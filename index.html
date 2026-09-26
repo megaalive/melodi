@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Fondasi songwriting Melodi.">
+    <title>Melodi</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles/app.css">
+    <script type="module" src="./src/app.js"></script>
+  </head>
+  <body>
+    <header class="page-header">
+      <div>
+        <h1>Melodi</h1>
+        <p data-copy="intro"></p>
+      </div>
+      <label class="language-control">
+        <span data-copy="languageLabel"></span>
+        <select id="language" data-action="language-switch" data-focus-key="language">
+          <option value="id">Indonesia</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+    </header>
+
+    <main>
+      <section aria-labelledby="song-heading">
+        <h2 id="song-heading" data-copy="songHeading"></h2>
+        <p id="song-title" data-entity="song-title"></p>
+        <dl class="song-summary" data-entity="song-summary">
+          <div><dt data-copy="tempoLabel"></dt><dd id="tempo-value"></dd></div>
+          <div><dt data-copy="keyLabel"></dt><dd id="key-value"></dd></div>
+          <div><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="notes-heading">
+        <h2 id="notes-heading" data-copy="notesHeading"></h2>
+        <p data-copy="notesHelp"></p>
+        <ol id="note-list" class="note-list" data-entity="note-list"></ol>
+
+        <form id="add-note-form" class="panel" data-action="add-note">
+          <h3 data-copy="addNoteHeading"></h3>
+          <div class="form-grid">
+            <label><span data-copy="pitchLabel"></span><input name="pitch" type="text" value="C4" pattern="[A-Ga-g][#b]?-?[0-9]+" required data-focus-key="add-pitch"></label>
+            <label><span data-copy="startTickLabel"></span><input id="add-start-tick" name="startTick" type="number" min="0" step="1" required data-focus-key="add-start"></label>
+            <label><span data-copy="durationLabel"></span><input name="durationTicks" type="number" min="1" step="1" value="480" required data-focus-key="add-duration"></label>
+          </div>
+          <button type="submit" data-focus-key="add-button" data-copy="addNoteButton"></button>
+        </form>
+      </section>
+
+      <section aria-labelledby="lyrics-heading">
+        <h2 id="lyrics-heading" data-copy="lyricsHeading"></h2>
+        <form id="lyrics-form" class="panel" data-action="set-lyrics">
+          <label><span data-copy="rawLyricsLabel"></span><textarea id="raw-lyrics" name="rawText" rows="3" data-focus-key="lyrics"></textarea></label>
+          <button type="submit" data-copy="saveLyricsButton"></button>
+        </form>
+        <p id="syllable-summary" class="muted" data-entity="lyric-mapping"></p>
+      </section>
+
+      <section aria-labelledby="selection-heading">
+        <h2 id="selection-heading" data-copy="selectionHeading"></h2>
+        <form id="selection-form" class="panel" data-action="select-range">
+          <div class="form-grid">
+            <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="range-start"></label>
+            <label><span data-copy="rangeEndLabel"></span><input name="endTick" type="number" min="0" step="1" value="1920" required data-focus-key="range-end"></label>
+          </div>
+          <button type="submit" data-copy="selectRangeButton"></button>
+        </form>
+        <p id="selection-summary" class="muted" data-entity="selection"></p>
+      </section>
+
+      <p id="operation-status" class="status" role="status" aria-live="polite" aria-atomic="true" data-entity="operation-status"></p>
+    </main>
+  </body>
+</html>
