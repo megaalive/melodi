@@ -21,6 +21,62 @@ Target awal harus berjalan penuh di GitHub Pages.
 - Canonical song model menjadi source of truth; UI, score renderer, dan player hanya menjadi view dari model yang sama.
 - Semua path asset harus aman untuk deployment GitHub Pages pada subpath repository.
 
+
+## Kontrak akses agent / LLM
+
+Melodi harus nyaman dipakai manusia sekaligus dapat dioperasikan secara stabil oleh browser agent, Computer Use, Codex, atau tool serupa. Jangan membuat automation bergantung pada koordinat layar.
+
+- Semua aksi utama harus punya semantic HTML yang benar: `button`, `input`, `select`, `textarea`, label, dan focus state.
+- Semua kontrol penting harus punya nama/label stabil dan state yang dapat dibaca.
+- Semua entity penting memakai ID stabil: note, section, lyric syllable, chord, candidate.
+- Piano Roll dan score boleh memakai SVG/Canvas untuk visual, tetapi operasi utamanya wajib punya jalur semantic/command yang tidak bergantung drag pixel.
+- Jangan membuat fungsi penting hanya tersedia lewat hover, gesture, atau context menu.
+- Drag-and-drop wajib punya alternatif edit eksplisit untuk pitch, start, duration, assignment, dan posisi.
+- UI dan automation harus memanggil command layer yang sama agar perilakunya identik.
+- Expose read-only state dan bounded command API pada halaman untuk automation lokal; jangan expose secret atau capability sensitif.
+- Tambahkan stable `data-*` hooks untuk entity/action penting. Hook automation tidak boleh bergantung pada class CSS visual.
+- Keyboard flow dan Command Palette dianggap bagian fitur, bukan aksesori.
+- State seperti selection, current section, current tick, locked notes, dan candidate aktif harus dapat dibaca tanpa screenshot.
+- Accessibility dan agentability dikerjakan bersama: semantic DOM, ARIA yang benar, keyboard navigation, deterministic focus, dan status text.
+- Perubahan layout/tema tidak boleh mematahkan selector automation yang sudah menjadi kontrak.
+
+### Command layer minimum
+
+Command layer mulai kecil dan bertambah sesuai release. Bentuk API internal harus setara dengan operasi UI, misalnya:
+
+```text
+getSong
+getSelection
+addNote
+updateNote
+deleteNote
+setLyrics
+setAnchor
+setLocked
+selectRange
+play
+pause
+stop
+```
+
+Release berikutnya menambah command seperti `generateGap`, `acceptCandidate`, `setChord`, `createSection`, dan export.
+
+### Agent state
+
+Sediakan snapshot state ringkas yang machine-readable, minimal memuat:
+
+```text
+song id/title
+tempo/key/time signature
+current section
+current tick
+selection
+locked/anchor entities yang relevan
+available actions untuk context saat ini
+```
+
+Tidak perlu membuat UI bot terpisah. Targetnya adalah UI manusia yang semantic dan predictable, dengan command/state surface yang bisa dipakai agent bila tersedia.
+
 ## Struktur awal
 
 ```text
@@ -55,6 +111,10 @@ Target awal harus berjalan penuh di GitHub Pages.
 - Siapkan i18n `id` dan `en`, default `id`.
 - Tetapkan convention source English + komentar Indonesia.
 - Pastikan resource memakai relative path agar aman di GitHub Pages.
+- Buat application command layer; UI tidak boleh memodifikasi canonical model lewat jalur ad-hoc.
+- Tetapkan stable entity IDs dan stable automation hooks (`data-entity`, `data-action`, dan identifier sejenis).
+- Buat read-only agent state snapshot awal.
+- Pastikan semua aksi R0 yang punya UI memakai semantic HTML, keyboard access, dan label yang stabil.
 - Buat model dasar:
   - `Song`
   - `Note`
@@ -83,7 +143,7 @@ Target awal harus berjalan penuh di GitHub Pages.
 
 ### Selesai bila
 
-Model dapat mewakili `C4-E4-A4-G4` plus lirik tanpa ketergantungan ke UI.
+Model dapat mewakili `C4-E4-A4-G4` plus lirik tanpa ketergantungan ke UI. Operasi dasarnya juga dapat dilakukan lewat command layer tanpa klik koordinat layar.
 
 ---
 
@@ -295,6 +355,7 @@ Skenario wajib:
 16. Simpan project.
 17. Reload.
 18. Project kembali dengan state yang sama.
+19. Browser agent dapat membaca state lagu dan melakukan minimal add/edit note, set lyrics, Play, serta memilih aksi utama tanpa bergantung koordinat pixel.
 
 Jangan lanjut ke fitur besar berikutnya sebelum alur ini cepat, stabil, dan enak dipakai.
 
@@ -481,6 +542,7 @@ Jangan dikerjakan sebelum kebutuhan nyata muncul:
 - Backend.
 - Polyphonic guitar transcription.
 - Framework UI besar.
+- Automation yang hanya bekerja dengan pixel-coordinate atau selector CSS visual yang rapuh.
 
 ## Prinsip kerja
 
