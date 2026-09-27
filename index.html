@@ -105,6 +105,7 @@
               <option value="piano-roll" data-copy="viewPianoRollOption"></option>
               <option value="combined" data-copy="viewCombinedOption"></option>
               <option value="lyrics" data-copy="viewLyricsOption"></option>
+              <option value="guitar" data-copy="viewGuitarOption"></option>
             </select>
           </label>
           <label class="follow-mode-control">
@@ -169,6 +170,20 @@
               <svg id="score"></svg>
             </div>
             <div id="score-fallback" class="score-fallback" hidden></div>
+          </section>
+
+          <section id="guitar-section" class="workspace-pane" data-view-region="guitar" aria-labelledby="guitar-heading">
+            <div class="pane-heading">
+              <div>
+                <h2 id="guitar-heading" data-copy="guitarHeading"></h2>
+                <p data-copy="guitarHelp"></p>
+              </div>
+              <p id="guitar-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="guitar-status"></p>
+            </div>
+            <div id="guitar-scroll" class="guitar-scroll" role="region" tabindex="0" data-aria-copy="guitarRegionLabel">
+              <svg id="guitar" role="img"></svg>
+            </div>
+            <p id="guitar-legend" class="muted" data-entity="guitar-positions"></p>
           </section>
 
           <section id="lyrics-section" class="workspace-pane" data-view-region="lyrics" aria-labelledby="lyrics-heading">

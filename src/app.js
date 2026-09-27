@@ -1,11 +1,12 @@
 import { createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
 import { SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState } from "./core/runtime-state.js";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
 import { createScoreView } from "./ui/score.js";
+import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createDraftPersistence } from "./storage/draft.js";
 
@@ -13,6 +14,7 @@ let language = DEFAULT_LANGUAGE;
 let commands;
 let rollView;
 let scoreView;
+let guitarView;
 let statusTimer;
 let pointerInteractionActive = false;
 let lastFollowSyllableId = null;
@@ -68,7 +70,7 @@ function getR3ViewMarkup() {
 
   const regionNames = new Set(regions.map((region) => region.dataset.viewRegion));
   const complete = modeControl && followControl
-    && ["score", "piano-roll", "lyrics"].every((name) => regionNames.has(name));
+    && [...Object.keys(VIEW_REGION_MODES)].every((name) => regionNames.has(name));
   if (!complete) throw new Error("Incomplete R3 view markup.");
   return { modeControl, followControl, regions };
 }
@@ -812,13 +814,9 @@ function render() {
   if (viewMarkup.modeControl) viewMarkup.modeControl.value = state.view.mode;
   if (viewMarkup.followControl) viewMarkup.followControl.checked = state.view.follow;
   for (const region of viewMarkup.regions) {
-    const mode = state.view.mode;
-    const visible = region.dataset.viewRegion === "score"
-      ? mode === "score" || mode === "combined"
-      : region.dataset.viewRegion === "piano-roll"
-        ? mode === "piano-roll" || mode === "combined"
-        : mode === "lyrics";
-    region.hidden = !visible;
+    const modes = VIEW_REGION_MODES[region.dataset.viewRegion];
+    // Region dengan nama yang tidak dikenal disembunyikan, bukan ditampilkan.
+    region.hidden = !modes?.includes(state.view.mode);
   }
   byId("raw-lyrics").value = lyricsFormPending ? rawLyricsDraft : song.lyrics.rawText;
   byId("syllable-summary").textContent = song.lyrics.syllables.length
@@ -837,6 +835,7 @@ function render() {
   rollView.render(song, state);
   byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
   scoreView.render(song, state);
+  renderGuitar(state);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -947,6 +946,27 @@ scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fal
   },
   onContextMenu: showNoteContextMenu
 });
+
+guitarView = createGuitarView(byId("guitar"));
+const guitarStatus = byId("guitar-status");
+const guitarLegend = byId("guitar-legend");
+
+function renderGuitar(state) {
+  const { note, positions } = guitarView.render(state);
+  const pitch = note ? midiToPitch(note.pitch) : null;
+  const labels = positions.map((position) => translate("guitarPosition", position));
+  if (!note) {
+    // Bantuan soal apa yang harus dilakukan sudah ada di judul panel, jadi di sini
+    // cukup dibiarkan kosong agar tidak mengulang kalimat yang sama.
+    guitarStatus.textContent = "";
+    guitarLegend.textContent = translate("guitarTuning");
+    return;
+  }
+  guitarStatus.textContent = positions.length === 0
+    ? translate("guitarUnplayable", { pitch })
+    : translate("guitarPositions", { pitch, count: positions.length, positions: labels.join(", ") });
+  guitarLegend.textContent = translate("guitarTuning");
+}
 
 const publicCommands = Object.freeze({
   getSong: commands.getSong,

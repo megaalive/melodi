@@ -22,7 +22,6 @@ Each song, note, phrase, section, lyric syllable, and chord has a stable ID. IDs
 ## Browser automation contract
 
 The page exposes a small frozen surface at `window.melodi`:
-
 ```js
 window.melodi.getState()
 window.melodi.commands.getSong()
@@ -41,6 +40,7 @@ window.melodi.commands.seek(480)
 window.melodi.commands.setTempo(96)
 window.melodi.commands.setLoop(0, 1920)
 window.melodi.commands.setLoopEnabled(true)
+window.melodi.commands.setViewMode("guitar")
 window.melodi.commands.undo()
 window.melodi.commands.redo()
 window.melodi.commands.canUndo()
@@ -98,3 +98,15 @@ Melodi uses a graphite base with two accents: petrol for structure and ember for
 The page follows the operating system by default. The `theme` select offers `system`, `light`, and `dark`; a manual choice is stored in `localStorage` under `melodi.theme` and survives reload, while language stays in-memory. Dark mode avoids pure black and pure white because pure black blooms on OLED and pure white text is harsh in a dark theme.
 
 Every canvas colour is a CSS custom property, including the SVG `fill` and `stroke` values in the Piano Roll and score, so both modes restyle from one token set. Tokens are declared as flat values first and upgraded to `light-dark()` pairs behind `@supports`, so a browser without `light-dark()` still renders a complete light theme instead of dropping every colour. Motion is reduced to near-zero under `prefers-reduced-motion: reduce`; state colour changes are kept, because anchor and locked feedback must stay readable.
+
+## Layout
+
+Above 46rem the workspace chrome is a single sticky row: transport and edit history on the left, tempo, loop, and the Advanced disclosure in the middle, view mode and Follow Mode on the right. Below 46rem the same chrome becomes a fixed bottom bar with 44px touch targets, so the canvas starts at the top of the page and playback stays under the thumb.
+
+The Advanced panel is an absolutely positioned popover rather than inline content. That keeps the sticky bar a constant height, which is why no rule needs to guess how tall the bar is when the panel is open. Regions are shown from `VIEW_REGION_MODES` in `core/runtime-state.js`; an unknown region name is hidden rather than shown.
+
+## Views
+
+`score`, `piano-roll`, `combined`, `lyrics`, and `guitar` are set with `setViewMode`. The piano roll draws the active generation candidate in the gap between the anchors, so auditioning happens where the music already is rather than in a separate panel.
+
+The guitar view is not a second timeline. It answers one question: which positions on a standard-tuned neck can play the selected note, and which of those sound cleanest. `findGuitarPositions(pitch, { tuning, maxFret })` returns every position as `{ string, fret }` with strings numbered the way a player numbers them, 6 being lowest. Positions at fret 12 or above are marked, because that register has the cleanest tone and most open resonance. Played notes render as `data-entity="guitar-position"` with `data-note-id`, `data-string`, and `data-fret`.

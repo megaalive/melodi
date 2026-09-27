@@ -1,4 +1,12 @@
-const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics"]);
+const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar"]);
+
+/** Region mana yang tampil pada mode tampilan apa. */
+export const VIEW_REGION_MODES = Object.freeze({
+  score: ["score", "combined"],
+  "piano-roll": ["piano-roll", "combined"],
+  lyrics: ["lyrics"],
+  guitar: ["guitar"]
+});
 
 function normalizeGenerationState(generation) {
   if (generation?.status !== "ready" || !Array.isArray(generation.candidates)) {

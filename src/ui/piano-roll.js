@@ -172,6 +172,25 @@ function svgElement(name, attributes = {}, parent = null, text = null) {
   return element;
 }
 
+/*
+ * Gradien pitch: baris paling atas (pitch tertinggi) condong hangat, baris paling
+ * bawah (pitch terendah) condong dingin. Selisihnya sengaja sangat kecil karena
+ * tujuannya memberi arti pada sumbu Y, bukan dekorasi. Satu gradient untuk
+ * seluruh tinggi roll, jadi tidak ada biaya per baris.
+ */
+function appendPitchTint(svg) {
+  const defs = svgElement("defs", {}, svg);
+  const gradient = svgElement("linearGradient", {
+    id: "melodi-pitch-tint",
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 1
+  }, defs);
+  svgElement("stop", { offset: "0%", class: "pitch-tint-high" }, gradient);
+  svgElement("stop", { offset: "100%", class: "pitch-tint-low" }, gradient);
+}
+
 function noteDescription(note, selected, current) {
   const states = [note.source, note.anchor ? "anchor" : "", note.locked ? "locked" : "", selected ? "selected" : "", current ? "playing" : ""]
     .filter(Boolean).join(", ");
@@ -253,6 +272,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     svg.replaceChildren();
 
     svgElement("title", {}, svg, `Piano Roll ${numerator}/${denominator}`);
+    appendPitchTint(svg);
     svgElement("rect", { x: 0, y: 0, width: geometry.width, height: geometry.height, class: "roll-background" }, svg);
 
     for (let midi = geometry.maxMidi; midi >= geometry.minMidi; midi -= 1) {

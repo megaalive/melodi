@@ -67,6 +67,13 @@
   --toast-surface-error: #9b2424;
   --toast-ink-error: #ffffff;
   --selection-fill: rgba(36, 93, 129, 0.12);
+  --pitch-tint-high: #fdf7f0;
+  --pitch-tint-low: #eef1f4;
+  --roll-key-light: rgba(255, 255, 255, 0.5);
+  --roll-key-dark: rgba(0, 0, 0, 0.05);
+  --neck-board: #f6f1e8;
+  --neck-nut: #e4dccd;
+  --neck-inlay: #d8cfbe;
   --surface-float: rgba(255, 255, 255, 0.97);
   --warning-surface: #fff8ec;
   --warning-ink: #69400d;
@@ -124,6 +131,13 @@
     --toast-surface-error: light-dark(#9b2424, #241a1c);
     --toast-ink-error: light-dark(#ffffff, #f0d2d4);
     --selection-fill: light-dark(rgba(36, 93, 129, 0.12), rgba(99, 182, 198, 0.2));
+    --pitch-tint-high: light-dark(#fdf7f0, #221f1e);
+    --pitch-tint-low: light-dark(#eef1f4, #181f24);
+    --roll-key-light: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.03));
+    --roll-key-dark: light-dark(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.22));
+    --neck-board: light-dark(#f6f1e8, #26221d);
+    --neck-nut: light-dark(#e4dccd, #383026);
+    --neck-inlay: light-dark(#d8cfbe, #453b2e);
     --surface-float: light-dark(rgba(255, 255, 255, 0.97), rgba(20, 23, 26, 0.97));
     --warning-surface: light-dark(#fff8ec, #2a2013);
     --warning-ink: light-dark(#69400d, #e0b872);
@@ -859,9 +873,14 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 }
 .syllable-add-form label { flex: 1 1 12rem; }
 
-.roll-background { fill: var(--surface); }
-.roll-row { fill: var(--surface); }
-.roll-row-black { fill: var(--surface-subtle); }
+/* Baris piano roll dibuat translusen supaya gradien pitch di belakang tetap
+   terlihat. Alternasi putih/hitam tetap terbaca, dan sumbu Y sekarang punya
+   warna: atas hangat, bawah dingin. */
+.roll-background { fill: url(#melodi-pitch-tint); }
+.pitch-tint-high { stop-color: var(--pitch-tint-high); }
+.pitch-tint-low { stop-color: var(--pitch-tint-low); }
+.roll-row { fill: var(--roll-key-light); }
+.roll-row-black { fill: var(--roll-key-dark); }
 .roll-row-line { stroke: var(--border); stroke-width: 1; }
 .roll-pitch-label, .roll-bar-label { fill: var(--text); font: 12px system-ui, sans-serif; }
 .roll-beat-line { stroke: var(--border-strong); stroke-width: 1; }
@@ -895,8 +914,31 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   border-left: 0.22rem solid var(--anchor);
   background: var(--warning-surface);
 }
-.score-fallback p { margin-top: 0; font-weight: 650; }
-.score-fallback ul { margin: 0.35rem 0 0; padding-left: 1.1rem; overflow-wrap: anywhere; }
+/* Guitar view. Papan dan senar sengaja low-contrast: yang perlu menonjol hanya
+   posisi yang bisa memainkan note terpilih. */
+.guitar-scroll {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+#guitar { display: block; max-width: none; }
+
+.neck-board { fill: var(--neck-board); }
+.neck-nut { fill: var(--neck-nut); }
+.neck-inlay { fill: var(--neck-inlay); }
+.neck-fret { stroke: var(--border-strong); stroke-width: 1; }
+.neck-fret-sweet { stroke: var(--ember); stroke-width: 1.5; }
+.neck-fret-label { fill: var(--text-muted); font: 10px system-ui, sans-serif; }
+.neck-string { stroke: var(--text-muted); stroke-width: 1; }
+.neck-string[data-string="6"] { stroke-width: 2.2; }
+.neck-string[data-string="5"],
+.neck-string[data-string="4"] { stroke-width: 1.7; }
+.neck-string[data-string="1"] { stroke-width: 1; }
+.neck-string-label { fill: var(--text-muted); font: 600 10px system-ui, sans-serif; }
+.neck-hit { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; }
+.neck-hit-sweet { fill: var(--ember); stroke: var(--note-anchor-stroke); }
+
+.score-fallback p { margin-top: 0; font-weight: 650; }.score-fallback ul { margin: 0.35rem 0 0; padding-left: 1.1rem; overflow-wrap: anywhere; }
 .score-warning-list { color: var(--warning-ink); }
 
 @media (min-width: 68.01rem) {
