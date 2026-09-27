@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialSong, createSong } from "../src/core/model.js";
 import { generateGap } from "../src/generation/generator.js";
+import { createGenerationContext } from "../src/generation/context.js";
+import { rankCandidates, scoreCandidate, SCORING_WEIGHTS } from "../src/generation/scoring.js";
 import {
   approachNote,
   directMove,
@@ -146,4 +148,76 @@ test("generation rejects invalid range, seed, and a range with no scale tone", (
   expectGenerationCode(() => generateGap(song, request({ voiceRange: { minPitch: 61, maxPitch: 61 } })), "generation-invalid-voice-range");
   const pentatonic = createSong({ ...song, scale: { name: "pentatonic", intervals: [0, 2, 4, 7, 9] } });
   expectGenerationCode(() => generateGap(pentatonic, request({ voiceRange: { minPitch: 65, maxPitch: 66 } })), "generation-range-has-no-scale-tones");
+});
+
+function candidate(id, pitches, duration = 960 / pitches.length) {
+  let startTick = 480;
+  const notes = pitches.map((pitch, index) => {
+    const note = { id: `${id}-note-${index}`, pitch, startTick, durationTicks: duration };
+    startTick += duration;
+    return note;
+  });
+  return { id, seed: 1, notes, generationIndex: 0, sourceMoves: ["direct"] };
+}
+
+test("scoring dimensions and overall score are normalized and explicit", () => {
+  const context = createGenerationContext(fixture(), request());
+  const result = scoreCandidate(candidate("smooth", [62, 65]), context, {
+    voiceRange: { minPitch: 48, maxPitch: 84 },
+    styleProfile: "balanced"
+  });
+  assert.deepEqual(Object.keys(result.scoreBreakdown).sort(), Object.keys(SCORING_WEIGHTS).sort());
+  assert.ok(result.score >= 0 && result.score <= 1);
+  assert.ok(Object.values(result.scoreBreakdown).every((value) => value >= 0 && value <= 1));
+  assert.deepEqual(result.metadata, {
+    noteCount: 2,
+    range: { minPitch: 62, maxPitch: 65, label: "D4–F4" },
+    stepCount: 1,
+    leapCount: 0,
+    landingInterval: -2,
+    smoothLanding: true
+  });
+});
+
+test("smooth tonal phrase outranks an unresolved large leap on the relevant dimensions", () => {
+  const context = createGenerationContext(fixture(), request());
+  const options = { voiceRange: { minPitch: 48, maxPitch: 84 }, styleProfile: "balanced" };
+  const smooth = scoreCandidate(candidate("smooth", [62, 65]), context, options);
+  const unresolved = scoreCandidate(candidate("unresolved", [84, 60]), context, options);
+  assert.ok(smooth.scoreBreakdown.leapResolution > unresolved.scoreBreakdown.leapResolution);
+  assert.ok(smooth.scoreBreakdown.singability > unresolved.scoreBreakdown.singability);
+});
+
+test("anchor landing and requested syllable density affect only their scoring dimensions", () => {
+  const context = createGenerationContext(fixture(), request());
+  const near = scoreCandidate(candidate("near", [62, 65]), context, { voiceRange: { minPitch: 48, maxPitch: 84 } });
+  const far = scoreCandidate(candidate("far", [62, 60]), context, { voiceRange: { minPitch: 48, maxPitch: 84 } });
+  assert.ok(near.scoreBreakdown.anchorLanding > far.scoreBreakdown.anchorLanding);
+
+  const sparse = scoreCandidate(candidate("sparse", [62]), context, { expectedSyllableCount: 3 });
+  const aligned = scoreCandidate(candidate("aligned", [62, 64, 65]), context, { expectedSyllableCount: 3 });
+  assert.ok(aligned.scoreBreakdown.lyricFit > sparse.scoreBreakdown.lyricFit);
+});
+
+test("deduplication and ranking are deterministic and keep objective score metadata", () => {
+  const context = createGenerationContext(fixture(), request());
+  const first = candidate("first-id", [62, 65]);
+  const duplicate = { ...candidate("different-id", [62, 65]), sourceMoves: ["approach"] };
+  const second = candidate("second-id", [64, 65]);
+  const options = { voiceRange: { minPitch: 48, maxPitch: 84 }, candidateCount: 6 };
+  const ranked = rankCandidates([second, duplicate, first], context, options);
+  assert.equal(ranked.length, 2);
+  assert.deepEqual(ranked, rankCandidates([second, duplicate, first], context, options));
+  assert.equal(ranked.some((item) => item.metadata.range.label && Number.isFinite(item.score)), true);
+  assert.deepEqual(ranked.find((item) => item.notes[0].pitch === 62).sourceMoves, ["approach", "direct"]);
+});
+
+test("style profile changes ranking score without rewriting candidate notes", () => {
+  const context = createGenerationContext(fixture(), request());
+  const source = candidate("style", [62, 64, 65]);
+  const originalNotes = structuredClone(source.notes);
+  const balanced = scoreCandidate(source, context, { styleProfile: "balanced" });
+  const smooth = scoreCandidate(source, context, { styleProfile: "smooth" });
+  assert.notEqual(balanced.scoreBreakdown.styleFit, smooth.scoreBreakdown.styleFit);
+  assert.deepEqual(source.notes, originalNotes);
 });

@@ -14,6 +14,7 @@ import {
   scalePitches,
   sequence
 } from "./primitives.js";
+import { rankCandidates, STYLE_PROFILES } from "./scoring.js";
 
 export const GENERATOR_VERSION = 1;
 export const DEFAULT_CANDIDATE_COUNT = 6;
@@ -50,11 +51,13 @@ function normalizeOptions(request) {
     || voiceRange.minPitch < 0 || voiceRange.maxPitch > 127 || voiceRange.minPitch >= voiceRange.maxPitch) {
     fail("generation-invalid-voice-range");
   }
+  const styleProfile = request.styleProfile ?? "balanced";
+  if (!STYLE_PROFILES.includes(styleProfile)) fail("generation-invalid-style");
   const expectedSyllableCount = request.lyricSyllableCount;
   if (expectedSyllableCount !== undefined && (!Number.isSafeInteger(expectedSyllableCount) || expectedSyllableCount < 0)) {
     fail("generation-invalid-lyric-count");
   }
-  return { seed, candidateCount, voiceRange: { ...voiceRange }, expectedSyllableCount };
+  return { seed, candidateCount, voiceRange: { ...voiceRange }, styleProfile, expectedSyllableCount };
 }
 
 function enumerateRhythmPlans(gapTicks) {
@@ -220,18 +223,21 @@ export function generateGap(song, request) {
       pool.push({ ...candidate, generationIndex: generationIndex++ });
     }
   }
-
-  const start = Math.floor(random() * pool.length);
-  const ordered = pool.length === 0 ? [] : [...pool.slice(start), ...pool.slice(0, start)];
-  const selected = ordered.slice(0, options.candidateCount);
-  if (selected.length < 4) fail("generation-insufficient-candidates");
-  const candidates = selected.map((candidate) => materializeCandidate(candidate, options.seed));
+  const candidatePool = pool.map((candidate) => materializeCandidate(candidate, options.seed));
+  const candidates = rankCandidates(candidatePool, context, {
+    voiceRange: options.voiceRange,
+    styleProfile: options.styleProfile,
+    expectedSyllableCount: options.expectedSyllableCount ?? context.mappedSyllableCount,
+    candidateCount: options.candidateCount
+  });
+  if (candidates.length < 4) fail("generation-insufficient-candidates");
   return {
     seed: options.seed,
     generatorVersion: GENERATOR_VERSION,
     gap: { ...context.gap },
     voiceRange: options.voiceRange,
-    expectedSyllableCount: options.expectedSyllableCount ?? null,
+    styleProfile: options.styleProfile,
+    expectedSyllableCount: options.expectedSyllableCount ?? context.mappedSyllableCount,
     candidates
   };
 }

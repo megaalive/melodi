@@ -54,6 +54,17 @@ export function createGenerationContext(songInput, request) {
     phrase.noteIds.includes(leftAnchorNoteId) && phrase.noteIds.includes(rightAnchorNoteId));
   if (commonPhrases.length !== 1) fail("generation-cross-phrase");
 
+  const leftSyllables = song.lyrics.syllables
+    .map((syllable, index) => syllable.noteIds.includes(leftAnchorNoteId) ? index : -1)
+    .filter((index) => index >= 0);
+  const rightSyllables = song.lyrics.syllables
+    .map((syllable, index) => syllable.noteIds.includes(rightAnchorNoteId) ? index : -1)
+    .filter((index) => index >= 0);
+  const mappedSyllableCount = leftSyllables.length === 1 && rightSyllables.length === 1
+    && rightSyllables[0] > leftSyllables[0]
+    ? rightSyllables[0] - leftSyllables[0] - 1
+    : null;
+
   const neighboringNotes = song.notes
     .filter((note) => note.id !== leftAnchorNoteId && note.id !== rightAnchorNoteId)
     .sort((left, right) => left.startTick - right.startTick || compareText(left.id, right.id));
@@ -63,6 +74,7 @@ export function createGenerationContext(songInput, request) {
     leftAnchor,
     rightAnchor,
     phraseId: commonPhrases[0].id,
+    mappedSyllableCount,
     key: song.key,
     scale: song.scale,
     tempo: song.timing.tempo,
