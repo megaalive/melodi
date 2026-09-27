@@ -88,6 +88,48 @@
         <div id="score-fallback" class="score-fallback" hidden></div>
       </section>
 
+      <section id="generation-panel" aria-labelledby="generation-heading" hidden>
+        <h2 id="generation-heading" data-copy="generationHeading"></h2>
+        <p data-copy="generationHelp"></p>
+        <p class="muted" data-copy="generationShortcuts"></p>
+        <form id="generation-form" class="panel generation-form" data-action="generate-gap" data-gap-ready="false">
+          <p id="generation-gap-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="generation-gap-hint"></p>
+          <div id="generation-anchor-actions" class="generation-anchor-actions" role="group">
+            <button type="button" class="secondary" data-action="mark-selected-anchors" data-copy="generationMarkAnchors" data-focus-key="generation-mark-anchors"></button>
+            <button type="button" class="secondary" data-action="use-selected-anchors" data-copy="generationUseAnchors" data-focus-key="generation-use-anchors"></button>
+          </div>
+          <input id="generation-left-anchor" type="hidden" name="leftAnchorNoteId">
+          <input id="generation-right-anchor" type="hidden" name="rightAnchorNoteId">
+          <details class="generation-options">
+            <summary data-copy="generationAdvanced"></summary>
+            <div class="form-grid generation-fields">
+              <label><span data-copy="generationStartLabel"></span><input id="generation-start" name="startTick" type="number" min="0" step="1" value="480" required data-focus-key="generation-start"></label>
+              <label><span data-copy="generationEndLabel"></span><input id="generation-end" name="endTick" type="number" min="0" step="1" value="1440" required data-focus-key="generation-end"></label>
+              <label><span data-copy="generationSeedLabel"></span><input id="generation-seed" name="seed" type="number" min="0" max="4294967295" step="1" value="1" required data-focus-key="generation-seed"></label>
+              <label><span data-copy="generationStyleLabel"></span><select id="generation-style" name="styleProfile" data-focus-key="generation-style"><option value="balanced" data-copy="styleBalanced"></option><option value="smooth" data-copy="styleSmooth"></option><option value="leaping" data-copy="styleLeaping"></option><option value="repetitive" data-copy="styleRepetitive"></option></select></label>
+              <label><span data-copy="generationMinPitchLabel"></span><select id="generation-min-pitch" name="minPitch" data-focus-key="generation-min-pitch"></select></label>
+              <label><span data-copy="generationMaxPitchLabel"></span><select id="generation-max-pitch" name="maxPitch" data-focus-key="generation-max-pitch"></select></label>
+              <label><span data-copy="generationLyricCountLabel"></span><input id="generation-lyric-count" name="lyricSyllableCount" type="number" min="0" max="32" step="1" data-focus-key="generation-lyric-count"></label>
+            </div>
+            <div class="generation-form-actions">
+              <button type="button" class="secondary" data-action="use-selection" data-copy="generationUseSelection" data-focus-key="generation-use-selection"></button>
+              <button type="button" class="secondary" data-action="use-generation-ticks" data-copy="generationUseTicks" data-focus-key="generation-use-ticks"></button>
+            </div>
+          </details>
+          <div class="generation-form-actions generation-primary-actions">
+            <button id="generate-gap" type="submit" data-copy="generationGenerate" data-focus-key="generation-generate" disabled></button>
+          </div>
+        </form>
+        <div id="generation-session-actions" class="generation-session-actions" role="group">
+          <button id="regenerate-gap" type="button" class="secondary" data-action="regenerate-gap" data-copy="generationRegenerate" data-focus-key="generation-regenerate" aria-keyshortcuts="R" disabled></button>
+          <button id="clear-generation" type="button" class="secondary" data-action="clear-generation" data-copy="generationClear" disabled></button>
+          <button id="lock-accepted-notes" type="button" class="secondary" data-action="lock-accepted-notes" data-focus-key="lock-accepted-notes" data-focus-fallback="generation-use-anchors" data-copy="generationLockAccepted" hidden></button>
+        </div>
+        <p id="generation-lock-help" class="muted" data-copy="generationLockHelp" hidden></p>
+        <p id="generation-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="generation-status"></p>
+        <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
+      </section>
+
       <section aria-labelledby="playback-heading">
         <h2 id="playback-heading" data-copy="playbackHeading"></h2>
         <fieldset class="panel transport-controls" aria-describedby="playback-readout">
@@ -138,33 +180,6 @@
           </div>
           <button type="submit" data-focus-key="add-button" data-copy="addNoteButton"></button>
         </form>
-      </section>
-
-      <section id="generation-panel" aria-labelledby="generation-heading" hidden>
-        <h2 id="generation-heading" data-copy="generationHeading"></h2>
-        <p data-copy="generationHelp"></p>
-        <form id="generation-form" class="panel generation-form" data-action="generate-gap">
-          <div class="form-grid generation-fields">
-            <label><span data-copy="generationStartLabel"></span><input id="generation-start" name="startTick" type="number" min="0" step="1" value="480" required data-focus-key="generation-start"></label>
-            <label><span data-copy="generationEndLabel"></span><input id="generation-end" name="endTick" type="number" min="0" step="1" value="1440" required data-focus-key="generation-end"></label>
-            <label><span data-copy="generationSeedLabel"></span><input id="generation-seed" name="seed" type="number" min="0" max="4294967295" step="1" value="1" required data-focus-key="generation-seed"></label>
-            <label><span data-copy="generationStyleLabel"></span><select id="generation-style" name="styleProfile" data-focus-key="generation-style"><option value="balanced" data-copy="styleBalanced"></option><option value="smooth" data-copy="styleSmooth"></option><option value="leaping" data-copy="styleLeaping"></option><option value="repetitive" data-copy="styleRepetitive"></option></select></label>
-            <label><span data-copy="generationMinPitchLabel"></span><input id="generation-min-pitch" name="minPitch" type="number" min="0" max="127" step="1" value="48" required data-focus-key="generation-min-pitch"></label>
-            <label><span data-copy="generationMaxPitchLabel"></span><input id="generation-max-pitch" name="maxPitch" type="number" min="0" max="127" step="1" value="84" required data-focus-key="generation-max-pitch"></label>
-            <label><span data-copy="generationLyricCountLabel"></span><input id="generation-lyric-count" name="lyricSyllableCount" type="number" min="0" max="32" step="1" data-focus-key="generation-lyric-count"></label>
-          </div>
-          <div class="generation-form-actions">
-            <button type="button" class="secondary" data-action="use-selection" data-copy="generationUseSelection" data-focus-key="generation-use-selection"></button>
-            <button id="generate-gap" type="submit" data-copy="generationGenerate" data-focus-key="generation-generate"></button>
-          </div>
-        </form>
-        <div class="generation-session-actions" aria-label="Generation session actions">
-          <button id="regenerate-gap" type="button" class="secondary" data-action="regenerate-gap" data-copy="generationRegenerate" disabled></button>
-          <button id="clear-generation" type="button" class="secondary" data-action="clear-generation" data-copy="generationClear" disabled></button>
-          <button id="lock-accepted-notes" type="button" class="secondary" data-action="lock-accepted-notes" data-focus-key="lock-accepted-notes" data-focus-fallback="generation-generate" data-copy="generationLockAccepted" hidden></button>
-        </div>
-        <p id="generation-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="generation-status"></p>
-        <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
       </section>
 
       <section id="lyrics-section" data-view-region="lyrics" aria-labelledby="lyrics-heading">

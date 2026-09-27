@@ -96,6 +96,7 @@ button.secondary {
   border-radius: 0.4rem;
   background: #fff;
 }
+.note-card[data-anchor="true"] { border-inline-start: 0.3rem solid #9b4c00; }
 
 .transport-controls { min-width: 0; margin: 0; }
 .transport-controls legend { padding: 0 0.35rem; font-weight: 700; }
@@ -138,13 +139,18 @@ button.secondary {
 }
 .editor-toolbar label { flex: 0 1 9rem; }
 .generation-form { display: grid; gap: 0.85rem; min-width: 0; }
+.generation-options { min-width: 0; }
+.generation-options > summary { cursor: pointer; font-weight: 650; }
 .generation-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
-.generation-form-actions, .generation-session-actions, .candidate-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; }
+.generation-form-actions, .generation-anchor-actions, .generation-session-actions, .candidate-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; min-width: 0; }
+.generation-primary-actions { justify-content: flex-start; }
 .generation-session-actions { margin: 0.75rem 0; }
 .generation-candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 0.75rem; padding-left: 1.5rem; }
 .generation-candidate-card { min-width: 0; padding: 0.9rem; border: 1px solid #ccd5dd; border-radius: 0.4rem; background: #fff; }
 .generation-candidate-card[data-active="true"] { border-color: #245d81; box-shadow: 0 0 0 2px #a9cfe5; }
 .generation-candidate-card h3 { margin: 0 0 0.45rem; }
+.candidate-active-label { display: inline-block; margin-inline-start: 0.35rem; padding: 0.08rem 0.45rem; border-radius: 999px; background: #e8f2f8; color: #174a68; font-size: 0.78em; vertical-align: 0.08em; }
+.candidate-melody { margin: 0.45rem 0 0.8rem; font-size: 1.08rem; font-weight: 700; line-height: 1.45; overflow-wrap: anywhere; }
 .candidate-id, .candidate-metadata, .candidate-score { margin: 0.35rem 0; overflow-wrap: anywhere; }
 .candidate-id code { overflow-wrap: anywhere; }
 .candidate-score-breakdown { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.3rem 0.8rem; margin: 0.6rem 0 0; }
@@ -227,8 +233,8 @@ button.secondary {
   .form-grid { grid-template-columns: 1fr; }
   .editor-toolbar { align-items: stretch; }
   .editor-toolbar > * { flex: 1 1 8rem; }
-  .generation-form-actions, .generation-session-actions, .candidate-actions { align-items: stretch; }
-  .generation-form-actions > *, .generation-session-actions > *, .candidate-actions > * { flex: 1 1 8rem; }
+  .generation-form-actions, .generation-anchor-actions, .generation-session-actions, .candidate-actions { align-items: stretch; }
+  .generation-form-actions > *, .generation-anchor-actions > *, .generation-session-actions > *, .candidate-actions > * { flex: 1 1 8rem; min-width: 0; }
   .generation-candidates { grid-template-columns: minmax(0, 1fr); padding-left: 1.2rem; }
   .syllable-split-fields { align-items: stretch; flex-direction: column; }
 }

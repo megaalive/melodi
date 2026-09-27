@@ -6,6 +6,7 @@ import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
 import { createScoreView } from "./ui/score.js";
+import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createDraftPersistence } from "./storage/draft.js";
 
 let language = DEFAULT_LANGUAGE;
@@ -343,15 +344,24 @@ function renderGeneration(state) {
   const form = byId("generation-form");
   const list = byId("generation-candidates");
   const status = byId("generation-status");
+  const gapStatus = byId("generation-gap-status");
+  const anchorActions = byId("generation-anchor-actions");
+  const sessionActions = byId("generation-session-actions");
   const useSelection = panel.querySelector('[data-action="use-selection"]');
+  const generate = byId("generate-gap");
   const regenerate = byId("regenerate-gap");
   const clear = byId("clear-generation");
   const lockAccepted = byId("lock-accepted-notes");
-  if (!form || !list || !status || !useSelection || !regenerate || !clear || !lockAccepted) {
+  const lockHelp = byId("generation-lock-help");
+  const leftAnchorField = byId("generation-left-anchor");
+  const rightAnchorField = byId("generation-right-anchor");
+  if (!form || !list || !status || !gapStatus || !anchorActions || !sessionActions || !useSelection || !generate || !regenerate || !clear || !lockAccepted || !lockHelp || !leftAnchorField || !rightAnchorField) {
     panel.hidden = false;
     throw new Error("Incomplete R4 generation markup.");
   }
   panel.hidden = false;
+  anchorActions.setAttribute("aria-label", translate("generationAnchorGroup"));
+  sessionActions.setAttribute("aria-label", translate("generationSessionGroup"));
 
   const generation = state.generation ?? { status: "idle", candidates: [], acceptedNoteIds: [] };
   const sessionReady = generation.status === "ready" && Array.isArray(generation.candidates);
@@ -361,14 +371,23 @@ function renderGeneration(state) {
     "generation-end": generation.gap?.endTick,
     "generation-seed": generation.seed,
     "generation-style": generation.styleProfile,
-    "generation-min-pitch": generation.voiceRange?.minPitch,
-    "generation-max-pitch": generation.voiceRange?.maxPitch,
+    "generation-min-pitch": generation.voiceRange?.minPitch ?? 48,
+    "generation-max-pitch": generation.voiceRange?.maxPitch ?? 84,
     "generation-lyric-count": generation.expectedSyllableCount
   };
   if (form.dataset.pending !== "true") {
     for (const [id, value] of Object.entries(fields)) {
       const field = byId(id);
-      if (field && value !== null && value !== undefined && document.activeElement !== field) field.value = String(value);
+      if (!field) continue;
+      if (field instanceof HTMLSelectElement && field.options.length === 0 && id.includes("pitch")) {
+        for (let midi = 0; midi <= 127; midi += 1) {
+          const option = document.createElement("option");
+          option.value = String(midi);
+          option.textContent = midiToPitch(midi);
+          field.append(option);
+        }
+      }
+      if (value !== null && value !== undefined && document.activeElement !== field) field.value = String(value);
     }
   }
 
@@ -376,16 +395,35 @@ function renderGeneration(state) {
   regenerate.disabled = !sessionReady;
   clear.disabled = !sessionReady && acceptedNoteIds.length === 0;
   lockAccepted.hidden = acceptedNoteIds.length === 0;
+  lockHelp.hidden = acceptedNoteIds.length === 0;
+  if (sessionReady && generation.gap && form.dataset.pending !== "true") {
+    form.dataset.gapReady = "true";
+    leftAnchorField.value = generation.gap.leftAnchorNoteId ?? "";
+    rightAnchorField.value = generation.gap.rightAnchorNoteId ?? "";
+  } else if (acceptedNoteIds.length > 0 && form.dataset.pending !== "true") {
+    form.dataset.gapReady = "false";
+    form.dataset.gapHint = "generationGapAccepted";
+  }
+  generate.disabled = form.dataset.gapReady !== "true"
+    || (sessionReady && generation.stale && form.dataset.pending !== "true");
+  gapStatus.textContent = translate(form.dataset.gapHint ?? "generationGapChooseAnchors");
   status.textContent = sessionReady
     ? generation.stale
       ? translate("generationStatusStale")
       : generation.auditionCandidateId
-      ? translate("generationStatusAuditioning", { id: generation.auditionCandidateId })
-      : translate("generationStatusReady", { count: generation.candidates.length })
-    : translate("generationStatusIdle");
+        ? translate("generationStatusAuditioning", { number: generation.candidates.findIndex((candidate) => candidate.id === generation.auditionCandidateId) + 1 })
+        : generation.activeCandidateId
+          ? translate("generationStatusSelected", { number: generation.candidates.findIndex((candidate) => candidate.id === generation.activeCandidateId) + 1 })
+          : translate("generationStatusReady", { count: generation.candidates.length })
+    : acceptedNoteIds.length > 0
+      ? translate("generationStatusAccepted")
+      : translate("generationStatusIdle");
 
   list.replaceChildren();
   if (!sessionReady) return;
+  const song = commands.getSong();
+  const leftAnchor = song.notes.find((note) => note.id === generation.gap?.leftAnchorNoteId);
+  const rightAnchor = song.notes.find((note) => note.id === generation.gap?.rightAnchorNoteId);
   const scoreKeys = ["tonalFit", "intervalSize", "leapResolution", "singability", "contour", "rhythm", "repetition", "anchorLanding", "lyricFit", "styleFit"];
   generation.candidates.forEach((candidate, index) => {
     const card = document.createElement("li");
@@ -393,10 +431,42 @@ function renderGeneration(state) {
     card.dataset.entity = "melody-candidate";
     card.dataset.entityId = candidate.id;
     card.dataset.candidateNumber = String(index + 1);
-    card.dataset.active = String(generation.activeCandidateId === candidate.id);
+    const isActive = generation.activeCandidateId === candidate.id;
+    card.dataset.active = String(isActive);
+    if (isActive) card.setAttribute("aria-current", "true");
 
     const heading = document.createElement("h3");
     heading.textContent = translate("candidateHeading", { number: index + 1 });
+    if (isActive) {
+      const activeLabel = document.createElement("span");
+      activeLabel.className = "candidate-active-label";
+      activeLabel.textContent = translate("candidateActive");
+      heading.append(" ", activeLabel);
+    }
+
+    const melody = document.createElement("p");
+    melody.className = "candidate-melody";
+    const melodyParts = candidate.notes.map((note) => {
+      const pitch = midiToPitch(note.pitch);
+      const beats = note.durationTicks / song.timing.ppq;
+      const rhythm = Math.abs(beats - 0.25) < 0.001 ? "1/16"
+        : Math.abs(beats - 0.5) < 0.001 ? "1/8"
+          : Math.abs(beats - 0.75) < 0.001 ? "3/16"
+            : Math.abs(beats - 1) < 0.001 ? "1/4"
+              : Math.abs(beats - 1.5) < 0.001 ? "3/8"
+                : Math.abs(beats - 2) < 0.001 ? "1/2"
+                  : Math.abs(beats - 3) < 0.001 ? "3/4"
+                    : Math.abs(beats - 4) < 0.001 ? "1/1"
+                      : `${Number(beats.toFixed(2))} ${translate("candidateBeats")}`;
+      return `${pitch} (${rhythm})`;
+    });
+    if (leftAnchor) melodyParts.unshift(`${midiToPitch(leftAnchor.pitch)} (${translate("candidateAnchorLabel")})`);
+    if (rightAnchor) melodyParts.push(`${midiToPitch(rightAnchor.pitch)} (${translate("candidateAnchorLabel")})`);
+    const melodyText = melodyParts.join(" → ");
+    melody.textContent = melodyText;
+    melody.setAttribute("role", "img");
+    melody.setAttribute("aria-label", translate("candidateMelodyLabel", { sequence: melodyText }));
+
     const identifier = document.createElement("p");
     identifier.className = "candidate-id";
     const idLabel = document.createElement("span");
@@ -408,12 +478,13 @@ function renderGeneration(state) {
     const metadata = candidate.metadata ?? {};
     const summary = document.createElement("p");
     summary.className = "candidate-metadata";
+    const pitches = candidate.notes.map((note) => note.pitch);
+    const range = pitches.length
+      ? `${midiToPitch(Math.min(...pitches))}–${midiToPitch(Math.max(...pitches))}`
+      : "—";
     summary.textContent = translate("candidateMetadata", {
-      notes: `${metadata.noteCount ?? candidate.notes?.length ?? 0} ${translate("candidateNoteUnit")}`,
-      steps: `${metadata.stepCount ?? 0} ${translate("candidateStepUnit")}`,
-      leaps: `${metadata.leapCount ?? 0} ${translate("candidateLeapUnit")}`,
-      range: metadata.range?.label ?? "—",
-      landing: translate(metadata.smoothLanding ? "candidateLandingSmooth" : "candidateLandingWide")
+      notes: metadata.noteCount ?? candidate.notes?.length ?? 0,
+      range
     });
     const score = document.createElement("p");
     score.className = "candidate-score";
@@ -422,13 +493,22 @@ function renderGeneration(state) {
     const actions = document.createElement("div");
     actions.className = "candidate-actions";
     const select = makeButton(translate("candidateSelect"), "select-candidate", { candidateId: candidate.id });
-    select.setAttribute("aria-pressed", String(generation.activeCandidateId === candidate.id));
+    select.setAttribute("aria-pressed", String(isActive));
+    select.setAttribute("aria-label", translate("candidateSelectAction", { number: index + 1 }));
     select.dataset.focusKey = `candidate-select-${candidate.id}`;
     const audition = makeButton(translate(generation.auditionCandidateId === candidate.id ? "candidateAuditioning" : "candidateAudition"), "audition-candidate", { candidateId: candidate.id });
+    audition.setAttribute("aria-label", translate("candidateAuditionAction", { number: index + 1 }));
+    audition.setAttribute("aria-pressed", String(generation.auditionCandidateId === candidate.id));
+    audition.setAttribute("aria-keyshortcuts", String(index + 1));
     audition.dataset.focusKey = `candidate-audition-${candidate.id}`;
     const accept = makeButton(translate("candidateAccept"), "accept-candidate", { candidateId: candidate.id });
+    accept.setAttribute("aria-label", translate("candidateAcceptAction", { number: index + 1 }));
+    accept.setAttribute("aria-keyshortcuts", "Enter");
     accept.dataset.focusKey = `candidate-accept-${candidate.id}`;
     accept.dataset.focusFallback = "lock-accepted-notes";
+    select.disabled = Boolean(generation.stale);
+    audition.disabled = Boolean(generation.stale);
+    accept.disabled = Boolean(generation.stale);
     actions.append(select, audition, accept);
 
     const details = document.createElement("details");
@@ -443,8 +523,8 @@ function renderGeneration(state) {
       value.textContent = Number(candidate.scoreBreakdown?.[key] ?? 0).toFixed(2);
       breakdown.append(term, value);
     }
-    details.append(detailsSummary, breakdown);
-    card.append(heading, identifier, summary, score, actions, details);
+    details.append(detailsSummary, identifier, breakdown);
+    card.append(heading, melody, actions, summary, score, details);
     list.append(card);
   });
 }
@@ -599,6 +679,13 @@ function clearPendingForms() {
     form.dataset.pending = "false";
     form.dataset.submitting = "false";
   }
+  const generationForm = byId("generation-form");
+  if (generationForm) {
+    generationForm.dataset.gapReady = "false";
+    generationForm.dataset.gapHint = "generationGapChooseAnchors";
+    byId("generation-left-anchor").value = "";
+    byId("generation-right-anchor").value = "";
+  }
 }
 
 const persistence = createDraftPersistence({
@@ -741,6 +828,10 @@ document.addEventListener("submit", (event) => {
   } else if (action === "set-loop") {
     result = run(() => commands.setLoop(Number(data.get("startTick")), Number(data.get("endTick"))), "loopUpdated");
   } else if (action === "generate-gap") {
+    if (form.dataset.gapReady !== "true") {
+      byId("generation-gap-status").textContent = translate("generationGapChooseAnchors");
+      return;
+    }
     const lyricCount = String(data.get("lyricSyllableCount") ?? "").trim();
     result = run(() => commands.generateGap({
       startTick: Number(data.get("startTick")),
@@ -748,6 +839,8 @@ document.addEventListener("submit", (event) => {
       seed: Number(data.get("seed")),
       styleProfile: data.get("styleProfile"),
       voiceRange: { minPitch: Number(data.get("minPitch")), maxPitch: Number(data.get("maxPitch")) },
+      ...(data.get("leftAnchorNoteId") ? { leftAnchorNoteId: data.get("leftAnchorNoteId") } : {}),
+      ...(data.get("rightAnchorNoteId") ? { rightAnchorNoteId: data.get("rightAnchorNoteId") } : {}),
       ...(lyricCount === "" ? {} : { lyricSyllableCount: Number(lyricCount) })
     }));
     if (result) announce("generationReady", "success", { count: result.candidates.length });
@@ -761,6 +854,14 @@ document.addEventListener("input", (event) => {
   if (target instanceof HTMLInputElement && ["checkbox", "radio"].includes(target.type)) return;
   if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) && target.form) {
     target.form.dataset.pending = "true";
+    if (target.form.id === "generation-form" && ["generation-start", "generation-end"].includes(target.id)) {
+      target.form.dataset.gapReady = "false";
+      target.form.dataset.gapHint = "generationGapReapply";
+      byId("generation-left-anchor").value = "";
+      byId("generation-right-anchor").value = "";
+      byId("generate-gap").disabled = true;
+      byId("generation-gap-status").textContent = translate("generationGapReapply");
+    }
   }
 });
 
@@ -772,6 +873,12 @@ document.addEventListener("change", (event) => {
     render();
     announce("languageChanged");
   } else if (target.dataset.action === "set-anchor") {
+    const form = byId("generation-form");
+    form.dataset.pending = "true";
+    form.dataset.gapReady = "false";
+    form.dataset.gapHint = "generationGapReapply";
+    byId("generation-left-anchor").value = "";
+    byId("generation-right-anchor").value = "";
     run(() => commands.setAnchor(target.dataset.noteId, target.checked), "anchorChanged");
   } else if (target.dataset.action === "set-locked") {
     run(() => commands.setLocked(target.dataset.noteId, target.checked), "lockedChanged");
@@ -830,9 +937,83 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.action === "use-selection") {
     const selection = commands.getSelection();
     if (!selection || selection.endTick <= selection.startTick) return;
+    const form = byId("generation-form");
     byId("generation-start").value = String(selection.startTick);
     byId("generation-end").value = String(selection.endTick);
-    byId("generation-form").dataset.pending = "true";
+    byId("generation-left-anchor").value = "";
+    byId("generation-right-anchor").value = "";
+    form.dataset.pending = "true";
+    form.dataset.gapReady = "true";
+    form.dataset.gapHint = "generationManualGapReady";
+    render();
+  } else if (target.dataset.action === "use-generation-ticks") {
+    const form = byId("generation-form");
+    const startValue = byId("generation-start").value.trim();
+    const endValue = byId("generation-end").value.trim();
+    const startTick = Number(startValue);
+    const endTick = Number(endValue);
+    const integerRange = Number.isSafeInteger(startTick) && Number.isSafeInteger(endTick)
+      && startValue !== "" && endValue !== "" && startTick >= 0 && endTick > startTick;
+    const onGrid = integerRange && startTick % 120 === 0 && endTick % 120 === 0;
+    const valid = onGrid && endTick - startTick <= 64 * 120;
+    if (!valid) {
+      form.dataset.gapReady = "false";
+      form.dataset.gapHint = !integerRange ? "generationManualGapInvalid"
+        : !onGrid ? "generationGapGrid"
+          : "generationGapTooLong";
+      render();
+      return;
+    }
+    byId("generation-left-anchor").value = "";
+    byId("generation-right-anchor").value = "";
+    form.dataset.pending = "true";
+    form.dataset.gapReady = "true";
+    form.dataset.gapHint = "generationManualGapReady";
+    render();
+  } else if (target.dataset.action === "mark-selected-anchors") {
+    const selectedIds = commands.getSelectedNoteIds();
+    const form = byId("generation-form");
+    if (selectedIds.length !== 2) {
+      form.dataset.gapHint = "generationGapSelectTwo";
+      render();
+      return;
+    }
+    form.dataset.gapReady = "false";
+    form.dataset.pending = "true";
+    byId("generation-left-anchor").value = "";
+    byId("generation-right-anchor").value = "";
+    form.dataset.gapHint = "generationAnchorsMarked";
+    const marked = run(() => {
+      for (const noteId of selectedIds) {
+        if (!commands.getSong().notes.find((note) => note.id === noteId)?.anchor) commands.setAnchor(noteId, true);
+      }
+      return true;
+    });
+    if (marked) render();
+  } else if (target.dataset.action === "use-selected-anchors") {
+    const form = byId("generation-form");
+    const selectedGap = resolveSelectedAnchorGap(commands.getSong(), commands.getSelectedNoteIds());
+    if (selectedGap.status !== "ready") {
+      const hintByStatus = {
+        "select-two": "generationGapSelectTwo",
+        "mark-two": "generationGapMarkTwo",
+        empty: "generationGapEmpty",
+        grid: "generationGapGrid",
+        "too-long": "generationGapTooLong"
+      };
+      form.dataset.gapReady = "false";
+      form.dataset.gapHint = hintByStatus[selectedGap.status] ?? "generationGapChooseAnchors";
+      render();
+      return;
+    }
+    byId("generation-start").value = String(selectedGap.gap.startTick);
+    byId("generation-end").value = String(selectedGap.gap.endTick);
+    byId("generation-left-anchor").value = selectedGap.gap.leftAnchorNoteId;
+    byId("generation-right-anchor").value = selectedGap.gap.rightAnchorNoteId;
+    form.dataset.pending = "true";
+    form.dataset.gapReady = "true";
+    form.dataset.gapHint = "generationGapReady";
+    render();
   } else if (target.dataset.action === "regenerate-gap") {
     const result = run(() => commands.regenerateGap());
     if (result) announce("generationRegenerated");
@@ -858,6 +1039,10 @@ document.addEventListener("keydown", (event) => {
     || target?.isContentEditable) return;
   if (!(event.ctrlKey || event.metaKey)) {
     if (event.altKey || event.shiftKey) return;
+    const nativeInteractive = target instanceof Element
+      ? target.closest("button, a, summary, [role='button'], [role='link']")
+      : null;
+    if (nativeInteractive) return;
     const generation = commands.getGenerationState();
     if (generation.status !== "ready") return;
     if (/^[1-8]$/.test(event.key)) {
@@ -873,10 +1058,7 @@ document.addEventListener("keydown", (event) => {
       if (result) announce("generationRegenerated");
       return;
     }
-    const nativeInteractive = target instanceof Element
-      ? target.closest("button, a, summary, [role='button'], [role='link']")
-      : null;
-    if (event.key === "Enter" && generation.activeCandidateId && !nativeInteractive) {
+    if (event.key === "Enter" && generation.activeCandidateId) {
       event.preventDefault();
       const accepted = run(() => commands.acceptCandidate(generation.activeCandidateId));
       if (accepted) announce("generationAccepted");
