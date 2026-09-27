@@ -1,6 +1,6 @@
 # Melodi
 
-Melodi is a static, vanilla JavaScript songwriting shell with a canonical song model and a basic Web Audio melody player. It has zero runtime dependencies and no persistence or generator layer.
+Melodi is a static, vanilla JavaScript songwriting shell with a canonical song model, a Web Audio melody player, and a bounded melody gap generator. It has zero runtime dependencies and saves canonical project drafts in browser storage.
 
 ## Run
 
@@ -41,9 +41,19 @@ window.melodi.commands.seek(480)
 window.melodi.commands.setTempo(96)
 window.melodi.commands.setLoop(0, 1920)
 window.melodi.commands.setLoopEnabled(true)
+window.melodi.commands.generateGap({ startTick: 480, endTick: 1440, seed: 1 })
+window.melodi.commands.getGenerationState()
+window.melodi.commands.selectCandidate(candidateId)
+await window.melodi.commands.auditionCandidate(candidateId)
+window.melodi.commands.acceptCandidate(candidateId)
+window.melodi.commands.lockAcceptedNotes()
+window.melodi.commands.regenerateGap()
+window.melodi.commands.clearGeneration()
 ```
 
-`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, and available commands. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
+`generateGap()` accepts an explicit half-open tick range and deterministic seed. The range must be bounded by two anchor notes in the same phrase, have a length and boundaries on the 120-tick grid, and contain no notes. Optional runtime settings are `voiceRange: { minPitch, maxPitch }`, `styleProfile`, and `lyricSyllableCount`; lyric counts are never inferred from raw text. Generation, selection, regeneration, and audition keep candidates in runtime state. Accept adds generated notes to the canonical Song and the owning phrase in one commit; `lockAcceptedNotes()` uses the normal user lock command.
+
+`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, a bounded `generation` summary, and available commands. `getGenerationState()` includes the bounded candidate list with candidate IDs, note timing and pitches, score breakdown, and factual metadata. Candidate step and leap counts describe intervals between generated notes; `landingInterval` describes the final generated note to the right anchor. Candidate IDs are session identifiers; candidate-local note IDs are not canonical Song IDs. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
 
 Successful commands commit canonical state before notifying the view. If `onChange` fails, the command still returns its success result and passes the view error to `onNotificationError` (the app logs it); notification errors do not roll back or masquerade as domain failures. Selection changes use the same notification behavior.
 
@@ -61,6 +71,6 @@ Audio starts only from a trusted Play gesture when the browser requires activati
 
 Section state is no longer assumed to be the first section; it is projected from canonical membership and the current tick.
 
-Important controls use stable `data-action` hooks. Rendered notes use `data-entity="note"` and `data-entity-id="<note-id>"`; automation should use these hooks rather than visual CSS classes or list position.
+Important controls use stable `data-action` hooks. Rendered notes use `data-entity="note"` and `data-entity-id="<note-id>"`; candidates use `data-entity="melody-candidate"` and their candidate ID. Automation should use these hooks rather than visual CSS classes or list position.
 
 The UI defaults to Indonesian. Language switching is in-memory and supports Indonesian (`id`) and English (`en`).

@@ -113,36 +113,37 @@ function pitchesForMove(move, count, context, range, variation) {
     const passings = scalePassingNotes(left, right, context, range.minPitch, range.maxPitch);
     if (count < passings.length || passings.length === 0) return null;
     pitches = Array.from({ length: count }, (_unused, index) => passings[Math.min(index, passings.length - 1)]);
-  } else if (move === "neighbor" && count >= 2) {
+  } else if (move === "neighbor") {
+    if (count < 2) return null;
     const neighbor = neighborNote(left, context, variation % 2 === 0 ? 1 : -1, range.minPitch, range.maxPitch);
-    if (neighbor) {
-      pitches[0] = neighbor.neighborPitch;
-      pitches[1] = neighbor.pitches[1];
-    }
+    if (!neighbor) return null;
+    pitches[0] = neighbor.neighborPitch;
+    pitches[1] = neighbor.pitches[1];
   } else if (move === "approach" && count > 0) {
     pitches[count - 1] = approachNote(right, left, context, range.minPitch, range.maxPitch);
   } else if (move === "leap" && count > 0) {
     const leap = leapNote(left, direction, context, 3 + variation % 2, range.minPitch, range.maxPitch);
-    if (leap !== null) {
-      pitches[0] = leap;
-      for (let index = 1; index < count; index += 1) {
-        pitches[index] = approachNote(right, pitches[index - 1], context, range.minPitch, range.maxPitch);
-      }
+    if (leap === null) return null;
+    pitches[0] = leap;
+    for (let index = 1; index < count; index += 1) {
+      pitches[index] = approachNote(right, pitches[index - 1], context, range.minPitch, range.maxPitch);
     }
-  } else if (move === "leap-resolution" && count >= 2) {
+  } else if (move === "leap-resolution") {
+    if (count < 2) return null;
     const leap = leapResolution(left, direction, context, 3 + variation % 2, range.minPitch, range.maxPitch);
-    if (leap) {
-      pitches[0] = leap.leapPitch;
-      pitches[1] = leap.resolutionPitch;
-      for (let index = 2; index < count; index += 1) {
-        pitches[index] = approachNote(right, pitches[index - 1], context, range.minPitch, range.maxPitch);
-      }
+    if (!leap) return null;
+    pitches[0] = leap.leapPitch;
+    pitches[1] = leap.resolutionPitch;
+    for (let index = 2; index < count; index += 1) {
+      pitches[index] = approachNote(right, pitches[index - 1], context, range.minPitch, range.maxPitch);
     }
-  } else if (move === "repetition" && count >= 2) {
-    const repeatCount = Math.min(count - 1, 1 + variation % 2);
+  } else if (move === "repetition") {
+    if (count < 2) return null;
+    const repeatCount = Math.min(count - 1, 2 + variation % 2);
     const repeated = repetition(left, repeatCount);
     pitches.splice(0, repeatCount, ...repeated);
-  } else if (move === "sequence" && count > 0) {
+  } else if (move === "sequence") {
+    if (count < 3) return null;
     pitches = sequence(left, priorSequence(context), count, context, range.minPitch, range.maxPitch);
     if (count > 1) pitches[count - 1] = approachNote(right, pitches[count - 2], context, range.minPitch, range.maxPitch);
   }
@@ -177,8 +178,13 @@ function chooseSingleNoteCandidates(context, range, rhythms, seed, startIndex, c
     makeCandidate([pitch], [duration], context.gap, seed, "approach", index));
 }
 
-function materializeCandidate(candidate, seed) {
-  const id = `candidate-${seed.toString(36)}-${stableHash(candidate.signature).toString(36)}`;
+function materializeCandidate(candidate, seed, gap, usedIds) {
+  const contextKey = `${gap.leftAnchorNoteId}\u0000${gap.rightAnchorNoteId}\u0000${candidate.signature}`;
+  const baseId = `candidate-${seed.toString(36)}-${gap.startTick.toString(36)}-${gap.endTick.toString(36)}-${stableHash(contextKey).toString(36)}`;
+  let id = baseId;
+  let collision = 0;
+  while (usedIds.has(id)) id = `${baseId}-${(++collision).toString(36)}`;
+  usedIds.add(id);
   return {
     id,
     seed,
@@ -223,7 +229,8 @@ export function generateGap(song, request) {
       pool.push({ ...candidate, generationIndex: generationIndex++ });
     }
   }
-  const candidatePool = pool.map((candidate) => materializeCandidate(candidate, options.seed));
+  const usedCandidateIds = new Set();
+  const candidatePool = pool.map((candidate) => materializeCandidate(candidate, options.seed, context.gap, usedCandidateIds));
   const candidates = rankCandidates(candidatePool, context, {
     voiceRange: options.voiceRange,
     styleProfile: options.styleProfile,

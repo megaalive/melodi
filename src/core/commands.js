@@ -345,7 +345,10 @@ export function createCommands(initialSong, {
         selection = null;
         selectedNoteIds = [...acceptedIds];
         lastAcceptedNoteIds = [...acceptedIds];
-        const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+        let tick = playback.currentTick;
+        if (playback.status === "playing" && audioPlayer) {
+          try { tick = audioPlayer.getPosition(); } catch {}
+        }
         updatePlayerSafely(() => audioPlayer?.songChanged(tick));
       }).map((note) => cloneData(note));
     },

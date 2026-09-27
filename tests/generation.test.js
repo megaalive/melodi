@@ -110,6 +110,7 @@ test("gap validation rejects empty, inverted, occupied, stale-anchor, and cross-
   const song = fixture();
   expectGenerationCode(() => generateGap(song, request({ endTick: 480 })), "generation-empty-gap");
   expectGenerationCode(() => generateGap(song, request({ startTick: 1440, endTick: 480 })), "generation-empty-gap");
+  expectGenerationCode(() => generateGap(song, request({ startTick: 60, endTick: 540 })), "generation-gap-grid");
   expectGenerationCode(() => generateGap(createSong({
     ...song,
     notes: [...song.notes, { id: "locked-gap-note", pitch: 64, startTick: 720, durationTicks: 120, source: "user", anchor: false, locked: true }],
@@ -124,6 +125,10 @@ test("gap validation rejects empty, inverted, occupied, stale-anchor, and cross-
       { id: "phrase-right", noteIds: ["anchor-right"] }
     ]
   }), request()), "generation-cross-phrase");
+  expectGenerationCode(() => generateGap(createSong({
+    ...song,
+    phrases: [{ ...song.phrases[0], noteIds: ["anchor-right", "anchor-left"] }]
+  }), request()), "generation-anchor-order");
 });
 
 test("passing note is a scale tone between its structural pitches", () => {
@@ -173,6 +178,33 @@ test("generation rejects invalid range, seed, and a range with no scale tone", (
   expectGenerationCode(() => generateGap(pentatonic, request({ voiceRange: { minPitch: 65, maxPitch: 66 } })), "generation-range-has-no-scale-tones");
 });
 
+test("candidate IDs distinguish different gaps with the same seed and relative notes", () => {
+  const song = fixture();
+  const first = generateGap(song, request());
+  const moved = createSong({
+    ...song,
+    notes: song.notes.map((note) => note.id === "anchor-left"
+      ? { ...note, durationTicks: 960 }
+      : { ...note, startTick: 1920 })
+  });
+  const second = generateGap(moved, request({ startTick: 960, endTick: 1920 }));
+  assert.deepEqual(first.candidates.map((item) => item.notes.map(({ pitch, durationTicks }) => ({ pitch, durationTicks }))),
+    second.candidates.map((item) => item.notes.map(({ pitch, durationTicks }) => ({ pitch, durationTicks }))));
+  assert.notEqual(first.candidates[0].id, second.candidates[0].id);
+  assert.equal(new Set(first.candidates.map((item) => item.id)).size, first.candidates.length);
+});
+
+test("generation does not label inapplicable rhythm plans as melodic primitives", () => {
+  const generated = generateGap(fixture(), request());
+  for (const item of generated.candidates) {
+    if (item.sourceMoves.includes("repetition")) {
+      assert.ok(item.notes.some((note, index) => index > 0 && note.pitch === item.notes[index - 1].pitch));
+    }
+    if (item.sourceMoves.includes("leap-resolution")) assert.ok(item.notes.length >= 2);
+    if (item.sourceMoves.includes("sequence")) assert.ok(item.notes.length >= 3);
+  }
+});
+
 function candidate(id, pitches, duration = 960 / pitches.length) {
   let startTick = 480;
   const notes = pitches.map((pitch, index) => {
@@ -195,11 +227,26 @@ test("scoring dimensions and overall score are normalized and explicit", () => {
   assert.deepEqual(result.metadata, {
     noteCount: 2,
     range: { minPitch: 62, maxPitch: 65, label: "D4–F4" },
-    stepCount: 1,
+    stepCount: 0,
     leapCount: 0,
     landingInterval: -2,
     smoothLanding: true
   });
+  assert.equal(scoreCandidate(candidate("scale-steps", [62, 64, 65]), context).metadata.stepCount, 2);
+});
+
+test("tonal stability uses scale intervals, and repetition rewards motifs over monotony", () => {
+  const song = createSong({ ...fixture(), scale: { name: "pentatonic", intervals: [0, 2, 4, 7, 9] } });
+  const context = createGenerationContext(song, request());
+  const fifth = scoreCandidate(candidate("fifth", [67]), context);
+  const sixth = scoreCandidate(candidate("sixth", [69]), context);
+  assert.ok(fifth.scoreBreakdown.tonalFit > sixth.scoreBreakdown.tonalFit);
+
+  const motif = scoreCandidate(candidate("motif", [62, 64, 62, 64]), context);
+  const varied = scoreCandidate(candidate("varied", [62, 65, 67, 64]), context);
+  const monotone = scoreCandidate(candidate("monotone", [64, 64, 64, 64]), context);
+  assert.ok(motif.scoreBreakdown.repetition > varied.scoreBreakdown.repetition);
+  assert.ok(motif.scoreBreakdown.repetition > monotone.scoreBreakdown.repetition);
 });
 
 test("smooth tonal phrase outranks an unresolved large leap on the relevant dimensions", () => {
@@ -306,6 +353,37 @@ test("Accept commits generated notes and phrase membership once, then serializes
   assert.equal(changes.filter((kind) => kind === "song").length, 1);
   assert.equal(commands.getGenerationState().status, "idle");
   assert.equal(deserializeProject(serializeProject(canonical)).notes.length, canonical.notes.length);
+});
+
+test("Accept still commits and notifies if reading the active audio position fails", async () => {
+  const changes = [];
+  let failPositionRead = false;
+  const commands = createCommands(fixture(), {
+    idFactory: (() => { let nextId = 0; return () => `position-failure-${++nextId}`; })(),
+    onChange: (change) => changes.push(change.kind),
+    audioPlayerFactory: () => ({
+      play: async () => true,
+      getPosition() {
+        if (failPositionRead) throw new Error("audio clock read failed");
+        return 0;
+      },
+      pause: () => 0,
+      stop: () => 0,
+      seek() {},
+      updateTempo() {},
+      updateLoop() {},
+      songChanged() {},
+      playPreview: async () => true,
+      cancelPreview() { return true; }
+    })
+  });
+  const generated = commands.generateGap(request());
+  await commands.play();
+  failPositionRead = true;
+  const accepted = commands.acceptCandidate(generated.candidates[0].id);
+  assert.equal(accepted.length, generated.candidates[0].notes.length);
+  assert.equal(commands.getSong().notes.length, fixture().notes.length + accepted.length);
+  assert.equal(changes.filter((kind) => kind === "song").length, 1);
 });
 
 test("Accept rejects a candidate after any canonical context change", () => {

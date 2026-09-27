@@ -1,5 +1,5 @@
 import { midiToPitch, MelodiError } from "../core/model.js";
-import { isScalePitch } from "./primitives.js";
+import { isScalePitch, nextScalePitch } from "./primitives.js";
 
 export const SCORING_WEIGHTS = Object.freeze({
   tonalFit: 0.16,
@@ -41,7 +41,7 @@ function tonalFit(candidate, context) {
   if (candidate.notes.length === 0) return 0;
   let scaleCount = 0;
   let stableCount = 0;
-  const stableIntervals = new Set([0, context.scale.intervals[2], context.scale.intervals[4]]);
+  const stableIntervals = new Set([0, 7].filter((interval) => context.scale.intervals.includes(interval)));
   for (const note of candidate.notes) {
     const inScale = isScalePitch(note.pitch, context.key, context.scale);
     if (inScale) scaleCount += 1;
@@ -116,13 +116,24 @@ function rhythm(candidate, context) {
 
 function repetitionScore(candidate) {
   const pitches = candidate.notes.map((note) => note.pitch);
-  if (pitches.length <= 1) return 0.65;
-  const unique = new Set(pitches).size;
-  const ratio = unique / pitches.length;
-  if (ratio === 1) return 0.78;
-  if (ratio >= 0.6) return 1;
-  if (ratio >= 0.4) return 0.74;
-  return 0.35;
+  if (pitches.length <= 1) return 0.5;
+  const durations = candidate.notes.map((note) => note.durationTicks);
+  const intervals = pitches.slice(1).map((pitch, index) => pitch - pitches[index]);
+  const recurrence = (values) => values.length <= 1
+    ? 0
+    : (values.length - new Set(values).size) / (values.length - 1);
+  if (pitches.length >= 3 && new Set(pitches).size === 1) return 0.25;
+  return 0.25 + 0.75 * (
+    0.4 * recurrence(intervals)
+    + 0.35 * recurrence(durations)
+    + 0.25 * recurrence(pitches)
+  );
+}
+
+function isScaleStep(leftPitch, rightPitch, context) {
+  if (leftPitch === rightPitch) return false;
+  const direction = rightPitch > leftPitch ? 1 : -1;
+  return nextScalePitch(leftPitch, direction, context, 0, 127) === rightPitch;
 }
 
 function anchorLanding(candidate, context) {
@@ -195,7 +206,7 @@ export function scoreCandidate(candidate, context, options = {}) {
         maxPitch: Math.max(...allPitches),
         label: `${midiToPitch(Math.min(...allPitches))}–${midiToPitch(Math.max(...allPitches))}`
       },
-      stepCount: noteIntervals.filter((interval) => Math.abs(interval) <= 4).length,
+      stepCount: candidate.notes.slice(1).filter((note, index) => isScaleStep(candidate.notes[index].pitch, note.pitch, context)).length,
       leapCount: leaps,
       landingInterval: candidate.notes.length ? candidate.notes.at(-1).pitch - context.rightAnchor.pitch : null,
       smoothLanding: candidate.notes.length > 0 && Math.abs(candidate.notes.at(-1).pitch - context.rightAnchor.pitch) <= 4

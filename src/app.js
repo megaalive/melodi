@@ -348,8 +348,10 @@ function renderGeneration(state) {
   const clear = byId("clear-generation");
   const lockAccepted = byId("lock-accepted-notes");
   if (!form || !list || !status || !useSelection || !regenerate || !clear || !lockAccepted) {
+    panel.hidden = false;
     throw new Error("Incomplete R4 generation markup.");
   }
+  panel.hidden = false;
 
   const generation = state.generation ?? { status: "idle", candidates: [], acceptedNoteIds: [] };
   const sessionReady = generation.status === "ready" && Array.isArray(generation.candidates);
@@ -426,6 +428,7 @@ function renderGeneration(state) {
     audition.dataset.focusKey = `candidate-audition-${candidate.id}`;
     const accept = makeButton(translate("candidateAccept"), "accept-candidate", { candidateId: candidate.id });
     accept.dataset.focusKey = `candidate-accept-${candidate.id}`;
+    accept.dataset.focusFallback = "lock-accepted-notes";
     actions.append(select, audition, accept);
 
     const details = document.createElement("details");
@@ -561,7 +564,7 @@ function render() {
 
   if (focusKey) {
     const target = copyFocusableElement(focusKey);
-    const targetHidden = target?.closest("details:not([open])");
+    const targetHidden = target?.hidden || target?.closest("[hidden], details:not([open])");
     if (target && !target.disabled && !targetHidden) {
       target.focus();
       if (selectionStart !== null && typeof target.setSelectionRange === "function") {
@@ -784,28 +787,6 @@ document.addEventListener("change", (event) => {
     const ids = commands.getSelectedNoteIds();
     const next = target.checked ? [...ids, target.dataset.noteId] : ids.filter((id) => id !== target.dataset.noteId);
     run(() => commands.selectNotes(next));
-  } else if (target.dataset.action === "use-selection") {
-    const selection = commands.getSelection();
-    if (!selection || selection.endTick <= selection.startTick) return;
-    byId("generation-start").value = String(selection.startTick);
-    byId("generation-end").value = String(selection.endTick);
-    byId("generation-form").dataset.pending = "true";
-  } else if (target.dataset.action === "regenerate-gap") {
-    const result = run(() => commands.regenerateGap());
-    if (result) announce("generationRegenerated");
-  } else if (target.dataset.action === "clear-generation") {
-    const cleared = run(() => commands.clearGeneration());
-    if (cleared) announce("generationCleared");
-  } else if (target.dataset.action === "select-candidate") {
-    run(() => commands.selectCandidate(target.dataset.candidateId));
-  } else if (target.dataset.action === "audition-candidate") {
-    runAsync(() => commands.auditionCandidate(target.dataset.candidateId), "generationAuditioned");
-  } else if (target.dataset.action === "accept-candidate") {
-    const accepted = run(() => commands.acceptCandidate(target.dataset.candidateId));
-    if (accepted) announce("generationAccepted");
-  } else if (target.dataset.action === "lock-accepted-notes") {
-    const locked = run(() => commands.lockAcceptedNotes());
-    if (locked) announce("generationLocked");
   } else if (target.dataset.action === "assign-syllable-note") {
     const syllable = commands.getSong().lyrics.syllables.find((item) => item.id === target.dataset.syllableId);
     if (!syllable) return;
@@ -846,6 +827,28 @@ document.addEventListener("click", (event) => {
     if (shouldConfirmNewIdea() && !window.confirm(translate("confirmNewIdea"))) return;
     clearPendingForms();
     run(() => commands.newIdea(), "newIdeaStarted");
+  } else if (target.dataset.action === "use-selection") {
+    const selection = commands.getSelection();
+    if (!selection || selection.endTick <= selection.startTick) return;
+    byId("generation-start").value = String(selection.startTick);
+    byId("generation-end").value = String(selection.endTick);
+    byId("generation-form").dataset.pending = "true";
+  } else if (target.dataset.action === "regenerate-gap") {
+    const result = run(() => commands.regenerateGap());
+    if (result) announce("generationRegenerated");
+  } else if (target.dataset.action === "clear-generation") {
+    const cleared = run(() => commands.clearGeneration());
+    if (cleared) announce("generationCleared");
+  } else if (target.dataset.action === "select-candidate") {
+    run(() => commands.selectCandidate(target.dataset.candidateId));
+  } else if (target.dataset.action === "audition-candidate") {
+    runAsync(() => commands.auditionCandidate(target.dataset.candidateId), "generationAuditioned");
+  } else if (target.dataset.action === "accept-candidate") {
+    const accepted = run(() => commands.acceptCandidate(target.dataset.candidateId));
+    if (accepted) announce("generationAccepted");
+  } else if (target.dataset.action === "lock-accepted-notes") {
+    const locked = run(() => commands.lockAcceptedNotes());
+    if (locked) announce("generationLocked");
   }
 });
 
@@ -870,7 +873,10 @@ document.addEventListener("keydown", (event) => {
       if (result) announce("generationRegenerated");
       return;
     }
-    if (event.key === "Enter" && generation.activeCandidateId && !(target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement)) {
+    const nativeInteractive = target instanceof Element
+      ? target.closest("button, a, summary, [role='button'], [role='link']")
+      : null;
+    if (event.key === "Enter" && generation.activeCandidateId && !nativeInteractive) {
       event.preventDefault();
       const accepted = run(() => commands.acceptCandidate(generation.activeCandidateId));
       if (accepted) announce("generationAccepted");

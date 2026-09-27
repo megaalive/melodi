@@ -32,6 +32,7 @@ p { margin: 0.5rem 0 1rem; }
 
 main > section { margin-top: 1.5rem; }
 [data-view-region][hidden] { display: none; }
+#generation-panel[hidden] { display: none !important; }
 
 .language-control, label {
   display: grid;

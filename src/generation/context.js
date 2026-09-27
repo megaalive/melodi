@@ -25,7 +25,7 @@ export function createGenerationContext(songInput, request) {
   if (!Number.isSafeInteger(startTick) || startTick < 0
     || !Number.isSafeInteger(endTick) || endTick < 0) fail("generation-invalid-gap");
   if (endTick <= startTick) fail("generation-empty-gap");
-  if ((endTick - startTick) % 120 !== 0) fail("generation-gap-grid");
+  if (startTick % 120 !== 0 || endTick % 120 !== 0) fail("generation-gap-grid");
   if ((endTick - startTick) / 120 > 64) fail("generation-gap-too-long");
 
   const leftCandidates = song.notes.filter((note) => note.anchor
@@ -52,6 +52,10 @@ export function createGenerationContext(songInput, request) {
   const commonPhrases = song.phrases.filter((phrase) =>
     phrase.noteIds.includes(leftAnchorNoteId) && phrase.noteIds.includes(rightAnchorNoteId));
   if (commonPhrases.length !== 1) fail("generation-cross-phrase");
+  const phrase = commonPhrases[0];
+  if (phrase.noteIds.indexOf(leftAnchorNoteId) >= phrase.noteIds.indexOf(rightAnchorNoteId)) {
+    fail("generation-anchor-order");
+  }
 
   const leftSyllables = song.lyrics.syllables
     .map((syllable, index) => syllable.noteIds.includes(leftAnchorNoteId) ? index : -1)
@@ -72,7 +76,7 @@ export function createGenerationContext(songInput, request) {
     gap: Object.freeze({ startTick, endTick, leftAnchorNoteId, rightAnchorNoteId }),
     leftAnchor,
     rightAnchor,
-    phraseId: commonPhrases[0].id,
+    phraseId: phrase.id,
     mappedSyllableCount,
     key: song.key,
     scale: song.scale,

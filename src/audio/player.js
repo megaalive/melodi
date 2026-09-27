@@ -23,6 +23,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
   let nextVoiceId = 0;
   let previewTimer = null;
   let previewGeneration = 0;
+  let previewState = null;
 
   function ensureContext() {
     if (context?.state === "closed") {
@@ -54,6 +55,32 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     return tickAtAudioTime(audioTime, anchor, tempo, loop);
   }
 
+  function finishPreview(preview) {
+    if (previewState?.id !== preview.id) return;
+    if (previewTimer !== null) clearTimeout(previewTimer);
+    previewTimer = null;
+    previewState = null;
+    try { preview.onEnded(); } catch {}
+  }
+
+  function schedulePreviewEnd(preview = previewState) {
+    if (!preview || previewState?.id !== preview.id || !context) return;
+    if (previewTimer !== null) clearTimeout(previewTimer);
+    previewTimer = null;
+    if (context.state !== "running") return;
+    const remainingMs = (preview.endAudioTime - context.currentTime) * 1000;
+    if (remainingMs <= 0) {
+      finishPreview(preview);
+      return;
+    }
+    previewTimer = setTimeout(() => {
+      previewTimer = null;
+      if (previewState?.id !== preview.id || !context || context.state !== "running") return;
+      if (context.currentTime >= preview.endAudioTime) finishPreview(preview);
+      else schedulePreviewEnd(preview);
+    }, Math.max(10, Math.ceil(remainingMs)));
+  }
+
   function clearTimer() {
     if (timer !== null) clearInterval(timer);
     timer = null;
@@ -63,6 +90,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     if (previewTimer !== null) clearTimeout(previewTimer);
     previewTimer = null;
     previewGeneration += 1;
+    previewState = null;
     if (!context) {
       voices.clear();
       return;
@@ -104,6 +132,16 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
       const tick = positionAt();
       halt(tick);
       onInterrupted(tick);
+    }
+    if (previewState && context?.state === "closed") {
+      const preview = previewState;
+      cancelVoices();
+      try { preview.onEnded(); } catch {}
+    } else if (previewState && context?.state !== "running") {
+      if (previewTimer !== null) clearTimeout(previewTimer);
+      previewTimer = null;
+    } else if (previewState) {
+      schedulePreviewEnd();
     }
   }
 
@@ -302,12 +340,9 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
       fail("audio-scheduling-failed");
     }
     const last = ordered.at(-1);
-    const previewMs = ((last.startTick + last.durationTicks - baseTick) * secondsPerTick * 1000) + 120;
-    previewTimer = setTimeout(() => {
-      if (previewId !== previewGeneration) return;
-      previewTimer = null;
-      try { onEnded(); } catch {}
-    }, previewMs);
+    const endAudioTime = firstAudioTime + (last.startTick + last.durationTicks - baseTick) * secondsPerTick + 0.12;
+    previewState = { id: previewId, endAudioTime, onEnded };
+    schedulePreviewEnd(previewState);
     return true;
   }
 

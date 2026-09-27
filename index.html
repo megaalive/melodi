@@ -140,7 +140,7 @@
         </form>
       </section>
 
-      <section id="generation-panel" aria-labelledby="generation-heading">
+      <section id="generation-panel" aria-labelledby="generation-heading" hidden>
         <h2 id="generation-heading" data-copy="generationHeading"></h2>
         <p data-copy="generationHelp"></p>
         <form id="generation-form" class="panel generation-form" data-action="generate-gap">
@@ -161,7 +161,7 @@
         <div class="generation-session-actions" aria-label="Generation session actions">
           <button id="regenerate-gap" type="button" class="secondary" data-action="regenerate-gap" data-copy="generationRegenerate" disabled></button>
           <button id="clear-generation" type="button" class="secondary" data-action="clear-generation" data-copy="generationClear" disabled></button>
-          <button id="lock-accepted-notes" type="button" class="secondary" data-action="lock-accepted-notes" data-copy="generationLockAccepted" hidden></button>
+          <button id="lock-accepted-notes" type="button" class="secondary" data-action="lock-accepted-notes" data-focus-key="lock-accepted-notes" data-focus-fallback="generation-generate" data-copy="generationLockAccepted" hidden></button>
         </div>
         <p id="generation-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="generation-status"></p>
         <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>

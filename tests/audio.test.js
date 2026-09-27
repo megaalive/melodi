@@ -71,7 +71,12 @@ class FakeAudioContext {
   currentTime = 0;
   destination = {};
   oscillators = [];
-  addEventListener() {}
+  listeners = new Map();
+  addEventListener(name, callback) { this.listeners.set(name, callback); }
+  setState(state) {
+    this.state = state;
+    this.listeners.get("statechange")?.();
+  }
   createGain() {
     return { gain: new FakeAudioParam(), connect() {}, disconnect() {} };
   }
@@ -296,6 +301,28 @@ test("candidate preview reuses the player, replaces an earlier audition, and can
   player.cancelPreview();
   assert.equal(context.oscillators[3].stopTime, 0);
   assert.equal(completed, 0);
+});
+
+test("candidate preview completion follows AudioContext time while suspended", async () => {
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => fixture(), audioContextFactory: () => context });
+  const note = { id: "candidate-note", pitch: 60, startTick: 0, durationTicks: 120 };
+  let completed = 0;
+
+  await player.playPreview([note], { tempo: 120, onEnded: () => { completed += 1; } });
+  context.currentTime = 0.08;
+  context.setState("suspended");
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(completed, 0);
+
+  context.currentTime = 0.16;
+  context.setState("running");
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(completed, 0);
+  context.setState("suspended");
+  context.currentTime = 0.3;
+  context.setState("running");
+  assert.equal(completed, 1);
 });
 
 test("Web Audio loop voices stop at the exact boundary before the next cycle starts", async () => {
