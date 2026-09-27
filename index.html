@@ -37,7 +37,26 @@
         </dl>
       </section>
 
-      <section aria-labelledby="piano-roll-heading">
+      <section id="view-controls" aria-labelledby="view-heading">
+        <h2 id="view-heading" data-copy="viewHeading"></h2>
+        <div class="panel editor-view-controls">
+          <label>
+            <span data-copy="viewModeLabel"></span>
+            <select id="view-mode" data-action="set-view-mode" data-entity="workspace-view" data-focus-key="view-mode">
+              <option value="score" data-copy="viewScoreOption"></option>
+              <option value="piano-roll" data-copy="viewPianoRollOption"></option>
+              <option value="combined" data-copy="viewCombinedOption"></option>
+              <option value="lyrics" data-copy="viewLyricsOption"></option>
+            </select>
+          </label>
+          <label class="follow-mode-control">
+            <input id="follow-mode" type="checkbox" data-action="set-follow-mode" data-entity="follow-mode">
+            <span data-copy="followModeLabel"></span>
+          </label>
+        </div>
+      </section>
+
+      <section id="piano-roll-section" data-view-region="piano-roll" aria-labelledby="piano-roll-heading">
         <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
         <p data-copy="pianoRollHelp"></p>
         <div id="editor-toolbar" class="panel editor-toolbar" aria-label="Piano Roll controls">
@@ -59,7 +78,7 @@
         <p id="roll-selection" class="muted" data-entity="selected-notes"></p>
       </section>
 
-      <section aria-labelledby="score-heading">
+      <section id="score-section" data-view-region="score" aria-labelledby="score-heading">
         <h2 id="score-heading" data-copy="scoreHeading"></h2>
         <p data-copy="scoreHelp"></p>
         <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
@@ -121,7 +140,7 @@
         </form>
       </section>
 
-      <section aria-labelledby="lyrics-heading">
+      <section id="lyrics-section" data-view-region="lyrics" aria-labelledby="lyrics-heading">
         <h2 id="lyrics-heading" data-copy="lyricsHeading"></h2>
         <form id="lyrics-form" class="panel" data-action="set-lyrics">
           <label><span data-copy="rawLyricsLabel"></span><textarea id="raw-lyrics" name="rawText" rows="3" data-focus-key="lyrics"></textarea></label>

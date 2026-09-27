@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialSong, createSong, PPQ } from "../src/core/model.js";
-import { projectSongToScore } from "../src/notation/project.js";
+import { projectSongToScore, spellPitchNameInKey } from "../src/notation/project.js";
 
-function makeSong({ timeSignature = { numerator: 4, denominator: 4 }, key = "C", notes } = {}) {
+function makeSong({ timeSignature = { numerator: 4, denominator: 4 }, key = "C", notes, chords } = {}) {
   const base = createInitialSong((() => { let id = 0; return () => `fixture-${++id}`; })());
   const selectedNotes = notes ?? base.notes;
   return createSong({
@@ -11,6 +11,7 @@ function makeSong({ timeSignature = { numerator: 4, denominator: 4 }, key = "C",
     timing: { ...base.timing, ppq: PPQ, timeSignature },
     key,
     notes: selectedNotes,
+    chords: chords ?? (selectedNotes === base.notes ? base.chords : []),
     sections: selectedNotes === base.notes ? base.sections : [],
     phrases: selectedNotes === base.notes ? base.phrases : [],
     lyrics: selectedNotes === base.notes ? base.lyrics : { rawText: "", syllables: [] }
@@ -105,6 +106,29 @@ test("pitch spelling follows flat-key preference and keeps MIDI unchanged", () =
   const flatProjection = projectSongToScore(makeSong({ key: "Bb", notes }));
   assert.deepEqual(flatProjection.measures[0].segments.map((segment) => segment.spelling.key), ["c/4", "db/4", "eb/4", "f/4"]);
   assert.deepEqual(flatProjection.measures[0].segments.map((segment) => segment.pitch), [60, 61, 63, 65]);
+});
+
+test("pitch and chord spelling follows C, G, and F key signatures", () => {
+  assert.equal(spellPitchNameInKey(60, "C"), "C");
+  assert.equal(spellPitchNameInKey(66, "G"), "F#");
+  assert.equal(spellPitchNameInKey(70, "F"), "Bb");
+
+  const chord = { id: "late-b-flat", rootPitchClass: 10, quality: "major", startTick: 1920, durationTicks: 480 };
+  const song = makeSong({ key: "F", notes: [], chords: [chord] });
+  const before = structuredClone(song);
+  const projection = projectSongToScore(song);
+  assert.equal(projection.totalMeasureCount, 2);
+  assert.deepEqual(projection.measures[0].chords, []);
+  assert.deepEqual(projection.measures[1].chords, [{
+    chordId: chord.id,
+    rootPitchClass: 10,
+    rootName: "Bb",
+    quality: "major",
+    startTick: 1920,
+    durationTicks: 480,
+    measureIndex: 1
+  }]);
+  assert.deepEqual(song, before);
 });
 
 test("projection output is deterministic for the same canonical song", () => {

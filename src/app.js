@@ -12,6 +12,8 @@ let commands;
 let rollView;
 let scoreView;
 let statusTimer;
+let pointerInteractionActive = false;
+let lastFollowSyllableId = null;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -172,7 +174,7 @@ function renderNotes(song, state) {
   }
 }
 
-function renderSyllables(song) {
+function renderSyllables(song, state) {
   const list = byId("syllable-list");
   list.replaceChildren();
   song.lyrics.syllables.forEach((syllable, index) => {
@@ -181,6 +183,7 @@ function renderSyllables(song) {
     item.dataset.entityId = syllable.id;
     item.dataset.text = syllable.text;
     item.dataset.noteIds = JSON.stringify(syllable.noteIds);
+    item.dataset.current = String(state.playback.currentSyllableIds.includes(syllable.id));
     item.className = "syllable-card";
 
     const form = document.createElement("form");
@@ -345,8 +348,27 @@ function renderPlayback() {
   if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
   if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
   byId("loop-enabled").checked = playback.loop.enabled;
-  rollView?.updatePlayback(playback);
-  scoreView?.updatePlayback(playback);
+  const active = document.activeElement;
+  const textEntryActive = active instanceof HTMLTextAreaElement
+    || (active instanceof HTMLInputElement && !["checkbox", "radio", "button", "submit", "range"].includes(active.type));
+  const follow = state.view.follow && playback.status === "playing" && !textEntryActive && !pointerInteractionActive;
+  rollView?.updatePlayback(playback, { follow });
+  scoreView?.updatePlayback(playback, { ...state.view, follow });
+  const activeSyllableIds = new Set(playback.currentSyllableIds);
+  for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
+    item.dataset.current = String(activeSyllableIds.has(item.dataset.entityId));
+  }
+  if (follow && state.view.mode === "lyrics") {
+    const syllableId = playback.currentSyllableIds[0] ?? null;
+    if (syllableId && syllableId !== lastFollowSyllableId) {
+      const item = [...byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')]
+        .find((candidate) => candidate.dataset.entityId === syllableId);
+      item?.scrollIntoView({ block: "nearest" });
+    }
+    lastFollowSyllableId = syllableId;
+  } else {
+    lastFollowSyllableId = null;
+  }
 }
 
 function render() {
@@ -374,6 +396,17 @@ function render() {
   byId("key-value").textContent = `${song.key} ${song.scale.name}`;
   byId("time-signature-value").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   byId("song-title").textContent = song.title;
+  byId("view-mode").value = state.view.mode;
+  byId("follow-mode").checked = state.view.follow;
+  for (const region of document.querySelectorAll("[data-view-region]")) {
+    const mode = state.view.mode;
+    const visible = region.dataset.viewRegion === "score"
+      ? mode === "score" || mode === "combined"
+      : region.dataset.viewRegion === "piano-roll"
+        ? mode === "piano-roll" || mode === "combined"
+        : mode === "lyrics";
+    region.hidden = !visible;
+  }
   byId("raw-lyrics").value = lyricsFormPending ? rawLyricsDraft : song.lyrics.rawText;
   byId("syllable-summary").textContent = song.lyrics.syllables.length
     ? translate("syllableSummary", { count: song.lyrics.syllables.length })
@@ -385,11 +418,11 @@ function render() {
     : translate("noSelection");
   byId("add-start-tick").value = String(song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0));
   renderNotes(song, state);
-  renderSyllables(song);
+  renderSyllables(song, state);
   renderEditorControls();
   rollView.render(song, state);
   byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
-  scoreView.render(song);
+  scoreView.render(song, state);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -476,7 +509,15 @@ rollView = createPianoRollView(byId("piano-roll"), commands, {
   onError: reportError
 });
 
-scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fallback"), translate);
+scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fallback"), byId("score-scroll"), translate, {
+  onSelectNote(noteId, additive) {
+    const selected = commands.getSelectedNoteIds();
+    const next = additive
+      ? selected.includes(noteId) ? selected.filter((id) => id !== noteId) : [...selected, noteId]
+      : [noteId];
+    run(() => commands.selectNotes(next));
+  }
+});
 
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
@@ -502,6 +543,8 @@ const publicCommands = Object.freeze({
   copySelection: commands.copySelection,
   pasteNotes: commands.pasteNotes,
   setSnap: commands.setSnap,
+  setViewMode: commands.setViewMode,
+  setFollowMode: commands.setFollowMode,
   newIdea: () => {
     if (shouldConfirmNewIdea() && !window.confirm(translate("confirmNewIdea"))) return false;
     clearPendingForms();
@@ -587,6 +630,10 @@ document.addEventListener("change", (event) => {
     run(() => commands.setLoopEnabled(target.checked), target.checked ? "loopEnabled" : "loopDisabled");
   } else if (target.dataset.action === "set-snap") {
     run(() => commands.setSnap(target.value));
+  } else if (target.dataset.action === "set-view-mode") {
+    run(() => commands.setViewMode(target.value));
+  } else if (target.dataset.action === "set-follow-mode") {
+    run(() => commands.setFollowMode(target.checked));
   } else if (target.dataset.action === "toggle-note-selection") {
     const ids = commands.getSelectedNoteIds();
     const next = target.checked ? [...ids, target.dataset.noteId] : ids.filter((id) => id !== target.dataset.noteId);
@@ -649,6 +696,10 @@ document.addEventListener("keydown", (event) => {
     announce("notePasted", "success", { count: notes.length });
   }
 });
+
+document.addEventListener("pointerdown", () => { pointerInteractionActive = true; }, true);
+document.addEventListener("pointerup", () => { pointerInteractionActive = false; }, true);
+document.addEventListener("pointercancel", () => { pointerInteractionActive = false; }, true);
 
 window.addEventListener("pagehide", () => persistence.flush());
 render();

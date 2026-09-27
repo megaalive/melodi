@@ -35,6 +35,8 @@ export function createCommands(initialSong, {
   let selection = null;
   let selectedNoteIds = [];
   let snap = DEFAULT_SNAP;
+  let viewMode = "combined";
+  let followMode = true;
   let copiedNotes = null;
   const songEndTick = () => song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
   const playback = {
@@ -173,7 +175,19 @@ export function createCommands(initialSong, {
         snap,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
-      }, selectedNoteIds);
+      }, selectedNoteIds, { mode: viewMode, follow: followMode });
+    },
+    setViewMode(mode) {
+      if (!["score", "piano-roll", "combined", "lyrics"].includes(mode)) fail("invalid-view-mode");
+      viewMode = mode;
+      notifyChange("view");
+      return viewMode;
+    },
+    setFollowMode(enabled) {
+      if (typeof enabled !== "boolean") fail("invalid-follow-mode");
+      followMode = enabled;
+      notifyChange("view");
+      return followMode;
     },
     async play() {
       if (!audioPlayer) fail("audio-unavailable");

@@ -1,4 +1,5 @@
 import { cloneData } from "./model.js";
+import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([
   "getSong",
@@ -31,7 +32,9 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "seek",
   "setTempo",
   "setLoop",
-  "setLoopEnabled"
+  "setLoopEnabled",
+  "setViewMode",
+  "setFollowMode"
 ]);
 
 export function createAgentSnapshot(song, selection, playback = {
@@ -41,7 +44,9 @@ export function createAgentSnapshot(song, selection, playback = {
   currentSectionId: song.sections[0]?.id ?? null,
   tempo: song.timing.tempo,
   loop: { enabled: false, startTick: 0, endTick: 1 }
-}, editor = { snap: "1/8", canPaste: false, clipboardCount: 0 }, selectedNoteIds = []) {
+}, editor = { snap: "1/8", canPaste: false, clipboardCount: 0 }, selectedNoteIds = [], view = { mode: "combined", follow: true }) {
+  const currentSyllableId = getActiveSyllableId(song.lyrics, playback.currentNoteId);
+  const currentSyllableIds = currentSyllableId ? [currentSyllableId] : [];
   return {
     song: {
       id: song.id,
@@ -52,12 +57,17 @@ export function createAgentSnapshot(song, selection, playback = {
       timeSignature: cloneData(song.timing.timeSignature),
       currentSectionId: playback.currentSectionId,
       notes: cloneData(song.notes),
-      lyrics: cloneData(song.lyrics)
+      lyrics: cloneData(song.lyrics),
+      sections: cloneData(song.sections),
+      phrases: cloneData(song.phrases),
+      chords: cloneData(song.chords)
     },
     playback: {
       status: playback.status,
       currentTick: playback.currentTick,
       currentNoteId: playback.currentNoteId,
+      currentSyllableId,
+      currentSyllableIds,
       currentSectionId: playback.currentSectionId,
       tempo: playback.tempo,
       loop: cloneData(playback.loop)
@@ -65,6 +75,7 @@ export function createAgentSnapshot(song, selection, playback = {
     selection: cloneData(selection),
     selectedNoteIds: cloneData(selectedNoteIds),
     editor: cloneData(editor),
+    view: cloneData(view),
     anchorNoteIds: song.notes.filter((note) => note.anchor).map((note) => note.id),
     lockedNoteIds: song.notes.filter((note) => note.locked).map((note) => note.id),
     availableActions: [...AVAILABLE_ACTIONS]

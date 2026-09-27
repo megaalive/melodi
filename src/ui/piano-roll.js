@@ -348,27 +348,37 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     }
   }
 
-  function updatePlayback(playback) {
+  function updatePlayback(playback, { follow = true } = {}) {
     const playbackTickChanged = playback.currentTick !== lastPlaybackTick;
     lastPlaybackTick = playback.currentTick;
     if (playback.currentTick < geometry.startTick || playback.currentTick >= geometry.endTick) {
-      if (playbackTickChanged || playback.status === "playing" || pendingPlaybackFollow) {
+      if (follow && playback.status === "playing" && (playbackTickChanged || pendingPlaybackFollow)) {
         if (activeDrag || finishingDrag) {
           pendingPlaybackFollow = true;
-          return;
+        } else {
+          pendingPlaybackFollow = false;
+          render(commands.getSong(), commands.getState(), playback.currentTick);
         }
+      } else {
         pendingPlaybackFollow = false;
-        render(commands.getSong(), commands.getState(), playback.currentTick);
       }
-      return;
-    }
-    if (!activeDrag) pendingPlaybackFollow = false;
-    const x = tickToX(playback.currentTick, geometry);
-    const playhead = svg.querySelector('[data-entity="playhead"]');
-    if (playhead) {
-      playhead.setAttribute("x1", String(x));
-      playhead.setAttribute("x2", String(x));
-      playhead.setAttribute("data-tick", String(playback.currentTick));
+    } else {
+      if (!activeDrag) pendingPlaybackFollow = false;
+      const x = tickToX(playback.currentTick, geometry);
+      const playhead = svg.querySelector('[data-entity="playhead"]');
+      if (playhead) {
+        playhead.setAttribute("x1", String(x));
+        playhead.setAttribute("x2", String(x));
+        playhead.setAttribute("data-tick", String(playback.currentTick));
+      }
+      if (follow && playback.status === "playing" && scrollContainer?.clientWidth > 0 && !activeDrag && !finishingDrag) {
+        const left = scrollContainer.scrollLeft;
+        const right = left + scrollContainer.clientWidth;
+        if (x < left + geometry.labelWidth || x > right - 24) {
+          const maximum = Math.max(0, geometry.width - scrollContainer.clientWidth);
+          scrollContainer.scrollLeft = Math.max(0, Math.min(maximum, x - scrollContainer.clientWidth * 0.35));
+        }
+      }
     }
     for (const group of svg.querySelectorAll('[data-entity="note"]')) {
       const current = group.dataset.entityId === playback.currentNoteId;
@@ -497,7 +507,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
   }
 
   function followPendingPlayback() {
-    if (pendingPlaybackFollow && !activeDrag) updatePlayback(commands.getState().playback);
+    if (pendingPlaybackFollow && !activeDrag) {
+      const state = commands.getState();
+      updatePlayback(state.playback, { follow: state.view.follow });
+    }
   }
 
   function handleClick(event) {

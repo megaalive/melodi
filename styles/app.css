@@ -31,6 +31,7 @@ h3 { margin: 0 0 1rem; }
 p { margin: 0.5rem 0 1rem; }
 
 main > section { margin-top: 1.5rem; }
+[data-view-region][hidden] { display: none; }
 
 .language-control, label {
   display: grid;
@@ -176,6 +177,14 @@ button.secondary {
 #score { display: block; max-width: none; }
 .score-measure-label { fill: #4c5d6c; font: 12px system-ui, sans-serif; }
 .score-note[data-current="true"] { filter: drop-shadow(0 0 3px #2d9d46); }
+.score-note[data-selected="true"] { filter: drop-shadow(0 0 2px #b06b00); }
+.score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px #b06b00) drop-shadow(0 0 3px #2d9d46); }
+.score-note:focus-visible { filter: drop-shadow(0 0 4px #d06b16); }
+.score-chord { fill: #31404d; font: 650 13px system-ui, sans-serif; }
+.score-syllable { fill: #31404d; font: 12px system-ui, sans-serif; }
+.score-syllable[data-current="true"] { fill: #174a25; font-weight: 700; }
+.score-melisma { stroke: #60717f; stroke-width: 1; }
+.score-melisma[data-current="true"] { stroke: #2d9d46; stroke-width: 2; }
 .score-fallback { margin-top: 0.75rem; padding: 0.75rem 1rem; border-left: 0.25rem solid #9b4c00; background: #fff8ec; }
 .score-fallback p { margin-top: 0; font-weight: 650; }
 .score-fallback ul { margin: 0.4rem 0 0; padding-left: 1.25rem; overflow-wrap: anywhere; }
@@ -185,6 +194,7 @@ button.secondary {
 }
 .syllable-list { display: grid; gap: 0.75rem; padding-left: 1.5rem; }
 .syllable-card { min-width: 0; padding: 0.9rem; border: 1px solid #ccd5dd; border-radius: 0.4rem; background: #fff; }
+.syllable-card[data-current="true"] { border-color: #2d7e3d; box-shadow: 0 0 0 2px #a7d8a8; }
 .syllable-card fieldset { min-width: 0; margin: 0.75rem 0; }
 .syllable-assignment { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.5rem; }
 .syllable-assignment label, .note-selection label { display: flex; align-items: center; gap: 0.45rem; overflow-wrap: anywhere; }

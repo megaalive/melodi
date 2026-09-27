@@ -50,6 +50,12 @@ function keyUsesFlats(key) {
   return !SHARP_KEYS.has(key);
 }
 
+export function spellPitchNameInKey(pitch, key) {
+  const flatPreference = keyUsesFlats(key);
+  const spelling = spellPitchInKey(pitch, key, flatPreference);
+  return `${spelling.step}${spelling.accidental ?? ""}`;
+}
+
 function spellPitch(pitch, flatPreference) {
   const spelling = (flatPreference ? NOTE_NAMES.flat : NOTE_NAMES.sharp)[pitch % 12];
   const match = /^([A-G])([#b]?)$/.exec(spelling);
@@ -185,7 +191,8 @@ export function projectSongToScore(song) {
 
   const types = durationTypes(ppq);
   const flatPreference = keyUsesFlats(song.key);
-  const songEndTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
+  const songEndTick = [...song.notes, ...(song.chords ?? [])]
+    .reduce((end, event) => Math.max(end, event.startTick + event.durationTicks), 0);
   const totalMeasureCount = Math.max(1, Math.ceil(songEndTick / ticksPerMeasure));
   const measureCount = Math.min(totalMeasureCount, MAX_SCORE_MEASURES);
   const scoreEndTick = measureCount * ticksPerMeasure;
@@ -195,7 +202,8 @@ export function projectSongToScore(song) {
     endTick: (index + 1) * ticksPerMeasure,
     segments: [],
     lanes: [],
-    rests: []
+    rests: [],
+    chords: []
   }));
 
   const warnings = [];
@@ -235,6 +243,26 @@ export function projectSongToScore(song) {
     }
   }
 
+  const fallbackChordIds = new Set();
+  const chordWindowLimitIds = new Set();
+  for (const chord of [...(song.chords ?? [])].sort((left, right) => left.startTick - right.startTick || compareIds(left.id, right.id))) {
+    const measureIndex = Math.floor(chord.startTick / ticksPerMeasure);
+    if (measureIndex >= measureCount) {
+      fallbackChordIds.add(chord.id);
+      chordWindowLimitIds.add(chord.id);
+      continue;
+    }
+    measures[measureIndex].chords.push({
+      chordId: chord.id,
+      rootPitchClass: chord.rootPitchClass,
+      rootName: spellPitchNameInKey(60 + chord.rootPitchClass, song.key),
+      quality: chord.quality,
+      startTick: chord.startTick,
+      durationTicks: chord.durationTicks,
+      measureIndex
+    });
+  }
+
   for (const measure of measures) {
     measure.segments.sort((left, right) => left.startTick - right.startTick || compareIds(left.noteId, right.noteId));
     const overlapNoteIds = new Set();
@@ -257,6 +285,9 @@ export function projectSongToScore(song) {
   if (windowLimitNoteIds.size) {
     warnings.push({ code: "score-window-limit", noteIds: [...windowLimitNoteIds].sort(compareIds), measureIndex: measureCount - 1 });
   }
+  if (chordWindowLimitIds.size) {
+    warnings.push({ code: "score-chord-window-limit", chordIds: [...chordWindowLimitIds].sort(compareIds), measureIndex: measureCount - 1 });
+  }
 
   const unsupportedNoteIds = [...new Set(measures.flatMap((measure) => measure.segments
     .filter((segment) => !segment.notation)
@@ -272,6 +303,7 @@ export function projectSongToScore(song) {
     warnings,
     unsupportedNoteIds,
     fallbackNoteIds: fallbackIds,
+    fallbackChordIds: [...fallbackChordIds].sort(compareIds),
     totalMeasureCount,
     measureLimit: MAX_SCORE_MEASURES,
     voiceLimit: MAX_SCORE_VOICES,

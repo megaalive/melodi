@@ -370,6 +370,8 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
   snapshot.song.lyrics.syllables[0].noteIds.push("fake");
   snapshot.selectedNoteIds.push("fake");
   snapshot.editor.snap = "1/4";
+  snapshot.view.mode = "lyrics";
+  snapshot.song.chords[0].quality = "changed";
   const next = commands.getState();
   const expected = {
     song: {
@@ -381,12 +383,17 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
       timeSignature: { numerator: 4, denominator: 4 },
       currentSectionId: "section-1",
       notes: fixture().notes,
-      lyrics: fixture().lyrics
+      lyrics: fixture().lyrics,
+      sections: fixture().sections,
+      phrases: fixture().phrases,
+      chords: fixture().chords
     },
     playback: {
       status: "stopped",
       currentTick: 0,
       currentNoteId: null,
+      currentSyllableId: null,
+      currentSyllableIds: [],
       currentSectionId: "section-1",
       tempo: 96,
       loop: { enabled: false, startTick: 0, endTick: 1920 }
@@ -394,6 +401,7 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
     selection: null,
     selectedNoteIds: [],
     editor: { snap: "1/8", canPaste: false, clipboardCount: 0 },
+    view: { mode: "combined", follow: true },
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
     availableActions: [
@@ -401,11 +409,36 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
-      "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled"
+      "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled", "setViewMode", "setFollowMode"
     ]
   };
   assert.deepEqual(next, expected);
   assert.deepEqual(commands.getState(), commands.getState());
+});
+
+test("view mode and Follow Mode are detached editor state, not song edits", () => {
+  const changes = [];
+  const commands = createCommands(fixture(), { onChange: (change) => changes.push(change.kind) });
+  const originalSong = commands.getSong();
+  for (const mode of ["score", "piano-roll", "combined", "lyrics"]) assert.equal(commands.setViewMode(mode), mode);
+  assert.equal(commands.setFollowMode(false), false);
+  const state = commands.getState();
+  assert.deepEqual(state.view, { mode: "lyrics", follow: false });
+  assert.deepEqual(commands.getSong(), originalSong);
+  assert.deepEqual(changes, ["view", "view", "view", "view", "view"]);
+  expectCode(() => commands.setViewMode("editor"), "invalid-view-mode");
+  expectCode(() => commands.setFollowMode("false"), "invalid-follow-mode");
+  assert.deepEqual(commands.getState().view, { mode: "lyrics", follow: false });
+});
+
+test("snapshot picks the first linked syllable in canonical lyric order", () => {
+  const commands = createCommands(fixture());
+  commands.assignSyllableNotes("syllable-1", ["note-1"]);
+  commands.seek(0);
+  const snapshot = commands.getState();
+  assert.equal(snapshot.playback.currentNoteId, "note-1");
+  assert.equal(snapshot.playback.currentSyllableId, "syllable-1");
+  assert.deepEqual(snapshot.playback.currentSyllableIds, ["syllable-1"]);
 });
 
 test("transport state stays outside the canonical song and project serialization", () => {
