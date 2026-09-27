@@ -1051,7 +1051,66 @@ document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
   const state = commands.getState();
-  if (target.dataset.action === "delete-note") {
+  if (target.dataset.action === "context-duplicate") {
+    closeNoteContextMenu();
+    const notes = run(() => duplicateSelectedNotes());
+    if (notes?.length) announce("notePasted", "success", { count: notes.length });
+  } else if (target.dataset.action === "context-copy") {
+    closeNoteContextMenu();
+    const count = run(() => commands.copySelection());
+    if (count) announce("noteCopied", "success", { count });
+  } else if (target.dataset.action === "context-delete") {
+    closeNoteContextMenu();
+    const count = run(() => deleteSelectedNotes());
+    if (count) announce("noteDeleted");
+  } else if (target.dataset.action === "context-toggle-anchor") {
+    const notes = selectedSongNotes();
+    const next = !notes.length || !notes.every((note) => note.anchor);
+    closeNoteContextMenu();
+    const count = run(() => setSelectedFlag("anchor", next));
+    if (count) announce("anchorChanged");
+  } else if (target.dataset.action === "context-toggle-lock") {
+    const notes = selectedSongNotes();
+    const next = !notes.length || !notes.every((note) => note.locked);
+    closeNoteContextMenu();
+    const count = run(() => setSelectedFlag("locked", next));
+    if (count) announce("lockedChanged");
+  } else if (target.dataset.action === "context-transpose") {
+    const delta = Number(target.dataset.delta);
+    closeNoteContextMenu();
+    const notes = run(() => transposeSelectedNotes(delta));
+    if (notes?.length) announce("noteSaved");
+  } else if (target.dataset.action === "context-duration") {
+    const snap = target.dataset.snap;
+    const durationTicks = snap === "1/2" ? SNAP_TICKS["1/4"] * 2 : SNAP_TICKS[snap];
+    closeNoteContextMenu();
+    const notes = run(() => setSelectedDuration(durationTicks));
+    if (notes?.length) announce("noteSaved");
+  } else if (target.dataset.action === "context-add-note") {
+    const context = contextTarget ? { ...contextTarget } : null;
+    closeNoteContextMenu();
+    if (context && Number.isSafeInteger(context.pitch) && Number.isSafeInteger(context.startTick)) {
+      const note = run(() => commands.addNote({
+        pitch: context.pitch,
+        startTick: context.startTick,
+        durationTicks: SNAP_TICKS[commands.getState().editor.snap]
+      }, { actor: "user" }));
+      if (note) {
+        commands.selectNotes([note.id]);
+        announce("noteAddedFromRoll");
+      }
+    }
+  } else if (target.dataset.action === "context-paste-here") {
+    const context = contextTarget ? { ...contextTarget } : null;
+    closeNoteContextMenu();
+    if (context && Number.isSafeInteger(context.pitch) && Number.isSafeInteger(context.startTick)) {
+      const notes = run(() => commands.pasteNotes(context.startTick, context.pitch));
+      if (notes?.length) announce("notePasted", "success", { count: notes.length });
+    }
+  } else if (target.dataset.action === "context-select-all") {
+    closeNoteContextMenu();
+    run(() => commands.selectNotes(commands.getSong().notes.map((note) => note.id)));
+  } else if (target.dataset.action === "delete-note") {
     run(() => commands.deleteNote(target.dataset.noteId), "noteDeleted");
   } else if (target.dataset.action === "play") {
     runAsync(() => commands.play(), "playbackStarted", (playback) => playback.status === "playing");
@@ -1180,6 +1239,56 @@ document.addEventListener("keydown", (event) => {
   const target = event.target;
   if (event.isComposing || event.repeat || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
     || target?.isContentEditable) return;
+
+  const menu = byId("note-context-menu");
+  if (event.key === "Escape" && menu && !menu.hidden) {
+    event.preventDefault();
+    closeNoteContextMenu();
+    return;
+  }
+
+  const editorTarget = target instanceof Element
+    ? target.closest("#piano-roll-scroll, #score-scroll, [data-entity='score-note']")
+    : null;
+  const selectedIds = commands.getSelectedNoteIds();
+
+  if (editorTarget && selectedIds.length > 0 && !event.ctrlKey && !event.metaKey && !event.altKey
+    && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+    event.preventDefault();
+    const amount = event.shiftKey ? 12 : 1;
+    const delta = event.key === "ArrowUp" ? amount : -amount;
+    const notes = run(() => transposeSelectedNotes(delta));
+    if (notes?.length) announce("noteSaved");
+    return;
+  }
+
+  if (editorTarget && selectedIds.length > 0 && !event.ctrlKey && !event.metaKey && !event.altKey
+    && (event.key === "Delete" || event.key === "Backspace")) {
+    event.preventDefault();
+    const count = run(() => deleteSelectedNotes());
+    if (count) announce("noteDeleted");
+    return;
+  }
+
+  if (editorTarget && (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "d" && selectedIds.length > 0) {
+    event.preventDefault();
+    const notes = run(() => duplicateSelectedNotes());
+    if (notes?.length) announce("notePasted", "success", { count: notes.length });
+    return;
+  }
+
+  if (editorTarget && (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "a") {
+    event.preventDefault();
+    run(() => commands.selectNotes(commands.getSong().notes.map((note) => note.id)));
+    return;
+  }
+
+  if (event.key === "Escape" && editorTarget && selectedIds.length > 0) {
+    event.preventDefault();
+    run(() => commands.clearSelection(), "selectionCleared");
+    return;
+  }
+
   if (!(event.ctrlKey || event.metaKey)) {
     if (event.altKey || event.shiftKey) return;
     const nativeInteractive = target instanceof Element
@@ -1220,9 +1329,15 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-document.addEventListener("pointerdown", () => { pointerInteractionActive = true; }, true);
+document.addEventListener("pointerdown", (event) => {
+  pointerInteractionActive = true;
+  const menu = byId("note-context-menu");
+  const insideMenu = event.target instanceof Element && event.target.closest("#note-context-menu");
+  if (menu && !menu.hidden && !insideMenu && event.button !== 2) closeNoteContextMenu();
+}, true);
 document.addEventListener("pointerup", () => { pointerInteractionActive = false; }, true);
 document.addEventListener("pointercancel", () => { pointerInteractionActive = false; }, true);
+document.addEventListener("scroll", () => closeNoteContextMenu(), true);
 
 window.addEventListener("pagehide", () => persistence.flush());
 
