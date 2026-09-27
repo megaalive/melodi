@@ -274,6 +274,30 @@ test("Web Audio engine uses audio timestamps, de-duplicates wakes, and cancels o
   player.stop();
 });
 
+test("candidate preview reuses the player, replaces an earlier audition, and cancels without leaking voices", async () => {
+  const song = fixture();
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, audioContextFactory: () => context });
+  const notes = [
+    { id: "candidate-note-1", pitch: 60, startTick: 480, durationTicks: 240 },
+    { id: "candidate-note-2", pitch: 64, startTick: 720, durationTicks: 240 },
+    { id: "right-anchor", pitch: 67, startTick: 960, durationTicks: 480 }
+  ];
+  let completed = 0;
+
+  await player.playPreview(notes, { tempo: 120, onEnded: () => { completed += 1; } });
+  assert.equal(context.oscillators.length, 3);
+  assert.equal(context.oscillators[0].startTime, 0.04);
+  assert.equal(context.oscillators[1].startTime, 0.29);
+  assert.equal(context.oscillators[2].startTime, 0.54);
+  await player.playPreview(notes.slice(0, 1), { tempo: 120, onEnded: () => { completed += 1; } });
+  assert.equal(context.oscillators.length, 4);
+  assert.ok(context.oscillators.slice(0, 3).every((oscillator) => oscillator.stopTime === 0));
+  player.cancelPreview();
+  assert.equal(context.oscillators[3].stopTime, 0);
+  assert.equal(completed, 0);
+});
+
 test("Web Audio loop voices stop at the exact boundary before the next cycle starts", async () => {
   const song = fixture();
   const context = new FakeAudioContext();

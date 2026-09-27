@@ -2,6 +2,9 @@ import { cloneData, createId, createInitialSong, createSong, MelodiError } from 
 import { DEFAULT_SNAP, SNAP_TICKS } from "./editor.js";
 import { createAgentSnapshot } from "./snapshot.js";
 import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js";
+import { createGenerationContext } from "../generation/context.js";
+import { generateGap as generateGapCandidates } from "../generation/generator.js";
+import { nextSeed } from "../generation/random.js";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -38,6 +41,10 @@ export function createCommands(initialSong, {
   let viewMode = "combined";
   let followMode = true;
   let copiedNotes = null;
+  let canonicalRevision = 0;
+  let generationSession = null;
+  let generationAuditionToken = 0;
+  let lastAcceptedNoteIds = [];
   const songEndTick = () => song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
   const playback = {
     status: "stopped",
@@ -125,11 +132,72 @@ export function createCommands(initialSong, {
     }
   }
 
+  function clearAuditionState({ notify = true } = {}) {
+    if (!generationSession?.auditionCandidateId) return false;
+    generationAuditionToken += 1;
+    generationSession.auditionCandidateId = null;
+    try { audioPlayer?.cancelPreview?.(); } catch {}
+    if (notify) notifyChange("generation");
+    return true;
+  }
+
+  function readGenerationState() {
+    if (!generationSession) {
+      return {
+        status: "idle",
+        stale: false,
+        gap: null,
+        seed: null,
+        candidateIds: [],
+        activeCandidateId: null,
+        auditionCandidateId: null,
+        candidates: [],
+        acceptedNoteIds: [...lastAcceptedNoteIds]
+      };
+    }
+    const candidates = generationSession.candidates.map((candidate) => ({
+      id: candidate.id,
+      seed: candidate.seed,
+      score: candidate.score,
+      scoreBreakdown: cloneData(candidate.scoreBreakdown),
+      metadata: cloneData(candidate.metadata),
+      notes: candidate.notes.map(({ id, pitch, startTick, durationTicks }) => ({ id, pitch, startTick, durationTicks })),
+      sourceMoves: [...candidate.sourceMoves]
+    }));
+    return {
+      status: "ready",
+      stale: generationSession.revision !== canonicalRevision,
+      gap: cloneData(generationSession.gap),
+      seed: generationSession.seed,
+      styleProfile: generationSession.styleProfile,
+      voiceRange: cloneData(generationSession.voiceRange),
+      expectedSyllableCount: generationSession.expectedSyllableCount,
+      candidateIds: candidates.map((candidate) => candidate.id),
+      activeCandidateId: generationSession.activeCandidateId,
+      auditionCandidateId: generationSession.auditionCandidateId,
+      candidates,
+      acceptedNoteIds: [...lastAcceptedNoteIds]
+    };
+  }
+
+  function findGenerationCandidate(candidateId) {
+    if (!generationSession) fail("generation-session-missing");
+    const candidate = generationSession.candidates.find((item) => item.id === candidateId);
+    if (!candidate) fail("generation-candidate-not-found");
+    return candidate;
+  }
+
   function commit(mutator, afterCommit = () => {}) {
     const candidate = cloneData(song);
     const result = mutator(candidate);
     const validated = createSong(candidate);
     song = validated;
+    canonicalRevision += 1;
+    if (generationSession?.auditionCandidateId) {
+      generationSession.auditionCandidateId = null;
+      generationAuditionToken += 1;
+      try { audioPlayer?.cancelPreview?.(); } catch {}
+    }
     afterCommit();
     notifyChange("song");
     return result;
@@ -175,7 +243,135 @@ export function createCommands(initialSong, {
         snap,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
-      }, selectedNoteIds, { mode: viewMode, follow: followMode });
+      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState());
+    },
+    generateGap(request) {
+      clearAuditionState({ notify: false });
+      const context = createGenerationContext(song, request);
+      const generated = generateGapCandidates(song, request);
+      generationSession = {
+        ...generated,
+        request: cloneData(request),
+        revision: canonicalRevision,
+        phraseId: context.phraseId,
+        activeCandidateId: null,
+        auditionCandidateId: null
+      };
+      notifyChange("generation");
+      return readGenerationState();
+    },
+    getGenerationState() {
+      return readGenerationState();
+    },
+    selectCandidate(candidateId) {
+      const candidate = findGenerationCandidate(candidateId);
+      if (generationSession.auditionCandidateId && generationSession.auditionCandidateId !== candidateId) {
+        clearAuditionState({ notify: false });
+      }
+      generationSession.activeCandidateId = candidate.id;
+      notifyChange("generation");
+      return readGenerationState();
+    },
+    async auditionCandidate(candidateId) {
+      if (!audioPlayer || typeof audioPlayer.playPreview !== "function") fail("audio-unavailable");
+      const candidate = findGenerationCandidate(candidateId);
+      if (generationSession.revision !== canonicalRevision) fail("generation-stale");
+      const currentContext = createGenerationContext(song, generationSession.request);
+      if (currentContext.phraseId !== generationSession.phraseId) fail("generation-stale");
+      if (playback.status === "playing") commands.pause();
+      clearAuditionState({ notify: false });
+      const token = ++generationAuditionToken;
+      generationSession.activeCandidateId = candidate.id;
+      generationSession.auditionCandidateId = candidate.id;
+      const previewNotes = [
+        ...candidate.notes,
+        {
+          id: `preview-${candidate.id}-right-anchor`,
+          pitch: currentContext.rightAnchor.pitch,
+          startTick: generationSession.gap.endTick,
+          durationTicks: Math.min(currentContext.rightAnchor.durationTicks, 480)
+        }
+      ];
+      notifyChange("generation");
+      try {
+        const started = await audioPlayer.playPreview(previewNotes, {
+          tempo: song.timing.tempo,
+          onEnded() {
+            if (generationAuditionToken !== token || generationSession?.auditionCandidateId !== candidate.id) return;
+            generationSession.auditionCandidateId = null;
+            notifyChange("generation");
+          }
+        });
+        if (!started && generationAuditionToken === token && generationSession?.auditionCandidateId === candidate.id) {
+          generationSession.auditionCandidateId = null;
+          notifyChange("generation");
+        }
+      } catch (error) {
+        if (generationAuditionToken === token && generationSession?.auditionCandidateId === candidate.id) {
+          generationSession.auditionCandidateId = null;
+          notifyChange("generation");
+        }
+        throw error;
+      }
+      return readGenerationState();
+    },
+    acceptCandidate(candidateId = generationSession?.activeCandidateId) {
+      if (!generationSession) fail("generation-session-missing");
+      if (generationSession.revision !== canonicalRevision) fail("generation-stale");
+      const candidate = findGenerationCandidate(candidateId);
+      const context = createGenerationContext(song, generationSession.request);
+      if (context.phraseId !== generationSession.phraseId) fail("generation-stale");
+      const acceptedNotes = candidate.notes.map((note) => ({
+        id: idFactory(),
+        pitch: note.pitch,
+        startTick: note.startTick,
+        durationTicks: note.durationTicks,
+        source: "generated",
+        anchor: false,
+        locked: false
+      }));
+      const acceptedIds = acceptedNotes.map((note) => note.id);
+      return commit((nextSong) => {
+        nextSong.notes.push(...acceptedNotes);
+        const phrase = nextSong.phrases.find((item) => item.id === context.phraseId);
+        const rightIndex = phrase?.noteIds.indexOf(context.gap.rightAnchorNoteId) ?? -1;
+        if (!phrase || rightIndex < 0) fail("generation-stale");
+        phrase.noteIds.splice(rightIndex, 0, ...acceptedIds);
+        return acceptedNotes;
+      }, () => {
+        generationAuditionToken += 1;
+        generationSession = null;
+        try { audioPlayer?.cancelPreview?.(); } catch {}
+        selection = null;
+        selectedNoteIds = [...acceptedIds];
+        lastAcceptedNoteIds = [...acceptedIds];
+        const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+        updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      }).map((note) => cloneData(note));
+    },
+    clearGeneration() {
+      if (!generationSession && lastAcceptedNoteIds.length === 0) return false;
+      generationAuditionToken += 1;
+      generationSession = null;
+      lastAcceptedNoteIds = [];
+      try { audioPlayer?.cancelPreview?.(); } catch {}
+      notifyChange("generation");
+      return true;
+    },
+    lockAcceptedNotes() {
+      const noteIds = [...lastAcceptedNoteIds];
+      if (noteIds.length === 0) fail("generation-no-accepted-notes");
+      const notes = noteIds.map((noteId) => song.notes.find((note) => note.id === noteId));
+      if (notes.some((note) => !note || note.source !== "generated")) fail("generation-accepted-notes-missing");
+      commit((nextSong) => {
+        for (const noteId of noteIds) nextSong.notes.find((note) => note.id === noteId).locked = true;
+      }, () => { lastAcceptedNoteIds = []; });
+      return noteIds;
+    },
+    regenerateGap() {
+      if (!generationSession) fail("generation-session-missing");
+      const request = { ...generationSession.request, seed: nextSeed(generationSession.seed) };
+      return commands.generateGap(request);
     },
     setViewMode(mode) {
       if (!["score", "piano-roll", "combined", "lyrics"].includes(mode)) fail("invalid-view-mode");
@@ -192,6 +388,7 @@ export function createCommands(initialSong, {
     async play() {
       if (!audioPlayer) fail("audio-unavailable");
       if (playback.status === "playing") return readPlayback();
+      clearAuditionState();
       const request = ++playRequest;
       let tick = playback.currentTick;
       if (!playback.loop.enabled && tick >= songEndTick()) tick = 0;
@@ -204,6 +401,7 @@ export function createCommands(initialSong, {
       return readPlayback();
     },
     pause() {
+      clearAuditionState();
       playRequest += 1;
       const wasPlaying = playback.status === "playing";
       const tick = audioPlayer ? audioPlayer.pause() : playback.currentTick;
@@ -214,6 +412,7 @@ export function createCommands(initialSong, {
       return readPlayback();
     },
     stop() {
+      clearAuditionState();
       playRequest += 1;
       if (audioPlayer) audioPlayer.stop();
       playback.status = "stopped";
@@ -224,6 +423,7 @@ export function createCommands(initialSong, {
     },
     seek(tick) {
       validateTick(tick);
+      clearAuditionState();
       const position = wrapLoopTick(tick, playback.loop);
       playRequest += 1;
       updatePlayerSafely(() => audioPlayer.seek(position, {
@@ -238,6 +438,7 @@ export function createCommands(initialSong, {
     },
     setTempo(tempo) {
       validateTempo(tempo);
+      clearAuditionState();
       commit((candidate) => { candidate.timing.tempo = tempo; }, () => {
         // Sample the old tempo clock and re-anchor before the view renders. Rendering
         // can take long enough for a pre-commit sample to become stale.
@@ -253,6 +454,7 @@ export function createCommands(initialSong, {
     },
     setLoop(startTick, endTick) {
       const nextLoop = validateLoop(startTick, endTick);
+      clearAuditionState();
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       playback.loop = { ...playback.loop, ...nextLoop };
       const position = wrapLoopTick(tick, playback.loop);
@@ -264,6 +466,7 @@ export function createCommands(initialSong, {
     },
     setLoopEnabled(enabled) {
       if (typeof enabled !== "boolean") fail("invalid-loop");
+      clearAuditionState();
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       playback.loop = { ...playback.loop, enabled };
       const position = wrapLoopTick(tick, playback.loop);
@@ -521,6 +724,10 @@ export function createCommands(initialSong, {
     },
     newIdea() {
       const nextSong = createInitialSong(idFactory);
+      canonicalRevision += 1;
+      generationAuditionToken += 1;
+      generationSession = null;
+      lastAcceptedNoteIds = [];
       playRequest += 1;
       updatePlayerSafely(() => audioPlayer?.stop());
       song = nextSong;

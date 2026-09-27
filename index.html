@@ -140,6 +140,33 @@
         </form>
       </section>
 
+      <section id="generation-panel" aria-labelledby="generation-heading">
+        <h2 id="generation-heading" data-copy="generationHeading"></h2>
+        <p data-copy="generationHelp"></p>
+        <form id="generation-form" class="panel generation-form" data-action="generate-gap">
+          <div class="form-grid generation-fields">
+            <label><span data-copy="generationStartLabel"></span><input id="generation-start" name="startTick" type="number" min="0" step="1" value="480" required data-focus-key="generation-start"></label>
+            <label><span data-copy="generationEndLabel"></span><input id="generation-end" name="endTick" type="number" min="0" step="1" value="1440" required data-focus-key="generation-end"></label>
+            <label><span data-copy="generationSeedLabel"></span><input id="generation-seed" name="seed" type="number" min="0" max="4294967295" step="1" value="1" required data-focus-key="generation-seed"></label>
+            <label><span data-copy="generationStyleLabel"></span><select id="generation-style" name="styleProfile" data-focus-key="generation-style"><option value="balanced" data-copy="styleBalanced"></option><option value="smooth" data-copy="styleSmooth"></option><option value="leaping" data-copy="styleLeaping"></option><option value="repetitive" data-copy="styleRepetitive"></option></select></label>
+            <label><span data-copy="generationMinPitchLabel"></span><input id="generation-min-pitch" name="minPitch" type="number" min="0" max="127" step="1" value="48" required data-focus-key="generation-min-pitch"></label>
+            <label><span data-copy="generationMaxPitchLabel"></span><input id="generation-max-pitch" name="maxPitch" type="number" min="0" max="127" step="1" value="84" required data-focus-key="generation-max-pitch"></label>
+            <label><span data-copy="generationLyricCountLabel"></span><input id="generation-lyric-count" name="lyricSyllableCount" type="number" min="0" max="32" step="1" data-focus-key="generation-lyric-count"></label>
+          </div>
+          <div class="generation-form-actions">
+            <button type="button" class="secondary" data-action="use-selection" data-copy="generationUseSelection" data-focus-key="generation-use-selection"></button>
+            <button id="generate-gap" type="submit" data-copy="generationGenerate" data-focus-key="generation-generate"></button>
+          </div>
+        </form>
+        <div class="generation-session-actions" aria-label="Generation session actions">
+          <button id="regenerate-gap" type="button" class="secondary" data-action="regenerate-gap" data-copy="generationRegenerate" disabled></button>
+          <button id="clear-generation" type="button" class="secondary" data-action="clear-generation" data-copy="generationClear" disabled></button>
+          <button id="lock-accepted-notes" type="button" class="secondary" data-action="lock-accepted-notes" data-copy="generationLockAccepted" hidden></button>
+        </div>
+        <p id="generation-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="generation-status"></p>
+        <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
+      </section>
+
       <section id="lyrics-section" data-view-region="lyrics" aria-labelledby="lyrics-heading">
         <h2 id="lyrics-heading" data-copy="lyricsHeading"></h2>
         <form id="lyrics-form" class="panel" data-action="set-lyrics">

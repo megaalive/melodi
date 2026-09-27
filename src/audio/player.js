@@ -1,5 +1,5 @@
-import { MelodiError } from "../core/model.js";
-import { planNoteEvents, tickAtAudioTime } from "./transport.js";
+import { MelodiError, PPQ } from "../core/model.js";
+import { planNoteEvents, tickAtAudioTime, validateTempo } from "./transport.js";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
@@ -21,6 +21,8 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
   let scheduled = new Map();
   const voices = new Map();
   let nextVoiceId = 0;
+  let previewTimer = null;
+  let previewGeneration = 0;
 
   function ensureContext() {
     if (context?.state === "closed") {
@@ -58,6 +60,9 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
   }
 
   function cancelVoices() {
+    if (previewTimer !== null) clearTimeout(previewTimer);
+    previewTimer = null;
+    previewGeneration += 1;
     if (!context) {
       voices.clear();
       return;
@@ -244,6 +249,68 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     return true;
   }
 
+  async function playPreview(notes, { tempo = 120, onEnded = () => {} } = {}) {
+    if (playing) fail("audio-preview-transport-playing");
+    validateTempo(tempo);
+    if (!Array.isArray(notes) || notes.length === 0 || notes.length > 16) fail("invalid-audio-preview");
+    for (const note of notes) {
+      if (!Number.isInteger(note?.pitch) || note.pitch < 0 || note.pitch > 127
+        || !Number.isSafeInteger(note.startTick) || note.startTick < 0
+        || !Number.isSafeInteger(note.durationTicks) || note.durationTicks <= 0) fail("invalid-audio-preview");
+    }
+
+    const token = ++generation;
+    cancelVoices();
+    const audioContext = ensureContext();
+    if (audioContext.state !== "running") {
+      if (globalThis.navigator?.userActivation && !globalThis.navigator.userActivation.isActive) {
+        fail("audio-activation-required");
+      }
+      let timeoutId;
+      try {
+        await Promise.race([
+          audioContext.resume(),
+          new Promise((_resolve, reject) => {
+            timeoutId = setTimeout(() => reject(new MelodiError("audio-activation-required")), ACTIVATION_TIMEOUT_MS);
+          })
+        ]);
+      } catch (error) {
+        if (error?.code) throw error;
+        fail("audio-activation-required");
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+    if (token !== generation) return false;
+    if (audioContext.state !== "running") fail("audio-activation-required");
+
+    clearTimer();
+    const previewId = ++previewGeneration;
+    const ordered = [...notes].sort((left, right) => left.startTick - right.startTick
+      || (String(left.id) < String(right.id) ? -1 : String(left.id) > String(right.id) ? 1 : 0));
+    const baseTick = ordered[0].startTick;
+    const firstAudioTime = audioContext.currentTime + 0.04;
+    const secondsPerTick = 60 / (PPQ * tempo);
+    try {
+      for (const note of ordered) {
+        const startTime = firstAudioTime + (note.startTick - baseTick) * secondsPerTick;
+        const endTime = startTime + note.durationTicks * secondsPerTick;
+        scheduleVoice({ note, startTime, endTime });
+      }
+    } catch {
+      cancelVoices();
+      fail("audio-scheduling-failed");
+    }
+    const last = ordered.at(-1);
+    const previewMs = ((last.startTick + last.durationTicks - baseTick) * secondsPerTick * 1000) + 120;
+    previewTimer = setTimeout(() => {
+      if (previewId !== previewGeneration) return;
+      previewTimer = null;
+      try { onEnded(); } catch {}
+    }, previewMs);
+    return true;
+  }
+
   return Object.freeze({
     play,
     pause() { return halt(); },
@@ -252,6 +319,14 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     seek(tick, options) { reanchor(tick, options.tempo, options.loop, options.playing); },
     updateTempo(nextTempo, tick, shouldPlay) { reanchor(tick, nextTempo, loop, shouldPlay); },
     updateLoop(nextLoop, tick, shouldPlay) { reanchor(tick, tempo, nextLoop, shouldPlay); },
-    songChanged(tick) { reanchor(tick, tempo, loop, playing); }
+    songChanged(tick) { reanchor(tick, tempo, loop, playing); },
+    playPreview,
+    cancelPreview() {
+      if (playing) return false;
+      generation += 1;
+      clearTimer();
+      cancelVoices();
+      return true;
+    }
   });
 }

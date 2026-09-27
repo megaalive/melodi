@@ -358,7 +358,7 @@ test("selection uses a half-open range and can be read through commands", () => 
   assert.deepEqual(commands.getSelection(), before);
 });
 
-test("state snapshot is detached and reports the actual R1 command surface", () => {
+test("state snapshot is detached and reports the actual command surface", () => {
   const commands = createCommands(fixture());
   const snapshot = commands.getState();
   snapshot.song.scale.intervals[0] = 11;
@@ -371,6 +371,8 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
   snapshot.selectedNoteIds.push("fake");
   snapshot.editor.snap = "1/4";
   snapshot.view.mode = "lyrics";
+  snapshot.generation.candidateIds.push("fake");
+  snapshot.generation.candidates.push({ id: "fake" });
   snapshot.song.chords[0].quality = "changed";
   const next = commands.getState();
   const expected = {
@@ -402,6 +404,17 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
     selectedNoteIds: [],
     editor: { snap: "1/8", canPaste: false, clipboardCount: 0 },
     view: { mode: "combined", follow: true },
+    generation: {
+      status: "idle",
+      stale: false,
+      gap: null,
+      seed: null,
+      candidateIds: [],
+      activeCandidateId: null,
+      auditionCandidateId: null,
+      candidates: [],
+      acceptedNoteIds: []
+    },
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
     availableActions: [
@@ -409,6 +422,8 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
+      "generateGap", "getGenerationState", "selectCandidate", "auditionCandidate", "acceptCandidate",
+      "lockAcceptedNotes", "clearGeneration", "regenerateGap",
       "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled", "setViewMode", "setFollowMode"
     ]
   };

@@ -207,10 +207,16 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     const savedTop = scrollContainer?.scrollTop ?? 0;
     const endTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), state.playback.currentTick);
     const selectedNote = [...state.selectedNoteIds].reverse().map((id) => song.notes.find((note) => note.id === id)).find(Boolean);
-    const focusTick = focusTickOverride ?? selectedNote?.startTick ?? state.playback.currentTick;
+    const activeCandidate = state.generation?.candidates?.find((candidate) => candidate.id === state.generation.activeCandidateId);
+    const focusTick = focusTickOverride ?? (activeCandidate ? state.generation.gap?.startTick : null) ?? selectedNote?.startTick ?? state.playback.currentTick;
     const { numerator, denominator } = song.timing.timeSignature;
     const previousStartTick = geometry.startTick;
-    geometry = createRollGeometry({ endTick, focusTick, ppq: song.timing.ppq, numerator, denominator });
+    const candidatePitches = activeCandidate?.notes?.map((note) => note.pitch) ?? [];
+    const pitchRange = {
+      min: Math.min(DEFAULT_PITCH_RANGE.min, ...candidatePitches),
+      max: Math.max(DEFAULT_PITCH_RANGE.max, ...candidatePitches)
+    };
+    geometry = createRollGeometry({ endTick, focusTick, ppq: song.timing.ppq, numerator, denominator, pitchRange });
     svg.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
     svg.setAttribute("width", geometry.width);
     svg.setAttribute("height", geometry.height);
@@ -323,6 +329,36 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
         "aria-hidden": "true"
       }, group);
       if (!hitLayout.canResize) resizeHandle.setAttribute("display", "none");
+    }
+
+    if (activeCandidate) {
+      for (const note of activeCandidate.notes) {
+        if (note.pitch < geometry.minMidi || note.pitch > geometry.maxMidi
+          || note.startTick + note.durationTicks <= geometry.startTick || note.startTick >= geometry.endTick) continue;
+        const x = tickToX(note.startTick, geometry);
+        const y = midiToY(note.pitch, geometry) + 2;
+        const width = note.durationTicks * geometry.pixelsPerQuarter / geometry.ppq;
+        const group = svgElement("g", {
+          "data-entity": "candidate-note",
+          "data-candidate-id": activeCandidate.id,
+          "data-candidate-note-id": note.id,
+          "data-pitch": note.pitch,
+          "data-start-tick": note.startTick,
+          "data-duration-ticks": note.durationTicks,
+          "pointer-events": "all",
+          role: "img",
+          "aria-label": `${midiToPitch(note.pitch)}, candidate, tick ${note.startTick}, duration ${note.durationTicks}`
+        }, svg);
+        svgElement("rect", {
+          x,
+          y,
+          width,
+          height: geometry.rowHeight - 4,
+          rx: 3,
+          class: "roll-candidate-note",
+          "pointer-events": "all"
+        }, group);
+      }
     }
 
     const playheadX = tickToX(state.playback.currentTick, geometry);
@@ -525,6 +561,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
       setGroupSelection(group.dataset.entityId, event);
       return;
     }
+    if (event.target.closest?.('[data-entity="candidate-note"]')) return;
     if (event.target.closest?.("[data-action]") || event.target.closest?.("text")) return;
     const point = pointerPoint(event);
     if (point.x < geometry.labelWidth || point.y < geometry.top || point.y >= geometry.height) return;

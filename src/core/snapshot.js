@@ -26,6 +26,14 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "moveLyricSyllable",
   "assignSyllableNotes",
   "newIdea",
+  "generateGap",
+  "getGenerationState",
+  "selectCandidate",
+  "auditionCandidate",
+  "acceptCandidate",
+  "lockAcceptedNotes",
+  "clearGeneration",
+  "regenerateGap",
   "play",
   "pause",
   "stop",
@@ -44,7 +52,17 @@ export function createAgentSnapshot(song, selection, playback = {
   currentSectionId: song.sections[0]?.id ?? null,
   tempo: song.timing.tempo,
   loop: { enabled: false, startTick: 0, endTick: 1 }
-}, editor = { snap: "1/8", canPaste: false, clipboardCount: 0 }, selectedNoteIds = [], view = { mode: "combined", follow: true }) {
+}, editor = { snap: "1/8", canPaste: false, clipboardCount: 0 }, selectedNoteIds = [], view = { mode: "combined", follow: true }, generation = {
+  status: "idle",
+  stale: false,
+  gap: null,
+  seed: null,
+  candidateIds: [],
+  activeCandidateId: null,
+  auditionCandidateId: null,
+  candidates: [],
+  acceptedNoteIds: []
+}) {
   const currentSyllableId = getActiveSyllableId(song.lyrics, playback.currentNoteId);
   const currentSyllableIds = currentSyllableId ? [currentSyllableId] : [];
   return {
@@ -76,6 +94,7 @@ export function createAgentSnapshot(song, selection, playback = {
     selectedNoteIds: cloneData(selectedNoteIds),
     editor: cloneData(editor),
     view: cloneData(view),
+    generation: cloneData(generation),
     anchorNoteIds: song.notes.filter((note) => note.anchor).map((note) => note.id),
     lockedNoteIds: song.notes.filter((note) => note.locked).map((note) => note.id),
     availableActions: [...AVAILABLE_ACTIONS]

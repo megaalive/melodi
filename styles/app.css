@@ -136,6 +136,18 @@ button.secondary {
   margin-bottom: 0.75rem;
 }
 .editor-toolbar label { flex: 0 1 9rem; }
+.generation-form { display: grid; gap: 0.85rem; min-width: 0; }
+.generation-fields { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); }
+.generation-form-actions, .generation-session-actions, .candidate-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; }
+.generation-session-actions { margin: 0.75rem 0; }
+.generation-candidates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 0.75rem; padding-left: 1.5rem; }
+.generation-candidate-card { min-width: 0; padding: 0.9rem; border: 1px solid #ccd5dd; border-radius: 0.4rem; background: #fff; }
+.generation-candidate-card[data-active="true"] { border-color: #245d81; box-shadow: 0 0 0 2px #a9cfe5; }
+.generation-candidate-card h3 { margin: 0 0 0.45rem; }
+.candidate-id, .candidate-metadata, .candidate-score { margin: 0.35rem 0; overflow-wrap: anywhere; }
+.candidate-id code { overflow-wrap: anywhere; }
+.candidate-score-breakdown { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.3rem 0.8rem; margin: 0.6rem 0 0; }
+.candidate-score-breakdown dd { margin: 0; font-variant-numeric: tabular-nums; }
 .piano-roll-scroll {
   width: 100%;
   max-width: 100%;
@@ -157,6 +169,7 @@ button.secondary {
 .roll-header-line { stroke: #60717f; stroke-width: 1.5; }
 .roll-note { fill: #5c9bc2; stroke: #245d81; stroke-width: 1.5; cursor: grab; touch-action: none; }
 .roll-note-generated { fill: #a9bbc7; stroke: #4c5d6c; stroke-dasharray: 4 2; }
+.roll-candidate-note { fill: #9b77c5; fill-opacity: 0.58; stroke: #5d3a88; stroke-width: 2; stroke-dasharray: 5 3; pointer-events: all; }
 [data-entity="note"][data-anchor="true"] .roll-note { stroke: #9b4c00; }
 [data-entity="note"][data-locked="true"] .roll-note { stroke-dasharray: 2 2; }
 [data-entity="note"][data-selected="true"] .roll-note { fill: #f3c879; }
@@ -213,5 +226,8 @@ button.secondary {
   .form-grid { grid-template-columns: 1fr; }
   .editor-toolbar { align-items: stretch; }
   .editor-toolbar > * { flex: 1 1 8rem; }
+  .generation-form-actions, .generation-session-actions, .candidate-actions { align-items: stretch; }
+  .generation-form-actions > *, .generation-session-actions > *, .candidate-actions > * { flex: 1 1 8rem; }
+  .generation-candidates { grid-template-columns: minmax(0, 1fr); padding-left: 1.2rem; }
   .syllable-split-fields { align-items: stretch; flex-direction: column; }
 }

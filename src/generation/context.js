@@ -25,9 +25,8 @@ export function createGenerationContext(songInput, request) {
   if (!Number.isSafeInteger(startTick) || startTick < 0
     || !Number.isSafeInteger(endTick) || endTick < 0) fail("generation-invalid-gap");
   if (endTick <= startTick) fail("generation-empty-gap");
-  if ((endTick - startTick) % 120 !== 0 || (endTick - startTick) / 120 > 64) {
-    fail("generation-gap-grid");
-  }
+  if ((endTick - startTick) % 120 !== 0) fail("generation-gap-grid");
+  if ((endTick - startTick) / 120 > 64) fail("generation-gap-too-long");
 
   const leftCandidates = song.notes.filter((note) => note.anchor
     && note.startTick + note.durationTicks === startTick);

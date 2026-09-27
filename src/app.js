@@ -337,6 +337,115 @@ function renderEditorControls() {
       : translate("noNotesSelected");
 }
 
+function renderGeneration(state) {
+  const panel = byId("generation-panel");
+  if (!panel) return;
+  const form = byId("generation-form");
+  const list = byId("generation-candidates");
+  const status = byId("generation-status");
+  const useSelection = panel.querySelector('[data-action="use-selection"]');
+  const regenerate = byId("regenerate-gap");
+  const clear = byId("clear-generation");
+  const lockAccepted = byId("lock-accepted-notes");
+  if (!form || !list || !status || !useSelection || !regenerate || !clear || !lockAccepted) {
+    throw new Error("Incomplete R4 generation markup.");
+  }
+
+  const generation = state.generation ?? { status: "idle", candidates: [], acceptedNoteIds: [] };
+  const sessionReady = generation.status === "ready" && Array.isArray(generation.candidates);
+  const acceptedNoteIds = Array.isArray(generation.acceptedNoteIds) ? generation.acceptedNoteIds : [];
+  const fields = {
+    "generation-start": generation.gap?.startTick,
+    "generation-end": generation.gap?.endTick,
+    "generation-seed": generation.seed,
+    "generation-style": generation.styleProfile,
+    "generation-min-pitch": generation.voiceRange?.minPitch,
+    "generation-max-pitch": generation.voiceRange?.maxPitch,
+    "generation-lyric-count": generation.expectedSyllableCount
+  };
+  if (form.dataset.pending !== "true") {
+    for (const [id, value] of Object.entries(fields)) {
+      const field = byId(id);
+      if (field && value !== null && value !== undefined && document.activeElement !== field) field.value = String(value);
+    }
+  }
+
+  useSelection.disabled = !state.selection || state.selection.endTick <= state.selection.startTick;
+  regenerate.disabled = !sessionReady;
+  clear.disabled = !sessionReady && acceptedNoteIds.length === 0;
+  lockAccepted.hidden = acceptedNoteIds.length === 0;
+  status.textContent = sessionReady
+    ? generation.stale
+      ? translate("generationStatusStale")
+      : generation.auditionCandidateId
+      ? translate("generationStatusAuditioning", { id: generation.auditionCandidateId })
+      : translate("generationStatusReady", { count: generation.candidates.length })
+    : translate("generationStatusIdle");
+
+  list.replaceChildren();
+  if (!sessionReady) return;
+  const scoreKeys = ["tonalFit", "intervalSize", "leapResolution", "singability", "contour", "rhythm", "repetition", "anchorLanding", "lyricFit", "styleFit"];
+  generation.candidates.forEach((candidate, index) => {
+    const card = document.createElement("li");
+    card.className = "generation-candidate-card";
+    card.dataset.entity = "melody-candidate";
+    card.dataset.entityId = candidate.id;
+    card.dataset.candidateNumber = String(index + 1);
+    card.dataset.active = String(generation.activeCandidateId === candidate.id);
+
+    const heading = document.createElement("h3");
+    heading.textContent = translate("candidateHeading", { number: index + 1 });
+    const identifier = document.createElement("p");
+    identifier.className = "candidate-id";
+    const idLabel = document.createElement("span");
+    idLabel.textContent = `${translate("candidateIdLabel")}: `;
+    const idCode = document.createElement("code");
+    idCode.textContent = candidate.id;
+    identifier.append(idLabel, idCode);
+
+    const metadata = candidate.metadata ?? {};
+    const summary = document.createElement("p");
+    summary.className = "candidate-metadata";
+    summary.textContent = translate("candidateMetadata", {
+      notes: `${metadata.noteCount ?? candidate.notes?.length ?? 0} ${translate("candidateNoteUnit")}`,
+      steps: `${metadata.stepCount ?? 0} ${translate("candidateStepUnit")}`,
+      leaps: `${metadata.leapCount ?? 0} ${translate("candidateLeapUnit")}`,
+      range: metadata.range?.label ?? "—",
+      landing: translate(metadata.smoothLanding ? "candidateLandingSmooth" : "candidateLandingWide")
+    });
+    const score = document.createElement("p");
+    score.className = "candidate-score";
+    score.textContent = `${translate("candidateScoreLabel")}: ${Number(candidate.score ?? 0).toFixed(2)}`;
+
+    const actions = document.createElement("div");
+    actions.className = "candidate-actions";
+    const select = makeButton(translate("candidateSelect"), "select-candidate", { candidateId: candidate.id });
+    select.setAttribute("aria-pressed", String(generation.activeCandidateId === candidate.id));
+    select.dataset.focusKey = `candidate-select-${candidate.id}`;
+    const audition = makeButton(translate(generation.auditionCandidateId === candidate.id ? "candidateAuditioning" : "candidateAudition"), "audition-candidate", { candidateId: candidate.id });
+    audition.dataset.focusKey = `candidate-audition-${candidate.id}`;
+    const accept = makeButton(translate("candidateAccept"), "accept-candidate", { candidateId: candidate.id });
+    accept.dataset.focusKey = `candidate-accept-${candidate.id}`;
+    actions.append(select, audition, accept);
+
+    const details = document.createElement("details");
+    const detailsSummary = document.createElement("summary");
+    detailsSummary.textContent = translate("candidateScoreDetails");
+    const breakdown = document.createElement("dl");
+    breakdown.className = "candidate-score-breakdown";
+    for (const key of scoreKeys) {
+      const term = document.createElement("dt");
+      term.textContent = translate(`score${key[0].toUpperCase()}${key.slice(1)}`);
+      const value = document.createElement("dd");
+      value.textContent = Number(candidate.scoreBreakdown?.[key] ?? 0).toFixed(2);
+      breakdown.append(term, value);
+    }
+    details.append(detailsSummary, breakdown);
+    card.append(heading, identifier, summary, score, actions, details);
+    list.append(card);
+  });
+}
+
 function renderPlayback() {
   if (!commands) return;
   const state = normalizeRuntimeState(commands.getState());
@@ -437,6 +546,7 @@ function render() {
   renderNotes(song, state);
   renderSyllables(song, state);
   renderEditorControls();
+  renderGeneration(state);
   rollView.render(song, state);
   byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
   scoreView.render(song, state);
@@ -573,7 +683,15 @@ const publicCommands = Object.freeze({
   seek: commands.seek,
   setTempo: commands.setTempo,
   setLoop: commands.setLoop,
-  setLoopEnabled: commands.setLoopEnabled
+  setLoopEnabled: commands.setLoopEnabled,
+  generateGap: commands.generateGap,
+  getGenerationState: commands.getGenerationState,
+  selectCandidate: commands.selectCandidate,
+  auditionCandidate: commands.auditionCandidate,
+  acceptCandidate: commands.acceptCandidate,
+  lockAcceptedNotes: commands.lockAcceptedNotes,
+  clearGeneration: commands.clearGeneration,
+  regenerateGap: commands.regenerateGap
 });
 const publicSurface = Object.freeze({ getState: commands.getState, commands: publicCommands });
 Object.defineProperty(window, "melodi", { value: publicSurface, enumerable: true, writable: false, configurable: false });
@@ -619,6 +737,17 @@ document.addEventListener("submit", (event) => {
     result = run(() => commands.setTempo(Number(data.get("tempo"))), "tempoUpdated");
   } else if (action === "set-loop") {
     result = run(() => commands.setLoop(Number(data.get("startTick")), Number(data.get("endTick"))), "loopUpdated");
+  } else if (action === "generate-gap") {
+    const lyricCount = String(data.get("lyricSyllableCount") ?? "").trim();
+    result = run(() => commands.generateGap({
+      startTick: Number(data.get("startTick")),
+      endTick: Number(data.get("endTick")),
+      seed: Number(data.get("seed")),
+      styleProfile: data.get("styleProfile"),
+      voiceRange: { minPitch: Number(data.get("minPitch")), maxPitch: Number(data.get("maxPitch")) },
+      ...(lyricCount === "" ? {} : { lyricSyllableCount: Number(lyricCount) })
+    }));
+    if (result) announce("generationReady", "success", { count: result.candidates.length });
   }
   if (result !== undefined) form.dataset.pending = "false";
   form.dataset.submitting = "false";
@@ -655,6 +784,28 @@ document.addEventListener("change", (event) => {
     const ids = commands.getSelectedNoteIds();
     const next = target.checked ? [...ids, target.dataset.noteId] : ids.filter((id) => id !== target.dataset.noteId);
     run(() => commands.selectNotes(next));
+  } else if (target.dataset.action === "use-selection") {
+    const selection = commands.getSelection();
+    if (!selection || selection.endTick <= selection.startTick) return;
+    byId("generation-start").value = String(selection.startTick);
+    byId("generation-end").value = String(selection.endTick);
+    byId("generation-form").dataset.pending = "true";
+  } else if (target.dataset.action === "regenerate-gap") {
+    const result = run(() => commands.regenerateGap());
+    if (result) announce("generationRegenerated");
+  } else if (target.dataset.action === "clear-generation") {
+    const cleared = run(() => commands.clearGeneration());
+    if (cleared) announce("generationCleared");
+  } else if (target.dataset.action === "select-candidate") {
+    run(() => commands.selectCandidate(target.dataset.candidateId));
+  } else if (target.dataset.action === "audition-candidate") {
+    runAsync(() => commands.auditionCandidate(target.dataset.candidateId), "generationAuditioned");
+  } else if (target.dataset.action === "accept-candidate") {
+    const accepted = run(() => commands.acceptCandidate(target.dataset.candidateId));
+    if (accepted) announce("generationAccepted");
+  } else if (target.dataset.action === "lock-accepted-notes") {
+    const locked = run(() => commands.lockAcceptedNotes());
+    if (locked) announce("generationLocked");
   } else if (target.dataset.action === "assign-syllable-note") {
     const syllable = commands.getSong().lyrics.syllables.find((item) => item.id === target.dataset.syllableId);
     if (!syllable) return;
@@ -699,10 +850,34 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
   const target = event.target;
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
+  if (event.isComposing || event.repeat || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
     || target?.isContentEditable) return;
+  if (!(event.ctrlKey || event.metaKey)) {
+    if (event.altKey || event.shiftKey) return;
+    const generation = commands.getGenerationState();
+    if (generation.status !== "ready") return;
+    if (/^[1-8]$/.test(event.key)) {
+      const candidate = generation.candidates[Number(event.key) - 1];
+      if (!candidate) return;
+      event.preventDefault();
+      runAsync(() => commands.auditionCandidate(candidate.id), "generationAuditioned");
+      return;
+    }
+    if (event.key.toLowerCase() === "r") {
+      event.preventDefault();
+      const result = run(() => commands.regenerateGap());
+      if (result) announce("generationRegenerated");
+      return;
+    }
+    if (event.key === "Enter" && generation.activeCandidateId && !(target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement)) {
+      event.preventDefault();
+      const accepted = run(() => commands.acceptCandidate(generation.activeCandidateId));
+      if (accepted) announce("generationAccepted");
+    }
+    return;
+  }
+  if (event.altKey) return;
   if (event.key.toLowerCase() === "c" && commands.getSelectedNoteIds().length > 0) {
     event.preventDefault();
     const count = commands.copySelection();

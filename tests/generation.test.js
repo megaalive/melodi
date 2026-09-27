@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialSong, createSong } from "../src/core/model.js";
+import { createCommands } from "../src/core/commands.js";
+import { deserializeProject, serializeProject } from "../src/core/serialization.js";
+import { createDraftPersistence } from "../src/storage/draft.js";
 import { generateGap } from "../src/generation/generator.js";
 import { createGenerationContext } from "../src/generation/context.js";
 import { rankCandidates, scoreCandidate, SCORING_WEIGHTS } from "../src/generation/scoring.js";
@@ -43,6 +46,26 @@ function request(overrides = {}) {
 
 function expectGenerationCode(operation, code) {
   assert.throws(operation, (error) => error?.code === code);
+}
+
+function playerStub() {
+  let preview;
+  return {
+    get preview() { return preview; },
+    factory() {
+      return {
+        play: async () => true,
+        pause: () => 0,
+        stop: () => 0,
+        seek() {},
+        updateTempo() {},
+        updateLoop() {},
+        songChanged() {},
+        playPreview: async (notes, options) => { preview = { notes: structuredClone(notes), onEnded: options.onEnded }; return true; },
+        cancelPreview() { return true; }
+      };
+    }
+  };
 }
 
 test("gap generation is deterministic for the same context and seed", () => {
@@ -220,4 +243,147 @@ test("style profile changes ranking score without rewriting candidate notes", ()
   const smooth = scoreCandidate(source, context, { styleProfile: "smooth" });
   assert.notEqual(balanced.scoreBreakdown.styleFit, smooth.scoreBreakdown.styleFit);
   assert.deepEqual(source.notes, originalNotes);
+});
+
+test("Generate, Select, Regenerate, and Audition keep the canonical Song unchanged", async () => {
+  const song = fixture();
+  const before = structuredClone(song);
+  const changes = [];
+  const audio = playerStub();
+  let nextId = 0;
+  const commands = createCommands(song, {
+    idFactory: () => `new-${++nextId}`,
+    onChange: (change) => changes.push(change.kind),
+    audioPlayerFactory: audio.factory.bind(audio)
+  });
+
+  const generated = commands.generateGap(request());
+  assert.deepEqual(commands.getSong(), before);
+  assert.equal(generated.status, "ready");
+  assert.equal(generated.candidates.length, 6);
+  assert.deepEqual(commands.getState().generation.candidateIds, generated.candidateIds);
+  generated.candidates[0].notes[0].pitch = 0;
+  assert.notEqual(commands.getGenerationState().candidates[0].notes[0].pitch, 0);
+
+  commands.selectCandidate(generated.candidateIds[0]);
+  assert.deepEqual(commands.getSong(), before);
+  await commands.auditionCandidate(generated.candidateIds[0]);
+  assert.deepEqual(commands.getSong(), before);
+  assert.equal(commands.getGenerationState().auditionCandidateId, generated.candidateIds[0]);
+  assert.equal(audio.preview.notes.at(-1).id, "preview-" + generated.candidateIds[0] + "-right-anchor");
+  audio.preview.onEnded();
+  assert.equal(commands.getGenerationState().auditionCandidateId, null);
+
+  const regenerated = commands.regenerateGap();
+  assert.equal(regenerated.seed, generated.seed + 1);
+  assert.deepEqual(commands.getSong(), before);
+  assert.ok(changes.every((kind) => kind === "generation"));
+});
+
+test("Accept commits generated notes and phrase membership once, then serializes validly", () => {
+  const song = fixture();
+  const originalAnchors = song.notes.map((note) => structuredClone(note));
+  const changes = [];
+  let nextId = 0;
+  const commands = createCommands(song, {
+    idFactory: () => `accepted-${++nextId}`,
+    onChange: (change) => changes.push(change.kind),
+    audioPlayerFactory: playerStub().factory.bind(playerStub())
+  });
+  const generated = commands.generateGap(request());
+  const chosen = generated.candidates[0];
+  const accepted = commands.acceptCandidate(chosen.id);
+  const canonical = commands.getSong();
+  assert.equal(accepted.length, chosen.notes.length);
+  assert.deepEqual(canonical.notes.slice(0, 2), originalAnchors);
+  assert.deepEqual(accepted.map(({ pitch, startTick, durationTicks }) => ({ pitch, startTick, durationTicks })),
+    chosen.notes.map(({ pitch, startTick, durationTicks }) => ({ pitch, startTick, durationTicks })));
+  assert.ok(accepted.every((note) => note.source === "generated" && !note.anchor && !note.locked));
+  assert.deepEqual(canonical.phrases[0].noteIds,
+    ["anchor-left", ...accepted.map((note) => note.id), "anchor-right"]);
+  assert.deepEqual(canonical.lyrics, song.lyrics);
+  assert.deepEqual(canonical.chords, song.chords);
+  assert.equal(changes.filter((kind) => kind === "song").length, 1);
+  assert.equal(commands.getGenerationState().status, "idle");
+  assert.equal(deserializeProject(serializeProject(canonical)).notes.length, canonical.notes.length);
+});
+
+test("Accept rejects a candidate after any canonical context change", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), {
+    idFactory: () => `stale-${++nextId}`,
+    audioPlayerFactory: playerStub().factory.bind(playerStub())
+  });
+  const generated = commands.generateGap(request());
+  commands.updateNote("anchor-left", { pitch: 62 });
+  const changedSong = commands.getSong();
+  expectGenerationCode(() => commands.acceptCandidate(generated.candidates[0].id), "generation-stale");
+  assert.deepEqual(commands.getSong(), changedSong);
+  assert.equal(commands.getGenerationState().status, "ready");
+});
+
+test("accepted notes can be locked through an explicit user command", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), {
+    idFactory: () => `locked-${++nextId}`,
+    audioPlayerFactory: playerStub().factory.bind(playerStub())
+  });
+  const generated = commands.generateGap(request());
+  commands.acceptCandidate(generated.candidates[0].id);
+  const lockedIds = commands.lockAcceptedNotes();
+  assert.ok(lockedIds.length > 0);
+  assert.ok(commands.getSong().notes.filter((note) => lockedIds.includes(note.id)).every((note) => note.locked && note.source === "generated"));
+  assert.deepEqual(commands.getGenerationState().acceptedNoteIds, []);
+});
+
+test("New Idea clears candidate runtime state", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), {
+    idFactory: () => `new-idea-${++nextId}`,
+    audioPlayerFactory: playerStub().factory.bind(playerStub())
+  });
+  commands.generateGap(request());
+  assert.equal(commands.getGenerationState().status, "ready");
+  commands.newIdea();
+  assert.equal(commands.getGenerationState().status, "idle");
+  assert.deepEqual(commands.getGenerationState().candidateIds, []);
+});
+
+test("candidate runtime state does not autosave; Accept schedules only canonical Song data", async () => {
+  const storage = new Map();
+  let timerCallback = null;
+  let nextTimer = 0;
+  const persistence = createDraftPersistence({
+    storage: {
+      getItem: (key) => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, value)
+    },
+    setTimer: (callback) => { timerCallback = callback; return ++nextTimer; },
+    clearTimer: () => { timerCallback = null; }
+  });
+  let commands;
+  let nextId = 0;
+  const audio = playerStub();
+  commands = createCommands(fixture(), {
+    idFactory: () => `saved-${++nextId}`,
+    onChange(change) {
+      if (change.kind === "song") persistence.schedule(commands.getSong());
+    },
+    audioPlayerFactory: audio.factory.bind(audio)
+  });
+
+  const generated = commands.generateGap(request());
+  commands.selectCandidate(generated.candidates[0].id);
+  await commands.auditionCandidate(generated.candidates[0].id);
+  commands.regenerateGap();
+  assert.equal(persistence.flush(), false);
+  assert.equal(storage.size, 0);
+
+  const chosen = commands.getGenerationState().candidates[0];
+  commands.acceptCandidate(chosen.id);
+  assert.equal(typeof timerCallback, "function");
+  assert.equal(persistence.flush(), true);
+  const saved = [...storage.values()][0];
+  assert.equal(saved.includes("generation"), false);
+  assert.equal(deserializeProject(saved).notes.length, fixture().notes.length + chosen.notes.length);
 });
