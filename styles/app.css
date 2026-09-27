@@ -164,6 +164,22 @@ button.secondary {
 .roll-resize-handle { fill: transparent; cursor: ew-resize; touch-action: none; }
 .roll-move-hit { fill: transparent; cursor: grab; touch-action: none; }
 .roll-playhead { stroke: #a32323; stroke-width: 2; }
+.score-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #8997a4;
+  border-radius: 0.35rem;
+  background: #fff;
+}
+#score { display: block; max-width: none; }
+.score-measure-label { fill: #4c5d6c; font: 12px system-ui, sans-serif; }
+.score-note[data-current="true"] { filter: drop-shadow(0 0 3px #2d9d46); }
+.score-fallback { margin-top: 0.75rem; padding: 0.75rem 1rem; border-left: 0.25rem solid #9b4c00; background: #fff8ec; }
+.score-fallback p { margin-top: 0; font-weight: 650; }
+.score-fallback ul { margin: 0.4rem 0 0; padding-left: 1.25rem; overflow-wrap: anywhere; }
+.score-warning-list { color: #69400d; }
 @media (pointer: coarse) {
   .roll-note, .roll-move-hit, .roll-resize-handle { touch-action: pan-x pan-y; }
 }

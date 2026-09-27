@@ -4,11 +4,13 @@ import { SNAP_TICKS } from "./core/editor.js";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
+import { createScoreView } from "./ui/score.js";
 import { createDraftPersistence } from "./storage/draft.js";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
 let rollView;
+let scoreView;
 let statusTimer;
 
 const byId = (id) => document.getElementById(id);
@@ -344,6 +346,7 @@ function renderPlayback() {
   if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
   byId("loop-enabled").checked = playback.loop.enabled;
   rollView?.updatePlayback(playback);
+  scoreView?.updatePlayback(playback);
 }
 
 function render() {
@@ -385,6 +388,8 @@ function render() {
   renderSyllables(song);
   renderEditorControls();
   rollView.render(song, state);
+  byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
+  scoreView.render(song);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -470,6 +475,8 @@ rollView = createPianoRollView(byId("piano-roll"), commands, {
   },
   onError: reportError
 });
+
+scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fallback"), translate);
 
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
