@@ -554,7 +554,7 @@ function renderPlayback() {
 
   byId("playback-status").textContent = translate(statusKey);
   byId("current-tick").textContent = String(playback.currentTick);
-  byId("current-note").textContent = note ? `${note.id} (${midiToPitch(note.pitch)})` : translate("noCurrentNote");
+  byId("current-note").textContent = note ? midiToPitch(note.pitch) : translate("noCurrentNote");
   byId("current-note").dataset.entityId = note?.id ?? "";
   byId("current-section").textContent = section ? `${section.name} (${section.id})` : translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
