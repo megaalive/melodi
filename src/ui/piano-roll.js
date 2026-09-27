@@ -61,7 +61,8 @@ export function createRollGeometry({
   rowHeight = PIANO_ROW_HEIGHT,
   top = PIANO_TOP,
   labelWidth = PIANO_LABEL_WIDTH,
-  pixelsPerQuarter = PIXELS_PER_QUARTER
+  pixelsPerQuarter = PIXELS_PER_QUARTER,
+  viewportWidth = 0
 } = {}) {
   if (!Number.isSafeInteger(ppq) || ppq <= 0 || !Number.isSafeInteger(numerator) || numerator <= 0
     || !Number.isSafeInteger(denominator) || denominator <= 0) throw new RangeError("Invalid musical grid.");
@@ -75,6 +76,16 @@ export function createRollGeometry({
     : Math.max(1, Math.ceil(endTick / barTicks) + 1);
   const maxGridTicks = barTicks * MAX_ROLL_BARS;
   const gridTicks = Math.min(MAX_ROLL_BARS, requestedBars) * barTicks;
+  const usableViewportWidth = Number.isFinite(viewportWidth) && viewportWidth > labelWidth
+    ? viewportWidth - labelWidth
+    : 0;
+  const fittedPixelsPerQuarter = usableViewportWidth > 0
+    ? usableViewportWidth * ppq / gridTicks
+    : pixelsPerQuarter;
+  const resolvedPixelsPerQuarter = Math.max(
+    pixelsPerQuarter,
+    Math.min(pixelsPerQuarter * 2, fittedPixelsPerQuarter)
+  );
   const focusBar = Math.floor(focusTick / barTicks);
   const contextBars = Math.floor((gridTicks / barTicks - 1) * 0.3);
   const startTick = Math.max(0, focusBar - contextBars) * barTicks;
@@ -92,8 +103,8 @@ export function createRollGeometry({
     rowHeight,
     top,
     labelWidth,
-    pixelsPerQuarter,
-    width: labelWidth + gridTicks * pixelsPerQuarter / ppq,
+    pixelsPerQuarter: resolvedPixelsPerQuarter,
+    width: labelWidth + gridTicks * resolvedPixelsPerQuarter / ppq,
     height: top + (pitchRange.max - pitchRange.min + 1) * rowHeight
   };
 }
@@ -225,7 +236,15 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
       if (max - min < minimumSpan) min = Math.max(0, max - minimumSpan);
       pitchRange = { min, max };
     }
-    geometry = createRollGeometry({ endTick, focusTick, ppq: song.timing.ppq, numerator, denominator, pitchRange });
+    geometry = createRollGeometry({
+      endTick,
+      focusTick,
+      ppq: song.timing.ppq,
+      numerator,
+      denominator,
+      pitchRange,
+      viewportWidth: scrollContainer?.clientWidth ?? 0
+    });
     svg.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
     svg.setAttribute("width", geometry.width);
     svg.setAttribute("height", geometry.height);
