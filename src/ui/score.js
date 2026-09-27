@@ -119,6 +119,7 @@ function addFallbackList(container, projection, song, translate) {
 
 export function createScoreView(svg, status, fallback, scrollContainer, translate, {
   onSelectNote = () => {},
+  onSelectNotes = () => {},
   onContextMenu = () => {}
 } = {}) {
   let projection = null;
@@ -129,6 +130,7 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
   let activeSyllableIds = new Set();
   let noteNavigation = [];
   let focusElementByNoteId = new Map();
+  let selectionDrag = null;
 
   function selectFromEvent(noteId, event) {
     onSelectNote(noteId, Boolean(event.shiftKey || event.ctrlKey || event.metaKey));
@@ -138,6 +140,80 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     const element = target instanceof Element ? target.closest('[data-entity="score-note"]') : null;
     return element && svg.contains(element) ? element : null;
   }
+
+  function pointerPoint(event) {
+    const bounds = svg.getBoundingClientRect();
+    const width = Number(svg.getAttribute("width")) || bounds.width || 1;
+    const height = Number(svg.getAttribute("height")) || bounds.height || 1;
+    return {
+      x: (event.clientX - bounds.left) * width / Math.max(1, bounds.width),
+      y: (event.clientY - bounds.top) * height / Math.max(1, bounds.height)
+    };
+  }
+
+  function beginSelectionDrag(event) {
+    if (event.button !== 0 || findScoreNote(event.target)) return;
+    if (event.target.closest?.('[data-entity="score-chord"], [data-entity="score-syllable"]')) return;
+    const point = pointerPoint(event);
+    selectionDrag = {
+      pointerId: event.pointerId,
+      startX: point.x,
+      startY: point.y,
+      currentX: point.x,
+      currentY: point.y,
+      additive: Boolean(event.shiftKey || event.ctrlKey || event.metaKey),
+      moved: false,
+      element: null
+    };
+    try { svg.setPointerCapture(event.pointerId); } catch {}
+  }
+
+  function previewSelectionDrag(event) {
+    if (!selectionDrag || selectionDrag.pointerId !== event.pointerId) return;
+    const point = pointerPoint(event);
+    selectionDrag.currentX = point.x;
+    selectionDrag.currentY = point.y;
+    const distance = Math.hypot(point.x - selectionDrag.startX, point.y - selectionDrag.startY);
+    if (distance < 4 && !selectionDrag.moved) return;
+    selectionDrag.moved = true;
+    if (!selectionDrag.element) {
+      selectionDrag.element = svgElement("rect", {
+        class: "score-selection-box",
+        "pointer-events": "none"
+      });
+      svg.append(selectionDrag.element);
+    }
+    selectionDrag.element.setAttribute("x", String(Math.min(selectionDrag.startX, point.x)));
+    selectionDrag.element.setAttribute("y", String(Math.min(selectionDrag.startY, point.y)));
+    selectionDrag.element.setAttribute("width", String(Math.abs(point.x - selectionDrag.startX)));
+    selectionDrag.element.setAttribute("height", String(Math.abs(point.y - selectionDrag.startY)));
+  }
+
+  function finishSelectionDrag(event, cancelled = false) {
+    if (!selectionDrag || selectionDrag.pointerId !== event.pointerId) return;
+    const drag = selectionDrag;
+    selectionDrag = null;
+    drag.element?.remove();
+    if (cancelled || !drag.moved) return;
+    const left = Math.min(drag.startX, drag.currentX);
+    const right = Math.max(drag.startX, drag.currentX);
+    const top = Math.min(drag.startY, drag.currentY);
+    const bottom = Math.max(drag.startY, drag.currentY);
+    const hitIds = [];
+    for (const [noteId, elements] of noteElementsById) {
+      if (elements.some((element) => {
+        const box = element.getBBox();
+        return box.x + box.width >= left && box.x <= right && box.y + box.height >= top && box.y <= bottom;
+      })) hitIds.push(noteId);
+    }
+    onSelectNotes(hitIds, drag.additive);
+  }
+
+  svg.addEventListener("pointerdown", beginSelectionDrag);
+  svg.addEventListener("pointermove", previewSelectionDrag);
+  svg.addEventListener("pointerup", (event) => finishSelectionDrag(event));
+  svg.addEventListener("pointercancel", (event) => finishSelectionDrag(event, true));
+  svg.addEventListener("lostpointercapture", (event) => finishSelectionDrag(event, true));
 
   svg.addEventListener("click", (event) => {
     const element = findScoreNote(event.target);
