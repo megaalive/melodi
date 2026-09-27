@@ -38,7 +38,7 @@ export function createCommands(initialSong, {
   let selection = null;
   let selectedNoteIds = [];
   let snap = DEFAULT_SNAP;
-  let viewMode = "combined";
+  let viewMode = "piano-roll";
   let followMode = true;
   let copiedNotes = null;
   let canonicalRevision = 0;
