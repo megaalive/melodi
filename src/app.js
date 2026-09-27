@@ -16,6 +16,7 @@ let scoreView;
 let statusTimer;
 let pointerInteractionActive = false;
 let lastFollowSyllableId = null;
+let contextTarget = null;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -76,6 +77,112 @@ function runAsync(operation, successKey, shouldAnnounce = () => true) {
   Promise.resolve(result).then((value) => {
     if (successKey && shouldAnnounce(value)) announce(successKey);
   }).catch(reportError);
+}
+
+function closeNoteContextMenu() {
+  const menu = byId("note-context-menu");
+  if (!menu) return;
+  menu.hidden = true;
+  menu.style.left = "";
+  menu.style.top = "";
+  contextTarget = null;
+}
+
+function selectedSongNotes() {
+  const selected = new Set(commands?.getSelectedNoteIds?.() ?? []);
+  return commands ? commands.getSong().notes.filter((note) => selected.has(note.id)) : [];
+}
+
+function ensureContextSelection(detail) {
+  if (detail?.kind !== "selection" || !detail.noteId || !commands) return;
+  const selected = commands.getSelectedNoteIds();
+  if (!selected.includes(detail.noteId)) commands.selectNotes([detail.noteId]);
+}
+
+function showNoteContextMenu(detail) {
+  const menu = byId("note-context-menu");
+  if (!menu || !commands) return;
+  closeNoteContextMenu();
+  ensureContextSelection(detail);
+  contextTarget = { ...detail };
+
+  const selectionGroup = menu.querySelector('[data-context-group="selection"]');
+  const emptyGroup = menu.querySelector('[data-context-group="empty"]');
+  const isSelection = detail?.kind === "selection";
+  selectionGroup.hidden = !isSelection;
+  emptyGroup.hidden = isSelection;
+
+  if (isSelection) {
+    const notes = selectedSongNotes();
+    const allAnchored = notes.length > 0 && notes.every((note) => note.anchor);
+    const allLocked = notes.length > 0 && notes.every((note) => note.locked);
+    const anchor = byId("context-anchor");
+    const lock = byId("context-lock");
+    anchor.textContent = translate(allAnchored ? "contextRemoveAnchor" : "contextAnchor");
+    anchor.setAttribute("aria-checked", String(allAnchored));
+    lock.textContent = translate(allLocked ? "contextUnlock" : "contextLock");
+    lock.setAttribute("aria-checked", String(allLocked));
+  } else {
+    const canPlace = detail?.source === "piano-roll"
+      && Number.isSafeInteger(detail.pitch)
+      && Number.isSafeInteger(detail.startTick);
+    const add = menu.querySelector('[data-action="context-add-note"]');
+    const paste = menu.querySelector('[data-action="context-paste-here"]');
+    add.hidden = !canPlace;
+    paste.hidden = !canPlace;
+    paste.disabled = !commands.getState().editor.canPaste;
+  }
+
+  menu.hidden = false;
+  const desiredX = Number(detail?.clientX ?? 0);
+  const desiredY = Number(detail?.clientY ?? 0);
+  menu.style.left = `${Math.max(8, desiredX)}px`;
+  menu.style.top = `${Math.max(8, desiredY)}px`;
+  requestAnimationFrame(() => {
+    if (menu.hidden) return;
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(8, Math.min(desiredX, window.innerWidth - rect.width - 8))}px`;
+    menu.style.top = `${Math.max(8, Math.min(desiredY, window.innerHeight - rect.height - 8))}px`;
+  });
+}
+
+function updateSelectedNotes(patchFactory) {
+  const notes = selectedSongNotes();
+  if (!notes.length) return [];
+  return commands.updateNotes(notes.map((note) => ({ noteId: note.id, patch: patchFactory(note) })));
+}
+
+function transposeSelectedNotes(delta) {
+  if (!Number.isInteger(delta) || delta === 0) return [];
+  return updateSelectedNotes((note) => ({ pitch: note.pitch + delta }));
+}
+
+function setSelectedDuration(durationTicks) {
+  if (!Number.isSafeInteger(durationTicks) || durationTicks <= 0) return [];
+  return updateSelectedNotes(() => ({ durationTicks }));
+}
+
+function deleteSelectedNotes() {
+  const ids = [...commands.getSelectedNoteIds()];
+  for (const noteId of ids) commands.deleteNote(noteId, { actor: "user" });
+  return ids.length;
+}
+
+function duplicateSelectedNotes() {
+  const notes = selectedSongNotes();
+  if (!notes.length) return [];
+  const targetTick = Math.max(...notes.map((note) => note.startTick + note.durationTicks));
+  commands.copySelection();
+  return commands.pasteNotes(targetTick);
+}
+
+function setSelectedFlag(flag, value) {
+  const notes = selectedSongNotes();
+  for (const note of notes) {
+    if (flag === "anchor") commands.setAnchor(note.id, value);
+    else if (flag === "locked") commands.setLocked(note.id, value);
+  }
+  return notes.length;
 }
 
 function makeButton(text, action, data = {}) {
