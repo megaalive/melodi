@@ -513,6 +513,12 @@ function renderEditorControls() {
   byId("paste-notes").disabled = !state.editor.canPaste;
   byId("copy-selection").disabled = state.selectedNoteIds.length === 0;
   byId("clear-selection").disabled = state.selectedNoteIds.length === 0 && !state.selection;
+  // Toolbar transpose dan durasi adalah jalur eksplisit; context menu tetap ada
+  // sebagai pintasan, bukan satu-satunya jalan (PLAN.md: fungsi penting tidak
+  // boleh hanya tersedia lewat context menu).
+  for (const button of document.querySelectorAll('[data-action="transpose-selected"], [data-action="set-selected-duration"]')) {
+    button.disabled = state.selectedNoteIds.length === 0;
+  }
   byId("piano-roll-scroll").setAttribute("aria-label", translate("pianoRollRegionLabel"));
   byId("editor-toolbar")?.setAttribute("aria-label", translate("pianoRollControlsLabel"));
   byId("roll-selection").textContent = state.selectedNoteIds.length
@@ -1144,12 +1150,12 @@ document.addEventListener("click", (event) => {
     closeNoteContextMenu();
     const count = run(() => setSelectedFlag("locked", next));
     if (count) announce("lockedChanged");
-  } else if (target.dataset.action === "context-transpose") {
+  } else if (target.dataset.action === "context-transpose" || target.dataset.action === "transpose-selected") {
     const delta = Number(target.dataset.delta);
     closeNoteContextMenu();
     const notes = run(() => transposeSelectedNotes(delta));
     if (notes?.length) announce("noteSaved");
-  } else if (target.dataset.action === "context-duration") {
+  } else if (target.dataset.action === "context-duration" || target.dataset.action === "set-selected-duration") {
     const snap = target.dataset.snap;
     const durationTicks = snap === "1/2" ? SNAP_TICKS["1/4"] * 2 : SNAP_TICKS[snap];
     closeNoteContextMenu();

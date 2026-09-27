@@ -365,7 +365,10 @@ p { margin: 0.45rem 0 0.8rem; }
   margin: 0;
 }
 
-.transport-advanced { margin-left: auto; align-self: center; }
+/* Hanya .tempo-control yang menyerap sisa ruang. Dua anak flex yang sama-sama
+   memakai margin-left: auto membagi ruang kosong itu sama rata, jadi panel
+   Lanjutan terdorong ke tengah baris dan tidak lagi rata kanan. */
+.transport-advanced { align-self: center; }
 .transport-advanced > summary,
 .generation-options > summary,
 .shortcut-help > summary,
@@ -494,6 +497,31 @@ p { margin: 0.45rem 0 0.8rem; }
   min-height: 2.1rem;
   padding: 0.35rem 0.55rem;
   font-size: 0.76rem;
+}
+
+.editor-toolbar-group {
+  display: flex;
+  align-items: end;
+  gap: 0.2rem;
+  padding: 0.12rem 0.2rem 0.12rem 0.32rem;
+  border: 1px solid var(--border);
+  border-radius: 0.42rem;
+}
+.editor-toolbar-label {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+.editor-toolbar-group button {
+  min-width: 2rem;
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+.editor-toolbar-group button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background: var(--surface-subtle);
 }
 
 .piano-roll-scroll {
