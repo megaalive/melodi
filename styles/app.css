@@ -1205,3 +1205,130 @@ body:has(.transport-advanced[open]) .workspace-sidebar {
     max-height: 19rem;
   }
 }
+
+
+/* Direct editing: kanvas adalah alat utama, bukan sidebar CRUD. */
+.roll-subdivision-line {
+  stroke: #e8edf1;
+  stroke-width: 1;
+}
+
+.roll-selection-box,
+.score-selection-box {
+  fill: rgba(36, 93, 129, 0.12);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+
+#copy-selection,
+#paste-notes,
+#clear-selection {
+  display: none;
+}
+
+.score-note {
+  cursor: pointer;
+}
+
+.score-note[data-selected="true"] path {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.score-note[data-anchor="true"]:not([data-selected="true"]) {
+  filter: drop-shadow(0 0 2px rgba(155, 76, 0, 0.75));
+}
+
+.score-note[data-locked="true"] {
+  opacity: 0.82;
+}
+
+.score-note[data-current="true"] {
+  filter: drop-shadow(0 0 3px #2d9d46);
+}
+
+.note-context-menu {
+  position: fixed;
+  z-index: 100;
+  width: min(15rem, calc(100vw - 1rem));
+  padding: 0.35rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(20, 35, 48, 0.2);
+}
+
+.note-context-menu[hidden] {
+  display: none !important;
+}
+
+.note-context-menu [data-context-group] {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.note-context-menu button {
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.3rem 0.48rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--viz-text, #17212b);
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.note-context-menu button:hover:not(:disabled),
+.note-context-menu button:focus-visible {
+  border-color: var(--border);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.context-separator {
+  height: 1px;
+  margin: 0.22rem 0;
+  background: var(--border);
+}
+
+.context-group-label {
+  padding: 0.18rem 0.45rem 0.08rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.context-inline-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.18rem;
+}
+
+.context-inline-actions button {
+  text-align: center;
+  padding-inline: 0.2rem;
+}
+
+.context-inline-actions:has(button:nth-child(3):last-child) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.utility-card[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 46rem) {
+  .note-context-menu {
+    width: min(17rem, calc(100vw - 1rem));
+  }
+
+  #copy-selection,
+  #paste-notes,
+  #clear-selection {
+    display: none;
+  }
+}
