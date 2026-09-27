@@ -1263,6 +1263,10 @@ body:has(.transport-advanced[open]) .workspace-sidebar {
   display: none !important;
 }
 
+.note-context-menu [hidden] {
+  display: none !important;
+}
+
 .note-context-menu [data-context-group] {
   display: grid;
   gap: 0.16rem;

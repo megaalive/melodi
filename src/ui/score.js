@@ -301,6 +301,9 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
       });
       return;
     }
+    // Let the document-level editor shortcuts handle modified arrows (notably
+    // Alt+Left/Right timing moves) without Score navigation changing selection.
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     const currentIndex = noteNavigation.indexOf(element.dataset.noteId);
     const nextIndex = currentIndex + (event.key === "ArrowRight" ? 1 : -1);
