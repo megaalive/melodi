@@ -254,16 +254,23 @@ p { margin: 0.45rem 0 0.8rem; }
   border-radius: var(--radius);
 }
 
+/* Strip lagu bukan panel, melainkan identitas halaman. Memberiinya kartu penuh
+  etus satu band ekstra; cukup baris tipis tanpa border. */
 .song-strip {
-  min-height: 4.4rem;
-  padding: 0.72rem 0.9rem;
+  min-height: 2.6rem;
+  padding: 0.2rem 0.15rem;
   display: flex;
   align-items: center;
-  gap: 1.15rem;
-  box-shadow: 0 1px 0 var(--hairline);
+  flex-wrap: wrap;
+  gap: 0.5rem 1.05rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
+.song-strip > button { min-height: 2rem; padding: 0.28rem 0.62rem; }
 
-.song-identity { min-width: 9rem; }
+.song-identity { min-width: 0; flex: 1 1 10rem; }
 .eyebrow {
   margin: 0 0 0.12rem;
   color: var(--text-muted);
@@ -373,10 +380,18 @@ p { margin: 0.45rem 0 0.8rem; }
   margin: 0;
 }
 
-/* Hanya .tempo-control yang menyerap sisa ruang. Dua anak flex yang sama-sama
-   memakai margin-left: auto membagi ruang kosong itu sama rata, jadi panel
-   Lanjutan terdorong ke tengah baris dan tidak lagi rata kanan. */
-.transport-advanced { align-self: center; }
+/* Panel Lanjutan adalah popover, bukan isi bar. Dulu ia ikut mengalir di dalam
+   bar sticky, jadi membukanya menambah tinggi bar dan menutupi kanvas; itu juga
+   memaksa tiga aturan body:has(...) dengan tinggi tebakan (13rem / 7.2rem /
+   4.9rem) yang harus dicocokkan manual tiap layout berubah. Karena posisinya
+   absolute, tinggi bar tidak pernah berubah dan aturan tebakan itu dihapus.
+   Aturan ini sengaja diletakkan sebelum media query agar breakpoint bisa
+   menimpanya. */
+.transport-advanced {
+  position: relative;
+  align-self: center;
+  margin-left: 0;
+}
 .transport-advanced > summary,
 .generation-options > summary,
 .shortcut-help > summary,
@@ -387,9 +402,25 @@ p { margin: 0.45rem 0 0.8rem; }
   font-weight: 700;
 }
 .transport-advanced[open] {
-  flex-basis: 100%;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--border);
+  flex-basis: auto;
+  padding-top: 0;
+  border-top: 0;
+}
+.transport-advanced[open] > summary { color: var(--accent-strong); }
+.transport-advanced[open] .transport-advanced-grid {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: min(22rem, 70vh);
+  overflow: auto;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
 }
 .transport-advanced-grid {
   display: grid;
@@ -869,10 +900,6 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .score-warning-list { color: var(--warning-ink); }
 
 @media (min-width: 68.01rem) {
-  body:has(.transport-advanced[open]) .workspace-sidebar {
-    top: 13rem;
-    max-height: calc(100vh - 14rem);
-  }
 }
 
 @media (pointer: coarse) {
@@ -982,35 +1009,6 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .tempo-control label > span { font-size: 0.62rem; }
 .tempo-control input { padding-block: 0.38rem; }
 .loop-toggle { min-height: 2.1rem; font-size: 0.78rem; }
-
-.transport-advanced {
-  position: relative;
-  margin-left: 0;
-}
-.transport-advanced[open] {
-  flex-basis: auto;
-  padding-top: 0;
-  border-top: 0;
-}
-.transport-advanced[open] > summary {
-  color: var(--accent-strong);
-}
-.transport-advanced[open] .transport-advanced-grid {
-  position: absolute;
-  z-index: 40;
-  top: calc(100% + 0.55rem);
-  right: 0;
-  width: min(42rem, calc(100vw - 2rem));
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-body:has(.transport-advanced[open]) .workspace-sidebar {
-  top: 4.9rem;
-  max-height: none;
-}
 
 .workspace-toolbar {
   margin-top: 0.42rem;
@@ -1176,10 +1174,15 @@ body[data-view-mode="combined"] .score-scroll {
   .loop-toggle { margin-left: 0; }
   .transport-advanced[open] .transport-advanced-grid {
     position: fixed;
-    top: 4.2rem;
+    /* Bar transport ada di bawah pada mobile, jadi popovernya membuka ke atas
+       dari tombolnya, bukan melompat ke atas layar. */
+    top: auto;
+    bottom: calc(100% + 0.5rem);
     left: 0.7rem;
     right: 0.7rem;
     width: auto;
+    max-height: 60vh;
+    overflow: auto;
   }
   .workspace-sidebar { grid-template-columns: 1fr; }
   .note-inspector,
@@ -1208,12 +1211,19 @@ body[data-view-mode="combined"] .score-scroll {
 }
 
 
-/* Satukan chrome editor agar toolbar tidak menimpa area kerja. */
+/* Workspace chrome: satu baris, bukan dua. Transport di kiri, kontrol tampilan
+   di kanan. Sebelumnya ini dua baris (transport di atas, view di bawah) yang
+   memakan satu band layar penuh sebelum user sampai kanvas. */
 .workspace-chrome {
   position: sticky;
   top: 0;
   z-index: 30;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.8rem;
   margin-top: 0.3rem;
+  padding: 0.45rem 0.6rem;
   border: 1px solid var(--border);
   border-radius: 0.6rem;
   background: var(--surface-float);
@@ -1224,19 +1234,22 @@ body[data-view-mode="combined"] .score-scroll {
 .workspace-chrome .transport-dock {
   position: static;
   top: auto;
+  flex: 1 1 22rem;
+  min-width: 0;
   margin: 0;
+  padding: 0;
   border: 0;
-  border-radius: 0.6rem 0.6rem 0 0;
+  border-radius: 0;
   box-shadow: none;
   background: transparent;
 }
 
 .workspace-chrome .workspace-toolbar {
-  margin: 0;
-  padding: 0.32rem 0.55rem;
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
+  padding: 0;
   border: 0;
-  border-top: 1px solid var(--border);
-  border-radius: 0 0 0.6rem 0.6rem;
+  border-radius: 0;
   background: transparent;
 }
 
@@ -1244,11 +1257,6 @@ body[data-view-mode="combined"] .score-scroll {
 
 .workspace-sidebar {
   top: 7.2rem;
-}
-
-body:has(.transport-advanced[open]) .workspace-sidebar {
-  top: 7.2rem;
-  max-height: none;
 }
 
 .piano-roll-scroll {
@@ -1271,8 +1279,53 @@ body:has(.transport-advanced[open]) .workspace-sidebar {
 }
 
 @media (max-width: 46rem) {
+  /* Di mobile chrome pindah ke bawah dan menempel. Transport jadi objek fisik
+     di jangkauan ibu jari, dan konten bisa mulai langsung di atas lipatan
+     tanpa menggulir melewati header + strip lagu + transport dulu. */
+  .workspace-chrome {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    width: min(100%, 100rem);
+    transform: translateX(-50%);
+    z-index: 30;
+    margin-top: 0;
+    padding: 0.4rem 0.5rem calc(0.4rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 0.7rem 0.7rem 0 0;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .workspace-chrome .transport-dock { flex: 1 1 100%; }
   .workspace-chrome .workspace-toolbar {
-    padding-inline: 0.45rem;
+    flex: 1 1 100%;
+    margin: 0;
+    padding: 0.25rem 0.15rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Ruang supaya bar tetap tidak menutupi kanvas dan dock kandidat. Bar diukur
+     220px pada 390px, jadi 15rem memberi jarak aman tanpa menebak. */
+  .app-shell { padding-bottom: 15rem; }
+  .candidate-dock { bottom: 14.5rem; }
+
+  /* Readout bisa jadi satu baris ramping di mobile; label dan nilai tidak perlu
+     ditumpuk seperti di desktop. */
+  .playback-readout { gap: 0.5rem; font-size: 0.72rem; }
+  .playback-readout dt { font-size: 0.6rem; }
+  .playback-readout dd { font-size: 0.72rem; }
+
+  /* Target sentuh: 44px adalah batas bawah yang masih bisa diulang di ruang
+     sempit tanpa membuat bar transport terlalu tinggi. */
+  .workspace-chrome button,
+  .workspace-chrome select,
+  .workspace-chrome input { min-height: 2.75rem; }
+  .workspace-chrome .transport-buttons button,
+  .workspace-chrome .history-buttons button {
+    min-width: 2.75rem;
+    width: 2.75rem;
   }
 }
 
@@ -1340,25 +1393,9 @@ body:has(.transport-advanced[open]) .workspace-sidebar {
 }
 
 
-/* Advanced controls tidak boleh menimpa workspace. */
-.transport-advanced[open] {
-  flex-basis: 100%;
-  margin-left: 0;
-  padding-top: 0.4rem;
-  border-top: 1px solid var(--border);
-}
-
-.transport-advanced[open] .transport-advanced-grid {
-  position: static;
-  display: grid;
-  grid-template-columns: minmax(12rem, 0.7fr) minmax(22rem, 1.3fr);
-  width: 100%;
-  padding: 0.45rem 0 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
+/* Catatan: aturan popover untuk .transport-advanced[open] ada di blok base
+   paling atas, sebelum media query, supaya breakpoint di bawahnya bisa
+   menimpanya. Jangan diduplikasi di sini. */
 .generation-options[open] > .generation-advanced-popover {
   position: static;
   width: auto;
