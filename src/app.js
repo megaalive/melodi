@@ -855,6 +855,7 @@ rollView = createPianoRollView(byId("piano-roll"), commands, {
       announce("noteAddedFromRoll");
     } catch (error) { reportError(error); }
   },
+  onContextMenu: showNoteContextMenu,
   onError: reportError
 });
 
@@ -865,7 +866,14 @@ scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fal
       ? selected.includes(noteId) ? selected.filter((id) => id !== noteId) : [...selected, noteId]
       : [noteId];
     run(() => commands.selectNotes(next));
-  }
+  },
+  onSelectNotes(noteIds, additive) {
+    const next = additive
+      ? [...new Set([...commands.getSelectedNoteIds(), ...noteIds])]
+      : noteIds;
+    run(() => next.length ? commands.selectNotes(next) : commands.clearSelection());
+  },
+  onContextMenu: showNoteContextMenu
 });
 
 const publicCommands = Object.freeze({
