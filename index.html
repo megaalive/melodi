@@ -17,6 +17,9 @@
         <p data-copy="intro"></p>
       </div>
       <div class="header-controls">
+        <button type="button" class="command-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
+          <span aria-hidden="true">⌘</span>
+        </button>
         <label class="language-control">
           <span data-copy="languageLabel"></span>
           <select id="language" data-action="language-switch" data-focus-key="language">
@@ -339,6 +342,17 @@
           <button type="button" role="menuitem" data-action="context-select-all" data-copy="contextSelectAll"></button>
         </div>
       </div>
+
+      <dialog id="command-palette" class="command-palette" data-action="command-palette" aria-labelledby="command-palette-heading">
+        <h2 id="command-palette-heading" class="visually-hidden" data-copy="paletteHeading"></h2>
+        <div class="palette-search">
+          <label class="visually-hidden" for="command-palette-input" data-copy="paletteSearchLabel"></label>
+          <input id="command-palette-input" type="text" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="command-palette-list" aria-autocomplete="list" data-entity="palette-input" data-focus-key="palette-input">
+        </div>
+        <ol id="command-palette-list" class="palette-list" role="listbox" data-entity="palette-list"></ol>
+        <p id="command-palette-empty" class="palette-empty" data-copy="paletteNoMatch" hidden></p>
+        <p class="palette-hint muted" data-copy="paletteHint"></p>
+      </dialog>
 
       <p id="operation-status" class="status" role="status" aria-live="polite" aria-atomic="true" data-entity="operation-status"></p>
     </main>

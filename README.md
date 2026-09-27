@@ -91,6 +91,8 @@ Important controls use stable `data-action` hooks. Rendered notes use `data-enti
 
 `undo` and `redo` are exposed both as buttons and as `data-action` hooks. Transpose and duration edits are available as `data-action="transpose-selected"` and `data-action="set-selected-duration"` in the Piano Roll toolbar, so no edit is reachable only through the note context menu. The context menu keeps its own `context-transpose` and `context-duration` hooks; both names run the same command path.
 
+`setZoom(zoom)` sets horizontal roll zoom and `getState().editor.zoom` reads it back.
+
 The UI defaults to Indonesian. Language switching is in-memory and supports Indonesian (`id`) and English (`en`).
 
 ## Theme
@@ -128,6 +130,18 @@ The guitar view is not a second timeline. It answers one question: which positio
 Every position is drawn in the same colour, because all of them are valid and a two-tone split reads as some being right and some being wrong. Only genuinely different techniques are marked: an open circle for an open string, and a heavier marker on the sounding note during playback. The orange line at fret 12 marks the octave boundary, where the same note reappears one octave up. Fret numbers are printed for every fret currently in use, not only every third fret, because a marker on fret 14 with no number next to it reads as being on the wrong fret. String names are printed together with their numbers, since this view orders the rows opposite to a chord diagram. `fretCenterX` is the single source of truth for where a fret sits, used by the wires, the numbers, the markers, and the inlays, so they cannot drift apart. The playhead is a bar and beat readout plus a heavier marker on the sounding note's positions, refreshed through `updatePlayback` only when the sounding note changes.
 
 VexFlow writes its colours as SVG presentation attributes and inherits the rest. Staff lines are `<path>` elements with no `stroke` attribute at all, so they inherit the hardcoded `stroke="black"` from the root svg. The override therefore has to sit on the root plus every `vf-` class and the nested `<svg>`, scoped so it never touches Melodi's own labels. A presentation attribute always loses to a CSS rule, so this beats the hardcoded values without writing literal colours into the DOM, and a theme change needs no re-render.
+
+## Command palette
+
+`Ctrl+K`, or the header button, opens the palette. It is a native `<dialog>`, so top layer, focus trap, and Escape come from the browser rather than being re-implemented. Arrow keys and `Home`/`End` move the selection, `Enter` runs it, and focus returns to whatever opened the palette.
+
+The palette is a shortcut, never the only way in. Every entry calls the same command layer the visible buttons call, so nothing becomes palette-only. Entries that cannot run right now are shown dimmed with `aria-disabled` rather than hidden, which tells the user the action exists.
+
+Filtering matches the label the user can actually read, not the internal message key, and accepts keywords from both languages so an Indonesian UI still answers to English terms. Matching is case, accent, and whitespace insensitive, and every whitespace-separated term must match so extra words narrow the result.
+
+The opener is a real button, not only a shortcut. A hidden shortcut cannot be discovered, and on a touch device there is no Ctrl key at all.
+
+`ui/command-palette.js` keeps the catalogue and the filter as pure functions with no DOM, so both are unit tested under Node: unique ids and label keys, every entry performing cleanly against a stub context, and availability derived from state instead of hardcoded.
 
 ## Contract tests
 

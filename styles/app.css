@@ -1692,3 +1692,67 @@ body[data-view-mode="combined"] .score-scroll {
     scroll-behavior: auto !important;
   }
 }
+
+/* Command palette. Native <dialog> memberi top layer, focus trap, dan Escape
+   dari browser, jadi yang ditulis di sini hanya tampilan dan backdrop. */
+.command-palette {
+  width: min(34rem, calc(100vw - 1.5rem));
+  max-height: min(30rem, calc(100vh - 4rem));
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.command-palette::backdrop { background: rgba(12, 16, 20, 0.45); }
+:root[data-theme="dark"] .command-palette::backdrop { background: rgba(0, 0, 0, 0.62); }
+
+.palette-search { padding: 0.6rem 0.7rem 0.5rem; border-bottom: 1px solid var(--border); }
+.palette-search input { border: 0; background: transparent; font-size: var(--text-md); }
+.palette-search input:focus-visible { outline-offset: -2px; }
+
+.palette-list { max-height: 21rem; margin: 0; padding: 0.3rem; list-style: none; overflow-y: auto; }
+.palette-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.42rem 0.55rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+.palette-row.is-active { background: var(--accent-soft); }
+.palette-row[data-available="false"] { cursor: not-allowed; opacity: 0.45; }
+.palette-row-group {
+  flex: 0 0 auto;
+  min-width: 6.5rem;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.palette-row-label { font-size: var(--text-sm); font-weight: 600; }
+.palette-empty { margin: 0; padding: 0.9rem 0.8rem; text-align: center; }
+.palette-hint { margin: 0; padding: 0.45rem 0.7rem; border-top: 1px solid var(--border); font-size: var(--text-2xs); }
+/* Tombol pembuka palette. Wajib ada sebagai tombol, bukan hanya shortcut:
+   tanpa tombol, pintasan tidak bisa ditemukan, dan di perangkat sentuh tidak
+   ada tombol Ctrl sama sekali. */
+.command-button {
+  align-self: flex-end;
+  width: 2.35rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1;
+}
+.command-button:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background: var(--surface-subtle);
+  color: var(--text);
+}

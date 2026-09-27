@@ -8,6 +8,7 @@ import { createPianoRollView } from "./ui/piano-roll.js";
 import { createScoreView } from "./ui/score.js";
 import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
+import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
 
 let language = DEFAULT_LANGUAGE;
@@ -52,11 +53,141 @@ function applyTheme() {
   if (themeSelect) themeSelect.value = theme;
 }
 
+const paletteCatalog = createPaletteCatalog();
+const paletteDialog = byId("command-palette");
+const paletteInput = byId("command-palette-input");
+const paletteList = byId("command-palette-list");
+const paletteEmpty = byId("command-palette-empty");
+let paletteRows = [];
+let paletteActiveIndex = 0;
+let paletteReturnFocus = null;
+
+function paletteContext() {
+  return { commands, byId, run, runAsync, announce, translate, setTheme, setLanguage };
+}
+
+function renderPalette() {
+  const state = normalizeRuntimeState(commands.getState());
+  const query = paletteInput.value;
+  const matches = filterPaletteEntries(paletteCatalog, query, language, translate);
+  paletteList.replaceChildren();
+  paletteRows = matches.map((item) => {
+    const available = isEntryAvailable(item, state);
+    const row = document.createElement("li");
+    row.className = "palette-row";
+    row.id = `palette-row-${item.id}`;
+    row.dataset.action = "palette-run";
+    row.dataset.paletteId = item.id;
+    row.dataset.available = String(available);
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", "false");
+    row.setAttribute("aria-disabled", String(!available));
+
+    const group = document.createElement("span");
+    group.className = "palette-row-group";
+    group.textContent = translate(`paletteGroup${item.group[0].toUpperCase()}${item.group.slice(1)}`);
+    const label = document.createElement("span");
+    label.className = "palette-row-label";
+    label.textContent = translate(item.labelKey);
+    row.append(group, label);
+    return { item, row, available };
+  });
+  paletteList.append(...paletteRows.map((entry) => entry.row));
+  paletteEmpty.hidden = paletteRows.length > 0;
+  paletteActiveIndex = Math.min(paletteActiveIndex, Math.max(0, paletteRows.length - 1));
+  setPaletteActive(paletteActiveIndex, { scroll: false });
+}
+
+function setPaletteActive(index, { scroll = true } = {}) {
+  paletteActiveIndex = index;
+  paletteRows.forEach((entry, position) => {
+    const active = position === index;
+    entry.row.setAttribute("aria-selected", String(active));
+    entry.row.classList.toggle("is-active", active);
+  });
+  const active = paletteRows[index];
+  if (active) {
+    paletteInput.setAttribute("aria-activedescendant", active.row.id);
+    if (scroll) active.row.scrollIntoView({ block: "nearest" });
+  } else {
+    paletteInput.removeAttribute("aria-activedescendant");
+  }
+}
+
+function movePaletteActive(delta) {
+  if (paletteRows.length === 0) return;
+  const next = (paletteActiveIndex + delta + paletteRows.length) % paletteRows.length;
+  setPaletteActive(next);
+}
+
+function runPaletteEntry(id) {
+  const entry = paletteRows.find((item) => item.item.id === id);
+  if (!entry || !entry.available) return false;
+  const item = entry.item;
+  closePalette();
+  try {
+    item.perform(paletteContext());
+  } catch (error) {
+    reportError(error);
+  }
+  return true;
+}
+
+function openPalette() {
+  if (!paletteDialog || paletteDialog.open) return;
+  paletteReturnFocus = document.activeElement;
+  paletteInput.value = "";
+  // Placeholder dipasang lewat JS karena data-copy hanya mengisi textContent,
+  // dan tanpa placeholder kolom pencarian yang borderless ini terlihat kosong.
+  paletteInput.placeholder = translate("paletteSearchLabel");
+  paletteActiveIndex = 0;
+  renderPalette();
+  paletteDialog.showModal();
+  paletteInput.focus();
+}
+
+function closePalette() {
+  if (paletteDialog?.open) paletteDialog.close();
+}
+
+paletteDialog?.addEventListener("close", () => {
+  // Elemen asal bisa sudah terlepas dari DOM karena perintah yang baru dijalankan
+  // memicu render ulang, jadi focuses hanya dilakukan kalau masih terhubung.
+  if (paletteReturnFocus instanceof HTMLElement && paletteReturnFocus.isConnected) paletteReturnFocus.focus();
+  paletteReturnFocus = null;
+});
+paletteDialog?.addEventListener("click", (event) => {
+  if (event.target === paletteDialog) closePalette();
+  const target = event.target;
+  if (target.dataset?.action === "palette-run") runPaletteEntry(target.dataset.paletteId);
+});
+paletteInput?.addEventListener("input", () => {
+  paletteActiveIndex = 0;
+  renderPalette();
+});
+paletteInput?.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown") { event.preventDefault(); movePaletteActive(1); }
+  else if (event.key === "ArrowUp") { event.preventDefault(); movePaletteActive(-1); }
+  else if (event.key === "Home") { event.preventDefault(); setPaletteActive(0); }
+  else if (event.key === "End") { event.preventDefault(); setPaletteActive(paletteRows.length - 1); }
+  else if (event.key === "Enter") {
+    event.preventDefault();
+    const entry = paletteRows[paletteActiveIndex];
+    if (entry) runPaletteEntry(entry.item.id);
+  }
+});
+
 function setTheme(next) {
   if (!THEMES.has(next)) return;
   theme = next;
   try { safeStorage()?.setItem(THEME_KEY, theme); } catch {}
   applyTheme();
+}
+
+function setLanguage(next) {
+  language = next === "en" ? "en" : DEFAULT_LANGUAGE;
+  render();
+  announce("languageChanged");
 }
 
 applyTheme();
@@ -1123,9 +1254,7 @@ document.addEventListener("change", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
   if (target.dataset.action === "language-switch") {
-    language = target.value === "en" ? "en" : DEFAULT_LANGUAGE;
-    render();
-    announce("languageChanged");
+    setLanguage(target.value);
   } else if (target.dataset.action === "theme-switch") {
     setTheme(target.value);
     announce("themeChanged");
@@ -1239,6 +1368,8 @@ document.addEventListener("click", (event) => {
     run(() => commands.pause(), "playbackPaused");
   } else if (target.dataset.action === "stop") {
     run(() => commands.stop(), "playbackStoppedMessage");
+  } else if (target.dataset.action === "command-palette") {
+    openPalette();
   } else if (target.dataset.action === "undo") {
     run(() => commands.undo(), "editUndone");
   } else if (target.dataset.action === "redo") {
@@ -1375,6 +1506,13 @@ document.addEventListener("keydown", (event) => {
   // Undo/redo sengaja tidak dibatasi ke editor. Keduanya mengubah state canonical,
   // jadi harus tersedia dari mana saja; teks yang sedang diketik sudah dilewati
   // oleh guard input di atas supaya undo native browser tetap dipakai di sana.
+  if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    if (paletteDialog?.open) closePalette();
+    else openPalette();
+    return;
+  }
+
   if ((event.ctrlKey || event.metaKey) && !event.altKey) {
     const key = event.key.toLowerCase();
     if (key === "z" || key === "y") {
