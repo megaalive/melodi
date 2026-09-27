@@ -353,6 +353,40 @@ test("style profile changes ranking score without rewriting candidate notes", ()
   assert.deepEqual(source.notes, originalNotes);
 });
 
+test("undo drops the generation session because candidates no longer match the song", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `new-${++nextId}` });
+  const before = commands.getSong();
+  const generated = commands.generateGap(request());
+  assert.equal(generated.status, "ready");
+  assert.equal(commands.getGenerationState().status, "ready");
+
+  commands.updateNote("anchor-left", { pitch: 62 });
+  commands.undo();
+
+  assert.deepEqual(commands.getSong(), before);
+  // Sesi kandidat dibuang, bukan ditandai stale, supaya agent tidak pernah
+  // menemukan kandidat yang referencing nada yang sudah tidak ada.
+  assert.equal(commands.getGenerationState().status, "idle");
+  assert.deepEqual(commands.getGenerationState().candidateIds, []);
+  assert.equal(commands.getState().generation.status, "idle");
+});
+
+test("accept then undo removes the generated notes from the canonical song", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `new-${++nextId}` });
+  const before = commands.getSong();
+  const generated = commands.generateGap(request());
+  const accepted = commands.acceptCandidate(generated.candidateIds[0]);
+  assert.equal(commands.getSong().notes.length, 2 + accepted.length);
+  assert.ok(commands.getSong().notes.slice(2).every((note) => note.source === "generated"));
+
+  commands.undo();
+  assert.deepEqual(commands.getSong(), before);
+  assert.deepEqual(commands.getSelectedNoteIds(), []);
+  assert.deepEqual(commands.getGenerationState().acceptedNoteIds, []);
+});
+
 test("Generate, Select, Regenerate, and Audition keep the canonical Song unchanged", async () => {
   const song = fixture();
   const before = structuredClone(song);

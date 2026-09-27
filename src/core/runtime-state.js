@@ -34,6 +34,17 @@ export function normalizeViewState(view) {
   };
 }
 
+export function normalizeHistoryState(history) {
+  const canUndo = typeof history?.canUndo === "boolean" ? history.canUndo : false;
+  const canRedo = typeof history?.canRedo === "boolean" ? history.canRedo : false;
+  return {
+    canUndo,
+    canRedo,
+    undoDepth: canUndo && Number.isSafeInteger(history.undoDepth) && history.undoDepth > 0 ? history.undoDepth : 0,
+    redoDepth: canRedo && Number.isSafeInteger(history.redoDepth) && history.redoDepth > 0 ? history.redoDepth : 0
+  };
+}
+
 export function normalizePlaybackState(playback) {
   const currentSyllableIds = Array.isArray(playback?.currentSyllableIds)
     ? playback.currentSyllableIds
@@ -53,6 +64,7 @@ export function normalizeRuntimeState(state = {}) {
     selectedNoteIds: state.selectedNoteIds ?? [],
     generation: normalizeGenerationState(state.generation),
     view: normalizeViewState(state.view),
-    playback: normalizePlaybackState(state.playback)
+    playback: normalizePlaybackState(state.playback),
+    history: normalizeHistoryState(state.history)
   };
 }

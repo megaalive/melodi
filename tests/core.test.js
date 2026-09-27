@@ -417,6 +417,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     },
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
+    history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
       "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
@@ -424,7 +425,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
       "generateGap", "getGenerationState", "selectCandidate", "auditionCandidate", "acceptCandidate",
       "lockAcceptedNotes", "clearGeneration", "regenerateGap",
-      "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled", "setViewMode", "setFollowMode"
+      "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled", "setViewMode", "setFollowMode",
+      "undo", "redo", "canUndo", "canRedo"
     ]
   };
   assert.deepEqual(next, expected);
@@ -619,4 +621,127 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   assert.equal(commands.getState().playback.status, "stopped");
   assert.equal(commands.getState().playback.currentTick, 0);
   assert.equal(Object.hasOwn(fresh, "playback"), false);
+});
+
+test("undo restores the previous canonical song and redo re-applies it", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `added-${++nextId}` });
+  const original = commands.getSong();
+  assert.equal(commands.canUndo(), false);
+  assert.equal(commands.canRedo(), false);
+  assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
+
+  const added = commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 });
+  assert.equal(commands.getSong().notes.length, 5);
+  assert.deepEqual(commands.getState().history, { canUndo: true, canRedo: false, undoDepth: 1, redoDepth: 0 });
+
+  commands.undo();
+  assert.deepEqual(commands.getSong(), original);
+  assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: true, undoDepth: 0, redoDepth: 1 });
+
+  commands.redo();
+  assert.deepEqual(commands.getSong().notes, [...original.notes, added]);
+  assert.deepEqual(commands.getState().history, { canUndo: true, canRedo: false, undoDepth: 1, redoDepth: 0 });
+});
+
+test("undo and redo report a stable code when there is nothing to restore", () => {
+  const commands = createCommands(fixture());
+  const original = commands.getSong();
+  expectCode(() => commands.undo(), "nothing-to-undo");
+  expectCode(() => commands.redo(), "nothing-to-redo");
+  assert.deepEqual(commands.getSong(), original);
+  assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
+});
+
+test("a new canonical change discards the redo branch", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `added-${++nextId}` });
+  commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 });
+  commands.undo();
+  assert.equal(commands.canRedo(), true);
+  commands.addNote({ pitch: 74, startTick: 1920, durationTicks: 240 });
+  assert.equal(commands.canRedo(), false);
+  assert.equal(commands.getState().history.redoDepth, 0);
+  expectCode(() => commands.redo(), "nothing-to-redo");
+  assert.deepEqual(commands.getSong().notes.map((note) => note.pitch), [60, 64, 69, 67, 74]);
+});
+
+test("undo restores deleted notes with their phrase and lyric references", () => {
+  const commands = createCommands(fixture());
+  const before = commands.getSong();
+  commands.deleteNote("note-2");
+  assert.deepEqual(commands.getSong().phrases[0].noteIds, ["note-1", "note-3", "note-4"]);
+  assert.deepEqual(commands.getSong().lyrics.syllables[1].noteIds, ["note-1"]);
+  commands.undo();
+  assert.deepEqual(commands.getSong(), before);
+  assert.deepEqual(commands.getSong().lyrics.syllables[1].noteIds, ["note-1", "note-2"]);
+});
+
+test("selection, view, clipboard, and loop state stay outside the history stack", () => {
+  const commands = createCommands(fixture());
+  commands.selectNotes(["note-1"]);
+  commands.selectRange(0, 1920);
+  commands.clearSelection();
+  commands.setViewMode("score");
+  commands.setFollowMode(false);
+  commands.setSnap("1/16");
+  commands.copySelection();
+  commands.setLoop(0, 960);
+  commands.setLoopEnabled(true);
+  assert.equal(commands.canUndo(), false);
+  assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
+});
+
+test("tempo is canonical so undo restores it", () => {
+  const commands = createCommands(fixture());
+  commands.setTempo(120);
+  assert.equal(commands.getSong().timing.tempo, 120);
+  commands.undo();
+  assert.equal(commands.getSong().timing.tempo, 96);
+  commands.redo();
+  assert.equal(commands.getSong().timing.tempo, 120);
+});
+
+test("new Idea is undoable so a replaced draft is recoverable", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `idea-${++nextId}` });
+  const before = commands.getSong();
+  commands.newIdea();
+  assert.equal(commands.getSong().title, "Ide baru");
+  assert.equal(commands.canUndo(), true);
+  commands.undo();
+  assert.deepEqual(commands.getSong(), before);
+});
+
+test("undo returns a detached song copy", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `added-${++nextId}` });
+  commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 });
+  const restored = commands.undo();
+  restored.notes[0].pitch = 10;
+  restored.title = "changed";
+  assert.equal(commands.getSong().notes[0].pitch, 60);
+  assert.equal(commands.getSong().title, "Ide awal");
+});
+
+test("a failed command leaves the history stack untouched", () => {
+  const commands = createCommands(fixture());
+  commands.setLyrics("draft");
+  expectCode(() => commands.deleteNote("missing"), "note-not-found");
+  expectCode(() => commands.setAnchor("missing", true), "note-not-found");
+  expectCode(() => commands.addNote({ pitch: 999, startTick: 0, durationTicks: 480 }), "invalid-pitch");
+  assert.equal(commands.getState().history.undoDepth, 1);
+  assert.equal(commands.getSong().lyrics.rawText, "draft");
+});
+
+test("history depth is reported per direction and stays bounded", () => {
+  const commands = createCommands(fixture());
+  for (let index = 0; index < 3; index += 1) commands.setLyrics(`draft ${index}`);
+  const history = commands.getState().history;
+  assert.equal(history.canUndo, true);
+  assert.equal(history.undoDepth, 3);
+  assert.equal(history.redoDepth, 0);
+
+  for (let index = 0; index < 120; index += 1) commands.setLyrics(`long session ${index}`);
+  assert.equal(commands.getState().history.undoDepth, 100);
 });

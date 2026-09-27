@@ -703,6 +703,8 @@ function renderPlayback() {
   byId("current-section").dataset.entityId = section?.id ?? "";
   byId("play").disabled = playback.status === "playing";
   byId("pause").disabled = playback.status !== "playing";
+  byId("undo").disabled = !state.history.canUndo;
+  byId("redo").disabled = !state.history.canRedo;
 
   if (document.activeElement !== byId("seek-tick")) byId("seek-tick").value = String(playback.currentTick);
   if (document.activeElement !== byId("tempo-input")) byId("tempo-input").value = String(playback.tempo);
@@ -1147,6 +1149,10 @@ document.addEventListener("click", (event) => {
     run(() => commands.pause(), "playbackPaused");
   } else if (target.dataset.action === "stop") {
     run(() => commands.stop(), "playbackStoppedMessage");
+  } else if (target.dataset.action === "undo") {
+    run(() => commands.undo(), "editUndone");
+  } else if (target.dataset.action === "redo") {
+    run(() => commands.redo(), "editRedone");
   } else if (target.dataset.action === "copy-selection") {
     const count = run(() => commands.copySelection());
     if (count) announce("noteCopied", "success", { count });
@@ -1274,6 +1280,21 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     closeNoteContextMenu();
     return;
+  }
+
+  // Undo/redo sengaja tidak dibatasi ke editor. Keduanya mengubah state canonical,
+  // jadi harus tersedia dari mana saja; teks yang sedang diketik sudah dilewati
+  // oleh guard input di atas supaya undo native browser tetap dipakai di sana.
+  if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+    const key = event.key.toLowerCase();
+    if (key === "z" || key === "y") {
+      const wantsRedo = key === "y" || event.shiftKey;
+      const applied = wantsRedo
+        ? run(() => commands.redo(), "editRedone")
+        : run(() => commands.undo(), "editUndone");
+      if (applied) event.preventDefault();
+      return;
+    }
   }
 
   const editorTarget = target instanceof Element

@@ -25,6 +25,10 @@ function reportUnobservedNotificationError(error) {
   console.error("Melodi notification failed after canonical state was committed.", error);
 }
 
+// Batas jumlah state yang disimpan. Cukup untuk satu sesi editing panjang tanpa
+// menahan memori tanpa batas; lagian Melodi tidak menyimpan audio di dalam song.
+const HISTORY_LIMIT = 100;
+
 export function createCommands(initialSong, {
   idFactory = createId,
   onChange = () => {},
@@ -42,6 +46,8 @@ export function createCommands(initialSong, {
   let followMode = true;
   let copiedNotes = null;
   let canonicalRevision = 0;
+  let undoStack = [];
+  let redoStack = [];
   let generationSession = null;
   let generationAuditionToken = 0;
   let lastAcceptedNoteIds = [];
@@ -187,10 +193,49 @@ export function createCommands(initialSong, {
     return candidate;
   }
 
+  // Hanya state canonical yang masuk history. Selection, posisi playback, dan
+  // sesi kandidat bukan keputusan editorial user, jadi undo tidak pernah
+  // mengubahnya secara tak terduga; kandidat otomatis jadi tidak berlaku karena
+  // revision membesar.
+  function pushHistory() {
+    undoStack.push(cloneData(song));
+    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    redoStack = [];
+  }
+
+  function readHistoryState() {
+    return {
+      canUndo: undoStack.length > 0,
+      canRedo: redoStack.length > 0,
+      undoDepth: undoStack.length,
+      redoDepth: redoStack.length
+    };
+  }
+
+  function restoreSong(nextSong) {
+    const validated = createSong(nextSong);
+    canonicalRevision += 1;
+    generationAuditionToken += 1;
+    generationSession = null;
+    lastAcceptedNoteIds = [];
+    try { audioPlayer?.cancelPreview?.(); } catch {}
+    song = validated;
+    selection = null;
+    selectedNoteIds = [];
+    let tick = playback.currentTick;
+    if (playback.status === "playing" && audioPlayer) {
+      try { tick = audioPlayer.getPosition(); } catch {}
+    }
+    updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+    notifyChange("song");
+    return cloneData(song);
+  }
+
   function commit(mutator, afterCommit = () => {}) {
     const candidate = cloneData(song);
     const result = mutator(candidate);
     const validated = createSong(candidate);
+    pushHistory();
     song = validated;
     canonicalRevision += 1;
     if (generationSession?.auditionCandidateId) {
@@ -243,7 +288,25 @@ export function createCommands(initialSong, {
         snap,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
-      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState());
+      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState());
+    },
+    canUndo() {
+      return undoStack.length > 0;
+    },
+    canRedo() {
+      return redoStack.length > 0;
+    },
+    undo() {
+      if (undoStack.length === 0) fail("nothing-to-undo");
+      const previous = undoStack.pop();
+      redoStack.push(cloneData(song));
+      return restoreSong(previous);
+    },
+    redo() {
+      if (redoStack.length === 0) fail("nothing-to-redo");
+      const next = redoStack.pop();
+      undoStack.push(cloneData(song));
+      return restoreSong(next);
     },
     generateGap(request) {
       clearAuditionState({ notify: false });
@@ -727,6 +790,7 @@ export function createCommands(initialSong, {
     },
     newIdea() {
       const nextSong = createInitialSong(idFactory);
+      pushHistory();
       canonicalRevision += 1;
       generationAuditionToken += 1;
       generationSession = null;

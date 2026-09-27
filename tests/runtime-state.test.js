@@ -43,3 +43,33 @@ test("invalid runtime view mode falls back without changing playback state", () 
   assert.equal(normalized.playback.currentSyllableId, "syllable-2");
   assert.deepEqual(normalized.playback.currentSyllableIds, ["syllable-2"]);
 });
+
+test("history state defaults when a cached Pages bundle predates the field", () => {
+  const legacy = { selectedNoteIds: [] };
+
+  const normalized = normalizeRuntimeState(legacy);
+
+  assert.deepEqual(normalized.history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
+  assert.equal("history" in legacy, false);
+});
+
+test("history depth is only trusted when the matching capability is set", () => {
+  assert.deepEqual(normalizeRuntimeState({ history: { canUndo: true, canRedo: false, undoDepth: 4, redoDepth: 7 } }).history, {
+    canUndo: true,
+    canRedo: false,
+    undoDepth: 4,
+    redoDepth: 0
+  });
+  assert.deepEqual(normalizeRuntimeState({ history: { canUndo: "yes", undoDepth: 3 } }).history, {
+    canUndo: false,
+    canRedo: false,
+    undoDepth: 0,
+    redoDepth: 0
+  });
+  assert.deepEqual(normalizeRuntimeState({ history: { canRedo: true, redoDepth: -1 } }).history, {
+    canUndo: false,
+    canRedo: true,
+    undoDepth: 0,
+    redoDepth: 0
+  });
+});

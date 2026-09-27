@@ -42,7 +42,11 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "setLoop",
   "setLoopEnabled",
   "setViewMode",
-  "setFollowMode"
+  "setFollowMode",
+  "undo",
+  "redo",
+  "canUndo",
+  "canRedo"
 ]);
 
 export function createAgentSnapshot(song, selection, playback = {
@@ -62,7 +66,7 @@ export function createAgentSnapshot(song, selection, playback = {
   auditionCandidateId: null,
   candidates: [],
   acceptedNoteIds: []
-}) {
+}, history = { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 }) {
   const currentSyllableId = getActiveSyllableId(song.lyrics, playback.currentNoteId);
   const currentSyllableIds = currentSyllableId ? [currentSyllableId] : [];
   return {
@@ -97,6 +101,7 @@ export function createAgentSnapshot(song, selection, playback = {
     generation: cloneData(generation),
     anchorNoteIds: song.notes.filter((note) => note.anchor).map((note) => note.id),
     lockedNoteIds: song.notes.filter((note) => note.locked).map((note) => note.id),
+    history: cloneData(history),
     availableActions: [...AVAILABLE_ACTIONS]
   };
 }

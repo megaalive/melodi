@@ -49,6 +49,11 @@
             <button id="stop" type="button" class="secondary" data-action="stop" data-aria-copy="stopButton">■</button>
           </div>
 
+          <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
+            <button id="undo" type="button" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled>↶</button>
+            <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled>↷</button>
+          </div>
+
           <dl id="playback-readout" class="playback-readout" aria-live="off">
             <div><dt data-copy="playbackStatusLabel"></dt><dd id="playback-status" data-entity="playback-status"></dd></div>
             <div class="machine-detail"><dt data-copy="currentTickLabel"></dt><dd><output id="current-tick" data-entity="current-tick">0</output></dd></div>
