@@ -3,13 +3,28 @@ import { cloneData } from "./model.js";
 const AVAILABLE_ACTIONS = Object.freeze([
   "getSong",
   "getSelection",
+  "getSelectedNoteIds",
   "addNote",
   "updateNote",
+  "updateNotes",
   "deleteNote",
   "setLyrics",
   "setAnchor",
   "setLocked",
   "selectRange",
+  "selectNotes",
+  "clearSelection",
+  "copySelection",
+  "pasteNotes",
+  "setSnap",
+  "addLyricSyllable",
+  "updateLyricSyllable",
+  "deleteLyricSyllable",
+  "splitLyricSyllable",
+  "mergeLyricSyllables",
+  "moveLyricSyllable",
+  "assignSyllableNotes",
+  "newIdea",
   "play",
   "pause",
   "stop",
@@ -26,7 +41,7 @@ export function createAgentSnapshot(song, selection, playback = {
   currentSectionId: song.sections[0]?.id ?? null,
   tempo: song.timing.tempo,
   loop: { enabled: false, startTick: 0, endTick: 1 }
-}) {
+}, editor = { snap: "1/8", canPaste: false, clipboardCount: 0 }, selectedNoteIds = []) {
   return {
     song: {
       id: song.id,
@@ -35,7 +50,9 @@ export function createAgentSnapshot(song, selection, playback = {
       key: song.key,
       scale: cloneData(song.scale),
       timeSignature: cloneData(song.timing.timeSignature),
-      currentSectionId: playback.currentSectionId
+      currentSectionId: playback.currentSectionId,
+      notes: cloneData(song.notes),
+      lyrics: cloneData(song.lyrics)
     },
     playback: {
       status: playback.status,
@@ -46,6 +63,8 @@ export function createAgentSnapshot(song, selection, playback = {
       loop: cloneData(playback.loop)
     },
     selection: cloneData(selection),
+    selectedNoteIds: cloneData(selectedNoteIds),
+    editor: cloneData(editor),
     anchorNoteIds: song.notes.filter((note) => note.anchor).map((note) => note.id),
     lockedNoteIds: song.notes.filter((note) => note.locked).map((note) => note.id),
     availableActions: [...AVAILABLE_ACTIONS]

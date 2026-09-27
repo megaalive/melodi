@@ -1,4 +1,5 @@
-import { cloneData, createId, createSong, MelodiError } from "./model.js";
+import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js";
+import { DEFAULT_SNAP, SNAP_TICKS } from "./editor.js";
 import { createAgentSnapshot } from "./snapshot.js";
 import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js";
 
@@ -24,6 +25,7 @@ function reportUnobservedNotificationError(error) {
 export function createCommands(initialSong, {
   idFactory = createId,
   onChange = () => {},
+  onEditorChange = () => {},
   onPlaybackChange = () => {},
   onPlaybackEvent = () => {},
   onNotificationError = reportUnobservedNotificationError,
@@ -31,6 +33,9 @@ export function createCommands(initialSong, {
 } = {}) {
   let song = createSong(initialSong);
   let selection = null;
+  let selectedNoteIds = [];
+  let snap = DEFAULT_SNAP;
+  let copiedNotes = null;
   const songEndTick = () => song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
   const playback = {
     status: "stopped",
@@ -43,15 +48,23 @@ export function createCommands(initialSong, {
   let audioPlayer = null;
   let playRequest = 0;
 
-  function notifyChange() {
+  function notifyChange(kind = "song") {
     try {
-      onChange();
+      onChange({ kind });
     } catch (error) {
       try {
         onNotificationError(error);
       } catch (reportingError) {
         console.error("Melodi notification error handler failed after canonical state was committed.", reportingError, error);
       }
+    }
+  }
+
+  function notifyEditorChange() {
+    try {
+      onEditorChange();
+    } catch (error) {
+      try { onNotificationError(error); } catch {}
     }
   }
 
@@ -116,7 +129,7 @@ export function createCommands(initialSong, {
     const validated = createSong(candidate);
     song = validated;
     afterCommit();
-    notifyChange();
+    notifyChange("song");
     return result;
   }
 
@@ -152,8 +165,15 @@ export function createCommands(initialSong, {
     getSelection() {
       return cloneData(selection);
     },
+    getSelectedNoteIds() {
+      return cloneData(selectedNoteIds);
+    },
     getState() {
-      return createAgentSnapshot(song, selection, readPlayback());
+      return createAgentSnapshot(song, selection, readPlayback(), {
+        snap,
+        canPaste: Boolean(copiedNotes),
+        clipboardCount: copiedNotes?.notes.length ?? 0
+      }, selectedNoteIds);
     },
     async play() {
       if (!audioPlayer) fail("audio-unavailable");
@@ -258,6 +278,30 @@ export function createCommands(initialSong, {
       updatePlayerSafely(() => audioPlayer?.songChanged(tick));
       return cloneData(note);
     },
+    updateNotes(updates, { actor = "user" } = {}) {
+      validateActor(actor);
+      if (!Array.isArray(updates) || updates.length === 0) fail("invalid-note-patch");
+      const seen = new Set();
+      const validated = updates.map((item) => {
+        if (item === null || typeof item !== "object" || Array.isArray(item)) fail("invalid-note-patch");
+        const { noteId, patch } = item;
+        if (typeof noteId !== "string" || seen.has(noteId)) fail(seen.has(noteId) ? "duplicate-reference" : "note-not-found");
+        seen.add(noteId);
+        validatePatch(patch);
+        const note = song.notes.find((candidate) => candidate.id === noteId);
+        if (!note) fail("note-not-found");
+        if (actor === "generator" && (note.anchor || note.locked)) fail("protected-note");
+        return { noteId, patch: cloneData(patch) };
+      });
+      commit((candidate) => {
+        for (const { noteId, patch } of validated) {
+          Object.assign(candidate.notes.find((item) => item.id === noteId), patch);
+        }
+      });
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      return validated.map(({ noteId }) => cloneData(song.notes.find((item) => item.id === noteId)));
+    },
     updateNote(noteId, patch, { actor = "user" } = {}) {
       validateActor(actor);
       validatePatch(patch);
@@ -289,6 +333,7 @@ export function createCommands(initialSong, {
         }));
       }, () => {
         if (selection) selection = { ...selection, noteIds: selection.noteIds.filter((id) => id !== noteId) };
+        selectedNoteIds = selectedNoteIds.filter((id) => id !== noteId);
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       updatePlayerSafely(() => audioPlayer?.songChanged(tick));
@@ -298,6 +343,82 @@ export function createCommands(initialSong, {
       if (typeof rawText !== "string") fail("invalid-lyrics");
       commit((candidate) => { candidate.lyrics.rawText = rawText; });
       return rawText;
+    },
+    addLyricSyllable(text = "", index = song.lyrics.syllables.length) {
+      if (typeof text !== "string") fail("invalid-lyrics");
+      if (!Number.isSafeInteger(index) || index < 0 || index > song.lyrics.syllables.length) fail("invalid-syllable-index");
+      const syllable = { id: idFactory(), text, noteIds: [] };
+      commit((candidate) => candidate.lyrics.syllables.splice(index, 0, syllable));
+      return cloneData(syllable);
+    },
+    updateLyricSyllable(syllableId, text) {
+      if (typeof text !== "string") fail("invalid-lyrics");
+      const index = song.lyrics.syllables.findIndex((item) => item.id === syllableId);
+      if (index < 0) fail("syllable-not-found");
+      commit((candidate) => { candidate.lyrics.syllables[index].text = text; });
+      return cloneData(song.lyrics.syllables[index]);
+    },
+    deleteLyricSyllable(syllableId) {
+      const index = song.lyrics.syllables.findIndex((item) => item.id === syllableId);
+      if (index < 0) fail("syllable-not-found");
+      commit((candidate) => candidate.lyrics.syllables.splice(index, 1));
+      return true;
+    },
+    moveLyricSyllable(syllableId, targetIndex) {
+      const sourceIndex = song.lyrics.syllables.findIndex((item) => item.id === syllableId);
+      if (sourceIndex < 0) fail("syllable-not-found");
+      if (!Number.isSafeInteger(targetIndex) || targetIndex < 0 || targetIndex >= song.lyrics.syllables.length) fail("invalid-syllable-index");
+      commit((candidate) => {
+        const [syllable] = candidate.lyrics.syllables.splice(sourceIndex, 1);
+        candidate.lyrics.syllables.splice(targetIndex, 0, syllable);
+      });
+      return cloneData(song.lyrics.syllables[targetIndex]);
+    },
+    splitLyricSyllable(syllableId, { leftText, rightText, noteSplitIndex }) {
+      if (typeof leftText !== "string" || typeof rightText !== "string") fail("invalid-lyrics");
+      const index = song.lyrics.syllables.findIndex((item) => item.id === syllableId);
+      if (index < 0) fail("syllable-not-found");
+      const syllable = song.lyrics.syllables[index];
+      if (!Number.isSafeInteger(noteSplitIndex) || noteSplitIndex < 0 || noteSplitIndex > syllable.noteIds.length) fail("invalid-syllable-split");
+      const right = {
+        id: idFactory(),
+        text: rightText,
+        noteIds: syllable.noteIds.slice(noteSplitIndex)
+      };
+      commit((candidate) => {
+        const left = candidate.lyrics.syllables[index];
+        left.text = leftText;
+        left.noteIds = left.noteIds.slice(0, noteSplitIndex);
+        candidate.lyrics.syllables.splice(index + 1, 0, right);
+      });
+      return { left: cloneData(song.lyrics.syllables[index]), right: cloneData(song.lyrics.syllables[index + 1]) };
+    },
+    mergeLyricSyllables(leftId, rightId) {
+      const leftIndex = song.lyrics.syllables.findIndex((item) => item.id === leftId);
+      const rightIndex = song.lyrics.syllables.findIndex((item) => item.id === rightId);
+      if (leftIndex < 0 || rightIndex < 0) fail("syllable-not-found");
+      if (rightIndex !== leftIndex + 1) fail("syllables-not-adjacent");
+      commit((candidate) => {
+        const left = candidate.lyrics.syllables[leftIndex];
+        const right = candidate.lyrics.syllables[rightIndex];
+        left.text += right.text;
+        left.noteIds = [...new Set([...left.noteIds, ...right.noteIds])];
+        candidate.lyrics.syllables.splice(rightIndex, 1);
+      });
+      return cloneData(song.lyrics.syllables[leftIndex]);
+    },
+    assignSyllableNotes(syllableId, noteIds) {
+      if (!Array.isArray(noteIds)) fail("invalid-syllable");
+      const index = song.lyrics.syllables.findIndex((item) => item.id === syllableId);
+      if (index < 0) fail("syllable-not-found");
+      const seen = new Set();
+      for (const noteId of noteIds) {
+        if (typeof noteId !== "string" || !song.notes.some((note) => note.id === noteId)) fail("invalid-reference");
+        if (seen.has(noteId)) fail("duplicate-reference");
+        seen.add(noteId);
+      }
+      commit((candidate) => { candidate.lyrics.syllables[index].noteIds = [...noteIds]; });
+      return cloneData(song.lyrics.syllables[index]);
     },
     setAnchor(noteId, value, { actor = "user" } = {}) {
       validateActor(actor);
@@ -315,13 +436,101 @@ export function createCommands(initialSong, {
       commit((candidate) => { candidate.notes.find((item) => item.id === noteId).locked = value; });
       return value;
     },
+    selectNotes(noteIds) {
+      if (!Array.isArray(noteIds)) fail("invalid-note-selection");
+      const seen = new Set();
+      for (const noteId of noteIds) {
+        if (typeof noteId !== "string" || !song.notes.some((note) => note.id === noteId)) fail("note-not-found");
+        if (seen.has(noteId)) fail("duplicate-reference");
+        seen.add(noteId);
+      }
+      selection = null;
+      selectedNoteIds = [...noteIds];
+      notifyChange("selection");
+      return cloneData(selectedNoteIds);
+    },
+    clearSelection() {
+      selection = null;
+      selectedNoteIds = [];
+      notifyChange("selection");
+      return [];
+    },
+    copySelection() {
+      const selected = new Set(selectedNoteIds);
+      const notes = song.notes.filter((note) => selected.has(note.id));
+      if (notes.length === 0) {
+        copiedNotes = null;
+        notifyEditorChange();
+        return 0;
+      }
+      const first = [...notes].sort((left, right) => left.startTick - right.startTick || left.id.localeCompare(right.id))[0];
+      const startTick = Math.min(...notes.map((note) => note.startTick));
+      copiedNotes = {
+        basePitch: first.pitch,
+        notes: notes.map((note) => ({
+          pitchOffset: note.pitch - first.pitch,
+          startOffset: note.startTick - startTick,
+          durationTicks: note.durationTicks
+        }))
+      };
+      notifyEditorChange();
+      return notes.length;
+    },
+    pasteNotes(targetTick = playback.currentTick, targetPitch = copiedNotes?.basePitch) {
+      if (!copiedNotes) return [];
+      if (!Number.isSafeInteger(targetTick) || targetTick < 0) fail("invalid-tick");
+      if (!Number.isInteger(targetPitch) || targetPitch < 0 || targetPitch > 127) fail("invalid-pitch");
+      const pasted = copiedNotes.notes.map((note) => ({
+        id: idFactory(),
+        pitch: targetPitch + note.pitchOffset,
+        startTick: targetTick + note.startOffset,
+        durationTicks: note.durationTicks,
+        source: "user",
+        anchor: false,
+        locked: false
+      }));
+      // Validate the whole paste before committing so overflow or invalid pitches cannot partially apply.
+      createSong({ ...cloneData(song), notes: [...song.notes, ...pasted] });
+      commit((candidate) => candidate.notes.push(...pasted), () => {
+        selection = null;
+        selectedNoteIds = pasted.map((note) => note.id);
+      });
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      return cloneData(pasted);
+    },
+    setSnap(value) {
+      if (!Object.hasOwn(SNAP_TICKS, value)) fail("invalid-snap");
+      snap = value;
+      notifyEditorChange();
+      return snap;
+    },
+    newIdea() {
+      const nextSong = createInitialSong(idFactory);
+      playRequest += 1;
+      updatePlayerSafely(() => audioPlayer?.stop());
+      song = nextSong;
+      selection = null;
+      selectedNoteIds = [];
+      copiedNotes = null;
+      snap = DEFAULT_SNAP;
+      playback.status = "stopped";
+      activeNoteSuppressed = true;
+      playback.loop = { enabled: false, startTick: 0, endTick: Math.max(1, songEndTick()) };
+      setPlaybackPosition(0);
+      notifyPlaybackChange();
+      notifyChange("song");
+      notifyEditorChange();
+      return cloneData(song);
+    },
     selectRange(startTick, endTick) {
       if (!Number.isSafeInteger(startTick) || startTick < 0 || !Number.isSafeInteger(endTick) || endTick < startTick) fail("invalid-range");
       const noteIds = song.notes
         .filter((note) => note.startTick < endTick && note.startTick + note.durationTicks > startTick)
         .map((note) => note.id);
       selection = { startTick, endTick, noteIds };
-      notifyChange();
+      selectedNoteIds = [...noteIds];
+      notifyChange("selection");
       return cloneData(selection);
     }
   };

@@ -28,11 +28,34 @@
       <section aria-labelledby="song-heading">
         <h2 id="song-heading" data-copy="songHeading"></h2>
         <p id="song-title" data-entity="song-title"></p>
+        <button id="new-idea" type="button" class="secondary" data-action="new-idea" data-copy="newIdeaButton"></button>
         <dl class="song-summary" data-entity="song-summary">
           <div><dt data-copy="tempoLabel"></dt><dd id="tempo-value"></dd></div>
           <div><dt data-copy="keyLabel"></dt><dd id="key-value"></dd></div>
           <div><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
         </dl>
+      </section>
+
+      <section aria-labelledby="piano-roll-heading">
+        <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
+        <p data-copy="pianoRollHelp"></p>
+        <div id="editor-toolbar" class="panel editor-toolbar" aria-label="Piano Roll controls">
+          <label>
+            <span data-copy="snapLabel"></span>
+            <select id="snap-select" data-action="set-snap">
+              <option value="1/4">1/4</option>
+              <option value="1/8">1/8</option>
+              <option value="1/16">1/16</option>
+            </select>
+          </label>
+          <button id="copy-selection" type="button" class="secondary" data-action="copy-selection" data-copy="copyButton"></button>
+          <button id="paste-notes" type="button" class="secondary" data-action="paste-notes" data-copy="pasteButton" disabled></button>
+          <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-copy="clearSelectionButton"></button>
+        </div>
+        <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
+          <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
+        </div>
+        <p id="roll-selection" class="muted" data-entity="selected-notes"></p>
       </section>
 
       <section aria-labelledby="playback-heading">
@@ -94,6 +117,11 @@
           <button type="submit" data-copy="saveLyricsButton"></button>
         </form>
         <p id="syllable-summary" class="muted" data-entity="lyric-mapping"></p>
+        <form id="add-syllable-form" class="panel syllable-add-form" data-action="add-syllable">
+          <label><span data-copy="newSyllableLabel"></span><input name="text" type="text" data-focus-key="new-syllable"></label>
+          <button type="submit" data-copy="addSyllableButton"></button>
+        </form>
+        <ol id="syllable-list" class="syllable-list" data-entity="lyric-syllable-list"></ol>
       </section>
 
       <section aria-labelledby="selection-heading">

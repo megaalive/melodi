@@ -127,8 +127,65 @@ button.secondary {
 .status[data-kind="error"] { color: #9b2424; }
 .status[data-kind="success"] { color: #21613b; }
 
+.editor-toolbar {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.editor-toolbar label { flex: 0 1 9rem; }
+.piano-roll-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #8997a4;
+  border-radius: 0.35rem;
+  background: #fff;
+  touch-action: pan-x pan-y;
+}
+#piano-roll { display: block; max-width: none; }
+.roll-background { fill: #fff; }
+.roll-row { fill: #fff; }
+.roll-row-black { fill: #f1f4f6; }
+.roll-row-line { stroke: #dce2e7; stroke-width: 1; }
+.roll-pitch-label, .roll-bar-label { fill: #31404d; font: 12px system-ui, sans-serif; }
+.roll-beat-line { stroke: #c9d2da; stroke-width: 1; }
+.roll-bar-line { stroke: #60717f; stroke-width: 2; }
+.roll-header-line { stroke: #60717f; stroke-width: 1.5; }
+.roll-note { fill: #5c9bc2; stroke: #245d81; stroke-width: 1.5; cursor: grab; touch-action: none; }
+.roll-note-generated { fill: #a9bbc7; stroke: #4c5d6c; stroke-dasharray: 4 2; }
+[data-entity="note"][data-anchor="true"] .roll-note { stroke: #9b4c00; }
+[data-entity="note"][data-locked="true"] .roll-note { stroke-dasharray: 2 2; }
+[data-entity="note"][data-selected="true"] .roll-note { fill: #f3c879; }
+[data-entity="note"][data-current="true"] .roll-note { fill: #a7d8a8; stroke: #174a25; }
+.roll-note-mark { fill: #17212b; font: 700 10px system-ui, sans-serif; pointer-events: none; }
+.roll-resize-handle { fill: transparent; cursor: ew-resize; touch-action: none; }
+.roll-move-hit { fill: transparent; cursor: grab; touch-action: none; }
+.roll-playhead { stroke: #a32323; stroke-width: 2; }
+@media (pointer: coarse) {
+  .roll-note, .roll-move-hit, .roll-resize-handle { touch-action: pan-x pan-y; }
+}
+.syllable-list { display: grid; gap: 0.75rem; padding-left: 1.5rem; }
+.syllable-card { min-width: 0; padding: 0.9rem; border: 1px solid #ccd5dd; border-radius: 0.4rem; background: #fff; }
+.syllable-card fieldset { min-width: 0; margin: 0.75rem 0; }
+.syllable-assignment { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.5rem; }
+.syllable-assignment label, .note-selection label { display: flex; align-items: center; gap: 0.45rem; overflow-wrap: anywhere; }
+.syllable-assignment input, .note-selection input { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; }
+.syllable-actions, .syllable-split-fields { display: flex; align-items: end; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.75rem; }
+.syllable-split-fields label { flex: 1 1 8rem; }
+.syllable-card details { margin-top: 0.75rem; }
+.note-selection { margin: 0.6rem 0; }
+.note-selection legend { font-weight: 650; }
+.syllable-add-form { display: flex; align-items: end; flex-wrap: wrap; gap: 0.75rem; }
+.syllable-add-form label { flex: 1 1 12rem; }
+
 @media (max-width: 38rem) {
   body { padding: 1rem; }
   .page-header { flex-direction: column; }
   .form-grid { grid-template-columns: 1fr; }
+  .editor-toolbar { align-items: stretch; }
+  .editor-toolbar > * { flex: 1 1 8rem; }
+  .syllable-split-fields { align-items: stretch; flex-direction: column; }
 }

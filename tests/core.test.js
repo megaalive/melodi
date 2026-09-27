@@ -366,6 +366,10 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
   snapshot.availableActions.push("play");
   snapshot.playback.loop.startTick = 200;
   snapshot.selection = { noteIds: ["fake"] };
+  snapshot.song.notes[0].pitch = 10;
+  snapshot.song.lyrics.syllables[0].noteIds.push("fake");
+  snapshot.selectedNoteIds.push("fake");
+  snapshot.editor.snap = "1/4";
   const next = commands.getState();
   const expected = {
     song: {
@@ -375,7 +379,9 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
       key: "C",
       scale: { name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] },
       timeSignature: { numerator: 4, denominator: 4 },
-      currentSectionId: "section-1"
+      currentSectionId: "section-1",
+      notes: fixture().notes,
+      lyrics: fixture().lyrics
     },
     playback: {
       status: "stopped",
@@ -386,9 +392,17 @@ test("state snapshot is detached and reports the actual R1 command surface", () 
       loop: { enabled: false, startTick: 0, endTick: 1920 }
     },
     selection: null,
+    selectedNoteIds: [],
+    editor: { snap: "1/8", canPaste: false, clipboardCount: 0 },
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
-    availableActions: ["getSong", "getSelection", "addNote", "updateNote", "deleteNote", "setLyrics", "setAnchor", "setLocked", "selectRange", "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled"]
+    availableActions: [
+      "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote", "setLyrics",
+      "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
+      "setSnap", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
+      "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
+      "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled"
+    ]
   };
   assert.deepEqual(next, expected);
   assert.deepEqual(commands.getState(), commands.getState());
@@ -419,4 +433,142 @@ test("returned song copies cannot mutate canonical state and IDs stay attached w
     { id: "note-2", pitch: 64 },
     { id: "note-1", pitch: 60 }
   ]);
+});
+
+test("note-ID selection supports multiple notes, rejects stale IDs, and prunes deleted notes", () => {
+  const commands = createCommands(fixture());
+  assert.deepEqual(commands.selectNotes(["note-4", "note-1"]), ["note-4", "note-1"]);
+  assert.deepEqual(commands.getSelectedNoteIds(), ["note-4", "note-1"]);
+  assert.deepEqual(commands.getState().selectedNoteIds, ["note-4", "note-1"]);
+  assert.equal(commands.getSelection(), null);
+  expectCode(() => commands.selectNotes(["note-1", "missing"]), "note-not-found");
+  expectCode(() => commands.selectNotes(["note-1", "note-1"]), "duplicate-reference");
+  commands.deleteNote("note-1");
+  assert.deepEqual(commands.getSelectedNoteIds(), ["note-4"]);
+  assert.deepEqual(commands.clearSelection(), []);
+  assert.deepEqual(commands.getState().selectedNoteIds, []);
+});
+
+test("multi-note edits commit atomically once and preserve source, anchor, and lock", () => {
+  let changes = 0;
+  const commands = createCommands(fixture(), { onChange: () => { changes += 1; } });
+  const before = commands.getSong();
+  commands.updateNotes([
+    { noteId: "note-1", patch: { startTick: 240 } },
+    { noteId: "note-2", patch: { pitch: 65 } }
+  ]);
+  const after = commands.getSong();
+  assert.equal(changes, 1);
+  assert.deepEqual(after.notes.map(({ startTick, pitch, source, anchor, locked }) => ({ startTick, pitch, source, anchor, locked })), [
+    { startTick: 240, pitch: 60, source: "user", anchor: true, locked: false },
+    { startTick: 480, pitch: 65, source: "user", anchor: false, locked: true },
+    { startTick: 960, pitch: 69, source: "generated", anchor: false, locked: false },
+    { startTick: 1440, pitch: 67, source: "user", anchor: false, locked: false }
+  ]);
+  expectCode(() => commands.updateNotes([
+    { noteId: "note-4", patch: { pitch: 68 } },
+    { noteId: "note-2", patch: { pitch: 66 } }
+  ], { actor: "generator" }), "protected-note");
+  expectCode(() => commands.updateNotes([
+    { noteId: "note-4", patch: { pitch: 68 } },
+    { noteId: "note-3", patch: { pitch: 128 } }
+  ]), "invalid-pitch");
+  assert.deepEqual(commands.getSong(), after);
+  assert.equal(changes, 1);
+  assert.notDeepEqual(after, before);
+});
+
+test("copy and paste create new user notes with relative timing and pitch but no protection flags", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `paste-${++nextId}` });
+  commands.selectNotes(["note-1", "note-3"]);
+  assert.equal(commands.copySelection(), 2);
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", canPaste: true, clipboardCount: 2 });
+
+  const pasted = commands.pasteNotes(1920, 72);
+  assert.deepEqual(pasted.map(({ pitch, startTick, durationTicks, source, anchor, locked }) => ({ pitch, startTick, durationTicks, source, anchor, locked })), [
+    { pitch: 72, startTick: 1920, durationTicks: 480, source: "user", anchor: false, locked: false },
+    { pitch: 81, startTick: 2880, durationTicks: 480, source: "user", anchor: false, locked: false }
+  ]);
+  assert.equal(new Set(commands.getSong().notes.map((note) => note.id)).size, commands.getSong().notes.length);
+  assert.deepEqual(commands.getSelectedNoteIds(), pasted.map((note) => note.id));
+
+  const beforeInvalidPaste = commands.getSong();
+  expectCode(() => commands.pasteNotes(4000, 120), "invalid-pitch");
+  expectCode(() => commands.pasteNotes(-1, 72), "invalid-tick");
+  assert.deepEqual(commands.getSong(), beforeInvalidPaste);
+
+  commands.clearSelection();
+  assert.equal(commands.copySelection(), 0);
+  assert.deepEqual(commands.pasteNotes(5000), []);
+});
+
+test("syllable add, edit, assign, unassign, delete, and reorder preserve stable IDs and raw lyrics", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `syllable-new-${++nextId}` });
+  const originalRawText = commands.getSong().lyrics.rawText;
+  const created = commands.addLyricSyllable("la", 1);
+  assert.equal(created.id, "syllable-new-1");
+  commands.updateLyricSyllable(created.id, "LÁ");
+  commands.assignSyllableNotes(created.id, ["note-2", "note-3"]);
+  assert.deepEqual(commands.getSong().lyrics.syllables[1], { id: created.id, text: "LÁ", noteIds: ["note-2", "note-3"] });
+  assert.equal(commands.getSong().lyrics.rawText, originalRawText);
+  expectCode(() => commands.assignSyllableNotes(created.id, ["note-2", "note-2"]), "duplicate-reference");
+  expectCode(() => commands.assignSyllableNotes(created.id, ["missing-note"]), "invalid-reference");
+  assert.deepEqual(commands.getSong().lyrics.syllables[1].noteIds, ["note-2", "note-3"]);
+
+  commands.moveLyricSyllable(created.id, 0);
+  assert.deepEqual(commands.getSong().lyrics.syllables.map((item) => item.id), [created.id, "syllable-1", "syllable-2"]);
+  commands.moveLyricSyllable(created.id, 2);
+  assert.deepEqual(commands.getSong().lyrics.syllables.map((item) => item.id), ["syllable-1", "syllable-2", created.id]);
+  commands.assignSyllableNotes(created.id, []);
+  commands.deleteLyricSyllable(created.id);
+  expectCode(() => commands.updateLyricSyllable(created.id, "stale"), "syllable-not-found");
+  assert.equal(commands.getSong().lyrics.rawText, originalRawText);
+});
+
+test("syllable split keeps the original ID on the left and merge is adjacent, ordered, and deduplicated", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `split-${++nextId}` });
+  const split = commands.splitLyricSyllable("syllable-2", {
+    leftText: "ku-",
+    rightText: "lah",
+    noteSplitIndex: 1
+  });
+  assert.deepEqual(split, {
+    left: { id: "syllable-2", text: "ku-", noteIds: ["note-1"] },
+    right: { id: "split-1", text: "lah", noteIds: ["note-2"] }
+  });
+  expectCode(() => commands.splitLyricSyllable("syllable-2", { leftText: "x", rightText: "y", noteSplitIndex: 2 }), "invalid-syllable-split");
+  expectCode(() => commands.mergeLyricSyllables("split-1", "syllable-2"), "syllables-not-adjacent");
+  commands.mergeLyricSyllables("syllable-2", "split-1");
+  assert.deepEqual(commands.getSong().lyrics.syllables[1], { id: "syllable-2", text: "ku-lah", noteIds: ["note-1", "note-2"] });
+
+  commands.assignSyllableNotes("syllable-1", ["note-1", "note-2"]);
+  commands.mergeLyricSyllables("syllable-1", "syllable-2");
+  assert.deepEqual(commands.getSong().lyrics.syllables[0], { id: "syllable-1", text: "aku-lah", noteIds: ["note-1", "note-2"] });
+  assert.equal(commands.getSong().lyrics.syllables.some((item) => item.id === "syllable-2"), false);
+  assert.equal(commands.getSong().lyrics.rawText, "aku menyanyi");
+  assert.deepEqual(deserializeProject(serializeProject(commands.getSong())).lyrics, commands.getSong().lyrics);
+});
+
+test("snap state and New Idea reset are editor runtime, not canonical song data", () => {
+  let next = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `new-idea-${++next}` });
+  commands.setSnap("1/16");
+  commands.selectNotes(["note-1"]);
+  commands.copySelection();
+  commands.setLyrics("draft lyric");
+  commands.setAnchor("note-2", true);
+  expectCode(() => commands.setSnap("1/32"), "invalid-snap");
+  const fresh = commands.newIdea();
+  assert.equal(fresh.title, "Ide baru");
+  assert.equal(fresh.lyrics.rawText, "");
+  assert.deepEqual(fresh.notes.map((note) => note.pitch), [60, 64, 69, 67]);
+  assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
+  assert.deepEqual(commands.getSelectedNoteIds(), []);
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", canPaste: false, clipboardCount: 0 });
+  assert.equal(commands.getState().playback.status, "stopped");
+  assert.equal(commands.getState().playback.currentTick, 0);
+  assert.equal(Object.hasOwn(fresh, "playback"), false);
 });
