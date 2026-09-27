@@ -1,5 +1,6 @@
 import { projectSongToScore, spellPitchNameInKey } from "../notation/project.js";
 import { midiToPitch } from "../core/model.js";
+import { normalizePlaybackState, normalizeRuntimeState, normalizeViewState } from "../core/runtime-state.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const measureWidth = 280;
@@ -193,7 +194,9 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     }
   }
 
-  function updatePlayback(playback, view = { follow: true }) {
+  function updatePlayback(playback = {}, view) {
+    playback = normalizePlaybackState(playback);
+    view = normalizeViewState(view);
     applyCurrentNote(playback.currentNoteId);
     applyCurrentSyllables(playback.currentSyllableIds);
     if (view.follow && playback.status === "playing") followMeasure(playback.currentTick);
@@ -280,7 +283,8 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     }
   }
 
-  function render(song, state = { selectedNoteIds: [], playback: { currentNoteId: null, currentSyllableIds: [] }, view: { follow: true } }) {
+  function render(song, state = {}) {
+    state = normalizeRuntimeState(state);
     const VF = window.VexFlow;
     if (!VF?.Renderer || !VF?.StaveNote) {
       status.textContent = translate("scoreUnavailable");

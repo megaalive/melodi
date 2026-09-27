@@ -1,6 +1,7 @@
 import { createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
 import { SNAP_TICKS } from "./core/editor.js";
+import { normalizePlaybackState, normalizeRuntimeState } from "./core/runtime-state.js";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
@@ -18,6 +19,20 @@ let lastFollowSyllableId = null;
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
 const translate = (key, values) => message(language, key, values);
+
+function getR3ViewMarkup() {
+  const modeControl = byId("view-mode");
+  const followControl = byId("follow-mode");
+  const regions = [...document.querySelectorAll("[data-view-region]")];
+  const isR3AMarkup = !modeControl && !followControl && regions.length === 0;
+  if (isR3AMarkup) return { modeControl: null, followControl: null, regions };
+
+  const regionNames = new Set(regions.map((region) => region.dataset.viewRegion));
+  const complete = modeControl && followControl
+    && ["score", "piano-roll", "lyrics"].every((name) => regionNames.has(name));
+  if (!complete) throw new Error("Incomplete R3 view markup.");
+  return { modeControl, followControl, regions };
+}
 
 function copyFocusableElement(key) {
   return [...document.querySelectorAll("[data-focus-key]")].find((element) => element.dataset.focusKey === key);
@@ -176,6 +191,7 @@ function renderNotes(song, state) {
 
 function renderSyllables(song, state) {
   const list = byId("syllable-list");
+  const currentSyllableIds = normalizePlaybackState(state?.playback).currentSyllableIds;
   list.replaceChildren();
   song.lyrics.syllables.forEach((syllable, index) => {
     const item = document.createElement("li");
@@ -183,7 +199,7 @@ function renderSyllables(song, state) {
     item.dataset.entityId = syllable.id;
     item.dataset.text = syllable.text;
     item.dataset.noteIds = JSON.stringify(syllable.noteIds);
-    item.dataset.current = String(state.playback.currentSyllableIds.includes(syllable.id));
+    item.dataset.current = String(currentSyllableIds.includes(syllable.id));
     item.className = "syllable-card";
 
     const form = document.createElement("form");
@@ -323,7 +339,7 @@ function renderEditorControls() {
 
 function renderPlayback() {
   if (!commands) return;
-  const state = commands.getState();
+  const state = normalizeRuntimeState(commands.getState());
   const playback = state.playback;
   const song = commands.getSong();
   const statusKey = {
@@ -385,7 +401,8 @@ function render() {
   const lyricsFormPending = byId("lyrics-form").dataset.pending === "true" && byId("lyrics-form").dataset.submitting !== "true";
   const rawLyricsDraft = byId("raw-lyrics").value;
   const song = commands.getSong();
-  const state = commands.getState();
+  const state = normalizeRuntimeState(commands.getState());
+  const viewMarkup = getR3ViewMarkup();
 
   document.documentElement.lang = language;
   document.querySelectorAll("[data-copy]").forEach((element) => {
@@ -396,9 +413,9 @@ function render() {
   byId("key-value").textContent = `${song.key} ${song.scale.name}`;
   byId("time-signature-value").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   byId("song-title").textContent = song.title;
-  byId("view-mode").value = state.view.mode;
-  byId("follow-mode").checked = state.view.follow;
-  for (const region of document.querySelectorAll("[data-view-region]")) {
+  if (viewMarkup.modeControl) viewMarkup.modeControl.value = state.view.mode;
+  if (viewMarkup.followControl) viewMarkup.followControl.checked = state.view.follow;
+  for (const region of viewMarkup.regions) {
     const mode = state.view.mode;
     const visible = region.dataset.viewRegion === "score"
       ? mode === "score" || mode === "combined"

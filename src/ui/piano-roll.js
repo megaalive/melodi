@@ -1,5 +1,6 @@
 import { midiToPitch, PPQ } from "../core/model.js";
 import { SNAP_TICKS } from "../core/editor.js";
+import { normalizeRuntimeState } from "../core/runtime-state.js";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -201,6 +202,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
   }
 
   function render(song, state = commands.getState(), focusTickOverride = null) {
+    state = normalizeRuntimeState(state);
     const savedLeft = scrollContainer?.scrollLeft ?? 0;
     const savedTop = scrollContainer?.scrollTop ?? 0;
     const endTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), state.playback.currentTick);
@@ -508,7 +510,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
 
   function followPendingPlayback() {
     if (pendingPlaybackFollow && !activeDrag) {
-      const state = commands.getState();
+      const state = normalizeRuntimeState(commands.getState());
       updatePlayback(state.playback, { follow: state.view.follow });
     }
   }
