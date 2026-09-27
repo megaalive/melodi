@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   PPQ,
   createInitialSong,
@@ -431,6 +432,32 @@ test("state snapshot is detached and reports the actual command surface", () => 
   };
   assert.deepEqual(next, expected);
   assert.deepEqual(commands.getState(), commands.getState());
+});
+
+test("every advertised action exists on the command object", () => {
+  const commands = createCommands(fixture());
+  const advertised = commands.getState().availableActions;
+  const missing = advertised.filter((name) => typeof commands[name] !== "function");
+  assert.deepEqual(missing, []);
+});
+
+test("every advertised action is re-exported on the browser surface", () => {
+  // availableActions adalah janji ke agent, jadi nama yang diiklankan harus benar
+  //-benar tersedia di window.melodi.commands juga. publicCommands ada di app.js
+  // yang tidak bisa diimpor di Node karena menyentuh DOM, jadi bloknya dibaca
+  // sebagai teks. Kegagalan parser sengaja dibiarkan menggagalkan test.
+  const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
+  const start = app.indexOf("const publicCommands = Object.freeze({");
+  assert.notEqual(start, -1, "publicCommands block not found in app.js");
+  const end = app.indexOf("\n});", start);
+  assert.notEqual(end, -1, "publicCommands block is not terminated");
+  const block = app.slice(start, end);
+  const exportedNames = new Set([
+    ...[...block.matchAll(/^\s{2}([A-Za-z][A-Za-z0-9]*)\s*[,:]/gm)].map((match) => match[1])
+  ]);
+  const commands = createCommands(fixture());
+  const missing = commands.getState().availableActions.filter((name) => !exportedNames.has(name));
+  assert.deepEqual(missing, []);
 });
 
 test("view mode and Follow Mode are detached editor state, not song edits", () => {

@@ -994,6 +994,10 @@ const publicCommands = Object.freeze({
   setSnap: commands.setSnap,
   setViewMode: commands.setViewMode,
   setFollowMode: commands.setFollowMode,
+  undo: commands.undo,
+  redo: commands.redo,
+  canUndo: commands.canUndo,
+  canRedo: commands.canRedo,
   newIdea: () => {
     if (shouldConfirmNewIdea() && !window.confirm(translate("confirmNewIdea"))) return false;
     clearPendingForms();

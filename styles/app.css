@@ -69,6 +69,8 @@
   --selection-fill: rgba(36, 93, 129, 0.12);
   --pitch-tint-high: #fdf7f0;
   --pitch-tint-low: #eef1f4;
+  --score-ink: #1b2124;
+  --score-ink-muted: #5f686f;
   --roll-key-light: rgba(255, 255, 255, 0.5);
   --roll-key-dark: rgba(0, 0, 0, 0.05);
   --neck-board: #f6f1e8;
@@ -133,6 +135,8 @@
     --selection-fill: light-dark(rgba(36, 93, 129, 0.12), rgba(99, 182, 198, 0.2));
     --pitch-tint-high: light-dark(#fdf7f0, #221f1e);
     --pitch-tint-low: light-dark(#eef1f4, #181f24);
+    --score-ink: light-dark(#1b2124, #e7e4de);
+    --score-ink-muted: light-dark(#5f686f, #949ca2);
     --roll-key-light: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.03));
     --roll-key-dark: light-dark(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.22));
     --neck-board: light-dark(#f6f1e8, #26221d);
@@ -899,6 +903,21 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .roll-playhead { stroke: var(--playhead); stroke-width: 2; }
 
 .score-measure-label { fill: var(--text-muted); font: 12px system-ui, sans-serif; }
+
+/* VexFlow menulis warna sebagai presentation attribute dengan hitam hardcoded
+   (fill="black" di root svg, stroke="black" di .vf-stem, stroke="#444" di garis
+   staff). Atribut presentasi selalu kalah prioritas dari aturan CSS mana pun,
+   jadi override di sini lebih andal daripada meneruskan warna lewat API
+   VexFlow: tidak ada literal warna yang bocor ke dalam DOM, dan pergantian tema
+   tidak butuh render ulang.
+   currentColor dipakai supaya cukup satu token yang dibaca. Selector teks dan
+   path sengaja dibatasi agar tidak menimpa label milik Melodi sendiri, yang punya
+   class sendiri dan punya warna sendiri. */
+#score { color: var(--score-ink); }
+#score text:not([class]) { fill: currentColor; }
+#score .vf-stem { stroke: currentColor; }
+#score path[stroke]:not([stroke="none"]) { stroke: currentColor; }
+#score path[fill="black"] { fill: currentColor; }
 .score-note[data-current="true"] { filter: drop-shadow(0 0 3px var(--highlight-current-ink)); }
 .score-note[data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)); }
 .score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)) drop-shadow(0 0 3px var(--highlight-current-ink)); }

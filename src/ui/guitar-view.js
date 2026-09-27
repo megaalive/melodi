@@ -117,8 +117,11 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
 
   return {
     render(state) {
-      const selectedId = state.selectedNoteIds[0] ?? state.playback.currentNoteId ?? null;
-      const note = state.song.notes.find((item) => item.id === selectedId) ?? null;
+      // Urutan fokus: note yang dipilih, note yang sedang berbunyi, lalu note
+      // pertama. Tanpa fallback terakhir, view akan kosong setiap kali transport
+      // berhenti dan tidak ada yang dipilih, padahal lagunya jelas berisi nada.
+      const focusedId = state.selectedNoteIds[0] ?? state.playback.currentNoteId ?? null;
+      const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
       const positions = note ? findGuitarPositions(note.pitch, { tuning, maxFret }) : [];
 
       svg.setAttribute("viewBox", `0 0 ${width()} ${height()}`);

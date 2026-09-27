@@ -109,4 +109,14 @@ The Advanced panel is an absolutely positioned popover rather than inline conten
 
 `score`, `piano-roll`, `combined`, `lyrics`, and `guitar` are set with `setViewMode`. The piano roll draws the active generation candidate in the gap between the anchors, so auditioning happens where the music already is rather than in a separate panel.
 
-The guitar view is not a second timeline. It answers one question: which positions on a standard-tuned neck can play the selected note, and which of those sound cleanest. `findGuitarPositions(pitch, { tuning, maxFret })` returns every position as `{ string, fret }` with strings numbered the way a player numbers them, 6 being lowest. Positions at fret 12 or above are marked, because that register has the cleanest tone and most open resonance. Played notes render as `data-entity="guitar-position"` with `data-note-id`, `data-string`, and `data-fret`.
+The roll's zoom follows the panel width and has a lower bound only. There is deliberately no upper bound: capping it left hundreds of pixels of undrawn grid on the right for short songs. When the grid is wider than the panel the panel scrolls horizontally instead.
+
+Scrolling is not taken away from the user. Auto-scroll runs only when the focus target actually changes, that is a different selection, a new candidate, or playback moving the playhead. `focusTick` falls back to the playhead, so re-running auto-scroll on every render would snap the view back to wherever the transport is stopped on any unrelated edit.
+
+The guitar view is not a second timeline. It answers one question: which positions on a standard-tuned neck can play the selected note, and which of those sound cleanest. `findGuitarPositions(pitch, { tuning, maxFret })` returns every position as `{ string, fret }` with strings numbered the way a player numbers them, 6 being lowest. Positions at fret 12 or above are marked, because that register has the cleanest tone and most open resonance. Focus falls back from the selected note to the playing note to the first note, so the view is never blank while the song has notes. Played notes render as `data-entity="guitar-position"` with `data-note-id`, `data-string`, and `data-fret`.
+
+VexFlow writes its colours as SVG presentation attributes with hardcoded black, and a presentation attribute always loses to any CSS rule. The score is themed through CSS on `#score` rather than through VexFlow's own style API, so no literal colour leaks into the DOM and a theme change needs no re-render.
+
+## Contract tests
+
+`availableActions` is a promise to an agent, so two tests hold it honest: every advertised name must be a function on the command object, and every advertised name must be re-exported on `window.melodi.commands`. The second test reads the `publicCommands` block out of `app.js` as text, because `app.js` touches the DOM and cannot be imported under Node.

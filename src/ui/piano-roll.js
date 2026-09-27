@@ -82,10 +82,13 @@ export function createRollGeometry({
   const fittedPixelsPerQuarter = usableViewportWidth > 0
     ? usableViewportWidth * ppq / gridTicks
     : pixelsPerQuarter;
-  const resolvedPixelsPerQuarter = Math.max(
-    pixelsPerQuarter,
-    Math.min(pixelsPerQuarter * 2, fittedPixelsPerQuarter)
-  );
+  // Zoom mengikuti lebar panel, dengan batas bawah saja. Dulu ada batas atas 2x,
+  // dan itulah penyebab panel menyisakan ruang mati di kanan untuk lagu pendek:
+  // satu bar di viewport 1113px butuh 264px per nada, lalu dipaksa turun ke
+  // 160px sehingga 417px grid tidak pernah digambar. Batas bawah tetap
+  // diperlukan supaya nada tidak terlalu rapat; kalau grid melebihi viewport,
+  //panel yang menggulir secara horizontal, bukan grid yang mengecil.
+  const resolvedPixelsPerQuarter = Math.max(pixelsPerQuarter, fittedPixelsPerQuarter);
   const focusBar = Math.floor(focusTick / barTicks);
   const contextBars = Math.floor((gridTicks / barTicks - 1) * 0.3);
   const startTick = Math.max(0, focusBar - contextBars) * barTicks;
@@ -211,6 +214,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let selectionDrag = null;
   let lastPlaybackTick = 0;
   let pendingPlaybackFollow = false;
+  let lastFocusTick = null;
 
   function pointerPoint(event) {
     const bounds = svg.getBoundingClientRect();
@@ -242,7 +246,6 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     const activeCandidate = state.generation?.candidates?.find((candidate) => candidate.id === state.generation.activeCandidateId);
     const focusTick = focusTickOverride ?? (activeCandidate ? state.generation.gap?.startTick : null) ?? selectedNote?.startTick ?? state.playback.currentTick;
     const { numerator, denominator } = song.timing.timeSignature;
-    const previousStartTick = geometry.startTick;
     const candidatePitches = activeCandidate?.notes?.map((note) => note.pitch) ?? [];
     const musicalPitches = [...song.notes.map((note) => note.pitch), ...candidatePitches];
     let pitchRange = DEFAULT_PITCH_RANGE;
@@ -424,10 +427,13 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       "pointer-events": "none"
     }, svg);
     if (scrollContainer) {
-      const focusX = tickToX(focusTick, geometry);
-      const focusOutsideViewport = focusX < savedLeft + geometry.labelWidth
-        || focusX > savedLeft + scrollContainer.clientWidth;
-      if (previousStartTick !== geometry.startTick || focusOutsideViewport) {
+      // Auto-scroll hanya boleh jalan kalau tujuan fokus benar-benar BERUBAH.
+      // Sebelumnya setiap render memaksa scrollLeft ke focusTick, dan focusTick
+      // jatuh ke playback.currentTick yaitu 0 saat transport berhenti. Akibatnya
+      // menggulir ke kanan akan ditarik balik ke kiri pada render berikutnya
+      // (misalnya saat mengubah tempo), dan baris yang sudah digulir user hilang.
+      const focusChanged = focusTick !== lastFocusTick;
+      if (focusChanged) {
         const maxScrollLeft = Math.max(0, geometry.width - scrollContainer.clientWidth);
         scrollContainer.scrollLeft = Math.max(0, Math.min(maxScrollLeft, tickToX(focusTick, geometry) - scrollContainer.clientWidth * 0.35));
       } else {
@@ -435,6 +441,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       }
       scrollContainer.scrollTop = savedTop;
     }
+    lastFocusTick = focusTick;
   }
 
   function updatePlayback(playback, { follow = true } = {}) {
