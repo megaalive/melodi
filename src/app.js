@@ -605,6 +605,7 @@ function render() {
   byId("key-value").textContent = `${song.key} ${song.scale.name}`;
   byId("time-signature-value").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   byId("song-title").textContent = song.title;
+  document.body.dataset.viewMode = state.view.mode;
   if (viewMarkup.modeControl) viewMarkup.modeControl.value = state.view.mode;
   if (viewMarkup.followControl) viewMarkup.followControl.checked = state.view.follow;
   for (const region of viewMarkup.regions) {
