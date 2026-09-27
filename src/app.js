@@ -162,6 +162,19 @@ function setSelectedDuration(durationTicks) {
   return updateSelectedNotes(() => ({ durationTicks }));
 }
 
+function moveSelectedNotes(deltaTicks) {
+  if (!Number.isSafeInteger(deltaTicks) || deltaTicks === 0) return [];
+  const notes = selectedSongNotes();
+  if (!notes.length) return [];
+  const minimumStart = Math.min(...notes.map((note) => note.startTick));
+  const boundedDelta = Math.max(deltaTicks, -minimumStart);
+  if (boundedDelta === 0) return notes;
+  return commands.updateNotes(notes.map((note) => ({
+    noteId: note.id,
+    patch: { startTick: note.startTick + boundedDelta }
+  })));
+}
+
 function deleteSelectedNotes() {
   const ids = [...commands.getSelectedNoteIds()];
   for (const noteId of ids) commands.deleteNote(noteId, { actor: "user" });
@@ -230,6 +243,21 @@ function renderNotes(song, state) {
   const list = byId("note-list");
   list.replaceChildren();
   const selected = new Set(state.selectedNoteIds);
+  const selectedNotes = song.notes.filter((note) => selected.has(note.id));
+  if (selectedNotes.length > 1) {
+    const item = document.createElement("li");
+    item.className = "note-card multi-note-summary";
+    item.dataset.entity = "note-selection-summary";
+    item.dataset.selected = "true";
+    const heading = document.createElement("strong");
+    heading.textContent = translate("contextSelectionCount", { count: selectedNotes.length });
+    const help = document.createElement("p");
+    help.className = "muted";
+    help.textContent = translate("multiSelectionHelp");
+    item.append(heading, help);
+    list.append(item);
+    return;
+  }
   for (const note of song.notes) {
     const pitch = midiToPitch(note.pitch);
     const item = document.createElement("li");
@@ -1251,6 +1279,16 @@ document.addEventListener("keydown", (event) => {
     ? target.closest("#piano-roll-scroll, #score-scroll, [data-entity='score-note']")
     : null;
   const selectedIds = commands.getSelectedNoteIds();
+
+  if (editorTarget && selectedIds.length > 0 && event.altKey && !event.ctrlKey && !event.metaKey
+    && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    event.preventDefault();
+    const snapTicks = SNAP_TICKS[commands.getState().editor.snap];
+    const delta = event.key === "ArrowRight" ? snapTicks : -snapTicks;
+    const notes = run(() => moveSelectedNotes(delta));
+    if (notes?.length) announce("noteSaved");
+    return;
+  }
 
   if (editorTarget && selectedIds.length > 0 && !event.ctrlKey && !event.metaKey && !event.altKey
     && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
