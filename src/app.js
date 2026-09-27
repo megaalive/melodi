@@ -1,4 +1,4 @@
-import { createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
 import { SNAP_TICKS } from "./core/editor.js";
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js";
@@ -762,6 +762,7 @@ function renderPlayback() {
   const follow = state.view.follow && playback.status === "playing" && !textEntryActive && !pointerInteractionActive;
   rollView?.updatePlayback(playback, { follow });
   scoreView?.updatePlayback(playback, { ...state.view, follow });
+  if (guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
   for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
     item.dataset.current = String(activeSyllableIds.has(item.dataset.entityId));
@@ -950,11 +951,23 @@ scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fal
 guitarView = createGuitarView(byId("guitar"));
 const guitarStatus = byId("guitar-status");
 const guitarLegend = byId("guitar-legend");
+const guitarPlayhead = byId("guitar-playhead");
 
 function renderGuitar(state) {
-  const { note, positions } = guitarView.render(state);
+  const { note, positions, sounding, playheadTick } = guitarView.render(state);
   const pitch = note ? midiToPitch(note.pitch) : null;
   const labels = positions.map((position) => translate("guitarPosition", position));
+  // Neck gitar tidak punya sumbu waktu, jadi playhead-nya berupa posisi bar dan
+  // ketukan, bukan garis yang bergerak di sepanjang fret.
+  // Snapshot tidak mengekspos song.timing, hanya timeSignature dan tempo di
+  // level atas. PPQ adalah konstanta model, jadi diimpor dari sana.
+  const { numerator, denominator } = state.song.timeSignature;
+  const beatTicks = PPQ * 4 / denominator;
+  const barTicks = beatTicks * numerator;
+  const position = translate("guitarPlayheadPosition", {
+    bar: Math.floor(playheadTick / barTicks) + 1,
+    beat: Math.floor((playheadTick % barTicks) / beatTicks) + 1
+  });
   if (!note) {
     // Bantuan soal apa yang harus dilakukan sudah ada di judul panel, jadi di sini
     // cukup dibiarkan kosong agar tidak mengulang kalimat yang sama.
@@ -966,6 +979,7 @@ function renderGuitar(state) {
     ? translate("guitarUnplayable", { pitch })
     : translate("guitarPositions", { pitch, count: positions.length, positions: labels.join(", ") });
   guitarLegend.textContent = translate("guitarTuning");
+  guitarPlayhead.textContent = sounding ? translate("guitarSounding", { position }) : "";
 }
 
 const publicCommands = Object.freeze({

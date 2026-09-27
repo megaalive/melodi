@@ -111,11 +111,15 @@ The Advanced panel is an absolutely positioned popover rather than inline conten
 
 The roll's zoom follows the panel width and has a lower bound only. There is deliberately no upper bound: capping it left hundreds of pixels of undrawn grid on the right for short songs. When the grid is wider than the panel the panel scrolls horizontally instead.
 
+The grid window always starts at bar 1 while the whole song fits inside `MAX_ROLL_BARS`. The window only follows the focus when a song genuinely exceeds that cap, where the priority is keeping the playhead reachable and the DOM bounded. Anchoring the window to the focus at all times is what made bar 1 and 2 vanish once a note in a later bar was selected: they fell outside the window, were never drawn, and could not be scrolled to because there was nothing there.
+
 Scrolling is not taken away from the user. Auto-scroll runs only when the focus target actually changes, that is a different selection, a new candidate, or playback moving the playhead. `focusTick` falls back to the playhead, so re-running auto-scroll on every render would snap the view back to wherever the transport is stopped on any unrelated edit.
 
 The guitar view is not a second timeline. It answers one question: which positions on a standard-tuned neck can play the selected note, and which of those sound cleanest. `findGuitarPositions(pitch, { tuning, maxFret })` returns every position as `{ string, fret }` with strings numbered the way a player numbers them, 6 being lowest. Positions at fret 12 or above are marked, because that register has the cleanest tone and most open resonance. Focus falls back from the selected note to the playing note to the first note, so the view is never blank while the song has notes. Played notes render as `data-entity="guitar-position"` with `data-note-id`, `data-string`, and `data-fret`.
 
-VexFlow writes its colours as SVG presentation attributes with hardcoded black, and a presentation attribute always loses to any CSS rule. The score is themed through CSS on `#score` rather than through VexFlow's own style API, so no literal colour leaks into the DOM and a theme change needs no re-render.
+Fret numbers are printed for every fret currently in use, not only every third fret, because a marker on fret 14 with no number next to it reads as being on the wrong fret. String names are printed together with their numbers, since this view orders the rows opposite to a chord diagram. `fretCenterX` is the single source of truth for where a fret sits, used by the wires, the numbers, the markers, and the inlays, so they cannot drift apart. The playhead is a bar and beat readout plus a heavier marker on the sounding note's positions, refreshed through `updatePlayback` only when the sounding note changes.
+
+VexFlow writes its colours as SVG presentation attributes and inherits the rest. Staff lines are `<path>` elements with no `stroke` attribute at all, so they inherit the hardcoded `stroke="black"` from the root svg. The override therefore has to sit on the root plus every `vf-` class and the nested `<svg>`, scoped so it never touches Melodi's own labels. A presentation attribute always loses to a CSS rule, so this beats the hardcoded values without writing literal colours into the DOM, and a theme change needs no re-render.
 
 ## Contract tests
 

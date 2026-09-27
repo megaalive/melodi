@@ -71,11 +71,11 @@ export function createRollGeometry({
   const beatTicks = ppq * 4 / denominator;
   const barTicks = beatTicks * numerator;
   if (!Number.isSafeInteger(beatTicks) || !Number.isSafeInteger(barTicks) || barTicks <= 0) throw new RangeError("Invalid musical grid.");
-  const requestedBars = endTick >= barTicks * (MAX_ROLL_BARS - 1)
-    ? MAX_ROLL_BARS
-    : Math.max(1, Math.ceil(endTick / barTicks) + 1);
+  const barsToCoverSong = Math.max(1, Math.ceil(endTick / barTicks) + 1);
+  const fitsWholeSong = barsToCoverSong <= MAX_ROLL_BARS;
+  const requestedBars = fitsWholeSong ? barsToCoverSong : MAX_ROLL_BARS;
   const maxGridTicks = barTicks * MAX_ROLL_BARS;
-  const gridTicks = Math.min(MAX_ROLL_BARS, requestedBars) * barTicks;
+  const gridTicks = requestedBars * barTicks;
   const usableViewportWidth = Number.isFinite(viewportWidth) && viewportWidth > labelWidth
     ? viewportWidth - labelWidth
     : 0;
@@ -89,9 +89,20 @@ export function createRollGeometry({
   // diperlukan supaya nada tidak terlalu rapat; kalau grid melebihi viewport,
   //panel yang menggulir secara horizontal, bukan grid yang mengecil.
   const resolvedPixelsPerQuarter = Math.max(pixelsPerQuarter, fittedPixelsPerQuarter);
+  /*
+   * Jendela grid SELALU mulai dari bar 1 selama seluruh lagu masih muat dalam
+   * batas. Dulu jendela ikut bergeser ke fokus, dan itulah akar bug "hanya bar 3
+   * dan 4 yang terlihat": begitu sebuah note di bar jauh menjadi terpilih, bar 1
+   * sampai 2 jatuh di luar jendela, tidak digambar sama sekali, dan tidak bisa
+   * dijangkau lagi karena tidak ada kontennya di sana.
+   *
+   * Jendela baru boleh bergeser ke fokus kalau lagu benar-benar melebihi
+   * MAX_ROLL_BARS, karena saat itu yang perlu dijaga adalah playhead tetap
+   * terjangkau dan DOM tidak membengkak.
+   */
   const focusBar = Math.floor(focusTick / barTicks);
-  const contextBars = Math.floor((gridTicks / barTicks - 1) * 0.3);
-  const startTick = Math.max(0, focusBar - contextBars) * barTicks;
+  const contextBars = fitsWholeSong ? 0 : Math.floor((requestedBars - 1) * 0.3);
+  const startTick = fitsWholeSong ? 0 : Math.max(0, focusBar - contextBars) * barTicks;
   const endWindowTick = startTick + gridTicks;
   return {
     ppq,

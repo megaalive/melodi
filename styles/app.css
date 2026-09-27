@@ -904,20 +904,29 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 
 .score-measure-label { fill: var(--text-muted); font: 12px system-ui, sans-serif; }
 
-/* VexFlow menulis warna sebagai presentation attribute dengan hitam hardcoded
-   (fill="black" di root svg, stroke="black" di .vf-stem, stroke="#444" di garis
-   staff). Atribut presentasi selalu kalah prioritas dari aturan CSS mana pun,
-   jadi override di sini lebih andal daripada meneruskan warna lewat API
-   VexFlow: tidak ada literal warna yang bocor ke dalam DOM, dan pergantian tema
-   tidak butuh render ulang.
+/* VexFlow menulis warna sebagai presentation attribute dan sisanya diwarisi.
+   Garis staff adalah <path> yang TIDAK punya atribut stroke sama sekali, jadi
+   mewarisi stroke="black" dari root svg. Karena itu override harus dipasang di
+   root: fill dan stroke di situ diwarisi seluruh keturunan, termasuk garis
+   staff, bar line, dan stem. Atribut presentasi selalu kalah dari aturan CSS,
+   jadi ini mengalahkan nilai hardcoded VexFlow tanpa menulis literal warna ke
+   DOM, dan pergantian tema tidak butuh render ulang.
    currentColor dipakai supaya cukup satu token yang dibaca. Selector teks dan
-   path sengaja dibatasi agar tidak menimpa label milik Melodi sendiri, yang punya
-   class sendiri dan punya warna sendiri. */
-#score { color: var(--score-ink); }
+   path yang punya atribut sendiri sengaja dibatasi agar tidak menimpa label
+   milik Melodi, yang punya warna sendiri. */
+#score { color: var(--score-ink); stroke: currentColor; fill: currentColor; }
+#score svg { stroke: currentColor; fill: currentColor; }
 #score text:not([class]) { fill: currentColor; }
 #score .vf-stem { stroke: currentColor; }
 #score path[stroke]:not([stroke="none"]) { stroke: currentColor; }
 #score path[fill="black"] { fill: currentColor; }
+/* Garis staff di dalam g.vf-stave tetap hitam walaupun root sudah benar:
+   kelompok itu tidak punya atribut stroke, tidak punya inline style, dan tidak
+   ada stylesheet yang mengaturnya, jadi pewarisannya tidak sampai. Scope pakai
+   awalan class "vf-" milik VexFlow supaya semua glyph-nya ikut ter-override,
+   tanpa pernah menyentuh label milik Melodi yang class-nya berbeda. */
+#score [class^="vf-"],
+#score [class^="vf-"] * { stroke: currentColor; fill: currentColor; }
 .score-note[data-current="true"] { filter: drop-shadow(0 0 3px var(--highlight-current-ink)); }
 .score-note[data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)); }
 .score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)) drop-shadow(0 0 3px var(--highlight-current-ink)); }
@@ -948,14 +957,27 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .neck-fret { stroke: var(--border-strong); stroke-width: 1; }
 .neck-fret-sweet { stroke: var(--ember); stroke-width: 1.5; }
 .neck-fret-label { fill: var(--text-muted); font: 10px system-ui, sans-serif; }
+.neck-fret-label-marked { fill: var(--text); font-weight: 700; }
+.neck-fret-label-current { fill: var(--ember); font-weight: 700; }
+.neck-fret-current { stroke: var(--ember); stroke-width: 2; }
 .neck-string { stroke: var(--text-muted); stroke-width: 1; }
 .neck-string[data-string="6"] { stroke-width: 2.2; }
 .neck-string[data-string="5"],
 .neck-string[data-string="4"] { stroke-width: 1.7; }
 .neck-string[data-string="1"] { stroke-width: 1; }
 .neck-string-label { fill: var(--text-muted); font: 600 10px system-ui, sans-serif; }
+.neck-string-number { fill: var(--text-muted); font: 9px system-ui, sans-serif; }
 .neck-hit { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; }
 .neck-hit-sweet { fill: var(--ember); stroke: var(--note-anchor-stroke); }
+.neck-hit-current { stroke: var(--ember); stroke-width: 2.5; }
+
+.guitar-playhead {
+  margin: 0;
+  min-height: 1.1rem;
+  color: var(--ember);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
 
 .score-fallback p { margin-top: 0; font-weight: 650; }.score-fallback ul { margin: 0.35rem 0 0; padding-left: 1.1rem; overflow-wrap: anywhere; }
 .score-warning-list { color: var(--warning-ink); }

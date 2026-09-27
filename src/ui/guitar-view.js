@@ -34,6 +34,16 @@ function svgElement(name, attributes = {}, parent = null, text = null) {
 }
 
 /**
+ * Titik tengah satu fret. Fungsi ini dipakai bersama oleh garis fret, angka
+ * fret, titik posisi, dan inlay, jadi semuanya dijamin berada di ruang fret
+ * yang sama. Sebelumnya masing-masing menghitung sendiri dan selisih satu fret
+ * akan membuat titik terlihat salah tempat.
+ */
+export function fretCenterX(fret, { labelWidth = LABEL_WIDTH, fretWidth = FRET_WIDTH } = {}) {
+  return labelWidth + (fret + 1) * fretWidth - fretWidth / 2;
+}
+
+/**
  * Semua posisi yang bisa memainkan satu MIDI pitch pada satu tuning.
  * String dinomori seperti pemain gitar: 6 adalah senar terendah.
  */
@@ -48,6 +58,8 @@ export function findGuitarPositions(midiPitch, { tuning = STANDARD_TUNING, maxFr
 }
 
 export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_FRET } = {}) {
+  let lastSoundingKey = null;
+
   function width() {
     return LABEL_WIDTH + (maxFret + 1) * FRET_WIDTH;
   }
@@ -60,19 +72,24 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
     return LABEL_WIDTH + (fret + 1) * FRET_WIDTH;
   }
 
+  function centerX(fret) {
+    return fretCenterX(fret);
+  }
+
   function stringY(index) {
     return 18 + index * ROW_HEIGHT + ROW_HEIGHT / 2;
   }
 
-  function drawNeck() {
+  function drawNeck(hitFrets, currentFrets) {
     svgElement("rect", { x: 0, y: 0, width: width(), height: height(), class: "neck-board" }, svg);
     svgElement("rect", { x: LABEL_WIDTH, y: 10, width: FRET_WIDTH, height: height() - 10, class: "neck-nut" }, svg);
 
     for (const fret of INLAY_FRETS) {
       if (fret > maxFret) continue;
       svgElement("circle", {
-        cx: fretX(fret) - FRET_WIDTH / 2,
-        cy: 18 + (ROW_HEIGHT * tuning.length) / 2,
+        cx: centerX(fret),
+        // Inlay di antara senar D dan G, bukan tepat di senar D.
+        cy: 18 + (ROW_HEIGHT * tuning.length) * 0.375,
         r: 4.5,
         class: "neck-inlay"
       }, svg);
@@ -80,26 +97,38 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
 
     for (let fret = 0; fret <= maxFret; fret += 1) {
       const x = fretX(fret);
+      const isCurrent = currentFrets.has(fret);
       svgElement("line", {
         x1: x, y1: 10, x2: x, y2: height() - NUT_HEIGHT,
-        class: fret === SWEET_SPOT_FRET ? "neck-fret neck-fret-sweet" : "neck-fret"
-      }, svg);
-      if (fret % 3 === 0 || fret === 1) {
-        svgElement("text", { x: x - FRET_WIDTH / 2, y: 9, "text-anchor": "middle", class: "neck-fret-label" }, svg, String(fret));
+        class: isCurrent ? "neck-fret neck-fret-current" : (fret === SWEET_SPOT_FRET ? "neck-fret neck-fret-sweet" : "neck-fret")
+      });
+      // Angka dicetak untuk setiap fret yang sedang dipakai, bukan hanya
+      // setiap tiga fret. Tanpa itu, titik di fret 5 atau 14 terlihat salah
+      // tempat karena tidak ada angka yang bisa dipakai sebagai acuan.
+      if (fret % 3 === 0 || fret === 1 || hitFrets.has(fret)) {
+        const marked = hitFrets.has(fret);
+        svgElement("text", {
+          x: centerX(fret), y: 9, "text-anchor": "middle",
+          class: isCurrent ? "neck-fret-label neck-fret-label-current" : (marked ? "neck-fret-label neck-fret-label-marked" : "neck-fret-label")
+        }, svg, String(fret));
       }
     }
 
     for (let index = 0; index < tuning.length; index += 1) {
       const y = stringY(index);
-      svgElement("line", { x1: 0, y1: y, x2: width(), y2: y, class: "neck-string", "data-string": tuning.length - index }, svg);
+      const stringNumber = tuning.length - index;
+      svgElement("line", { x1: 0, y1: y, x2: width(), y2: y, class: "neck-string", "data-string": stringNumber }, svg);
       svgElement("text", { x: 4, y: y + 4, class: "neck-string-label" }, svg, STRING_NAMES[index]);
+      // Nomor senar ikut dicetak supaya tidak ada ambiguitas senar mana yang
+      // dimaksud, karena urutan baris di view ini dibalik dari diagram chord.
+      svgElement("text", { x: LABEL_WIDTH - 8, y: y + 4, "text-anchor": "end", class: "neck-string-number" }, svg, String(stringNumber));
     }
   }
 
-  function drawPositions(positions, noteId) {
+  function drawPositions(positions, noteId, isCurrent) {
     for (const position of positions) {
       const index = tuning.length - position.string;
-      const x = fretX(position.fret) - FRET_WIDTH / 2;
+      const x = centerX(position.fret);
       const group = svgElement("g", {
         "data-entity": "guitar-position",
         "data-note-id": noteId ?? "",
@@ -108,10 +137,10 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
         role: "img",
         "aria-label": `String ${position.string}, fret ${position.fret}`
       }, svg);
-      svgElement("circle", {
-        cx: x, cy: stringY(index), r: 9,
-        class: position.fret >= SWEET_SPOT_FRET ? "neck-hit neck-hit-sweet" : "neck-hit"
-      }, group);
+      const classes = ["neck-hit"];
+      if (position.fret >= SWEET_SPOT_FRET) classes.push("neck-hit-sweet");
+      if (isCurrent) classes.push("neck-hit-current");
+      svgElement("circle", { cx: x, cy: stringY(index), r: 9, class: classes.join(" ") }, group);
     }
   }
 
@@ -123,6 +152,14 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
       const focusedId = state.selectedNoteIds[0] ?? state.playback.currentNoteId ?? null;
       const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
       const positions = note ? findGuitarPositions(note.pitch, { tuning, maxFret }) : [];
+      // Playhead: posisi yang sedang berbunyi ditandai penuh, dan fret yang
+      // dipakai ikut diberi label serta garis tebal. Tanpa ini neck terlihat
+      // diam dan tidak ada yang menghubungkan posisi gitar dengan transport.
+      const playingNoteId = state.playback.currentNoteId ?? null;
+      const isPlaying = state.playback.status === "playing" || state.playback.status === "paused";
+      const sounding = isPlaying && playingNoteId === note?.id;
+      const hitFrets = new Set(positions.map((position) => position.fret));
+      const currentFrets = sounding ? hitFrets : new Set();
 
       svg.setAttribute("viewBox", `0 0 ${width()} ${height()}`);
       svg.setAttribute("width", width());
@@ -132,9 +169,26 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
         : "Guitar neck, no note selected");
       svg.replaceChildren();
 
-      drawNeck();
-      if (positions.length > 0) drawPositions(positions, note.id);
-      return { note, positions };
+      drawNeck(hitFrets, currentFrets);
+      if (positions.length > 0) drawPositions(positions, note.id, sounding);
+      lastSoundingKey = `${note?.id ?? ""}:${sounding}`;
+      return { note, positions, sounding, playheadTick: state.playback.currentTick };
+    },
+
+    /**
+     * Dipanggil tiap tick playback. Build ulang hanya kalau nada yang berbunyi
+     * benar-benar berubah, supaya transport yang berjalan 25 ms sekali tidak
+     * membuat ulang seluruh neck.
+     */
+    updatePlayback(state) {
+      const focusedId = state.selectedNoteIds[0] ?? state.playback.currentNoteId ?? null;
+      const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
+      const isPlaying = state.playback.status === "playing" || state.playback.status === "paused";
+      const sounding = isPlaying && (state.playback.currentNoteId ?? null) === note?.id;
+      const key = `${note?.id ?? ""}:${sounding}`;
+      if (key === lastSoundingKey) return false;
+      this.render(state);
+      return true;
     }
   };
 }

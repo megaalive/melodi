@@ -1,10 +1,51 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { findGuitarPositions, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
+import { findGuitarPositions, fretCenterX, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
 
 test("standard tuning spans E2 to E4 across six strings", () => {
   assert.deepEqual(STANDARD_TUNING, [40, 45, 50, 55, 59, 64]);
   assert.equal(MAX_FRET, 24);
+});
+
+test("a fret centre sits between its own fret wires, so labels and hits cannot drift apart", () => {
+  const labelWidth = 34;
+  const fretWidth = 26;
+  const options = { labelWidth, fretWidth };
+  for (let fret = 0; fret <= MAX_FRET; fret += 1) {
+    const centre = fretCenterX(fret, options);
+    //-space of a fret is bounded by the two wires around it; wire n is at labelWidth + (n+1)*fretWidth.
+    const leftWire = labelWidth + fret * fretWidth;
+    const rightWire = labelWidth + (fret + 1) * fretWidth;
+    assert.ok(centre > leftWire, `fret ${fret} centre left of its own wire`);
+    assert.ok(centre < rightWire, `fret ${fret} centre right of its own wire`);
+    assert.equal(centre, (leftWire + rightWire) / 2);
+    // Fret spaces must never overlap.
+    assert.equal(fretCenterX(fret + 1, options) - centre, fretWidth);
+  }
+});
+
+// Fret 0 is the nut itself, not the space after the first wire.
+test("fret 0 is the nut itself, not the space after the first wire", () => {
+  const labelWidth = 34;
+  const fretWidth = 26;
+  // Fret 0 is the nut itself, not the space after the first wire.
+  const centre = fretCenterX(0, { labelWidth, fretWidth });
+  // The nut is drawn from labelWidth with width fretWidth, so an open string
+  // marker must land in the middle of that bar.
+  assert.equal(centre, labelWidth + fretWidth / 2);
+  assert.ok(centre < labelWidth + fretWidth);
+});
+
+test("every playable position maps to a fret centre inside the drawn neck", () => {
+  const neckWidth = 34 + (MAX_FRET + 1) * 26;
+  for (let pitch = 0; pitch <= 127; pitch += 1) {
+    for (const position of findGuitarPositions(pitch)) {
+      const centre = fretCenterX(position.fret);
+      assert.ok(centre > 34, `pitch ${pitch} fret ${position.fret} lands left of the nut`);
+      assert.ok(centre < neckWidth, `pitch ${pitch} fret ${position.fret} lands off the neck`);
+      assert.ok(Number.isInteger(position.fret) && position.fret >= 0 && position.fret <= MAX_FRET);
+    }
+  }
 });
 
 test("open strings are reported on the string a player would call them", () => {
