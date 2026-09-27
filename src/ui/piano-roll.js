@@ -212,10 +212,18 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     const { numerator, denominator } = song.timing.timeSignature;
     const previousStartTick = geometry.startTick;
     const candidatePitches = activeCandidate?.notes?.map((note) => note.pitch) ?? [];
-    const pitchRange = {
-      min: Math.min(DEFAULT_PITCH_RANGE.min, ...candidatePitches),
-      max: Math.max(DEFAULT_PITCH_RANGE.max, ...candidatePitches)
-    };
+    const musicalPitches = [...song.notes.map((note) => note.pitch), ...candidatePitches];
+    let pitchRange = DEFAULT_PITCH_RANGE;
+    if (musicalPitches.length > 0) {
+      const lowest = Math.min(...musicalPitches);
+      const highest = Math.max(...musicalPitches);
+      const center = Math.round((lowest + highest) / 2);
+      const minimumSpan = 18;
+      let min = Math.max(0, Math.min(lowest - 4, center - Math.floor(minimumSpan / 2)));
+      let max = Math.min(127, Math.max(highest + 4, min + minimumSpan));
+      if (max - min < minimumSpan) min = Math.max(0, max - minimumSpan);
+      pitchRange = { min, max };
+    }
     geometry = createRollGeometry({ endTick, focusTick, ppq: song.timing.ppq, numerator, denominator, pitchRange });
     svg.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
     svg.setAttribute("width", geometry.width);
