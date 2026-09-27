@@ -177,6 +177,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
   let activeDrag = null;
   let finishingDrag = false;
   let ignoreNextClick = false;
+  let pendingNoteClickId = null;
   let lastPlaybackTick = 0;
   let pendingPlaybackFollow = false;
 
@@ -453,6 +454,11 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     const song = commands.getSong();
     const note = song.notes.find((item) => item.id === noteId);
     if (!note) return;
+    const selectedBefore = commands.getSelectedNoteIds();
+    if (event.ctrlKey || event.metaKey || event.shiftKey || !selectedBefore.includes(noteId)) {
+      setGroupSelection(noteId, event);
+    }
+    pendingNoteClickId = noteId;
     const state = commands.getState();
     const currentNotes = new Map(song.notes.map((item) => [item.id, item]));
     const moveIds = !handle && state.selectedNoteIds.includes(noteId) ? state.selectedNoteIds : [noteId];
@@ -520,6 +526,12 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
     const drag = activeDrag;
     activeDrag = null;
+    const pendingClickId = pendingNoteClickId;
+    if (pendingClickId) {
+      setTimeout(() => {
+        if (pendingNoteClickId === pendingClickId) pendingNoteClickId = null;
+      }, 0);
+    }
     ignoreNextClick = drag.moved;
     if (drag.moved) setTimeout(() => { ignoreNextClick = false; }, 0);
     if (cancelled || !drag.moved) {
@@ -565,6 +577,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
       return;
     }
     const group = event.target.closest?.('[data-entity="note"]');
+    if (pendingNoteClickId) {
+      pendingNoteClickId = null;
+      return;
+    }
     if (group && svg.contains(group)) {
       setGroupSelection(group.dataset.entityId, event);
       return;

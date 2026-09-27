@@ -403,7 +403,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     selection: null,
     selectedNoteIds: [],
     editor: { snap: "1/8", canPaste: false, clipboardCount: 0 },
-    view: { mode: "combined", follow: true },
+    view: { mode: "piano-roll", follow: true },
     generation: {
       status: "idle",
       stale: false,
