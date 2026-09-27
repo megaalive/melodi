@@ -20,7 +20,44 @@ let contextTarget = null;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
+const themeSelect = byId("theme");
 const translate = (key, values) => message(language, key, values);
+
+// Berbeda dari bahasa (yang in-memory), pilihan tema disimpan: ini preferensi
+// perangkat, dan reset tiap reload terasa seperti bug. Default tetap "system".
+const THEME_KEY = "melodi.theme";
+const THEMES = new Set(["system", "light", "dark"]);
+
+function safeStorage() {
+  try { return globalThis.localStorage ?? null; } catch { return null; }
+}
+
+function readStoredTheme() {
+  try {
+    const stored = safeStorage()?.getItem(THEME_KEY);
+    return THEMES.has(stored) ? stored : "system";
+  } catch {
+    return "system";
+  }
+}
+
+let theme = readStoredTheme();
+
+function applyTheme() {
+  // Tanpa atribut = colour-scheme dari media query, yaitu ikut sistem.
+  if (theme === "system") delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  if (themeSelect) themeSelect.value = theme;
+}
+
+function setTheme(next) {
+  if (!THEMES.has(next)) return;
+  theme = next;
+  try { safeStorage()?.setItem(THEME_KEY, theme); } catch {}
+  applyTheme();
+}
+
+applyTheme();
 
 function getR3ViewMarkup() {
   const modeControl = byId("view-mode");
@@ -1041,6 +1078,9 @@ document.addEventListener("change", (event) => {
     language = target.value === "en" ? "en" : DEFAULT_LANGUAGE;
     render();
     announce("languageChanged");
+  } else if (target.dataset.action === "theme-switch") {
+    setTheme(target.value);
+    announce("themeChanged");
   } else if (target.dataset.action === "set-tempo-direct") {
     run(() => commands.setTempo(Number(target.value)), "tempoUpdated");
     if (target.form) target.form.dataset.pending = "false";

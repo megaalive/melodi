@@ -16,13 +16,23 @@
         <h1>Melodi</h1>
         <p data-copy="intro"></p>
       </div>
-      <label class="language-control">
-        <span data-copy="languageLabel"></span>
-        <select id="language" data-action="language-switch" data-focus-key="language">
-          <option value="id">Indonesia</option>
-          <option value="en">English</option>
-        </select>
-      </label>
+      <div class="header-controls">
+        <label class="language-control">
+          <span data-copy="languageLabel"></span>
+          <select id="language" data-action="language-switch" data-focus-key="language">
+            <option value="id">Indonesia</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label class="language-control">
+          <span data-copy="themeLabel"></span>
+          <select id="theme" data-action="theme-switch" data-entity="theme" data-focus-key="theme">
+            <option value="system" data-copy="themeSystem"></option>
+            <option value="light" data-copy="themeLight"></option>
+            <option value="dark" data-copy="themeDark"></option>
+          </select>
+        </label>
+      </div>
     </header>
 
     <main class="app-shell">

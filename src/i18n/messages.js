@@ -4,6 +4,10 @@ export const MESSAGES = {
   id: {
     intro: "Ruang kecil untuk menyusun ide lagu.",
     languageLabel: "Bahasa",
+    themeLabel: "Tema",
+    themeSystem: "Ikuti sistem",
+    themeLight: "Terang",
+    themeDark: "Gelap",
     songHeading: "Lagu",
     newIdeaButton: "Baru",
     confirmNewIdea: "Mulai ide baru dan ganti draft saat ini?",
@@ -316,11 +320,16 @@ export const MESSAGES = {
     "error_nothing-to-redo": "There is no change to redo.",
     "error_nothing-to-redo": "Tidak ada perubahan yang bisa diulang.",
     error_default: "Periksa nilai yang dimasukkan lalu coba lagi.",
-    languageChanged: "Bahasa diubah ke Indonesia."
+    languageChanged: "Bahasa diubah ke Indonesia.",
+    themeChanged: "Tema diubah."
   },
   en: {
     intro: "A small space to shape a song idea.",
     languageLabel: "Language",
+    themeLabel: "Theme",
+    themeSystem: "Follow system",
+    themeLight: "Light",
+    themeDark: "Dark",
     songHeading: "Song",
     newIdeaButton: "New",
     confirmNewIdea: "Start a new idea and replace the current draft?",
@@ -632,7 +641,8 @@ export const MESSAGES = {
     "error_nothing-to-undo": "There is no change to undo.",
     "error_nothing-to-redo": "There is no change to redo.",
     error_default: "Check the values and try again.",
-    languageChanged: "Language changed to English."
+    languageChanged: "Language changed to English.",
+    themeChanged: "Theme changed."
   }
 };
 
