@@ -532,6 +532,22 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 }
 .note-card legend { margin-bottom: 0.2rem; font-size: 0.88rem; font-weight: 750; }
 .note-card .form-grid { grid-template-columns: 1fr; }
+.note-primary-fields { margin-bottom: 0; }
+.note-timing-details {
+  margin-top: 0.1rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+}
+.note-timing-details > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.note-timing-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  margin-top: 0.5rem;
+}
 .note-flags,
 .note-actions {
   display: flex;
@@ -541,7 +557,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 }
 .note-flags label,
 .note-actions label {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 0.35rem;
   font-size: 0.78rem;
