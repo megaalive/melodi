@@ -40,6 +40,31 @@ export function nextScalePitch(pitch, direction, context, minPitch = 0, maxPitch
   return [...pitches].reverse().find((candidate) => candidate < pitch) ?? null;
 }
 
+// A leap skips at least one intervening scale tone.
+export const MIN_LEAP_SCALE_STEPS = 2;
+
+export function scaleStepDistance(leftPitch, rightPitch, context, minPitch = 0, maxPitch = 127) {
+  if (!Number.isSafeInteger(leftPitch) || !Number.isSafeInteger(rightPitch)) return null;
+  const left = nearestScalePitch(leftPitch, context, minPitch, maxPitch);
+  const right = nearestScalePitch(rightPitch, context, minPitch, maxPitch);
+  if (left === right) return 0;
+
+  const direction = right > left ? 1 : -1;
+  let current = left;
+  let distance = 0;
+  while (current !== right && distance < 128) {
+    const next = nextScalePitch(current, direction, context, minPitch, maxPitch);
+    if (next === null || (direction > 0 && next > right) || (direction < 0 && next < right)) return null;
+    current = next;
+    distance += 1;
+  }
+  return current === right ? distance : null;
+}
+
+export function isLeapInterval(leftPitch, rightPitch, context, minPitch = 0, maxPitch = 127) {
+  return (scaleStepDistance(leftPitch, rightPitch, context, minPitch, maxPitch) ?? 0) >= MIN_LEAP_SCALE_STEPS;
+}
+
 export function scalePath(startPitch, targetPitch, context, minPitch = 0, maxPitch = 127) {
   const start = nearestScalePitch(startPitch, context, minPitch, maxPitch);
   const target = nearestScalePitch(targetPitch, context, minPitch, maxPitch);
@@ -91,7 +116,7 @@ export function approachNote(targetPitch, sourcePitch, context, minPitch = 0, ma
 }
 
 export function leapNote(startPitch, direction, context, scaleSteps = 3, minPitch = 0, maxPitch = 127) {
-  if (!Number.isSafeInteger(scaleSteps) || scaleSteps < 2 || scaleSteps > 5) fail("generation-invalid-leap");
+  if (!Number.isSafeInteger(scaleSteps) || scaleSteps < MIN_LEAP_SCALE_STEPS || scaleSteps > 5) fail("generation-invalid-leap");
   let pitch = nearestScalePitch(startPitch, context, minPitch, maxPitch);
   for (let step = 0; step < scaleSteps; step += 1) {
     pitch = nextScalePitch(pitch, direction, context, minPitch, maxPitch);

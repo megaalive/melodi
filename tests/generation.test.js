@@ -156,6 +156,8 @@ test("leap is bounded and leap resolution steps in the opposite direction", () =
   const context = { key: "C", scale: { intervals: [0, 2, 4, 5, 7, 9, 11] } };
   const leap = leapNote(60, 1, context, 4, 48, 84);
   const resolved = leapResolution(60, 1, context, 4, 48, 84);
+  assert.equal(leapNote(60, 1, context, 2, 48, 84), 64);
+  expectGenerationCode(() => leapNote(60, 1, context, 1, 48, 84), "generation-invalid-leap");
   assert.ok(leap > 60 && leap <= 84);
   assert.ok(resolved.leapPitch > 60);
   assert.ok(resolved.resolutionPitch < resolved.leapPitch);
@@ -242,7 +244,7 @@ test("scoring dimensions and overall score are normalized and explicit", () => {
     noteCount: 2,
     range: { minPitch: 62, maxPitch: 65, label: "D4–F4" },
     stepCount: 0,
-    leapCount: 0,
+    leapCount: 1,
     landingInterval: -2,
     smoothLanding: true
   });
@@ -266,10 +268,55 @@ test("tonal stability uses scale intervals, and repetition rewards motifs over m
 test("smooth tonal phrase outranks an unresolved large leap on the relevant dimensions", () => {
   const context = createGenerationContext(fixture(), request());
   const options = { voiceRange: { minPitch: 48, maxPitch: 84 }, styleProfile: "balanced" };
-  const smooth = scoreCandidate(candidate("smooth", [62, 65]), context, options);
+  const smooth = scoreCandidate(candidate("smooth", [62, 64, 65]), context, options);
   const unresolved = scoreCandidate(candidate("unresolved", [84, 60]), context, options);
   assert.ok(smooth.scoreBreakdown.leapResolution > unresolved.scoreBreakdown.leapResolution);
   assert.ok(smooth.scoreBreakdown.singability > unresolved.scoreBreakdown.singability);
+});
+
+test("leap resolution and metadata count perfect fourth and fifth anchor transitions consistently", () => {
+  const context = createGenerationContext(fixture(), request());
+  const resolvedFifth = scoreCandidate(candidate("resolved-fifth", [67, 65]), context);
+  const unresolvedFifth = scoreCandidate(candidate("unresolved-fifth", [67, 67]), context);
+  const fourth = scoreCandidate(candidate("fourth", [65]), context);
+  const outgoingFifth = scoreCandidate(candidate("outgoing-fifth", [62, 60]), context);
+  const leapingStyle = scoreCandidate(candidate("leaping-style", [67, 65]), context, { styleProfile: "leaping" });
+  const stepwiseStyle = scoreCandidate(candidate("stepwise-style", [62, 64, 65, 65], 240), context, { styleProfile: "leaping" });
+
+  assert.equal(resolvedFifth.scoreBreakdown.leapResolution, 1);
+  assert.equal(unresolvedFifth.scoreBreakdown.leapResolution, 0);
+  assert.ok(resolvedFifth.scoreBreakdown.leapResolution > unresolvedFifth.scoreBreakdown.leapResolution);
+  assert.equal(resolvedFifth.metadata.leapCount, 1);
+  assert.equal(unresolvedFifth.metadata.leapCount, 1);
+  assert.equal(fourth.metadata.leapCount, 1);
+  assert.equal(outgoingFifth.metadata.leapCount, 1);
+  assert.equal(outgoingFifth.scoreBreakdown.leapResolution, 0);
+  assert.ok(leapingStyle.scoreBreakdown.styleFit > stepwiseStyle.scoreBreakdown.styleFit);
+});
+
+test("rhythm scoring reflects meter, cadence, and real-time note density", () => {
+  const song = fixture();
+  const context = createGenerationContext(song, request());
+  const sixteenthNotes = candidate("sixteenths", Array(8).fill(62), 120);
+  const quarterNotes = candidate("quarters", [62, 65], 480);
+  const denseScore = scoreCandidate(sixteenthNotes, context).scoreBreakdown.rhythm;
+  const heldScore = scoreCandidate(quarterNotes, context).scoreBreakdown.rhythm;
+  const sixEightSong = createSong({
+    ...song,
+    timing: { ...song.timing, timeSignature: { numerator: 6, denominator: 8 } }
+  });
+  const sixEightContext = createGenerationContext(sixEightSong, request());
+  const sixEightScore = scoreCandidate(sixteenthNotes, sixEightContext).scoreBreakdown.rhythm;
+  const slowSong = createSong({ ...song, timing: { ...song.timing, tempo: 60 } });
+  const slowContext = createGenerationContext(slowSong, request());
+  const slowScore = scoreCandidate(sixteenthNotes, slowContext).scoreBreakdown.rhythm;
+
+  assert.notEqual(denseScore, heldScore);
+  assert.notEqual(denseScore, sixEightScore);
+  assert.notEqual(denseScore, slowScore);
+  assert.ok(slowScore > denseScore);
+  assert.ok([denseScore, heldScore, sixEightScore, slowScore].every((value) => value >= 0 && value <= 1));
+  assert.deepEqual(generateGap(song, request()).candidates, generateGap(song, request()).candidates);
 });
 
 test("anchor landing and requested syllable density affect only their scoring dimensions", () => {

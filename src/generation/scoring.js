@@ -1,5 +1,5 @@
 import { midiToPitch, MelodiError } from "../core/model.js";
-import { isScalePitch, nextScalePitch } from "./primitives.js";
+import { isLeapInterval, isScalePitch, nextScalePitch, scaleStepDistance } from "./primitives.js";
 
 export const SCORING_WEIGHTS = Object.freeze({
   tonalFit: 0.16,
@@ -14,6 +14,8 @@ export const SCORING_WEIGHTS = Object.freeze({
   styleFit: 0.05
 });
 
+const RHYTHM_WEIGHTS = Object.freeze({ beatAlignment: 0.55, cadence: 0.2, density: 0.25 });
+const RHYTHM_DENSITY_REFERENCE_SECONDS = 0.3;
 export const STYLE_PROFILES = Object.freeze(["balanced", "smooth", "leaping", "repetitive"]);
 
 function clamp(value) {
@@ -30,11 +32,6 @@ function sign(value) {
 
 function pitchesWithAnchors(candidate, context) {
   return [context.leftAnchor.pitch, ...candidate.notes.map((note) => note.pitch), context.rightAnchor.pitch];
-}
-
-function intervalSizes(candidate, context) {
-  const pitches = pitchesWithAnchors(candidate, context);
-  return pitches.slice(1).map((pitch, index) => pitch - pitches[index]);
 }
 
 function tonalFit(candidate, context) {
@@ -69,15 +66,21 @@ function intervalSize(intervals) {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function leapResolution(intervals) {
-  const leaps = [];
-  for (let index = 0; index < intervals.length; index += 1) {
-    if (Math.abs(intervals[index]) > 7) leaps.push(index);
-  }
+function leapResolution(pitches, context, voiceRange) {
+  const intervals = pitches.slice(1).map((pitch, index) => pitch - pitches[index]);
+  const leaps = intervals
+    .map((interval, index) => isLeapInterval(
+      pitches[index], pitches[index + 1], context, voiceRange.minPitch, voiceRange.maxPitch
+    ) ? index : -1)
+    .filter((index) => index >= 0);
   if (leaps.length === 0) return 1;
   const resolved = leaps.filter((index) => {
     const next = intervals[index + 1];
-    return next !== undefined && sign(next) === -sign(intervals[index]) && Math.abs(next) <= 4;
+    return next !== undefined
+      && sign(next) === -sign(intervals[index])
+      && scaleStepDistance(
+        pitches[index + 1], pitches[index + 2], context, voiceRange.minPitch, voiceRange.maxPitch
+      ) === 1;
   }).length;
   return resolved / leaps.length;
 }
@@ -105,13 +108,35 @@ function rhythm(candidate, context) {
   if (candidate.notes.length === 0) return 0;
   let cursor = context.gap.startTick;
   const allowed = new Set([120, 240, 480, 960]);
-  let validCount = 0;
   for (const note of candidate.notes) {
-    if (note.startTick === cursor && allowed.has(note.durationTicks)
-      && note.startTick + note.durationTicks <= context.gap.endTick) validCount += 1;
+    if (note.startTick !== cursor || !allowed.has(note.durationTicks)
+      || note.startTick + note.durationTicks > context.gap.endTick) return 0;
     cursor = note.startTick + note.durationTicks;
   }
-  return cursor === context.gap.endTick ? validCount / candidate.notes.length : 0;
+  if (cursor !== context.gap.endTick) return 0;
+
+  const timing = context.song.timing;
+  const { numerator, denominator } = context.timeSignature;
+  const beatTicks = timing.ppq * 4 / denominator;
+  const halfBeatTicks = beatTicks / 2;
+  const onsetAlignment = candidate.notes.reduce((total, note) => {
+    const beatPhase = note.startTick % beatTicks;
+    if (beatPhase === 0) return total + 1;
+    if (halfBeatTicks >= 120 && beatPhase % halfBeatTicks === 0) return total + 0.8;
+    return total + 0.55;
+  }, 0) / candidate.notes.length;
+
+  const lastDuration = candidate.notes.at(-1).durationTicks;
+  const barTicks = beatTicks * numerator;
+  const barlineLanding = context.gap.endTick % barTicks === 0 ? 1 : 0.65;
+  const cadence = 0.75 * clamp(lastDuration / beatTicks) + 0.25 * barlineLanding;
+  const meanDurationSeconds = candidate.notes.reduce((total, note) => total + note.durationTicks, 0)
+    / candidate.notes.length * 60 / (timing.ppq * context.tempo);
+  const density = clamp(meanDurationSeconds / RHYTHM_DENSITY_REFERENCE_SECONDS);
+
+  return clamp(RHYTHM_WEIGHTS.beatAlignment * onsetAlignment
+    + RHYTHM_WEIGHTS.cadence * cadence
+    + RHYTHM_WEIGHTS.density * density);
 }
 
 function repetitionScore(candidate) {
@@ -154,12 +179,14 @@ function lyricFit(candidate, expectedSyllableCount) {
   return Math.max(0, 1 - penalty / Math.max(1, expectedSyllableCount));
 }
 
-function styleFit(styleProfile, dimensions, intervals) {
+function styleFit(styleProfile, dimensions, pitches, context, voiceRange) {
   if (styleProfile === "smooth") return 0.5 * dimensions.intervalSize + 0.3 * dimensions.leapResolution + 0.2 * dimensions.contour;
   if (styleProfile === "repetitive") return 0.65 * dimensions.repetition + 0.2 * dimensions.rhythm + 0.15 * dimensions.anchorLanding;
   if (styleProfile === "leaping") {
-    const leaps = intervals.filter((interval) => Math.abs(interval) >= 5 && Math.abs(interval) <= 9).length;
-    const ratio = leaps / Math.max(1, intervals.length);
+    const transitions = pitches.slice(1).map((pitch, index) => isLeapInterval(
+      pitches[index], pitch, context, voiceRange.minPitch, voiceRange.maxPitch
+    ));
+    const ratio = transitions.filter(Boolean).length / Math.max(1, transitions.length);
     const target = Math.max(0, 1 - Math.abs(ratio - 0.25) / 0.25);
     return 0.45 * target + 0.35 * dimensions.leapResolution + 0.2 * dimensions.anchorLanding;
   }
@@ -176,11 +203,12 @@ export function scoreCandidate(candidate, context, options = {}) {
   const expectedSyllableCount = options.expectedSyllableCount ?? context.mappedSyllableCount ?? null;
   const styleProfile = options.styleProfile ?? "balanced";
   if (!STYLE_PROFILES.includes(styleProfile)) throw new MelodiError("generation-invalid-style");
-  const intervals = intervalSizes(candidate, context);
+  const pitches = pitchesWithAnchors(candidate, context);
+  const intervals = pitches.slice(1).map((pitch, index) => pitch - pitches[index]);
   const dimensions = {
     tonalFit: tonalFit(candidate, context),
     intervalSize: intervalSize(intervals),
-    leapResolution: leapResolution(intervals),
+    leapResolution: leapResolution(pitches, context, voiceRange),
     singability: singability(candidate, intervals, voiceRange),
     contour: contour(intervals),
     rhythm: rhythm(candidate, context),
@@ -188,13 +216,14 @@ export function scoreCandidate(candidate, context, options = {}) {
     anchorLanding: anchorLanding(candidate, context),
     lyricFit: lyricFit(candidate, expectedSyllableCount)
   };
-  dimensions.styleFit = styleFit(styleProfile, dimensions, intervals);
+  dimensions.styleFit = styleFit(styleProfile, dimensions, pitches, context, voiceRange);
   const scoreBreakdown = Object.fromEntries(Object.entries(dimensions).map(([key, value]) => [key, rounded(value)]));
   const score = rounded(Object.entries(SCORING_WEIGHTS)
     .reduce((total, [key, weight]) => total + scoreBreakdown[key] * weight, 0));
   const allPitches = candidate.notes.map((note) => note.pitch);
-  const noteIntervals = candidate.notes.slice(1).map((note, index) => note.pitch - candidate.notes[index].pitch);
-  const leaps = noteIntervals.filter((interval) => Math.abs(interval) > 7).length;
+  const leaps = intervals.filter((interval, index) => isLeapInterval(
+    pitches[index], pitches[index + 1], context, voiceRange.minPitch, voiceRange.maxPitch
+  )).length;
   return {
     ...candidate,
     score,
