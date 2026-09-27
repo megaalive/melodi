@@ -1098,3 +1098,66 @@ body:has(.transport-advanced[open]) .workspace-sidebar {
     padding-inline: 0.45rem;
   }
 }
+
+
+/* Sidebar: hanya konteks aktif; utility dan advanced tetap tersedia tanpa membuat halaman memanjang. */
+.generation-options {
+  position: relative;
+}
+
+.generation-advanced-popover {
+  display: none;
+}
+
+.generation-options[open] > .generation-advanced-popover {
+  position: absolute;
+  z-index: 45;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  display: block;
+  width: min(24rem, calc(100vw - 2rem));
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.generation-options[open] .generation-fields {
+  margin-top: 0;
+}
+
+.sidebar-tools > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sidebar-tools-body {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.utility-card {
+  padding-block: 0.5rem;
+}
+
+.utility-card .utility-details {
+  margin-top: 0;
+}
+
+.utility-card .compact-panel {
+  margin-top: 0.4rem;
+}
+
+@media (max-width: 46rem) {
+  .generation-options[open] > .generation-advanced-popover {
+    position: static;
+    width: auto;
+    margin-top: 0.45rem;
+    padding: 0.55rem;
+    box-shadow: none;
+  }
+}
