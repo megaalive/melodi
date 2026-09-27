@@ -59,7 +59,7 @@ function markNoteElement(element, segment, note, { selected, tabStop, translate 
       tick: note.startTick,
       duration: note.durationTicks
     }));
-    element.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight Enter Space");
+    element.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight ArrowUp ArrowDown Delete Backspace Enter Space Shift+F10");
   } else {
     element.removeAttribute("aria-label");
   }
@@ -116,7 +116,8 @@ function addFallbackList(container, projection, song, translate) {
 }
 
 export function createScoreView(svg, status, fallback, scrollContainer, translate, {
-  onSelectNote = () => {}
+  onSelectNote = () => {},
+  onContextMenu = () => {}
 } = {}) {
   let projection = null;
   let lastFollowMeasure = null;
@@ -140,12 +141,46 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     const element = findScoreNote(event.target);
     if (element) selectFromEvent(element.dataset.noteId, event);
   });
+  svg.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    const element = findScoreNote(event.target);
+    if (element) {
+      const noteId = element.dataset.noteId;
+      onSelectNote(noteId, true);
+      onContextMenu({
+        kind: "selection",
+        source: "score",
+        noteId,
+        clientX: event.clientX,
+        clientY: event.clientY
+      });
+      return;
+    }
+    onContextMenu({
+      kind: "empty",
+      source: "score",
+      clientX: event.clientX,
+      clientY: event.clientY
+    });
+  });
   svg.addEventListener("keydown", (event) => {
     const element = findScoreNote(event.target);
     if (!element) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       selectFromEvent(element.dataset.noteId, event);
+      return;
+    }
+    if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) {
+      event.preventDefault();
+      const rect = element.getBoundingClientRect();
+      onContextMenu({
+        kind: "selection",
+        source: "score",
+        noteId: element.dataset.noteId,
+        clientX: rect.left + rect.width / 2,
+        clientY: rect.bottom
+      });
       return;
     }
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
