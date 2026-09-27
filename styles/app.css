@@ -1029,3 +1029,72 @@ body[data-view-mode="combined"] .score-scroll {
   .tempo-control { width: auto; }
   .transport-buttons { width: auto; }
 }
+
+
+/* Satukan chrome editor agar toolbar tidak menimpa area kerja. */
+.workspace-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin-top: 0.3rem;
+  border: 1px solid #cbd5de;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 5px 18px rgba(31, 49, 64, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.workspace-chrome .transport-dock {
+  position: static;
+  top: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0.6rem 0.6rem 0 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.workspace-chrome .workspace-toolbar {
+  margin: 0;
+  padding: 0.32rem 0.55rem;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 0.6rem 0.6rem;
+  background: transparent;
+}
+
+.workspace-grid { margin-top: 0.5rem; }
+
+.workspace-sidebar {
+  top: 7.2rem;
+}
+
+body:has(.transport-advanced[open]) .workspace-sidebar {
+  top: 7.2rem;
+  max-height: none;
+}
+
+.piano-roll-scroll {
+  min-width: 0;
+}
+
+#piano-roll {
+  min-width: 100%;
+}
+
+@media (max-width: 68rem) {
+  .workspace-chrome {
+    position: static;
+    box-shadow: none;
+  }
+
+  .workspace-sidebar {
+    top: auto;
+  }
+}
+
+@media (max-width: 46rem) {
+  .workspace-chrome .workspace-toolbar {
+    padding-inline: 0.45rem;
+  }
+}
