@@ -1110,6 +1110,11 @@ document.addEventListener("pointerup", () => { pointerInteractionActive = false;
 document.addEventListener("pointercancel", () => { pointerInteractionActive = false; }, true);
 
 window.addEventListener("pagehide", () => persistence.flush());
+
+// Mulai dari workspace yang bersih. Beberapa browser mempertahankan state <details>
+// setelah reload/back-forward, yang dapat membuat beberapa panel advanced terbuka sekaligus.
+document.querySelectorAll("details").forEach((details) => { details.open = false; });
+
 render();
 if (draft.status === "restored") announce("draftRestored");
 else if (draft.status === "invalid") announce("draftInvalid", "error");
