@@ -5,6 +5,11 @@ import { normalizePlaybackState, normalizeRuntimeState, normalizeViewState } fro
 const SVG_NS = "http://www.w3.org/2000/svg";
 const measureWidth = 280;
 const scoreHeight = 220;
+const NATURAL_PITCH_CLASSES = new Set([0, 2, 4, 5, 7, 9, 11]);
+const NATURAL_MIDI = Object.freeze(Array.from({ length: 128 }, (_unused, midi) => midi)
+  .filter((midi) => NATURAL_PITCH_CLASSES.has(midi % 12)));
+const TREBLE_TOP_LINE_MIDI = 77; // F5
+const TREBLE_TOP_LINE_INDEX = NATURAL_MIDI.indexOf(TREBLE_TOP_LINE_MIDI);
 
 function createTickable(VF, event) {
   const duration = event.notation;
@@ -131,6 +136,7 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
   let noteNavigation = [];
   let focusElementByNoteId = new Map();
   let selectionDrag = null;
+  let stavesByMeasure = new Map();
 
   function selectFromEvent(noteId, event) {
     onSelectNote(noteId, Boolean(event.shiftKey || event.ctrlKey || event.metaKey));
@@ -148,6 +154,39 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     return {
       x: (event.clientX - bounds.left) * width / Math.max(1, bounds.width),
       y: (event.clientY - bounds.top) * height / Math.max(1, bounds.height)
+    };
+  }
+
+  function contextPlacement(event) {
+    if (!projection?.measures?.length) return null;
+    const point = pointerPoint(event);
+    const measureIndex = Math.max(0, Math.min(projection.measures.length - 1, Math.floor(point.x / measureWidth)));
+    const measure = projection.measures[measureIndex];
+    const stave = stavesByMeasure.get(measureIndex);
+    if (!measure || !stave) return null;
+
+    const noteStartX = typeof stave.getNoteStartX === "function"
+      ? stave.getNoteStartX()
+      : 16 + measureIndex * measureWidth + 66;
+    const noteEndX = typeof stave.getNoteEndX === "function"
+      ? stave.getNoteEndX()
+      : 16 + (measureIndex + 1) * measureWidth - 34;
+    const ratio = Math.max(0, Math.min(1, (point.x - noteStartX) / Math.max(1, noteEndX - noteStartX)));
+    const beatTicks = projection.ticksPerMeasure / projection.timeSignature.numerator;
+    const snapTicks = Math.max(1, Math.round(beatTicks / 2));
+    const rawTick = measure.startTick + ratio * projection.ticksPerMeasure;
+    const startTick = Math.round(rawTick / snapTicks) * snapTicks;
+
+    const topY = typeof stave.getYForLine === "function" ? stave.getYForLine(0) : 50;
+    const bottomY = typeof stave.getYForLine === "function" ? stave.getYForLine(4) : 90;
+    const direction = bottomY >= topY ? 1 : -1;
+    const diatonicStepHeight = Math.max(1, Math.abs(bottomY - topY) / 8);
+    const stepsDown = Math.round((point.y - topY) / (diatonicStepHeight * direction));
+    const pitchIndex = Math.max(0, Math.min(NATURAL_MIDI.length - 1, TREBLE_TOP_LINE_INDEX - stepsDown));
+    return {
+      pitch: NATURAL_MIDI[pitchIndex],
+      startTick: Math.max(0, startTick),
+      durationTicks: snapTicks
     };
   }
 
@@ -233,9 +272,11 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
       });
       return;
     }
+    const placement = contextPlacement(event);
     onContextMenu({
       kind: "empty",
       source: "score",
+      ...(placement ?? {}),
       clientX: event.clientX,
       clientY: event.clientY
     });
@@ -408,6 +449,7 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     noteElementsById = new Map();
     syllableElementsById = new Map();
     focusElementByNoteId = new Map();
+    stavesByMeasure = new Map();
     noteNavigation = [];
     activeNoteId = null;
     activeSyllableIds = new Set();
@@ -427,6 +469,7 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
 
     for (const measure of projection.measures) {
       const stave = new VF.Stave(16 + measure.index * measureWidth, 30, measureWidth - 30, 100);
+      stavesByMeasure.set(measure.index, stave);
       stave.addClef("treble");
       if (measure.index === 0) {
         stave.addKeySignature(projection.keySignature);
