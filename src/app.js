@@ -354,6 +354,7 @@ function renderEditorControls() {
 function renderGeneration(state) {
   const panel = byId("generation-panel");
   if (!panel) return;
+  const dock = byId("candidate-dock");
   const form = byId("generation-form");
   const list = byId("generation-candidates");
   const status = byId("generation-status");
@@ -379,6 +380,7 @@ function renderGeneration(state) {
   const generation = state.generation ?? { status: "idle", candidates: [], acceptedNoteIds: [] };
   const sessionReady = generation.status === "ready" && Array.isArray(generation.candidates);
   const acceptedNoteIds = Array.isArray(generation.acceptedNoteIds) ? generation.acceptedNoteIds : [];
+  if (dock) dock.hidden = !sessionReady;
   const fields = {
     "generation-start": generation.gap?.startTick,
     "generation-end": generation.gap?.endTick,
@@ -612,6 +614,11 @@ function render() {
   document.documentElement.lang = language;
   document.querySelectorAll("[data-copy]").forEach((element) => {
     element.textContent = translate(element.dataset.copy);
+  });
+  document.querySelectorAll("[data-aria-copy]").forEach((element) => {
+    const label = translate(element.dataset.ariaCopy);
+    element.setAttribute("aria-label", label);
+    element.setAttribute("title", label);
   });
   languageSelect.value = language;
   byId("tempo-value").textContent = `${song.timing.tempo} BPM`;
@@ -886,6 +893,8 @@ document.addEventListener("change", (event) => {
     language = target.value === "en" ? "en" : DEFAULT_LANGUAGE;
     render();
     announce("languageChanged");
+  } else if (target.dataset.action === "set-tempo-direct") {
+    run(() => commands.setTempo(Number(target.value)), "tempoUpdated");
   } else if (target.dataset.action === "set-anchor") {
     const form = byId("generation-form");
     form.dataset.pending = "true";
