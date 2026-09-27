@@ -16,9 +16,29 @@ function validatePatch(patch) {
   if (keys.length === 0 || keys.some((key) => !allowed.has(key))) fail("invalid-note-patch");
 }
 
-export function createCommands(initialSong, { idFactory = createId, onChange = () => {} } = {}) {
+function reportUnobservedNotificationError(error) {
+  console.error("Melodi notification failed after canonical state was committed.", error);
+}
+
+export function createCommands(initialSong, {
+  idFactory = createId,
+  onChange = () => {},
+  onNotificationError = reportUnobservedNotificationError
+} = {}) {
   let song = createSong(initialSong);
   let selection = null;
+
+  function notifyChange() {
+    try {
+      onChange();
+    } catch (error) {
+      try {
+        onNotificationError(error);
+      } catch (reportingError) {
+        console.error("Melodi notification error handler failed after canonical state was committed.", reportingError, error);
+      }
+    }
+  }
 
   function commit(mutator, afterCommit = () => {}) {
     const candidate = cloneData(song);
@@ -26,7 +46,7 @@ export function createCommands(initialSong, { idFactory = createId, onChange = (
     const validated = createSong(candidate);
     song = validated;
     afterCommit();
-    onChange();
+    notifyChange();
     return result;
   }
 
@@ -116,7 +136,7 @@ export function createCommands(initialSong, { idFactory = createId, onChange = (
         .filter((note) => note.startTick < endTick && note.startTick + note.durationTicks > startTick)
         .map((note) => note.id);
       selection = { startTick, endTick, noteIds };
-      onChange();
+      notifyChange();
       return cloneData(selection);
     }
   };

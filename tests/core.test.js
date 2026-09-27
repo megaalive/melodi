@@ -4,6 +4,7 @@ import {
   PPQ,
   createInitialSong,
   createSong,
+  MelodiError,
   midiToPitch,
   pitchToMidi
 } from "../src/core/model.js";
@@ -242,8 +243,71 @@ test("invalid command input leaves song and change count untouched", () => {
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, source: "generated" }), "invalid-note");
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, anchor: true }), "invalid-note");
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, locked: true }), "invalid-note");
+  assert.throws(
+    () => commands.updateNote("note-4", { pitch: 128 }),
+    (error) => error instanceof MelodiError && error.code === "invalid-pitch"
+  );
   assert.deepEqual(commands.getSong(), before);
   assert.equal(changes, 0);
+});
+
+test("each successful mutation and selection notifies exactly once", () => {
+  let notifications = 0;
+  const commands = createCommands(fixture(), {
+    idFactory: () => "note-new",
+    onChange: () => { notifications += 1; }
+  });
+  const expectOneNotification = (operation) => {
+    const before = notifications;
+    operation();
+    assert.equal(notifications, before + 1);
+  };
+
+  expectOneNotification(() => commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 }));
+  expectOneNotification(() => commands.updateNote("note-4", { pitch: 68 }));
+  expectOneNotification(() => commands.setLyrics("new lyrics"));
+  expectOneNotification(() => commands.setAnchor("note-4", true));
+  expectOneNotification(() => commands.setLocked("note-4", true));
+  expectOneNotification(() => commands.selectRange(1920, 2160));
+  expectOneNotification(() => commands.deleteNote("note-new"));
+});
+
+test("notification failures do not turn committed mutations or selections into command failures", () => {
+  let notifications = 0;
+  const reportedErrors = [];
+  const commands = createCommands(fixture(), {
+    idFactory: () => "note-notified",
+    onChange() {
+      notifications += 1;
+      throw new Error(`view failed ${notifications}`);
+    },
+    onNotificationError(error) {
+      reportedErrors.push(error.message);
+    }
+  });
+
+  let added;
+  assert.doesNotThrow(() => {
+    added = commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 });
+  });
+  assert.equal(added.id, "note-notified");
+  assert.equal(commands.getSong().notes.some((note) => note.id === added.id), true);
+  assert.equal(notifications, 1);
+
+  let selection;
+  assert.doesNotThrow(() => {
+    selection = commands.selectRange(1920, 2160);
+  });
+  assert.deepEqual(selection, { startTick: 1920, endTick: 2160, noteIds: [added.id] });
+  assert.deepEqual(commands.getSelection(), selection);
+  assert.equal(notifications, 2);
+  assert.deepEqual(reportedErrors, ["view failed 1", "view failed 2"]);
+
+  const beforeSelection = commands.getSelection();
+  expectCode(() => commands.selectRange(2160, 1920), "invalid-range");
+  assert.deepEqual(commands.getSelection(), beforeSelection);
+  assert.equal(notifications, 2);
+  assert.deepEqual(reportedErrors, ["view failed 1", "view failed 2"]);
 });
 
 test("commands add, update, lyrics, flags, and delete notes through one boundary", () => {

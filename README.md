@@ -36,7 +36,9 @@ window.melodi.commands.setLocked(noteId, true)
 window.melodi.commands.selectRange(0, 1920)
 ```
 
-`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, and available R0 commands. Song and snapshot reads return copies. Invalid commands throw an error with a stable `code` property and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes user commands only; actor selection stays inside the application boundary.
+`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, and available R0 commands. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes user commands only; actor selection stays inside the application boundary.
+
+Successful commands commit canonical state before notifying the view. If `onChange` fails, the command still returns its success result and passes the view error to `onNotificationError` (the app logs it); notification errors do not roll back or masquerade as domain failures. Selection changes use the same notification behavior.
 
 R0 has no section-switching command, so the snapshot reports the song's first section as current when one exists.
 

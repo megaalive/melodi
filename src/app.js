@@ -169,16 +169,29 @@ function reportError(error) {
   announce(`${translated("operationFailed")}: ${translated(key)}`, "error");
 }
 
-function run(operation, successKey) {
-  try {
-    operation();
-    if (successKey) announce(successKey);
-  } catch (error) {
-    reportError(error);
-  }
+function reportNotificationError(error) {
+  console.error("Melodi view update failed after canonical state was committed.", error);
 }
 
-commands = createCommands(createInitialSong(), { onChange: render });
+function run(operation, successKey) {
+  let result;
+  try {
+    result = operation();
+  } catch (error) {
+    reportError(error);
+    return;
+  }
+  if (successKey) {
+    try {
+      announce(successKey);
+    } catch (error) {
+      reportNotificationError(error);
+    }
+  }
+  return result;
+}
+
+commands = createCommands(createInitialSong(), { onChange: render, onNotificationError: reportNotificationError });
 
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
