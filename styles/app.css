@@ -95,6 +95,18 @@ button.secondary {
   background: #fff;
 }
 
+.transport-controls { min-width: 0; margin: 0; }
+.transport-controls legend { padding: 0 0.35rem; font-weight: 700; }
+.transport-buttons, .transport-form { display: flex; align-items: end; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.85rem; }
+.transport-form label { flex: 1 1 9rem; }
+.transport-form button { flex: 0 0 auto; }
+.playback-readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.65rem 1rem; margin: 1rem 0; }
+.playback-readout div { display: grid; gap: 0.2rem; }
+.playback-readout dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.loop-toggle { display: flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; }
+.loop-toggle input { width: 1.15rem; height: 1.15rem; }
+.transport-controls button:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .note-card fieldset {
   display: grid;
   gap: 0.75rem;

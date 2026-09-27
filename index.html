@@ -35,6 +35,42 @@
         </dl>
       </section>
 
+      <section aria-labelledby="playback-heading">
+        <h2 id="playback-heading" data-copy="playbackHeading"></h2>
+        <fieldset class="panel transport-controls" aria-describedby="playback-readout">
+          <legend data-copy="playbackHeading"></legend>
+          <div class="transport-buttons">
+            <button id="play" type="button" data-action="play" data-copy="playButton"></button>
+            <button id="pause" type="button" data-action="pause" data-copy="pauseButton" disabled></button>
+            <button id="stop" type="button" class="secondary" data-action="stop" data-copy="stopButton"></button>
+          </div>
+
+          <dl id="playback-readout" class="playback-readout" aria-live="off">
+            <div><dt data-copy="playbackStatusLabel"></dt><dd id="playback-status" data-entity="playback-status"></dd></div>
+            <div><dt data-copy="currentTickLabel"></dt><dd><output id="current-tick" data-entity="current-tick">0</output></dd></div>
+            <div><dt data-copy="currentNoteLabel"></dt><dd><output id="current-note" data-entity="current-note"></output></dd></div>
+            <div><dt data-copy="currentSectionLabel"></dt><dd><output id="current-section" data-entity="current-section"></output></dd></div>
+          </dl>
+
+          <form class="transport-form" data-action="seek">
+            <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
+            <button type="submit" data-action="seek" data-copy="seekButton"></button>
+          </form>
+
+          <form class="transport-form" data-action="set-tempo">
+            <label><span data-copy="tempoInputLabel"></span><input id="tempo-input" name="tempo" type="number" min="20" max="300" step="1" value="120" required></label>
+            <button type="submit" data-action="set-tempo" data-copy="applyTempoButton"></button>
+          </form>
+
+          <form class="transport-form loop-range" data-action="set-loop">
+            <label><span data-copy="loopStartLabel"></span><input id="loop-start" name="startTick" type="number" min="0" step="1" value="0" required></label>
+            <label><span data-copy="loopEndLabel"></span><input id="loop-end" name="endTick" type="number" min="1" step="1" value="1920" required></label>
+            <button type="submit" data-action="set-loop" data-copy="applyLoopButton"></button>
+            <label class="loop-toggle"><input id="loop-enabled" type="checkbox" data-action="set-loop-enabled"><span data-copy="loopEnabledLabel"></span></label>
+          </form>
+        </fieldset>
+      </section>
+
       <section aria-labelledby="notes-heading">
         <h2 id="notes-heading" data-copy="notesHeading"></h2>
         <p data-copy="notesHelp"></p>

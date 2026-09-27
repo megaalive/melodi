@@ -1,6 +1,7 @@
 import { createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
+import { createAudioPlayer } from "./audio/player.js";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -115,6 +116,34 @@ function makeCheckboxLabel(text, checked, action, noteId, focusKey) {
   return label;
 }
 
+function renderPlayback() {
+  if (!commands) return;
+  const { playback } = commands.getState();
+  const song = commands.getSong();
+  const statusKey = {
+    stopped: "playbackStopped",
+    playing: "playbackPlaying",
+    paused: "playbackStatusPaused"
+  }[playback.status];
+  const note = song.notes.find((item) => item.id === playback.currentNoteId);
+  const section = song.sections.find((item) => item.id === playback.currentSectionId);
+
+  byId("playback-status").textContent = translated(statusKey);
+  byId("current-tick").textContent = String(playback.currentTick);
+  byId("current-note").textContent = note ? `${note.id} (${midiToPitch(note.pitch)})` : translated("noCurrentNote");
+  byId("current-note").dataset.entityId = note?.id ?? "";
+  byId("current-section").textContent = section ? `${section.name} (${section.id})` : translated("noCurrentSection");
+  byId("current-section").dataset.entityId = section?.id ?? "";
+  byId("play").disabled = playback.status === "playing";
+  byId("pause").disabled = playback.status !== "playing";
+
+  if (document.activeElement !== byId("seek-tick")) byId("seek-tick").value = String(playback.currentTick);
+  if (document.activeElement !== byId("tempo-input")) byId("tempo-input").value = String(playback.tempo);
+  if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
+  if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
+  byId("loop-enabled").checked = playback.loop.enabled;
+}
+
 function render() {
   const active = document.activeElement;
   const focusKey = active?.dataset?.focusKey;
@@ -154,6 +183,7 @@ function render() {
       copyFocusableElement("add-pitch")?.focus();
     }
   }
+  renderPlayback();
 }
 
 function announce(key, kind = "success") {
@@ -191,7 +221,30 @@ function run(operation, successKey) {
   return result;
 }
 
-commands = createCommands(createInitialSong(), { onChange: render, onNotificationError: reportNotificationError });
+function runAsync(operation, successKey, shouldAnnounce = () => true) {
+  let result;
+  try {
+    result = operation();
+  } catch (error) {
+    reportError(error);
+    return;
+  }
+  Promise.resolve(result).then((value) => {
+    if (successKey && shouldAnnounce(value)) announce(successKey);
+  }).catch(reportError);
+}
+
+commands = createCommands(createInitialSong(), {
+  onChange: render,
+  onPlaybackChange: renderPlayback,
+  onPlaybackEvent(event, error) {
+    if (event === "ended") announce("playbackStoppedMessage");
+    else if (event === "interrupted") announce("playbackPaused");
+    else if (event === "error") reportError(error);
+  },
+  onNotificationError: reportNotificationError,
+  audioPlayerFactory: (callbacks) => createAudioPlayer(callbacks)
+});
 
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
@@ -202,7 +255,14 @@ const publicCommands = Object.freeze({
   setLyrics: commands.setLyrics,
   setAnchor: (noteId, value) => commands.setAnchor(noteId, value, { actor: "user" }),
   setLocked: (noteId, value) => commands.setLocked(noteId, value, { actor: "user" }),
-  selectRange: commands.selectRange
+  selectRange: commands.selectRange,
+  play: commands.play,
+  pause: commands.pause,
+  stop: commands.stop,
+  seek: commands.seek,
+  setTempo: commands.setTempo,
+  setLoop: commands.setLoop,
+  setLoopEnabled: commands.setLoopEnabled
 });
 const publicSurface = Object.freeze({ getState: commands.getState, commands: publicCommands });
 Object.defineProperty(window, "melodi", { value: publicSurface, enumerable: true, writable: false, configurable: false });
@@ -230,6 +290,12 @@ document.addEventListener("submit", (event) => {
     run(() => commands.setLyrics(data.get("rawText")), "lyricsSaved");
   } else if (action === "select-range") {
     run(() => commands.selectRange(Number(data.get("startTick")), Number(data.get("endTick"))), "rangeSelected");
+  } else if (action === "seek") {
+    run(() => commands.seek(Number(data.get("tick"))), "seekUpdated");
+  } else if (action === "set-tempo") {
+    run(() => commands.setTempo(Number(data.get("tempo"))), "tempoUpdated");
+  } else if (action === "set-loop") {
+    run(() => commands.setLoop(Number(data.get("startTick")), Number(data.get("endTick"))), "loopUpdated");
   }
 });
 
@@ -244,13 +310,23 @@ document.addEventListener("change", (event) => {
     run(() => commands.setAnchor(target.dataset.noteId, target.checked), "anchorChanged");
   } else if (target.dataset.action === "set-locked") {
     run(() => commands.setLocked(target.dataset.noteId, target.checked), "lockedChanged");
+  } else if (target.dataset.action === "set-loop-enabled") {
+    run(() => commands.setLoopEnabled(target.checked), target.checked ? "loopEnabled" : "loopDisabled");
   }
 });
 
 document.addEventListener("click", (event) => {
-  const target = event.target instanceof Element ? event.target.closest('[data-action="delete-note"]') : null;
+  const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
-  run(() => commands.deleteNote(target.dataset.noteId), "noteDeleted");
+  if (target.dataset.action === "delete-note") {
+    run(() => commands.deleteNote(target.dataset.noteId), "noteDeleted");
+  } else if (target.dataset.action === "play") {
+    runAsync(() => commands.play(), "playbackStarted", (playback) => playback.status === "playing");
+  } else if (target.dataset.action === "pause") {
+    run(() => commands.pause(), "playbackPaused");
+  } else if (target.dataset.action === "stop") {
+    run(() => commands.stop(), "playbackStoppedMessage");
+  }
 });
 
 render();

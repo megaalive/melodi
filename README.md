@@ -1,6 +1,6 @@
 # Melodi
 
-Melodi R0 is a static, vanilla JavaScript shell for a canonical song model. It has no runtime dependencies, audio playback, generator, or persistence layer.
+Melodi is a static, vanilla JavaScript songwriting shell with a canonical song model and a basic Web Audio melody player. It has zero runtime dependencies and no persistence or generator layer.
 
 ## Run
 
@@ -34,13 +34,32 @@ window.melodi.commands.setLyrics("raw lyric text")
 window.melodi.commands.setAnchor(noteId, true)
 window.melodi.commands.setLocked(noteId, true)
 window.melodi.commands.selectRange(0, 1920)
+window.melodi.commands.play()
+window.melodi.commands.pause()
+window.melodi.commands.stop()
+window.melodi.commands.seek(480)
+window.melodi.commands.setTempo(96)
+window.melodi.commands.setLoop(0, 1920)
+window.melodi.commands.setLoopEnabled(true)
 ```
 
-`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, and available R0 commands. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes user commands only; actor selection stays inside the application boundary.
+`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, and available commands. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
 
 Successful commands commit canonical state before notifying the view. If `onChange` fails, the command still returns its success result and passes the view error to `onNotificationError` (the app logs it); notification errors do not roll back or masquerade as domain failures. Selection changes use the same notification behavior.
 
-R0 has no section-switching command, so the snapshot reports the song's first section as current when one exists.
+## Playback
+
+Musical positions stay in integer ticks at PPQ 480. Tick conversion treats tempo as quarter notes per minute: `seconds = ticks * 60 / (480 * bpm)`. The Web Audio player creates its AudioContext on Play, anchors tick positions to `AudioContext.currentTime`, and schedules a 120 ms look-ahead window. A 25 ms JavaScript interval only wakes the scheduler; it does not advance the playhead.
+
+Tempo commands accept finite BPM values from 20 through 300. Changing tempo during playback samples the current integer tick using the old tempo, cancels scheduled voices, and anchors future events at that tick using the new tempo. Pause keeps the current tick and does not suspend AudioContext. Stop and natural end reset to tick 0 and clear the active note. Seeking into a note retriggers its remaining duration. Stop has no active note; an explicit seek to a note's tick projects that note immediately.
+
+The current note uses half-open note ranges `[startTick, startTick + durationTicks)`. When notes overlap, the latest onset wins, then the lexically smallest note ID. During a gap, currentNoteId is null. Current section follows section → phrase → note membership for an active note. In a gap, it is inferred from the first canonical section whose member-note span contains the tick; sections without member notes do not match.
+
+Loop start and end use integer ticks and the end is exclusive. Loop times are derived from the same audio-time anchor and integer cycle offsets, so each cycle does not accumulate its predecessor's rounding error. Notes are cut at the loop boundary. If playback starts before loop start, notes before that point play once; notes spanning loop start retrigger there on later cycles. When loop is enabled, seeking to or beyond loop end maps the playhead to its corresponding position inside the range; positions before loop start remain exact so the intro can play once.
+
+Audio starts only from a trusted Play gesture when the browser requires activation. A rejected or still-suspended start returns a stable `MelodiError` and playback remains stopped or paused. The UI handles the Promise directly in the button event so browser activation is preserved.
+
+Section state is no longer assumed to be the first section; it is projected from canonical membership and the current tick.
 
 Important controls use stable `data-action` hooks. Rendered notes use `data-entity="note"` and `data-entity-id="<note-id>"`; automation should use these hooks rather than visual CSS classes or list position.
 

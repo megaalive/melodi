@@ -358,12 +358,13 @@ test("selection uses a half-open range and can be read through commands", () => 
   assert.deepEqual(commands.getSelection(), before);
 });
 
-test("state snapshot is detached and reports only real R0 actions", () => {
+test("state snapshot is detached and reports the actual R1 command surface", () => {
   const commands = createCommands(fixture());
   const snapshot = commands.getState();
   snapshot.song.scale.intervals[0] = 11;
   snapshot.anchorNoteIds.push("fake");
   snapshot.availableActions.push("play");
+  snapshot.playback.loop.startTick = 200;
   snapshot.selection = { noteIds: ["fake"] };
   const next = commands.getState();
   const expected = {
@@ -376,13 +377,32 @@ test("state snapshot is detached and reports only real R0 actions", () => {
       timeSignature: { numerator: 4, denominator: 4 },
       currentSectionId: "section-1"
     },
+    playback: {
+      status: "stopped",
+      currentTick: 0,
+      currentNoteId: null,
+      currentSectionId: "section-1",
+      tempo: 96,
+      loop: { enabled: false, startTick: 0, endTick: 1920 }
+    },
     selection: null,
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
-    availableActions: ["getSong", "getSelection", "addNote", "updateNote", "deleteNote", "setLyrics", "setAnchor", "setLocked", "selectRange"]
+    availableActions: ["getSong", "getSelection", "addNote", "updateNote", "deleteNote", "setLyrics", "setAnchor", "setLocked", "selectRange", "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled"]
   };
   assert.deepEqual(next, expected);
   assert.deepEqual(commands.getState(), commands.getState());
+});
+
+test("transport state stays outside the canonical song and project serialization", () => {
+  const commands = createCommands(fixture());
+  commands.seek(960);
+  commands.setLoop(240, 1680);
+  commands.setLoopEnabled(true);
+  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "timing", "title"]);
+  const restored = deserializeProject(serializeProject(commands.getSong()));
+  assert.equal(Object.hasOwn(restored, "playback"), false);
+  assert.deepEqual(restored.notes, fixture().notes);
 });
 
 test("returned song copies cannot mutate canonical state and IDs stay attached when reordered", () => {
