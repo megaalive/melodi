@@ -895,6 +895,7 @@ document.addEventListener("change", (event) => {
     announce("languageChanged");
   } else if (target.dataset.action === "set-tempo-direct") {
     run(() => commands.setTempo(Number(target.value)), "tempoUpdated");
+    if (target.form) target.form.dataset.pending = "false";
   } else if (target.dataset.action === "set-anchor") {
     const form = byId("generation-form");
     form.dataset.pending = "true";
