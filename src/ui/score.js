@@ -48,6 +48,8 @@ function markNoteElement(element, segment, note, { selected, tabStop, translate 
   element.setAttribute("data-measure-index", segment.measureIndex);
   element.setAttribute("data-fragment-index", segment.fragmentIndex);
   element.setAttribute("data-selected", String(selected));
+  element.setAttribute("data-anchor", String(note.anchor));
+  element.setAttribute("data-locked", String(note.locked));
   element.setAttribute("data-current", "false");
   element.setAttribute("data-focus-key", `score-note-${note.id}`);
   element.setAttribute("role", tabStop ? "button" : "presentation");
@@ -146,7 +148,6 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     const element = findScoreNote(event.target);
     if (element) {
       const noteId = element.dataset.noteId;
-      onSelectNote(noteId, true);
       onContextMenu({
         kind: "selection",
         source: "score",
