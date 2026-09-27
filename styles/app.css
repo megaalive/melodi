@@ -85,6 +85,22 @@
   --ease: cubic-bezier(0.2, 0, 0.2, 1);
   --radius: 0.65rem;
   --shadow: 0 10px 30px rgba(31, 49, 64, 0.08);
+
+  /*
+   * Type scale. Sebelumnya ada 19 nilai font-size bebas yang tersebar di seluruh
+   * file, dan itu penyebab tunggal terbesar tampilan terasa tidak elegan: tidak
+   * ada dua bagian yang bisa diyakinkan sengaja memakai ukuran yang sama. Enam
+   * langkah ini cukup untuk seluruh UI, dan karena nilainya token, perubahan
+   * di masa depan cukup di satu tempat.
+   * Ukuran glif seperti ▶ ❚❚ ■ ↶ ↷ sengaja TIDAK memakai scale ini karena
+   * itu ukuran ikon, bukan tipografi.
+   */
+  --text-2xs: 0.68rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.82rem;
+  --text-md: 0.9rem;
+  --text-lg: 1rem;
+  --text-xl: 1.28rem;
 }
 
 @supports (color: light-dark(#ffffff, #000000)) {
@@ -236,8 +252,8 @@ p { margin: 0.45rem 0 0.8rem; }
 }
 
 .brand-block { min-width: 0; }
-.brand-block h1 { margin: 0; font-size: 1.28rem; letter-spacing: -0.02em; }
-.brand-block p { margin: 0.12rem 0 0; color: var(--text-muted); font-size: 0.86rem; }
+.brand-block h1 { margin: 0; font-size: var(--text-xl); letter-spacing: -0.02em; }
+.brand-block p { margin: 0.12rem 0 0; color: var(--text-muted); font-size: var(--text-sm); }
 
 .language-control {
   display: grid;
@@ -245,7 +261,7 @@ p { margin: 0.45rem 0 0.8rem; }
   align-items: center;
   gap: 0.5rem;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
 }
 .language-control select { width: auto; min-width: 7rem; }
 
@@ -292,11 +308,11 @@ p { margin: 0.45rem 0 0.8rem; }
 .eyebrow {
   margin: 0 0 0.12rem;
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-#song-title { margin: 0; font-size: 1.05rem; font-weight: 750; }
+#song-title { margin: 0; font-size: var(--text-lg); font-weight: 750; }
 
 .song-summary {
   display: flex;
@@ -306,8 +322,8 @@ p { margin: 0.45rem 0 0.8rem; }
   margin: 0;
 }
 .song-summary div { display: flex; align-items: baseline; gap: 0.34rem; }
-.song-summary dt { color: var(--text-muted); font-size: 0.76rem; }
-.song-summary dd { margin: 0; font-size: 0.86rem; font-weight: 700; }
+.song-summary dt { color: var(--text-muted); font-size: var(--text-xs); }
+.song-summary dd { margin: 0; font-size: var(--text-sm); font-weight: 700; }
 
 .transport-dock {
   position: sticky;
@@ -355,14 +371,14 @@ p { margin: 0.45rem 0 0.8rem; }
   min-width: 0;
 }
 .playback-readout div { display: grid; gap: 0.05rem; }
-.playback-readout dt { color: var(--text-muted); font-size: 0.68rem; }
+.playback-readout dt { color: var(--text-muted); font-size: var(--text-2xs); }
 .playback-readout dd {
   margin: 0;
   max-width: 14rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.84rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 .playback-readout .machine-detail { display: none; }
@@ -378,7 +394,7 @@ p { margin: 0.45rem 0 0.8rem; }
   gap: 0.2rem;
   min-width: 0;
 }
-.transport-form label > span { color: var(--text-muted); font-size: 0.7rem; }
+.transport-form label > span { color: var(--text-muted); font-size: var(--text-xs); }
 .tempo-control { margin-left: auto; }
 .tempo-control label { width: 7rem; }
 .tempo-control button { white-space: nowrap; }
@@ -389,7 +405,7 @@ p { margin: 0.45rem 0 0.8rem; }
   gap: 0.42rem;
   min-height: 2.35rem;
   white-space: nowrap;
-  font-size: 0.84rem;
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 .loop-toggle input {
@@ -416,7 +432,7 @@ p { margin: 0.45rem 0 0.8rem; }
 .utility-details > summary {
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 .transport-advanced[open] {
@@ -463,7 +479,7 @@ p { margin: 0.45rem 0 0.8rem; }
   align-items: center;
   gap: 0.48rem;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 .compact-field select { width: auto; min-width: 11rem; }
 .follow-mode-control {
@@ -471,7 +487,7 @@ p { margin: 0.45rem 0 0.8rem; }
   align-items: center;
   gap: 0.42rem;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 .follow-mode-control input { width: 1rem; height: 1rem; margin: 0; }
 
@@ -509,7 +525,7 @@ p { margin: 0.45rem 0 0.8rem; }
 .workspace-pane h2,
 .inspector-card h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--text-lg);
 }
 
 .pane-heading,
@@ -526,7 +542,7 @@ p { margin: 0.45rem 0 0.8rem; }
 .inspector-heading p {
   margin: 0.18rem 0 0;
   color: var(--text-muted);
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
   line-height: 1.35;
 }
 .inspector-heading { display: block; }
@@ -548,12 +564,12 @@ p { margin: 0.45rem 0 0.8rem; }
   gap: 0.2rem;
   width: 5.2rem;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
 }
 .editor-toolbar button {
   min-height: 2.1rem;
   padding: 0.35rem 0.55rem;
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
 }
 
 .editor-toolbar-group {
@@ -567,7 +583,7 @@ p { margin: 0.45rem 0 0.8rem; }
 .editor-toolbar-label {
   align-self: center;
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
   white-space: nowrap;
 }
 .editor-toolbar-group button {
@@ -647,7 +663,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .form-grid label > span,
 .lyrics-form label > span {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
 }
 
 .generation-form { display: grid; gap: 0.62rem; min-width: 0; }
@@ -694,7 +710,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   box-shadow: 0 0 0 2px var(--petrol);
   background: var(--petrol-soft);
 }
-.generation-candidate-card h3 { margin: 0 0 0.3rem; font-size: 0.9rem; }
+.generation-candidate-card h3 { margin: 0 0 0.3rem; font-size: var(--text-md); }
 .candidate-active-label {
   display: inline-block;
   margin-inline-start: 0.3rem;
@@ -706,21 +722,21 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 }
 .candidate-melody {
   margin: 0.35rem 0 0.55rem;
-  font-size: 0.88rem;
+  font-size: var(--text-sm);
   font-weight: 750;
   line-height: 1.45;
 }
-.candidate-actions button { flex: 1 1 5rem; min-height: 2.1rem; font-size: 0.76rem; }
+.candidate-actions button { flex: 1 1 5rem; min-height: 2.1rem; font-size: var(--text-xs); }
 .candidate-id,
 .candidate-metadata,
-.candidate-score { margin: 0.28rem 0; font-size: 0.76rem; overflow-wrap: anywhere; }
+.candidate-score { margin: 0.28rem 0; font-size: var(--text-xs); overflow-wrap: anywhere; }
 .candidate-id code { overflow-wrap: anywhere; }
 .candidate-score-breakdown {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.25rem 0.65rem;
   margin: 0.45rem 0 0;
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
 }
 .candidate-score-breakdown dd { margin: 0; font-variant-numeric: tabular-nums; }
 
@@ -744,7 +760,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   padding: 0;
   border: 0;
 }
-.note-card legend { margin-bottom: 0.2rem; font-size: 0.88rem; font-weight: 750; }
+.note-card legend { margin-bottom: 0.2rem; font-size: var(--text-sm); font-weight: 750; }
 .note-card .form-grid { grid-template-columns: 1fr; }
 .note-primary-fields { margin-bottom: 0; }
 .note-timing-details {
@@ -755,7 +771,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .note-timing-details > summary {
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 .note-timing-fields {
@@ -773,17 +789,17 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
 }
 .note-actions label {
   display: none;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
 }
 .note-flags input,
 .note-actions input { width: 1rem; height: 1rem; margin: 0; }
-.note-actions button { min-height: 2.05rem; padding: 0.32rem 0.5rem; font-size: 0.75rem; }
+.note-actions button { min-height: 2.05rem; padding: 0.32rem 0.5rem; font-size: var(--text-xs); }
 .entity-id { display: none; }
 
 .utility-details { margin-top: 0.55rem; }
@@ -792,7 +808,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .compact-panel .form-grid { grid-template-columns: 1fr; }
 .utility-card { padding: 0.62rem 0.72rem; }
 
-.muted { color: var(--text-muted); font-size: 0.78rem; }
+.muted { color: var(--text-muted); font-size: var(--text-sm); }
 
 .status {
   position: fixed;
@@ -807,7 +823,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   background: var(--chip-surface);
   color: var(--chip-ink);
   box-shadow: var(--shadow);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 .status:empty { display: none; }
@@ -886,7 +902,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .roll-row { fill: var(--roll-key-light); }
 .roll-row-black { fill: var(--roll-key-dark); }
 .roll-row-line { stroke: var(--border); stroke-width: 1; }
-.roll-pitch-label, .roll-bar-label { fill: var(--text); font: 12px system-ui, sans-serif; }
+.roll-pitch-label, .roll-bar-label { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
 .roll-beat-line { stroke: var(--border-strong); stroke-width: 1; }
 .roll-bar-line { stroke: var(--text-muted); stroke-width: 2; }
 .roll-header-line { stroke: var(--text-muted); stroke-width: 1.5; }
@@ -897,12 +913,12 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 [data-entity="note"][data-locked="true"] .roll-note { stroke-dasharray: 2 2; }
 [data-entity="note"][data-selected="true"] .roll-note { fill: var(--highlight-selected); }
 [data-entity="note"][data-current="true"] .roll-note { fill: var(--highlight-current); stroke: var(--highlight-current-ink); }
-.roll-note-mark { fill: var(--text); font: 700 10px system-ui, sans-serif; pointer-events: none; }
+.roll-note-mark { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-2xs); font-weight: 700; pointer-events: none; }
 .roll-resize-handle { fill: transparent; cursor: ew-resize; touch-action: none; }
 .roll-move-hit { fill: transparent; cursor: grab; touch-action: none; }
 .roll-playhead { stroke: var(--playhead); stroke-width: 2; }
 
-.score-measure-label { fill: var(--text-muted); font: 12px system-ui, sans-serif; }
+.score-measure-label { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
 
 /* VexFlow menulis warna sebagai presentation attribute dan sisanya diwarisi.
    Garis staff adalah <path> yang TIDAK punya atribut stroke sama sekali, jadi
@@ -931,8 +947,8 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .score-note[data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)); }
 .score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)) drop-shadow(0 0 3px var(--highlight-current-ink)); }
 .score-note:focus-visible { filter: drop-shadow(0 0 4px var(--focus)); }
-.score-chord { fill: var(--text); font: 650 13px system-ui, sans-serif; }
-.score-syllable { fill: var(--text); font: 12px system-ui, sans-serif; }
+.score-chord { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-sm); font-weight: 650; }
+.score-syllable { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
 .score-syllable[data-current="true"] { fill: var(--highlight-current-ink); font-weight: 700; }
 .score-melisma { stroke: var(--text-muted); stroke-width: 1; }
 .score-melisma[data-current="true"] { stroke: var(--highlight-current-ink); stroke-width: 2; }
@@ -957,7 +973,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .neck-fret { stroke: var(--border-strong); stroke-width: 1; }
 .neck-fret-sweet { stroke: var(--ember); stroke-width: 1.5; }
 .neck-fret-octave { stroke: var(--ember); stroke-width: 1.5; }
-.neck-fret-label { fill: var(--text-muted); font: 10px system-ui, sans-serif; }
+.neck-fret-label { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); }
 .neck-fret-label-marked { fill: var(--text); font-weight: 700; }
 .neck-fret-label-current { fill: var(--ember); font-weight: 700; }
 .neck-fret-current { stroke: var(--ember); stroke-width: 2; }
@@ -966,8 +982,8 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .neck-string[data-string="5"],
 .neck-string[data-string="4"] { stroke-width: 1.7; }
 .neck-string[data-string="1"] { stroke-width: 1; }
-.neck-string-label { fill: var(--text-muted); font: 600 10px system-ui, sans-serif; }
-.neck-string-number { fill: var(--text-muted); font: 9px system-ui, sans-serif; }
+.neck-string-label { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); font-weight: 600; }
+.neck-string-number { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); }
 /* Semua posisi yang bisa dimainkan memakai warna yang sama. Warna berbeda
    hanya untuk senar terbuka, jadi tidak ada posisi yang terlihat "salah". */
 .neck-hit { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; }
@@ -978,7 +994,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   margin: 0;
   min-height: 1.1rem;
   color: var(--ember);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
@@ -1088,13 +1104,13 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   line-height: 1;
 }
 .playback-readout { gap: 0.65rem; }
-.playback-readout dt { font-size: 0.62rem; }
-.playback-readout dd { font-size: 0.78rem; }
+.playback-readout dt { font-size: var(--text-2xs); }
+.playback-readout dd { font-size: var(--text-sm); }
 .tempo-control { margin-left: auto; }
 .tempo-control label { width: 4.6rem; }
-.tempo-control label > span { font-size: 0.62rem; }
+.tempo-control label > span { font-size: var(--text-2xs); }
 .tempo-control input { padding-block: 0.38rem; }
-.loop-toggle { min-height: 2.1rem; font-size: 0.78rem; }
+.loop-toggle { min-height: 2.1rem; font-size: var(--text-sm); }
 
 .workspace-toolbar {
   margin-top: 0.42rem;
@@ -1144,14 +1160,14 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   min-height: 2.15rem;
   flex: 1 1 6.5rem;
   padding: 0.32rem 0.5rem;
-  font-size: 0.76rem;
+  font-size: var(--text-xs);
 }
 .generation-primary-actions button { min-height: 2.2rem; }
 .generation-session-actions { gap: 0.35rem; margin: 0.4rem 0; }
 .generation-session-actions > * {
   min-height: 2.05rem;
   padding: 0.3rem 0.45rem;
-  font-size: 0.74rem;
+  font-size: var(--text-xs);
 }
 .shortcut-help { margin-top: 0.25rem; }
 
@@ -1201,16 +1217,16 @@ body[data-view-mode="combined"] .score-scroll {
 }
 .candidate-dock-header h2 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-md);
 }
 .candidate-dock-header p {
   margin: 0.08rem 0 0;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
 }
 .candidate-dock-close {
   min-height: 2rem;
   padding: 0.28rem 0.5rem;
-  font-size: 0.72rem;
+  font-size: var(--text-xs);
 }
 .candidate-dock .generation-candidates {
   display: grid;
@@ -1230,7 +1246,7 @@ body[data-view-mode="combined"] .score-scroll {
 }
 .candidate-dock .candidate-melody {
   margin: 0.25rem 0 0.4rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
 }
 .candidate-dock .candidate-metadata,
 .candidate-dock .candidate-score { display: inline; margin-right: 0.6rem; }
@@ -1399,9 +1415,9 @@ body[data-view-mode="combined"] .score-scroll {
 
   /* Readout bisa jadi satu baris ramping di mobile; label dan nilai tidak perlu
      ditumpuk seperti di desktop. */
-  .playback-readout { gap: 0.5rem; font-size: 0.72rem; }
-  .playback-readout dt { font-size: 0.6rem; }
-  .playback-readout dd { font-size: 0.72rem; }
+  .playback-readout { gap: 0.5rem; font-size: var(--text-xs); }
+  .playback-readout dt { font-size: var(--text-2xs); }
+  .playback-readout dd { font-size: var(--text-xs); }
 
   /* Target sentuh: 44px adalah batas bawah yang masih bisa diulang di ruang
      sempit tanpa membuat bar transport terlalu tinggi. */
@@ -1446,7 +1462,7 @@ body[data-view-mode="combined"] .score-scroll {
 .sidebar-tools > summary {
   cursor: pointer;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
@@ -1580,7 +1596,7 @@ body[data-view-mode="combined"] .score-scroll {
   background: transparent;
   color: var(--text);
   text-align: left;
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -1600,7 +1616,7 @@ body[data-view-mode="combined"] .score-scroll {
 .context-group-label {
   padding: 0.18rem 0.45rem 0.08rem;
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: var(--text-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
