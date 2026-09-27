@@ -18,6 +18,7 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "copySelection",
   "pasteNotes",
   "setSnap",
+  "setZoom",
   "addLyricSyllable",
   "updateLyricSyllable",
   "deleteLyricSyllable",

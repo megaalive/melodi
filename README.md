@@ -41,6 +41,8 @@ window.melodi.commands.setTempo(96)
 window.melodi.commands.setLoop(0, 1920)
 window.melodi.commands.setLoopEnabled(true)
 window.melodi.commands.setViewMode("guitar")
+window.melodi.commands.setZoom(2)
+window.melodi.commands.setSnap("1/16")
 window.melodi.commands.undo()
 window.melodi.commands.redo()
 window.melodi.commands.canUndo()
@@ -99,6 +101,10 @@ The page follows the operating system by default. The `theme` select offers `sys
 
 Every canvas colour is a CSS custom property, including the SVG `fill` and `stroke` values in the Piano Roll and score, so both modes restyle from one token set. Tokens are declared as flat values first and upgraded to `light-dark()` pairs behind `@supports`, so a browser without `light-dark()` still renders a complete light theme instead of dropping every colour. Motion is reduced to near-zero under `prefers-reduced-motion: reduce`; state colour changes are kept, because anchor and locked feedback must stay readable.
 
+## Type
+
+All typography comes from six steps, `--text-2xs` through `--text-xl`. This replaced nineteen free-floating `font-size` values spread across the stylesheet, which was the single biggest reason the interface did not read as deliberate: no two parts of the UI could be sure they had chosen the same size on purpose. Glyph sizes such as the transport symbols are intentionally not on the scale, because those are icon sizes rather than typography.
+
 ## Layout
 
 Above 46rem the workspace chrome is a single sticky row: transport and edit history on the left, tempo, loop, and the Advanced disclosure in the middle, view mode and Follow Mode on the right. Below 46rem the same chrome becomes a fixed bottom bar with 44px touch targets, so the canvas starts at the top of the page and playback stays under the thumb.
@@ -110,6 +116,8 @@ The Advanced panel is an absolutely positioned popover rather than inline conten
 `score`, `piano-roll`, `combined`, `lyrics`, and `guitar` are set with `setViewMode`. The piano roll draws the active generation candidate in the gap between the anchors, so auditioning happens where the music already is rather than in a separate panel.
 
 The roll's zoom follows the panel width and has a lower bound only. There is deliberately no upper bound: capping it left hundreds of pixels of undrawn grid on the right for short songs. When the grid is wider than the panel the panel scrolls horizontally instead.
+
+Horizontal zoom is a user multiplier on top of that fitted width, from 1x to 4x in quarter steps, set with `setZoom(zoom)` and read from `getState().editor.zoom`. At 1x the grid fits the panel, so zoom changes nothing until asked. There is no zoom below 1x on purpose: the grid either already fits the panel or is already at the 80px per note legibility floor, so shrinking it only adds empty space. Zoom is a multiplier rather than an absolute pixel value so it stays meaningful when the window is resized. `-`, `+`, and `0` step it from inside the editor only, deliberately leaving `Ctrl`+`Plus` and `Ctrl`+`Minus` to the browser for page zoom.
 
 The grid window always starts at bar 1 while the whole song fits inside `MAX_ROLL_BARS`. The window only follows the focus when a song genuinely exceeds that cap, where the priority is keeping the playhead reachable and the DOM bounded. Anchoring the window to the focus at all times is what made bar 1 and 2 vanish once a note in a later bar was selected: they fell outside the window, were never drawn, and could not be scrolled to because there was nothing there.
 

@@ -1,6 +1,6 @@
 import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
-import { SNAP_TICKS } from "./core/editor.js";
+import { ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
@@ -515,6 +515,9 @@ function renderEditorControls() {
   byId("paste-notes").disabled = !state.editor.canPaste;
   byId("copy-selection").disabled = state.selectedNoteIds.length === 0;
   byId("clear-selection").disabled = state.selectedNoteIds.length === 0 && !state.selection;
+  const zoomControl = byId("roll-zoom");
+  if (document.activeElement !== zoomControl) zoomControl.value = String(state.editor.zoom);
+  byId("roll-zoom-value").textContent = translate("zoomValue", { percent: Math.round(state.editor.zoom * 100) });
   // Toolbar transpose dan durasi adalah jalur eksplisit; context menu tetap ada
   // sebagai pintasan, bukan satu-satunya jalan (PLAN.md: fungsi penting tidak
   // boleh hanya tersedia lewat context menu).
@@ -1006,6 +1009,7 @@ const publicCommands = Object.freeze({
   copySelection: commands.copySelection,
   pasteNotes: commands.pasteNotes,
   setSnap: commands.setSnap,
+  setZoom: commands.setZoom,
   setViewMode: commands.setViewMode,
   setFollowMode: commands.setFollowMode,
   undo: commands.undo,
@@ -1142,6 +1146,8 @@ document.addEventListener("change", (event) => {
     run(() => commands.setLoopEnabled(target.checked), target.checked ? "loopEnabled" : "loopDisabled");
   } else if (target.dataset.action === "set-snap") {
     run(() => commands.setSnap(target.value));
+  } else if (target.dataset.action === "set-zoom") {
+    run(() => commands.setZoom(Number(target.value)));
   } else if (target.dataset.action === "set-view-mode") {
     run(() => commands.setViewMode(target.value));
   } else if (target.dataset.action === "set-follow-mode") {
@@ -1430,6 +1436,18 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && editorTarget && selectedIds.length > 0) {
     event.preventDefault();
     run(() => commands.clearSelection(), "selectionCleared");
+    return;
+  }
+
+  if (editorTarget && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey
+    && (event.key === "-" || event.key === "=" || event.key === "+" || event.key === "0")) {
+    // Zoom memakai tombol biasa dan hanya di dalam editor, supaya Ctrl+Plus dan
+    // Ctrl+Minus milik browser untuk zoom halaman tetap berfungsi.
+    event.preventDefault();
+    // Handler ini tidak punya state di scope, jadi dibaca lewat commands.
+    const currentZoom = commands.getState().editor.zoom;
+    const next = event.key === "0" ? 1 : event.key === "-" ? currentZoom - ROLL_ZOOM_STEP : currentZoom + ROLL_ZOOM_STEP;
+    run(() => commands.setZoom(Number(next.toFixed(2))));
     return;
   }
 

@@ -76,6 +76,25 @@ test("bounded roll windows can focus and round-trip late absolute ticks", () => 
   assert.equal(geometry.startTick % geometry.barTicks, 0);
 });
 
+test("roll zoom is a multiplier that widens the grid and is clamped", () => {
+  const base = createRollGeometry({ endTick: 2880, viewportWidth: 1113 });
+  assert.equal(createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 1 }).width, base.width);
+  const zoomed = createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 2 });
+  assert.equal(zoomed.pixelsPerQuarter, base.pixelsPerQuarter * 2);
+  assert.ok(zoomed.width > base.width, "zooming in must widen the grid so the panel scrolls");
+  // Zoomed in, the grid is wider than the panel, which is the whole point.
+  assert.ok(zoomed.width > 1113);
+  // Ticks must still round-trip at any zoom, otherwise drag and click-to-add
+  // would drift off the grid.
+  for (const tick of [0, 120, 240, 480, 1440, 2880]) {
+    assert.equal(xToTick(tickToX(tick, zoomed), zoomed), tick);
+    assert.ok(Number.isSafeInteger(xToTick(tickToX(tick, zoomed), zoomed)));
+  }
+  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: 0.5 }), /Invalid roll zoom/);
+  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: 8 }), /Invalid roll zoom/);
+  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: Number.NaN }), /Invalid roll zoom/);
+});
+
 test("short same-pitch notes keep disjoint in-note move and resize targets", () => {
   const geometry = createRollGeometry({ endTick: 1000 });
   const notes = [0, 120, 240, 360].map((startTick, index) => ({

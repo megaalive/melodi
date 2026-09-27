@@ -1,3 +1,5 @@
+import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM } from "./editor.js";
+
 const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar"]);
 
 /** Region mana yang tampil pada mode tampilan apa. */
@@ -53,8 +55,16 @@ export function normalizeHistoryState(history) {
   };
 }
 
-export function normalizePlaybackState(playback) {
-  const currentSyllableIds = Array.isArray(playback?.currentSyllableIds)
+/** Zoom horizontal editor, clamped ke rentang yang diizinkan command layer. */
+export function normalizeEditorState(editor) {
+  const zoom = Number.isFinite(editor?.zoom) ? editor.zoom : MIN_ROLL_ZOOM;
+  return {
+    ...editor,
+    zoom: Math.min(MAX_ROLL_ZOOM, Math.max(MIN_ROLL_ZOOM, zoom))
+  };
+}
+
+export function normalizePlaybackState(playback) {  const currentSyllableIds = Array.isArray(playback?.currentSyllableIds)
     ? playback.currentSyllableIds
     : playback?.currentSyllableId
       ? [playback.currentSyllableId]
@@ -73,6 +83,7 @@ export function normalizeRuntimeState(state = {}) {
     generation: normalizeGenerationState(state.generation),
     view: normalizeViewState(state.view),
     playback: normalizePlaybackState(state.playback),
+    editor: normalizeEditorState(state.editor),
     history: normalizeHistoryState(state.history)
   };
 }

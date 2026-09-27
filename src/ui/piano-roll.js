@@ -1,5 +1,5 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { SNAP_TICKS } from "../core/editor.js";
+import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
 
 export { SNAP_TICKS };
@@ -62,12 +62,14 @@ export function createRollGeometry({
   top = PIANO_TOP,
   labelWidth = PIANO_LABEL_WIDTH,
   pixelsPerQuarter = PIXELS_PER_QUARTER,
-  viewportWidth = 0
+  viewportWidth = 0,
+  zoom = MIN_ROLL_ZOOM
 } = {}) {
   if (!Number.isSafeInteger(ppq) || ppq <= 0 || !Number.isSafeInteger(numerator) || numerator <= 0
     || !Number.isSafeInteger(denominator) || denominator <= 0) throw new RangeError("Invalid musical grid.");
   if (!Number.isFinite(endTick) || endTick < 0) throw new RangeError("Invalid grid end tick.");
   if (!Number.isFinite(focusTick) || focusTick < 0) throw new RangeError("Invalid grid focus tick.");
+  if (!Number.isFinite(zoom) || zoom < MIN_ROLL_ZOOM || zoom > MAX_ROLL_ZOOM) throw new RangeError("Invalid roll zoom.");
   const beatTicks = ppq * 4 / denominator;
   const barTicks = beatTicks * numerator;
   if (!Number.isSafeInteger(beatTicks) || !Number.isSafeInteger(barTicks) || barTicks <= 0) throw new RangeError("Invalid musical grid.");
@@ -87,8 +89,17 @@ export function createRollGeometry({
   // satu bar di viewport 1113px butuh 264px per nada, lalu dipaksa turun ke
   // 160px sehingga 417px grid tidak pernah digambar. Batas bawah tetap
   // diperlukan supaya nada tidak terlalu rapat; kalau grid melebihi viewport,
-  //panel yang menggulir secara horizontal, bukan grid yang mengecil.
-  const resolvedPixelsPerQuarter = Math.max(pixelsPerQuarter, fittedPixelsPerQuarter);
+  // panel yang menggulir secara horizontal, bukan grid yang mengecil.
+  // Zoom memakai kelipatan, bukan nilai absolut, supaya tetap berlaku ketika
+  // jendela diubah ukurannya. Rentang 1x sampai 4x: di bawah 1x tidak
+  // menawarkan apa pun karena grid sudah pas di panel.
+  // Zoom memakai kelipatan, bukan nilai absolut, supaya tetap berlaku ketika
+  // jendela diubah ukurannya. Rentang 1x sampai 4x: di bawah 1x tidak
+  // menawarkan apa pun karena grid sudah pas di panel.
+  // Pixels per quarter adalah ukuran piksel, jadi dibulatkan. Nilai pecahan
+  // tidak merepresentasikan apa pun dan hanya menambah galat floating point
+  // pada xToTick, yang TomeZone dipakai untuk drag dan klik tambah note.
+  const resolvedPixelsPerQuarter = Math.round(Math.max(pixelsPerQuarter, fittedPixelsPerQuarter) * zoom);
   /*
    * Jendela grid SELALU mulai dari bar 1 selama seluruh lagu masih muat dalam
    * batas. Dulu jendela ikut bergeser ke fokus, dan itulah akar bug "hanya bar 3
@@ -128,7 +139,9 @@ export function tickToX(tick, geometry) {
 }
 
 export function xToTick(x, geometry) {
-  return geometry.startTick + (x - geometry.labelWidth) * geometry.ppq / geometry.pixelsPerQuarter;
+  // Error floating point sekecil apa pun harus hilang, karena hasil ini dipakai
+  // untuk snapped tick yang wajib integer agar lolos validasi canonical Song.
+  return Math.round(geometry.startTick + (x - geometry.labelWidth) * geometry.ppq / geometry.pixelsPerQuarter);
 }
 
 export function midiToY(midi, geometry) {
@@ -277,6 +290,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       numerator,
       denominator,
       pitchRange,
+      zoom: state.editor.zoom,
       viewportWidth: scrollContainer?.clientWidth ?? 0
     });
     svg.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
