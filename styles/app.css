@@ -1161,3 +1161,47 @@ body:has(.transport-advanced[open]) .workspace-sidebar {
     box-shadow: none;
   }
 }
+
+
+/* Advanced controls tidak boleh menimpa workspace. */
+.transport-advanced[open] {
+  flex-basis: 100%;
+  margin-left: 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.transport-advanced[open] .transport-advanced-grid {
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.7fr) minmax(22rem, 1.3fr);
+  width: 100%;
+  padding: 0.45rem 0 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.generation-options[open] > .generation-advanced-popover {
+  position: static;
+  width: auto;
+  max-height: 17rem;
+  margin-top: 0.4rem;
+  padding: 0.55rem 0 0;
+  overflow: auto;
+  border: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@media (max-width: 46rem) {
+  .transport-advanced[open] .transport-advanced-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generation-options[open] > .generation-advanced-popover {
+    max-height: 19rem;
+  }
+}
