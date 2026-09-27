@@ -144,11 +144,20 @@ function renderNotes(song, state) {
     fieldset.append(legend);
 
     const grid = document.createElement("div");
-    grid.className = "form-grid";
+    grid.className = "form-grid note-primary-fields";
     grid.append(
       makeInputLabel(translate("notePitchLabel", { pitch }), "text", pitch, `pitch-${note.id}`, {
         pattern: "[A-Ga-g][#b]?-?[0-9]+", action: "edit-note-pitch", focusKey: `pitch-${note.id}`
-      }),
+      })
+    );
+
+    const timing = document.createElement("details");
+    timing.className = "note-timing-details";
+    const timingSummary = document.createElement("summary");
+    timingSummary.textContent = translate("generationAdvanced");
+    const timingGrid = document.createElement("div");
+    timingGrid.className = "form-grid note-timing-fields";
+    timingGrid.append(
       makeInputLabel(translate("noteStartTickLabel", { pitch }), "number", note.startTick, `start-${note.id}`, {
         min: 0, step: 1, action: "edit-note-start", focusKey: `start-${note.id}`
       }),
@@ -156,6 +165,7 @@ function renderNotes(song, state) {
         min: 1, step: 1, action: "edit-note-duration", focusKey: `duration-${note.id}`
       })
     );
+    timing.append(timingSummary, timingGrid);
 
     const flags = document.createElement("div");
     flags.className = "note-flags";
@@ -183,7 +193,7 @@ function renderNotes(song, state) {
       id
     );
 
-    fieldset.append(grid, flags, actions);
+    fieldset.append(grid, flags, actions, timing);
     form.append(fieldset);
     item.append(form);
     list.append(item);
