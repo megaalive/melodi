@@ -43,9 +43,9 @@
         <h2 id="playback-heading" class="visually-hidden" data-copy="playbackHeading"></h2>
         <div class="transport-main">
           <div class="transport-buttons" aria-label="Playback">
-            <button id="play" type="button" data-action="play" data-copy="playButton"></button>
-            <button id="pause" type="button" data-action="pause" data-copy="pauseButton" disabled></button>
-            <button id="stop" type="button" class="secondary" data-action="stop" data-copy="stopButton"></button>
+            <button id="play" type="button" data-action="play" data-aria-copy="playButton">▶</button>
+            <button id="pause" type="button" data-action="pause" data-aria-copy="pauseButton" disabled>❚❚</button>
+            <button id="stop" type="button" class="secondary" data-action="stop" data-aria-copy="stopButton">■</button>
           </div>
 
           <dl id="playback-readout" class="playback-readout" aria-live="off">
@@ -56,14 +56,14 @@
           </dl>
 
           <form class="transport-form tempo-control" data-action="set-tempo">
-            <label><span data-copy="tempoInputLabel"></span><input id="tempo-input" name="tempo" type="number" min="20" max="300" step="1" value="120" required></label>
-            <button type="submit" data-action="set-tempo" data-copy="applyTempoButton"></button>
+            <label><span data-copy="tempoInputLabel"></span><input id="tempo-input" name="tempo" type="number" min="20" max="300" step="1" value="120" required data-action="set-tempo-direct"></label>
+            <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true" data-action="set-tempo" data-copy="applyTempoButton"></button>
           </form>
 
           <label class="loop-toggle"><input id="loop-enabled" type="checkbox" data-action="set-loop-enabled"><span data-copy="loopEnabledLabel"></span></label>
 
           <details class="transport-advanced">
-            <summary>Advanced</summary>
+            <summary data-copy="transportAdvanced"></summary>
             <div class="transport-advanced-grid">
               <form class="transport-form" data-action="seek">
                 <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
@@ -202,7 +202,6 @@
               <summary data-copy="generationShortcutsHeading"></summary>
               <p class="muted" data-copy="generationShortcuts"></p>
             </details>
-            <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
           </section>
 
           <section class="inspector-card note-inspector" aria-labelledby="notes-heading">
@@ -239,6 +238,17 @@
           </section>
         </aside>
       </div>
+
+      <section id="candidate-dock" class="candidate-dock" hidden aria-labelledby="candidate-dock-heading">
+        <div class="candidate-dock-header">
+          <div>
+            <h2 id="candidate-dock-heading" data-copy="candidateDockHeading"></h2>
+            <p id="candidate-dock-status" class="muted" data-copy="candidateDockHelp"></p>
+          </div>
+          <button type="button" class="secondary candidate-dock-close" data-action="clear-generation" data-copy="generationClear"></button>
+        </div>
+        <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
+      </section>
 
       <p id="operation-status" class="status" role="status" aria-live="polite" aria-atomic="true" data-entity="operation-status"></p>
     </main>
