@@ -123,9 +123,8 @@ function showNoteContextMenu(detail) {
     lock.textContent = translate(allLocked ? "contextUnlock" : "contextLock");
     lock.setAttribute("aria-checked", String(allLocked));
   } else {
-    const canPlace = detail?.source === "piano-roll"
-      && Number.isSafeInteger(detail.pitch)
-      && Number.isSafeInteger(detail.startTick);
+    const canPlace = Number.isSafeInteger(detail?.pitch)
+      && Number.isSafeInteger(detail?.startTick);
     const add = menu.querySelector('[data-action="context-add-note"]');
     const paste = menu.querySelector('[data-action="context-paste-here"]');
     add.hidden = !canPlace;
@@ -1121,7 +1120,9 @@ document.addEventListener("click", (event) => {
       const note = run(() => commands.addNote({
         pitch: context.pitch,
         startTick: context.startTick,
-        durationTicks: SNAP_TICKS[commands.getState().editor.snap]
+        durationTicks: Number.isSafeInteger(context.durationTicks)
+          ? context.durationTicks
+          : SNAP_TICKS[commands.getState().editor.snap]
       }, { actor: "user" }));
       if (note) {
         commands.selectNotes([note.id]);
