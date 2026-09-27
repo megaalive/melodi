@@ -180,7 +180,10 @@ function renderNotes(song, state) {
     save.type = "submit";
     save.dataset.focusKey = `save-${note.id}`;
     save.textContent = translate("saveNoteButton");
-    const deleteButton = makeButton(translate("deleteNoteButton"), "delete-note", { noteId: note.id });
+    const deleteButton = makeButton(translate("deleteNoteButton"), "delete-note", {
+      noteId: note.id,
+      focusFallback: "view-mode"
+    });
     deleteButton.className = "secondary";
     deleteButton.dataset.focusKey = `delete-${note.id}`;
     const id = document.createElement("span");
