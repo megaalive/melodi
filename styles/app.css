@@ -27,7 +27,7 @@
   --border-strong: #b2ada4;
   --hairline: rgba(27, 33, 36, 0.05);
   --text: #1b2124;
-  --text-muted: #69737a;
+  --text-muted: #5f686f;
   --petrol: #1a5f6b;
   --petrol-strong: #124750;
   --petrol-soft: #e2edef;
@@ -62,6 +62,10 @@
   --on-accent: #ffffff;
   --chip-surface: #1f2d38;
   --chip-ink: #ffffff;
+  --toast-surface: #1f5f3a;
+  --toast-ink: #ffffff;
+  --toast-surface-error: #9b2424;
+  --toast-ink-error: #ffffff;
   --selection-fill: rgba(36, 93, 129, 0.12);
   --surface-float: rgba(255, 255, 255, 0.97);
   --warning-surface: #fff8ec;
@@ -83,9 +87,9 @@
     --border-strong: light-dark(#b2ada4, #464f57);
     --hairline: light-dark(rgba(27, 33, 36, 0.05), rgba(255, 255, 255, 0.05));
     --text: light-dark(#1b2124, #e7e4de);
-    --text-muted: light-dark(#69737a, #8e969c);
-    --petrol: light-dark(#1a5f6b, #63b6c6);
-    --petrol-strong: light-dark(#124750, #8acfdd);
+    --text-muted: light-dark(#5f686f, #949ca2);
+    --petrol: light-dark(#1a5f6b, #4f97a8);
+    --petrol-strong: light-dark(#124750, #6bafbe);
     --petrol-soft: light-dark(#e2edef, #182b30);
     --ember: light-dark(#b05108, #e08a3c);
     --ember-soft: light-dark(#fbeedd, #31231a);
@@ -93,13 +97,13 @@
     --success: light-dark(#1f5f3a, #6cbf8a);
 
     --focus: light-dark(#b05108, #e08a3c);
-    --accent: light-dark(#1a5f6b, #63b6c6);
-    --accent-strong: light-dark(#124750, #8acfdd);
+    --accent: light-dark(#1a5f6b, #4f97a8);
+    --accent-strong: light-dark(#124750, #6bafbe);
     --accent-soft: light-dark(#e2edef, #182b30);
     --anchor: light-dark(#b05108, #e08a3c);
 
-    --note-user: light-dark(#1a5f6b, #63b6c6);
-    --note-user-stroke: light-dark(#124750, #8acfdd);
+    --note-user: light-dark(#1a5f6b, #3f7f8e);
+    --note-user-stroke: light-dark(#124750, #6bafbe);
     --note-generated: light-dark(#7fa9b2, #4a7d88);
     --note-anchor: light-dark(#b05108, #e08a3c);
     --note-anchor-stroke: light-dark(#7c3a05, #b06a24);
@@ -115,6 +119,10 @@
     --on-accent: light-dark(#ffffff, #0f1417);
     --chip-surface: light-dark(#1f2d38, #e7e4de);
     --chip-ink: light-dark(#ffffff, #14171a);
+    --toast-surface: light-dark(#1f5f3a, #18211d);
+    --toast-ink: light-dark(#ffffff, #cfe8d8);
+    --toast-surface-error: light-dark(#9b2424, #241a1c);
+    --toast-ink-error: light-dark(#ffffff, #f0d2d4);
     --selection-fill: light-dark(rgba(36, 93, 129, 0.12), rgba(99, 182, 198, 0.2));
     --surface-float: light-dark(rgba(255, 255, 255, 0.97), rgba(20, 23, 26, 0.97));
     --warning-surface: light-dark(#fff8ec, #2a2013);
@@ -754,8 +762,20 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   font-weight: 650;
 }
 .status:empty { display: none; }
-.status[data-kind="error"] { background: var(--danger); }
-.status[data-kind="success"] { background: var(--success); }
+/* Toast tidak lagi memakai isian hijau/merah pekat. Di tema gelap isian pekat
+   justru jadi elemen paling menyilaukan di layar, jadi isiannya jadi surface
+   redup dan sinyalnya dipindah ke garis sisi + warna teks. */
+.status { background: var(--toast-surface); color: var(--toast-ink); box-shadow: inset 0.16rem 0 0 var(--success), var(--shadow); }
+.status[data-kind="error"] {
+  background: var(--toast-surface-error);
+  color: var(--toast-ink-error);
+  box-shadow: inset 0.16rem 0 0 var(--danger), var(--shadow);
+}
+.status[data-kind="success"] {
+  background: var(--toast-surface);
+  color: var(--toast-ink);
+  box-shadow: inset 0.16rem 0 0 var(--success), var(--shadow);
+}
 
 .lyrics-form {
   display: grid;

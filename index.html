@@ -60,7 +60,7 @@
           </div>
 
           <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
-            <button id="undo" type="button" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled>↶</button>
+            <button id="undo" type="button" class="secondary" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled>↶</button>
             <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled>↷</button>
           </div>
 
@@ -134,14 +134,14 @@
                   </select>
                 </label>
                 <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
-                  <span class="editor-toolbar-label" data-copy="transposeLabel"></span>
+                  <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
                   <button type="button" data-action="transpose-selected" data-delta="-12" data-aria-copy="transposeDownOctave" data-focus-key="transpose-down-12" disabled>−12</button>
                   <button type="button" data-action="transpose-selected" data-delta="-1" data-aria-copy="transposeDownSemitone" data-focus-key="transpose-down-1" disabled>−1</button>
                   <button type="button" data-action="transpose-selected" data-delta="1" data-aria-copy="transposeUpSemitone" data-focus-key="transpose-up-1" disabled>+1</button>
                   <button type="button" data-action="transpose-selected" data-delta="12" data-aria-copy="transposeUpOctave" data-focus-key="transpose-up-12" disabled>+12</button>
                 </div>
                 <div class="editor-toolbar-group" role="group" data-aria-copy="durationGroupLabel">
-                  <span class="editor-toolbar-label" data-copy="durationLabel"></span>
+                  <span class="editor-toolbar-label" data-copy="durationGroupLabel"></span>
                   <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
                   <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
                   <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
