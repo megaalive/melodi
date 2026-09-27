@@ -182,13 +182,14 @@ function isBlackKey(midi) {
   return [1, 3, 6, 8, 10].includes(midi % 12);
 }
 
-export function createPianoRollView(svg, commands, { onAddNote = () => {}, onError = () => {} } = {}) {
+export function createPianoRollView(svg, commands, { onAddNote = () => {}, onContextMenu = () => {}, onError = () => {} } = {}) {
   const scrollContainer = svg.parentElement;
   let geometry = createRollGeometry();
   let activeDrag = null;
   let finishingDrag = false;
   let ignoreNextClick = false;
   let pendingNoteClickId = null;
+  let selectionDrag = null;
   let lastPlaybackTick = 0;
   let pendingPlaybackFollow = false;
 
@@ -275,15 +276,17 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
       }
     }
 
-    for (let tick = geometry.startTick; tick <= geometry.endTick; tick += geometry.beatTicks) {
+    const subdivisionTicks = SNAP_TICKS[state.editor.snap] ?? geometry.beatTicks;
+    for (let tick = geometry.startTick; tick <= geometry.endTick; tick += subdivisionTicks) {
       const x = tickToX(tick, geometry);
       const isBar = tick % geometry.barTicks === 0;
+      const isBeat = tick % geometry.beatTicks === 0;
       svgElement("line", {
         x1: x,
         x2: x,
         y1: geometry.top,
         y2: geometry.height,
-        class: isBar ? "roll-bar-line" : "roll-beat-line",
+        class: isBar ? "roll-bar-line" : isBeat ? "roll-beat-line" : "roll-subdivision-line",
         "data-grid-tick": tick
       }, svg);
       if (isBar) svgElement("text", { x: x + 4, y: 18, class: "roll-bar-label" }, svg, String(tick / geometry.barTicks + 1));
@@ -467,7 +470,23 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     if (event.button !== 0) return;
     const handle = event.target.closest?.('[data-action="resize-note"]');
     const group = event.target.closest?.('[data-entity="note"]');
-    if (!group || !svg.contains(group)) return;
+    if (!group || !svg.contains(group)) {
+      if (event.target.closest?.('[data-entity="candidate-note"], [data-action], text')) return;
+      const point = pointerPoint(event);
+      if (point.x < geometry.labelWidth || point.y < geometry.top || point.y >= geometry.height) return;
+      selectionDrag = {
+        pointerId: event.pointerId,
+        startX: point.x,
+        startY: point.y,
+        currentX: point.x,
+        currentY: point.y,
+        additive: Boolean(event.shiftKey || event.ctrlKey || event.metaKey),
+        moved: false,
+        element: null
+      };
+      try { svg.setPointerCapture(event.pointerId); } catch {}
+      return;
+    }
     event.preventDefault();
     const noteId = handle?.dataset.noteId ?? group.dataset.entityId;
     const song = commands.getSong();
@@ -502,6 +521,29 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
   }
 
   function previewDrag(event) {
+    if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
+      const point = pointerPoint(event);
+      selectionDrag.currentX = point.x;
+      selectionDrag.currentY = point.y;
+      const distance = Math.hypot(point.x - selectionDrag.startX, point.y - selectionDrag.startY);
+      if (distance < 4 && !selectionDrag.moved) return;
+      selectionDrag.moved = true;
+      const x = Math.min(selectionDrag.startX, point.x);
+      const y = Math.min(selectionDrag.startY, point.y);
+      const width = Math.abs(point.x - selectionDrag.startX);
+      const height = Math.abs(point.y - selectionDrag.startY);
+      if (!selectionDrag.element) {
+        selectionDrag.element = svgElement("rect", {
+          class: "roll-selection-box",
+          "pointer-events": "none"
+        }, svg);
+      }
+      selectionDrag.element.setAttribute("x", String(x));
+      selectionDrag.element.setAttribute("y", String(y));
+      selectionDrag.element.setAttribute("width", String(width));
+      selectionDrag.element.setAttribute("height", String(height));
+      return;
+    }
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
     const point = pointerPoint(event);
     const distance = Math.hypot(point.x - activeDrag.startX, point.y - activeDrag.startY);
@@ -542,6 +584,33 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
   }
 
   function finishDrag(event, cancelled = false) {
+    if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
+      const drag = selectionDrag;
+      selectionDrag = null;
+      drag.element?.remove();
+      if (cancelled || !drag.moved) return;
+      const left = Math.min(drag.startX, drag.currentX);
+      const right = Math.max(drag.startX, drag.currentX);
+      const top = Math.min(drag.startY, drag.currentY);
+      const bottom = Math.max(drag.startY, drag.currentY);
+      const song = commands.getSong();
+      const hitIds = song.notes.filter((note) => {
+        if (note.pitch < geometry.minMidi || note.pitch > geometry.maxMidi) return false;
+        const noteLeft = tickToX(Math.max(note.startTick, geometry.startTick), geometry);
+        const noteRight = tickToX(Math.min(note.startTick + note.durationTicks, geometry.endTick), geometry);
+        const noteTop = midiToY(note.pitch, geometry);
+        const noteBottom = noteTop + geometry.rowHeight;
+        return noteRight >= left && noteLeft <= right && noteBottom >= top && noteTop <= bottom;
+      }).map((note) => note.id);
+      const next = drag.additive
+        ? [...new Set([...commands.getSelectedNoteIds(), ...hitIds])]
+        : hitIds;
+      if (next.length) commands.selectNotes(next);
+      else commands.clearSelection();
+      ignoreNextClick = true;
+      setTimeout(() => { ignoreNextClick = false; }, 0);
+      return;
+    }
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
     const drag = activeDrag;
     activeDrag = null;
@@ -613,6 +682,34 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onErr
     const startTick = snapTick(xToTick(point.x, geometry), state.editor.snap);
     onAddNote({ pitch, startTick, durationTicks: SNAP_TICKS[state.editor.snap] });
   }
+
+  svg.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    const group = event.target.closest?.('[data-entity="note"]');
+    if (group && svg.contains(group)) {
+      const noteId = group.dataset.entityId;
+      if (!commands.getSelectedNoteIds().includes(noteId)) commands.selectNotes([noteId]);
+      onContextMenu({
+        kind: "selection",
+        source: "piano-roll",
+        noteId,
+        clientX: event.clientX,
+        clientY: event.clientY
+      });
+      return;
+    }
+    const point = pointerPoint(event);
+    if (point.x < geometry.labelWidth || point.y < geometry.top || point.y >= geometry.height) return;
+    const state = commands.getState();
+    onContextMenu({
+      kind: "empty",
+      source: "piano-roll",
+      pitch: Math.max(0, Math.min(127, yToMidi(point.y, geometry))),
+      startTick: snapTick(xToTick(point.x, geometry), state.editor.snap),
+      clientX: event.clientX,
+      clientY: event.clientY
+    });
+  });
 
   svg.addEventListener("pointerdown", beginDrag);
   svg.addEventListener("pointermove", previewDrag);
