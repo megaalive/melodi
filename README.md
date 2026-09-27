@@ -41,6 +41,10 @@ window.melodi.commands.seek(480)
 window.melodi.commands.setTempo(96)
 window.melodi.commands.setLoop(0, 1920)
 window.melodi.commands.setLoopEnabled(true)
+window.melodi.commands.undo()
+window.melodi.commands.redo()
+window.melodi.commands.canUndo()
+window.melodi.commands.canRedo()
 window.melodi.commands.generateGap({ startTick: 480, endTick: 1440, seed: 1 })
 window.melodi.commands.getGenerationState()
 window.melodi.commands.selectCandidate(candidateId)
@@ -53,7 +57,17 @@ window.melodi.commands.clearGeneration()
 
 `generateGap()` accepts an explicit half-open tick range and deterministic seed. The range must be bounded by two anchor notes in the same phrase, have a length and boundaries on the 120-tick grid, and contain no notes. Optional runtime settings are `voiceRange: { minPitch, maxPitch }`, `styleProfile`, and `lyricSyllableCount`; lyric counts are never inferred from raw text. Generation, selection, regeneration, and audition keep candidates in runtime state. Accept adds generated notes to the canonical Song and the owning phrase in one commit; `lockAcceptedNotes()` uses the normal user lock command.
 
-`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, a bounded `generation` summary, and available commands. `getGenerationState()` includes the bounded candidate list with candidate IDs, note timing and pitches, score breakdown, and factual metadata. Candidate step and leap counts describe intervals between generated notes; `landingInterval` describes the final generated note to the right anchor. Candidate IDs are session identifiers; candidate-local note IDs are not canonical Song IDs. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
+`getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, a bounded `generation` summary, edit `history` depths, and available commands. `getGenerationState()` includes the bounded candidate list with candidate IDs, note timing and pitches, score breakdown, and factual metadata. Candidate step and leap counts describe intervals between generated notes; `landingInterval` describes the final generated note to the right anchor. Candidate IDs are session identifiers; candidate-local note IDs are not canonical Song IDs. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
+
+## Edit history
+
+`undo()` and `redo()` restore canonical song snapshots. Every canonical mutation goes through one commit path, so history covers notes, lyrics, tempo, and `newIdea()`. Selection, clipboard, loop, snap, and view mode are not canonical and are deliberately excluded: undoing them would move state the user never chose to change.
+
+`getState().history` exposes `canUndo`, `canRedo`, `undoDepth`, and `redoDepth` so a UI or an agent can read whether a step is available instead of guessing. `undo()` with an empty stack throws `nothing-to-undo`, and `redo()` with an empty stack throws `nothing-to-redo`. A new canonical change discards the redo branch. The stack is bounded at 100 entries.
+
+Undoing discards any in-flight generation session rather than marking it stale, because a candidate references notes that the restored song may no longer contain. Undo returns a detached copy, and playback is re-anchored at the current tick rather than reset.
+
+Keyboard: `Cmd/Ctrl+Z` undoes, `Cmd/Ctrl+Shift+Z` and `Cmd/Ctrl+Y` redo. The shortcuts are global rather than scoped to an editor, but they stand down inside text inputs so native text undo still works while typing lyrics.
 
 Successful commands commit canonical state before notifying the view. If `onChange` fails, the command still returns its success result and passes the view error to `onNotificationError` (the app logs it); notification errors do not roll back or masquerade as domain failures. Selection changes use the same notification behavior.
 
@@ -73,4 +87,14 @@ Section state is no longer assumed to be the first section; it is projected from
 
 Important controls use stable `data-action` hooks. Rendered notes use `data-entity="note"` and `data-entity-id="<note-id>"`; candidates use `data-entity="melody-candidate"` and their candidate ID. Automation should use these hooks rather than visual CSS classes or list position.
 
+`undo` and `redo` are exposed both as buttons and as `data-action` hooks. Transpose and duration edits are available as `data-action="transpose-selected"` and `data-action="set-selected-duration"` in the Piano Roll toolbar, so no edit is reachable only through the note context menu. The context menu keeps its own `context-transpose` and `context-duration` hooks; both names run the same command path.
+
 The UI defaults to Indonesian. Language switching is in-memory and supports Indonesian (`id`) and English (`en`).
+
+## Theme
+
+Melodi uses a graphite base with two accents: petrol for structure and ember for decisions the user has made. Ember is used sparingly, only for anchor notes, locked notes, the playhead, and focus. Generated notes are always lower contrast than user notes, and that rule holds in every view.
+
+The page follows the operating system by default. The `theme` select offers `system`, `light`, and `dark`; a manual choice is stored in `localStorage` under `melodi.theme` and survives reload, while language stays in-memory. Dark mode avoids pure black and pure white because pure black blooms on OLED and pure white text is harsh in a dark theme.
+
+Every canvas colour is a CSS custom property, including the SVG `fill` and `stroke` values in the Piano Roll and score, so both modes restyle from one token set. Tokens are declared as flat values first and upgraded to `light-dark()` pairs behind `@supports`, so a browser without `light-dark()` still renders a complete light theme instead of dropping every colour. Motion is reduced to near-zero under `prefers-reduced-motion: reduce`; state colour changes are kept, because anchor and locked feedback must stay readable.
