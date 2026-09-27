@@ -176,18 +176,20 @@
               <input id="generation-right-anchor" type="hidden" name="rightAnchorNoteId">
               <details class="generation-options">
                 <summary data-copy="generationAdvanced"></summary>
-                <div class="form-grid generation-fields">
-                  <label><span data-copy="generationStartLabel"></span><input id="generation-start" name="startTick" type="number" min="0" step="1" value="480" required data-focus-key="generation-start"></label>
-                  <label><span data-copy="generationEndLabel"></span><input id="generation-end" name="endTick" type="number" min="0" step="1" value="1440" required data-focus-key="generation-end"></label>
-                  <label><span data-copy="generationSeedLabel"></span><input id="generation-seed" name="seed" type="number" min="0" max="4294967295" step="1" value="1" required data-focus-key="generation-seed"></label>
-                  <label><span data-copy="generationStyleLabel"></span><select id="generation-style" name="styleProfile" data-focus-key="generation-style"><option value="balanced" data-copy="styleBalanced"></option><option value="smooth" data-copy="styleSmooth"></option><option value="leaping" data-copy="styleLeaping"></option><option value="repetitive" data-copy="styleRepetitive"></option></select></label>
-                  <label><span data-copy="generationMinPitchLabel"></span><select id="generation-min-pitch" name="minPitch" data-focus-key="generation-min-pitch"></select></label>
-                  <label><span data-copy="generationMaxPitchLabel"></span><select id="generation-max-pitch" name="maxPitch" data-focus-key="generation-max-pitch"></select></label>
-                  <label><span data-copy="generationLyricCountLabel"></span><input id="generation-lyric-count" name="lyricSyllableCount" type="number" min="0" max="32" step="1" data-focus-key="generation-lyric-count"></label>
-                </div>
-                <div class="generation-form-actions">
-                  <button type="button" class="secondary" data-action="use-selection" data-copy="generationUseSelection" data-focus-key="generation-use-selection"></button>
-                  <button type="button" class="secondary" data-action="use-generation-ticks" data-copy="generationUseTicks" data-focus-key="generation-use-ticks"></button>
+                <div class="generation-advanced-popover">
+                  <div class="form-grid generation-fields">
+                    <label><span data-copy="generationStartLabel"></span><input id="generation-start" name="startTick" type="number" min="0" step="1" value="480" required data-focus-key="generation-start"></label>
+                    <label><span data-copy="generationEndLabel"></span><input id="generation-end" name="endTick" type="number" min="0" step="1" value="1440" required data-focus-key="generation-end"></label>
+                    <label><span data-copy="generationSeedLabel"></span><input id="generation-seed" name="seed" type="number" min="0" max="4294967295" step="1" value="1" required data-focus-key="generation-seed"></label>
+                    <label><span data-copy="generationStyleLabel"></span><select id="generation-style" name="styleProfile" data-focus-key="generation-style"><option value="balanced" data-copy="styleBalanced"></option><option value="smooth" data-copy="styleSmooth"></option><option value="leaping" data-copy="styleLeaping"></option><option value="repetitive" data-copy="styleRepetitive"></option></select></label>
+                    <label><span data-copy="generationMinPitchLabel"></span><select id="generation-min-pitch" name="minPitch" data-focus-key="generation-min-pitch"></select></label>
+                    <label><span data-copy="generationMaxPitchLabel"></span><select id="generation-max-pitch" name="maxPitch" data-focus-key="generation-max-pitch"></select></label>
+                    <label><span data-copy="generationLyricCountLabel"></span><input id="generation-lyric-count" name="lyricSyllableCount" type="number" min="0" max="32" step="1" data-focus-key="generation-lyric-count"></label>
+                  </div>
+                  <div class="generation-form-actions">
+                    <button type="button" class="secondary" data-action="use-selection" data-copy="generationUseSelection" data-focus-key="generation-use-selection"></button>
+                    <button type="button" class="secondary" data-action="use-generation-ticks" data-copy="generationUseTicks" data-focus-key="generation-use-ticks"></button>
+                  </div>
                 </div>
               </details>
               <div class="generation-form-actions generation-primary-actions">
@@ -213,30 +215,36 @@
               <p data-copy="notesHelp"></p>
             </div>
             <ol id="note-list" class="note-list" data-entity="note-list"></ol>
-            <details class="utility-details">
-              <summary data-copy="addNoteHeading"></summary>
-              <form id="add-note-form" class="panel compact-panel" data-action="add-note">
-                <div class="form-grid">
-                  <label><span data-copy="pitchLabel"></span><input name="pitch" type="text" value="C4" pattern="[A-Ga-g][#b]?-?[0-9]+" required data-focus-key="add-pitch"></label>
-                  <label><span data-copy="startTickLabel"></span><input id="add-start-tick" name="startTick" type="number" min="0" step="1" required data-focus-key="add-start"></label>
-                  <label><span data-copy="durationLabel"></span><input name="durationTicks" type="number" min="1" step="1" value="480" required data-focus-key="add-duration"></label>
-                </div>
-                <button type="submit" data-focus-key="add-button" data-copy="addNoteButton"></button>
-              </form>
-            </details>
+
           </section>
 
-          <section class="inspector-card utility-card" aria-labelledby="selection-heading">
-            <details class="utility-details">
-              <summary id="selection-heading" data-copy="selectionHeading"></summary>
-              <form id="selection-form" class="panel compact-panel" data-action="select-range">
-                <div class="form-grid">
-                  <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="range-start"></label>
-                  <label><span data-copy="rangeEndLabel"></span><input name="endTick" type="number" min="0" step="1" value="1920" required data-focus-key="range-end"></label>
-                </div>
-                <button type="submit" data-copy="selectRangeButton"></button>
-              </form>
-              <p id="selection-summary" class="muted" data-entity="selection"></p>
+          <section class="inspector-card utility-card">
+            <details class="sidebar-tools">
+              <summary data-copy="toolsHeading"></summary>
+              <div class="sidebar-tools-body">
+                <details class="utility-details">
+                  <summary data-copy="addNoteHeading"></summary>
+                  <form id="add-note-form" class="panel compact-panel" data-action="add-note">
+                    <div class="form-grid">
+                      <label><span data-copy="pitchLabel"></span><input name="pitch" type="text" value="C4" pattern="[A-Ga-g][#b]?-?[0-9]+" required data-focus-key="add-pitch"></label>
+                      <label><span data-copy="startTickLabel"></span><input id="add-start-tick" name="startTick" type="number" min="0" step="1" required data-focus-key="add-start"></label>
+                      <label><span data-copy="durationLabel"></span><input name="durationTicks" type="number" min="1" step="1" value="480" required data-focus-key="add-duration"></label>
+                    </div>
+                    <button type="submit" data-focus-key="add-button" data-copy="addNoteButton"></button>
+                  </form>
+                </details>
+                <details class="utility-details">
+                  <summary id="selection-heading" data-copy="selectionHeading"></summary>
+                  <form id="selection-form" class="panel compact-panel" data-action="select-range">
+                    <div class="form-grid">
+                      <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="range-start"></label>
+                      <label><span data-copy="rangeEndLabel"></span><input name="endTick" type="number" min="0" step="1" value="1920" required data-focus-key="range-end"></label>
+                    </div>
+                    <button type="submit" data-copy="selectRangeButton"></button>
+                  </form>
+                  <p id="selection-summary" class="muted" data-entity="selection"></p>
+                </details>
+              </div>
             </details>
           </section>
         </aside>
