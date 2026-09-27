@@ -218,7 +218,7 @@
 
           </section>
 
-          <section class="inspector-card utility-card">
+          <section class="inspector-card utility-card" hidden aria-hidden="true">
             <details class="sidebar-tools">
               <summary data-copy="toolsHeading"></summary>
               <div class="sidebar-tools-body">
@@ -260,6 +260,36 @@
         </div>
         <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
       </section>
+
+      <div id="note-context-menu" class="note-context-menu" role="menu" hidden aria-label="Note actions">
+        <div class="note-context-selection" data-context-group="selection">
+          <button type="button" role="menuitem" data-action="context-duplicate" data-copy="contextDuplicate"></button>
+          <button type="button" role="menuitem" data-action="context-copy" data-copy="contextCopy"></button>
+          <button type="button" role="menuitem" data-action="context-delete" data-copy="contextDelete"></button>
+          <div class="context-separator" role="separator"></div>
+          <button id="context-anchor" type="button" role="menuitemcheckbox" data-action="context-toggle-anchor"></button>
+          <button id="context-lock" type="button" role="menuitemcheckbox" data-action="context-toggle-lock"></button>
+          <div class="context-separator" role="separator"></div>
+          <div class="context-group-label" data-copy="contextTranspose"></div>
+          <div class="context-inline-actions">
+            <button type="button" data-action="context-transpose" data-delta="-12">−12</button>
+            <button type="button" data-action="context-transpose" data-delta="-1">−1</button>
+            <button type="button" data-action="context-transpose" data-delta="1">+1</button>
+            <button type="button" data-action="context-transpose" data-delta="12">+12</button>
+          </div>
+          <div class="context-group-label" data-copy="contextLength"></div>
+          <div class="context-inline-actions">
+            <button type="button" data-action="context-duration" data-snap="1/8">1/8</button>
+            <button type="button" data-action="context-duration" data-snap="1/4">1/4</button>
+            <button type="button" data-action="context-duration" data-snap="1/2">1/2</button>
+          </div>
+        </div>
+        <div class="note-context-empty" data-context-group="empty" hidden>
+          <button type="button" role="menuitem" data-action="context-add-note" data-copy="contextAddNote"></button>
+          <button type="button" role="menuitem" data-action="context-paste-here" data-copy="contextPasteHere"></button>
+          <button type="button" role="menuitem" data-action="context-select-all" data-copy="contextSelectAll"></button>
+        </div>
+      </div>
 
       <p id="operation-status" class="status" role="status" aria-live="polite" aria-atomic="true" data-entity="operation-status"></p>
     </main>
