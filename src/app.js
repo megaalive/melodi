@@ -361,6 +361,7 @@ function renderGeneration(state) {
   const gapStatus = byId("generation-gap-status");
   const anchorActions = byId("generation-anchor-actions");
   const sessionActions = byId("generation-session-actions");
+  const shortcutHelp = panel.querySelector(".shortcut-help");
   const useSelection = panel.querySelector('[data-action="use-selection"]');
   const generate = byId("generate-gap");
   const regenerate = byId("regenerate-gap");
@@ -409,6 +410,9 @@ function renderGeneration(state) {
   useSelection.disabled = !state.selection || state.selection.endTick <= state.selection.startTick;
   regenerate.disabled = !sessionReady;
   clear.disabled = !sessionReady && acceptedNoteIds.length === 0;
+  sessionActions.hidden = !sessionReady && acceptedNoteIds.length === 0;
+  if (shortcutHelp) shortcutHelp.hidden = !sessionReady;
+  status.hidden = !sessionReady && acceptedNoteIds.length === 0;
   lockAccepted.hidden = acceptedNoteIds.length === 0;
   lockHelp.hidden = acceptedNoteIds.length === 0;
   if (sessionReady && generation.gap && form.dataset.pending !== "true") {
