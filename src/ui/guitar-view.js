@@ -15,10 +15,12 @@ export const MAX_FRET = 24;
 
 const STRING_NAMES = Object.freeze(["E", "A", "D", "G", "B", "e"]);
 const INLAY_FRETS = Object.freeze([3, 5, 7, 9, 12, 15, 17, 19, 21]);
-// Fret 12 ke atas adalah posisi dengan warna paling bersih dan resonansi paling
-// lega. Menandainya memberi alasan musikal untuk memilih posisi, bukan hanya
-// posisi mana pun yang bisa dijangkau.
-const SWEET_SPOT_FRET = 12;
+// Fret 12 adalah batas oktaf: nada yang sama satu oktaf di atas. Ini landmark
+// nyata pada neck, bukan penilaian kualitas. Earlier version menandai fret 12
+// ke atas sebagai "paling bersih" dengan warna berbeda, dan itu menyesatkan:
+// semua posisi yang ditampilkan tetap bisa dimainkan, jadi membedakannya dengan
+// warna seolah-olah sebagian benar dan sebagian salah.
+const OCTAVE_FRET = 12;
 
 const LABEL_WIDTH = 34;
 const FRET_WIDTH = 26;
@@ -100,7 +102,7 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
       const isCurrent = currentFrets.has(fret);
       svgElement("line", {
         x1: x, y1: 10, x2: x, y2: height() - NUT_HEIGHT,
-        class: isCurrent ? "neck-fret neck-fret-current" : (fret === SWEET_SPOT_FRET ? "neck-fret neck-fret-sweet" : "neck-fret")
+        class: isCurrent ? "neck-fret neck-fret-current" : (fret === OCTAVE_FRET ? "neck-fret neck-fret-octave" : "neck-fret")
       });
       // Angka dicetak untuk setiap fret yang sedang dipakai, bukan hanya
       // setiap tiga fret. Tanpa itu, titik di fret 5 atau 14 terlihat salah
@@ -138,7 +140,10 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
         "aria-label": `String ${position.string}, fret ${position.fret}`
       }, svg);
       const classes = ["neck-hit"];
-      if (position.fret >= SWEET_SPOT_FRET) classes.push("neck-hit-sweet");
+      // Yang ditandai hanya teknik yang memang berbeda: senar terbuka, dan nada
+      // yang sedang berbunyi. Tidak ada lagi dua warna yang menyiratkan posisi
+      // yang benar dan yang salah.
+      if (position.fret === 0) classes.push("neck-hit-open");
       if (isCurrent) classes.push("neck-hit-current");
       svgElement("circle", { cx: x, cy: stringY(index), r: 9, class: classes.join(" ") }, group);
     }

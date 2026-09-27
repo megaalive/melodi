@@ -956,6 +956,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .neck-inlay { fill: var(--neck-inlay); }
 .neck-fret { stroke: var(--border-strong); stroke-width: 1; }
 .neck-fret-sweet { stroke: var(--ember); stroke-width: 1.5; }
+.neck-fret-octave { stroke: var(--ember); stroke-width: 1.5; }
 .neck-fret-label { fill: var(--text-muted); font: 10px system-ui, sans-serif; }
 .neck-fret-label-marked { fill: var(--text); font-weight: 700; }
 .neck-fret-label-current { fill: var(--ember); font-weight: 700; }
@@ -967,9 +968,11 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .neck-string[data-string="1"] { stroke-width: 1; }
 .neck-string-label { fill: var(--text-muted); font: 600 10px system-ui, sans-serif; }
 .neck-string-number { fill: var(--text-muted); font: 9px system-ui, sans-serif; }
+/* Semua posisi yang bisa dimainkan memakai warna yang sama. Warna berbeda
+   hanya untuk senar terbuka, jadi tidak ada posisi yang terlihat "salah". */
 .neck-hit { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; }
-.neck-hit-sweet { fill: var(--ember); stroke: var(--note-anchor-stroke); }
-.neck-hit-current { stroke: var(--ember); stroke-width: 2.5; }
+.neck-hit-open { fill: none; stroke: var(--note-user); stroke-width: 2.5; }
+.neck-hit-current { stroke: var(--ember); stroke-width: 3; }
 
 .guitar-playhead {
   margin: 0;
