@@ -4,7 +4,7 @@ import { createInitialSong, createSong } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { deserializeProject, serializeProject } from "../src/core/serialization.js";
 import { createDraftPersistence } from "../src/storage/draft.js";
-import { generateGap } from "../src/generation/generator.js";
+import { generateGap, pitchesForMove } from "../src/generation/generator.js";
 import { createGenerationContext } from "../src/generation/context.js";
 import { rankCandidates, scoreCandidate, SCORING_WEIGHTS } from "../src/generation/scoring.js";
 import {
@@ -165,9 +165,23 @@ test("leap is bounded and leap resolution steps in the opposite direction", () =
 
 test("repetition and sequence remain bounded melodic operations", () => {
   assert.deepEqual(repetition(64, 3), [64, 64, 64]);
-  const result = sequence(60, [1, -1], 4, { key: "C", scale: { intervals: [0, 2, 4, 5, 7, 9, 11] } }, 48, 84);
+  const context = { key: "C", scale: { intervals: [0, 2, 4, 5, 7, 9, 11] } };
+  const result = sequence(60, [1, -1], 4, context, 48, 84);
   assert.equal(result.length, 4);
-  assert.ok(result.every((pitch) => pitch >= 48 && pitch <= 84 && isScalePitch(pitch, "C", { intervals: [0, 2, 4, 5, 7, 9, 11] })));
+  assert.ok(result.every((pitch) => pitch >= 48 && pitch <= 84 && isScalePitch(pitch, "C", context.scale)));
+  assert.equal(sequence(84, [1], 1, context, 48, 84), null);
+  const moveContext = {
+    ...context,
+    leftAnchor: { pitch: 60 },
+    rightAnchor: { pitch: 67 },
+    neighboringNotes: []
+  };
+  assert.deepEqual(pitchesForMove("repetition", 2, moveContext, { minPitch: 48, maxPitch: 84 }, 0), [60, 60]);
+  assert.equal(pitchesForMove("sequence", 3, {
+    ...moveContext,
+    leftAnchor: { pitch: 84 },
+    rightAnchor: { pitch: 84 }
+  }, { minPitch: 48, maxPitch: 84 }, 0), null);
 });
 
 test("generation rejects invalid range, seed, and a range with no scale tone", () => {

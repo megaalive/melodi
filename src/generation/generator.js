@@ -103,7 +103,7 @@ function priorSequence(context) {
   return [secondIndex >= firstIndex ? interval : -interval, secondIndex >= firstIndex ? 1 : -1];
 }
 
-function pitchesForMove(move, count, context, range, variation) {
+export function pitchesForMove(move, count, context, range, variation) {
   const left = nearestScalePitch(context.leftAnchor.pitch, context, range.minPitch, range.maxPitch);
   const right = nearestScalePitch(context.rightAnchor.pitch, context, range.minPitch, range.maxPitch);
   const direction = right > left ? 1 : right < left ? -1 : (variation % 2 === 0 ? 1 : -1);
@@ -139,12 +139,13 @@ function pitchesForMove(move, count, context, range, variation) {
     }
   } else if (move === "repetition") {
     if (count < 2) return null;
-    const repeatCount = Math.min(count - 1, 2 + variation % 2);
+    const repeatCount = Math.min(count, 2 + variation % 2);
     const repeated = repetition(left, repeatCount);
     pitches.splice(0, repeatCount, ...repeated);
   } else if (move === "sequence") {
     if (count < 3) return null;
     pitches = sequence(left, priorSequence(context), count, context, range.minPitch, range.maxPitch);
+    if (!pitches) return null;
     if (count > 1) pitches[count - 1] = approachNote(right, pitches[count - 2], context, range.minPitch, range.maxPitch);
   }
 

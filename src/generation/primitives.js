@@ -125,9 +125,8 @@ export function sequence(startPitch, intervals, count, context, minPitch = 0, ma
     let next = current;
     for (let step = 0; step < Math.abs(interval); step += 1) {
       next = nextScalePitch(next, direction, context, minPitch, maxPitch);
-      if (next === null) break;
+      if (next === null) return null;
     }
-    if (next === null) next = nearestScalePitch(current, context, minPitch, maxPitch);
     pitches.push(next);
     current = next;
   }
