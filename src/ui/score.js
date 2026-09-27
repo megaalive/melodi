@@ -61,7 +61,7 @@ function markNoteElement(element, segment, note, { selected, tabStop, translate 
       tick: note.startTick,
       duration: note.durationTicks
     }));
-    element.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight ArrowUp ArrowDown Delete Backspace Enter Space Shift+F10");
+    element.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowUp Shift+ArrowDown Alt+ArrowLeft Alt+ArrowRight Delete Backspace Control+D Meta+D Enter Space Shift+F10");
   } else {
     element.removeAttribute("aria-label");
   }
