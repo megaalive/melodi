@@ -577,6 +577,26 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
         let elements = noteElementsById.get(noteId);
         if (!elements) noteElementsById.set(noteId, elements = []);
         elements.push(element);
+
+        // Bend harus tampak di notasi, bukan hanya hidup di playback/aria.
+        // Hanya fragment pertama yang mendapat label agar note lintas bar tidak
+        // menampilkan tanda bend berulang.
+        if (ref.fragmentIndex === 0) {
+          const bend = scoreBendLabel(note);
+          if (bend) {
+            const box = element.getBBox();
+            svg.append(svgElement("text", {
+              x: box.x + box.width / 2,
+              y: Math.max(16, box.y - 6),
+              "text-anchor": "middle",
+              class: "score-bend-label",
+              "data-entity": "score-bend",
+              "data-note-id": note.id,
+              "pointer-events": "none",
+              "aria-hidden": "true"
+            }, bend));
+          }
+        }
         if (tabStop) focusElementByNoteId.set(noteId, element);
       }
     }
