@@ -213,10 +213,8 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     try {
       const now = context.currentTime;
       const tick = positionAt(now);
-      const song = getSong();
-      const songEndTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
-      if (!loop.enabled && tick >= songEndTick) {
-        halt(0);
+      if (!loop.enabled && tick >= loop.endTick) {
+        halt(loop.startTick);
         onComplete();
         return;
       }
