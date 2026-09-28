@@ -1923,3 +1923,25 @@ button.danger-button:hover:not(:disabled) {
     min-width: 3rem;
   }
 }
+
+
+.score-heading-tools {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+}
+
+.score-heading-tools .bend-tool-group {
+  justify-content: flex-end;
+}
+
+.score-heading-tools #score-status {
+  margin: 0;
+}
+
+@media (max-width: 46rem) {
+  .score-heading-tools {
+    justify-items: start;
+    margin-top: 0.45rem;
+  }
+}
