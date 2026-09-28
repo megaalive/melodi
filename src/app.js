@@ -12,6 +12,7 @@ import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
 import { createShareUrl, decodeShareHash } from "./io/share.js";
+import { deserializeProject, serializeProject } from "./core/serialization.js";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1196,6 +1197,43 @@ function saveSharedAsDraft() {
   return true;
 }
 
+function projectFileName(title) {
+  const base = String(title || "melodi")
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "melodi";
+  return `${base}.melodi.json`;
+}
+
+function saveProjectFile() {
+  const payload = serializeProject(commands.getSong());
+  const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = projectFileName(commands.getSong().title);
+  anchor.hidden = true;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  announce("projectFileSaved");
+  return anchor.download;
+}
+
+async function loadProjectFile(file) {
+  if (!(file instanceof File)) return false;
+  const text = await file.text();
+  const song = deserializeProject(text);
+  clearPendingForms();
+  leaveShareSession();
+  commands.loadSong(song);
+  byId("project-file-input").value = "";
+  announce("projectFileLoaded");
+  return true;
+}
+
 async function requestNewIdea() {
   if (!(await confirmInApp())) return false;
   clearPendingForms();
@@ -1379,6 +1417,12 @@ const publicCommands = Object.freeze({
     leaveShareSession();
     return commands.newIdea();
   },
+  exportProject: () => serializeProject(commands.getSong()),
+  importProject: (input) => {
+    clearPendingForms();
+    leaveShareSession();
+    return commands.loadSong(deserializeProject(input));
+  },
   getShareUrl: () => createShareUrl(commands.getSong(), globalThis.location?.href),
   play: commands.play,
   pause: commands.pause,
@@ -1399,6 +1443,12 @@ const publicCommands = Object.freeze({
 });
 const publicSurface = Object.freeze({ getState: commands.getState, commands: publicCommands });
 Object.defineProperty(window, "melodi", { value: publicSurface, enumerable: true, writable: false, configurable: false });
+
+byId("project-file-input")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0] ?? null;
+  if (!file) return;
+  runAsync(() => loadProjectFile(file));
+});
 
 document.addEventListener("submit", (event) => {
   const form = event.target;
@@ -1624,6 +1674,10 @@ document.addEventListener("click", (event) => {
     run(() => commands.moveLyricSyllable(target.dataset.syllableId, Number(target.dataset.targetIndex)), "syllableMoved");
   } else if (target.dataset.action === "merge-syllables") {
     run(() => commands.mergeLyricSyllables(target.dataset.leftId, target.dataset.rightId), "syllableMerged");
+  } else if (target.dataset.action === "save-project-file") {
+    run(() => saveProjectFile());
+  } else if (target.dataset.action === "open-project-file") {
+    byId("project-file-input")?.click();
   } else if (target.dataset.action === "share-song") {
     runAsync(() => shareCurrentSong());
   } else if (target.dataset.action === "save-shared-draft") {
