@@ -30,6 +30,24 @@ function svgElement(name, attributes, text = null) {
   return element;
 }
 
+function normalizeVexFlowInk(root) {
+  const black = /^(?:black|#000(?:000)?|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))$/i;
+  for (const element of root.querySelectorAll("*")) {
+    for (const attribute of ["fill", "stroke"]) {
+      const value = element.getAttribute(attribute)?.trim();
+      if (value && black.test(value)) element.setAttribute(attribute, "currentColor");
+    }
+    const style = element.getAttribute("style");
+    if (style && /(?:fill|stroke)\s*:/.test(style)) {
+      const normalized = style.replace(
+        /(fill|stroke)\s*:\s*(?:black|#000000|#000|rgb\(\s*0\s*,\s*0\s*,\s*0\s*\))/gi,
+        "$1: currentColor"
+      );
+      if (normalized !== style) element.setAttribute("style", normalized);
+    }
+  }
+}
+
 function scoreBendLabel(note) {
   if (!Array.isArray(note.pitchBend) || note.pitchBend.length < 2) return "";
   const semitones = note.pitchBend.map((point) => point.semitones);
@@ -621,6 +639,7 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
             ? translate("scoreOverlapWarning", { count: overlapIds.size })
             : translate("scoreReady", { count: projection.measures.length });
     addFallbackList(fallback, projection, song, translate);
+    normalizeVexFlowInk(svg);
     updatePlayback(state.playback ?? {}, { ...(state.view ?? {}), follow: false });
   }
 
