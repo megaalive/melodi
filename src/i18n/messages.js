@@ -122,7 +122,7 @@ export const MESSAGES = {
     pianoRollRegionLabel: "Grid Piano Roll yang dapat digulir",
     emptyRollTitle: "Belum ada note di lagu ini.",
     emptyRollHint: "Pilih tool Gambar, lalu klik atau drag di kanvas untuk membuat note.",
-    emptyRollSeedHint: "Butuh titik awal? Tombol Baru di atas akan mengisi C-E-G-A.",
+    emptyRollSeedHint: "Butuh titik awal? Tombol Baru memuat contoh frase empat birama.",
     paletteHeading: "Pintasan perintah",
     paletteSearchLabel: "Cari perintah",
     paletteOpenLabel: "Buka pintasan perintah (Ctrl+K)",
