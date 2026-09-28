@@ -933,6 +933,32 @@ export function createCommands(initialSong, {
       notifyEditorChange();
       return cloneData(song);
     },
+    loadSong(input) {
+      const nextSong = createSong(input);
+      canonicalRevision += 1;
+      generationAuditionToken += 1;
+      generationSession = null;
+      lastAcceptedNoteIds = [];
+      playRequest += 1;
+      updatePlayerSafely(() => audioPlayer?.stop());
+      song = nextSong;
+      selection = null;
+      selectedNoteIds = [];
+      copiedNotes = null;
+      snap = DEFAULT_SNAP;
+      tool = DEFAULT_EDITOR_TOOL;
+      loopRangeMode = "auto";
+      playback.status = "stopped";
+      activeNoteSuppressed = true;
+      playback.loop = { enabled: true, startTick: 0, endTick: Math.max(1, songEndTick()) };
+      setPlaybackPosition(0);
+      undoStack = [];
+      redoStack = [];
+      notifyPlaybackChange();
+      notifyChange("song");
+      notifyEditorChange();
+      return cloneData(song);
+    },
     selectRange(startTick, endTick) {
       if (!Number.isSafeInteger(startTick) || startTick < 0 || !Number.isSafeInteger(endTick) || endTick < startTick) fail("invalid-range");
       const noteIds = song.notes
