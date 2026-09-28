@@ -69,7 +69,7 @@ test("initial song gets stable, project-unique IDs for each entity", () => {
   const song = createInitialSong(() => `generated-${++next}`);
   const ids = [song.id, ...song.notes.map((item) => item.id), ...song.phrases.map((item) => item.id), ...song.sections.map((item) => item.id)];
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(song.notes.map((note) => note.pitch), [60, 64, 69, 67]);
+  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 77, 77, 76, 74, 72, 74, 76, 76, 74, 72]);
 });
 
 test("duplicate entity IDs across the project are rejected", () => {
@@ -678,7 +678,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   const fresh = commands.newIdea();
   assert.equal(fresh.title, "Ide baru");
   assert.equal(fresh.lyrics.rawText, "");
-  assert.deepEqual(fresh.notes.map((note) => note.pitch), [60, 64, 69, 67]);
+  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 77, 77, 76, 74, 72, 74, 76, 76, 74, 72]);
   assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
