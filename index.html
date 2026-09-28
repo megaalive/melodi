@@ -160,8 +160,15 @@
                 <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-copy="clearSelectionButton"></button>
               </div>
             </div>
-            <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
-              <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
+            <div class="roll-surface">
+              <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
+                <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
+              </div>
+              <div id="piano-roll-empty" class="roll-empty" data-entity="roll-empty" hidden>
+                <p class="roll-empty-title" data-copy="emptyRollTitle"></p>
+                <p class="roll-empty-hint" data-copy="emptyRollHint"></p>
+                <p class="roll-empty-hint" data-copy="emptyRollSeedHint"></p>
+              </div>
             </div>
             <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
           </section>

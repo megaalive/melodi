@@ -113,9 +113,18 @@ Above 46rem the workspace chrome is a single sticky row: transport and edit hist
 
 The Advanced panel is an absolutely positioned popover rather than inline content. That keeps the sticky bar a constant height, which is why no rule needs to guess how tall the bar is when the panel is open. Regions are shown from `VIEW_REGION_MODES` in `core/runtime-state.js`; an unknown region name is hidden rather than shown.
 
+The song strip is deliberately not merged into the chrome, so there are still four bands rather than two. Measured below 46rem, the fixed bottom chrome is already 223px of a 780px viewport. Folding the 78px song strip into it would make the permanently visible chrome 301px, which is 39% of the screen, and would push the canvas down rather than reclaim space. The bands are cheap because the two of them that matter scroll away: the page header and the song strip are `static`, and only the chrome is fixed. The real cost on a small screen is the height of the fixed chrome, not the number of bands, and that is a progressive-disclosure problem rather than a band-counting one.
+
+
 ## Views
 
 `score`, `piano-roll`, `combined`, `lyrics`, and `guitar` are set with `setViewMode`. The piano roll draws the active generation candidate in the gap between the anchors, so auditioning happens where the music already is rather than in a separate panel.
+
+Every row of the roll is labelled with its pitch, not just the C rows. With only the C rows labelled, reading a melody means counting semitones upwards from the nearest C, which is exactly the arithmetic a piano roll is supposed to remove. Black key labels use `--text-muted` so a full octave of twelve labels stays quiet and the white keys stay findable. The gutter is fixed at 56px, so `C#4` at `--text-xs` fits without clipping.
+
+The roll also shows the candidates that are not selected, as a single faint layer behind the active one. Comparing options is the point of having six of them, and reading six score breakdown cards to work out which one goes higher is not comparison. The layer uses `opacity` on the wrapping `g` rather than `fill-opacity` on each rectangle: several candidates often land on the same pitch, and per-element alpha accumulates, so a stack of five ghosts at `0.16` composites to roughly `0.57` and competes with the active candidate it is meant to sit behind.
+
+An empty song gets guidance instead of a blank grid: the roll explains that clicking adds a note and that the New button fills in C-E-G-A. It points at affordances that already exist instead of adding a command, and it is an absolutely positioned layer over the grid rather than a replacement for it, so the grid the user is being told to click stays visible.
 
 The roll's zoom follows the panel width and has a lower bound only. There is deliberately no upper bound: capping it left hundreds of pixels of undrawn grid on the right for short songs. When the grid is wider than the panel the panel scrolls horizontally instead.
 
@@ -146,3 +155,16 @@ The opener is a real button, not only a shortcut. A hidden shortcut cannot be di
 ## Contract tests
 
 `availableActions` is a promise to an agent, so two tests hold it honest: every advertised name must be a function on the command object, and every advertised name must be re-exported on `window.melodi.commands`. The second test reads the `publicCommands` block out of `app.js` as text, because `app.js` touches the DOM and cannot be imported under Node.
+
+## Module graph test
+
+`npm test` did not import `src/i18n/messages.js` at all, so a missing comma in a message object shipped a blank application with all tests green. `npm run check` caught it, but only when someone remembered to run it. `tests/module-graph.test.js` closes that gap two ways: every module that does not need the DOM is genuinely imported, and every relative import specifier in every file under `src` is resolved to a real file. The second half works even for the DOM modules, so renaming a module without fixing its importers fails the suite instead of the browser.
+
+Four files are listed in `DOM_TOUCHING` because they read the DOM at import time. A test asserts that list is still accurate, so a module that grows a DOM dependency cannot slip through by being quietly unlisted.
+
+The piano roll is exercised through a small SVG stub, which keeps `tests/piano-roll-render.test.js` about what gets drawn rather than about pointer behaviour. Its generation fixture sets `status: "ready"` on purpose: `normalizeRuntimeState` drops every candidate when status is not ready, so a fixture that omits it would make each candidate test pass against an empty roll.
+
+## Phrase membership
+
+`addNote` and `pasteNotes` register the new note in `phrases[0].noteIds`, inserted in tick order. This is not bookkeeping for its own sake: `createGenerationContext` fails with `generation-cross-phrase` unless both anchors are in the same phrase, so a song built by clicking notes in the roll could never have a gap filled. Notes added by hand are exactly the ones a user wants to extend, which made the flagship generation flow unreachable for them. Order matters because `acceptCandidate` splices accepted notes in by indexing `noteIds` at the right anchor.
+

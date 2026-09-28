@@ -968,6 +968,7 @@ function render() {
   renderEditorControls();
   renderGeneration(state);
   rollView.render(song, state);
+  byId("piano-roll-empty").hidden = song.notes.length > 0;
   byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
   scoreView.render(song, state);
   renderGuitar(state);

@@ -53,6 +53,22 @@ export function createCommands(initialSong, {
   let generationAuditionToken = 0;
   let lastAcceptedNoteIds = [];
   const songEndTick = () => song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
+
+  /*
+   * Note yang dibuat manual harus masuk ke phrase, kalau tidak phrase berhenti
+   * mencerminkan song. Akibatnya generateGap selalu gagal dengan
+   * "generation-cross-phrase", karena kedua anchor tidak pernah berada di phrase
+   * yang sama. Urutan phrase mengikuti tick, karena acceptCandidate menyisipkan
+   * note baru tepat sebelum anchor kanan dengan cara mengindex noteIds.
+   */
+  function registerNoteInPhrase(targetSong, note) {
+    const phrase = targetSong.phrases[0];
+    if (!phrase) return;
+    const tickOf = (noteId) => targetSong.notes.find((item) => item.id === noteId)?.startTick ?? Number.POSITIVE_INFINITY;
+    const index = phrase.noteIds.findIndex((noteId) => tickOf(noteId) > note.startTick);
+    if (index < 0) phrase.noteIds.push(note.id);
+    else phrase.noteIds.splice(index, 0, note.id);
+  }
   const playback = {
     status: "stopped",
     currentTick: 0,
@@ -558,7 +574,10 @@ export function createCommands(initialSong, {
         anchor: false,
         locked: false
       };
-      commit((candidate) => candidate.notes.push(note));
+      commit((candidate) => {
+        candidate.notes.push(note);
+        registerNoteInPhrase(candidate, note);
+      });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       updatePlayerSafely(() => audioPlayer?.songChanged(tick));
       return cloneData(note);
@@ -776,7 +795,10 @@ export function createCommands(initialSong, {
       }));
       // Validate the whole paste before committing so overflow or invalid pitches cannot partially apply.
       createSong({ ...cloneData(song), notes: [...song.notes, ...pasted] });
-      commit((candidate) => candidate.notes.push(...pasted), () => {
+      commit((candidate) => {
+        candidate.notes.push(...pasted);
+        for (const note of pasted) registerNoteInPhrase(candidate, note);
+      }, () => {
         selection = null;
         selectedNoteIds = pasted.map((note) => note.id);
       });

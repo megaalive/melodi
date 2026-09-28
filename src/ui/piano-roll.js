@@ -319,9 +319,14 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         y2: y + geometry.rowHeight,
         class: "roll-row-line"
       }, svg);
-      if (midi % 12 === 0) {
-        svgElement("text", { x: geometry.labelWidth - 7, y: y + 14, "text-anchor": "end", class: "roll-pitch-label" }, svg, midiToPitch(midi));
-      }
+      // Label di setiap baris, bukan hanya C, supaya nada bisa dibaca tanpa menghitung
+      // dari C. Black key diredupkan supaya 12 label per oktaf tidak berteriak.
+      svgElement("text", {
+        x: geometry.labelWidth - 7,
+        y: y + 14,
+        "text-anchor": "end",
+        class: isBlackKey(midi) ? "roll-pitch-label roll-pitch-label-black" : "roll-pitch-label"
+      }, svg, midiToPitch(midi));
     }
 
     const subdivisionTicks = SNAP_TICKS[state.editor.snap] ?? geometry.beatTicks;
@@ -408,6 +413,44 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         "aria-hidden": "true"
       }, group);
       if (!hitLayout.canResize) resizeHandle.setAttribute("display", "none");
+    }
+
+    // Kandidat lain digambar sangat tipis dulu, di belakang kandidat aktif. Jadi
+    // user bisa lihat arah tiap opsi tanpa harus pindah-pindah card di dock.
+    //
+    // Kelembutannya pakai `opacity` pada satu lapisan, bukan `fill-opacity` per
+    // rect. fill-opacity terakumulasi kalau dua ghost menumpuk, dan di pitch yang
+    // sama beberapa kandidat memang often overlap, sehingga ghost bisa terlihat
+    // lebih pekat dari kandidat aktif. `opacity` pada group melapis sekali di akhir.
+    const idleCandidates = (state.generation?.candidates ?? []).filter((candidate) => candidate.id !== state.generation.activeCandidateId);
+    const ghostLayer = idleCandidates.length > 0
+      ? svgElement("g", {
+        class: "roll-candidate-ghost-layer",
+        "aria-hidden": "true",
+        "pointer-events": "none"
+      }, svg)
+      : null;
+
+    if (ghostLayer) {
+      for (const candidate of idleCandidates) {
+        for (const note of candidate.notes) {
+          if (note.pitch < geometry.minMidi || note.pitch > geometry.maxMidi
+            || note.startTick + note.durationTicks <= geometry.startTick || note.startTick >= geometry.endTick) continue;
+          const x = tickToX(note.startTick, geometry);
+          const y = midiToY(note.pitch, geometry) + 2;
+          const width = note.durationTicks * geometry.pixelsPerQuarter / geometry.ppq;
+          svgElement("rect", {
+            x,
+            y,
+            width,
+            height: geometry.rowHeight - 4,
+            rx: 3,
+            class: "roll-candidate-ghost",
+            "data-entity": "candidate-ghost",
+            "data-candidate-id": candidate.id
+          }, ghostLayer);
+        }
+      }
     }
 
     if (activeCandidate) {

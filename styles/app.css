@@ -930,12 +930,19 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .roll-row-black { fill: var(--roll-key-dark); }
 .roll-row-line { stroke: var(--border); stroke-width: 1; }
 .roll-pitch-label, .roll-bar-label { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
+/* Black key diredupkan supaya oktaf penuh (12 label) tetap ringan dibaca. */
+.roll-pitch-label-black { fill: var(--text-muted); }
 .roll-beat-line { stroke: var(--border-strong); stroke-width: 1; }
 .roll-bar-line { stroke: var(--text-muted); stroke-width: 2; }
 .roll-header-line { stroke: var(--text-muted); stroke-width: 1.5; }
 .roll-note { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; cursor: grab; touch-action: none; }
 .roll-note-generated { fill: var(--note-generated); stroke: var(--text-muted); stroke-dasharray: 4 2; }
 .roll-candidate-note { fill: var(--candidate-ghost); fill-opacity: 0.58; stroke: var(--candidate-ghost-active); stroke-width: 2; stroke-dasharray: 5 3; pointer-events: all; }
+/* Kandidat non-aktif: satu lapisan tipis tanpa stroke. `opacity` ada di lapisan
+   (`g`), bukan di tiap rect, supaya ghost yang menumpuk tidak saling menambah
+   alpha dan akhirnya menutupi kandidat aktif. */
+.roll-candidate-ghost-layer { opacity: 0.22; }
+.roll-candidate-ghost { fill: var(--candidate-ghost); }
 [data-entity="note"][data-anchor="true"] .roll-note { stroke: var(--note-anchor-stroke); }
 [data-entity="note"][data-locked="true"] .roll-note { stroke-dasharray: 2 2; }
 [data-entity="note"][data-selected="true"] .roll-note { fill: var(--highlight-selected); }
@@ -1756,3 +1763,26 @@ body[data-view-mode="combined"] .score-scroll {
   background: var(--surface-subtle);
   color: var(--text);
 }
+/* Empty state piano roll. Ditaruh di atas kanvas, bukan menggantikannya, supaya
+   grid tetap terlihat dan user belajar di mana harus mengklik. */
+.roll-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 1.2rem;
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--surface) 45%);
+}
+.roll-empty-title { margin: 0; font-size: var(--text-md); font-weight: 700; }
+.roll-empty-hint { margin: 0; max-width: 26rem; color: var(--text-muted); font-size: var(--text-sm); }
+/* Pembungkus kanvas + empty state, supaya empty state bisa absolute tanpa
+   ikut bergeser saat pane di-scroll. */
+.roll-surface { position: relative; }
+
+/* `hidden` dari UA stylesheet kalah spesifisitas dari `display: grid` di atas,
+   jadi tanpa ini empty state selalu tampil. */
+.roll-empty[hidden] { display: none; }
