@@ -43,6 +43,7 @@ window.melodi.commands.setLoopEnabled(true)
 window.melodi.commands.setViewMode("guitar")
 window.melodi.commands.setZoom(2)
 window.melodi.commands.setSnap("1/16")
+window.melodi.commands.setTool("select") // "select" | "draw"
 window.melodi.commands.undo()
 window.melodi.commands.redo()
 window.melodi.commands.canUndo()
@@ -128,7 +129,9 @@ An empty song gets guidance instead of a blank grid: the roll explains that clic
 
 The roll's zoom follows the panel width and has a lower bound only. There is deliberately no upper bound: capping it left hundreds of pixels of undrawn grid on the right for short songs. When the grid is wider than the panel the panel scrolls horizontally instead.
 
-Horizontal zoom is a user multiplier on top of that fitted width, from 1x to 4x in quarter steps, set with `setZoom(zoom)` and read from `getState().editor.zoom`. At 1x the grid fits the panel, so zoom changes nothing until asked. There is no zoom below 1x on purpose: the grid either already fits the panel or is already at the 80px per note legibility floor, so shrinking it only adds empty space. Zoom is a multiplier rather than an absolute pixel value so it stays meaningful when the window is resized. `-`, `+`, and `0` step it from inside the editor only, deliberately leaving `Ctrl`+`Plus` and `Ctrl`+`Minus` to the browser for page zoom.
+Horizontal zoom is a user multiplier on top of that fitted width, from 1x to 4x in quarter steps, set with `setZoom(zoom)` and read from `getState().editor.zoom`. At 1x the grid fits the panel, so zoom changes nothing until asked. There is no zoom below 1x on purpose: the grid either already fits the panel or is already at the 80px per note legibility floor, so shrinking it only adds empty space.
+
+The Piano Roll has an explicit editor tool in `getState().editor.tool`. `select` is the safe default: blank clicks only clear selection, blank drags make a box selection, and note drags move or resize notes. `draw` must be chosen deliberately before blank pointer gestures create notes; clicking creates one snapped note and horizontal dragging sets its duration. Existing notes do not move while Draw is active. The toolbar, keyboard shortcuts (`V` Select, `D` Draw), Command Palette, and `setTool()` all use the same runtime state. Zoom is a multiplier rather than an absolute pixel value so it stays meaningful when the window is resized. `-`, `+`, and `0` step it from inside the editor only, deliberately leaving `Ctrl`+`Plus` and `Ctrl`+`Minus` to the browser for page zoom.
 
 The grid window always starts at bar 1 while the whole song fits inside `MAX_ROLL_BARS`. The window only follows the focus when a song genuinely exceeds that cap, where the priority is keeping the playhead reachable and the DOM bounded. Anchoring the window to the focus at all times is what made bar 1 and 2 vanish once a note in a later bar was selected: they fell outside the window, were never drawn, and could not be scrolled to because there was nothing there.
 

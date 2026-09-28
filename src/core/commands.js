@@ -1,5 +1,5 @@
 import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js";
-import { DEFAULT_SNAP, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
+import { DEFAULT_EDITOR_TOOL, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
 import { createAgentSnapshot } from "./snapshot.js";
 import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js";
 import { createGenerationContext } from "../generation/context.js";
@@ -42,6 +42,7 @@ export function createCommands(initialSong, {
   let selection = null;
   let selectedNoteIds = [];
   let snap = DEFAULT_SNAP;
+  let tool = DEFAULT_EDITOR_TOOL;
   let zoom = MIN_ROLL_ZOOM;
   let viewMode = "piano-roll";
   let followMode = true;
@@ -303,6 +304,7 @@ export function createCommands(initialSong, {
     getState() {
       return createAgentSnapshot(song, selection, readPlayback(), {
         snap,
+        tool,
         zoom,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
@@ -812,6 +814,13 @@ export function createCommands(initialSong, {
       notifyEditorChange();
       return snap;
     },
+    setTool(value) {
+      if (!EDITOR_TOOLS.includes(value)) fail("invalid-editor-tool");
+      if (value === tool) return tool;
+      tool = value;
+      notifyEditorChange();
+      return tool;
+    },
     setZoom(value) {
       if (!Number.isFinite(value) || value < MIN_ROLL_ZOOM || value > MAX_ROLL_ZOOM) fail("invalid-zoom");
       if (value === zoom) return zoom;
@@ -833,6 +842,7 @@ export function createCommands(initialSong, {
       selectedNoteIds = [];
       copiedNotes = null;
       snap = DEFAULT_SNAP;
+      tool = DEFAULT_EDITOR_TOOL;
       playback.status = "stopped";
       activeNoteSuppressed = true;
       playback.loop = { enabled: false, startTick: 0, endTick: Math.max(1, songEndTick()) };

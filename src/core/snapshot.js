@@ -18,6 +18,7 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "copySelection",
   "pasteNotes",
   "setSnap",
+  "setTool",
   "setZoom",
   "addLyricSyllable",
   "updateLyricSyllable",
@@ -57,7 +58,7 @@ export function createAgentSnapshot(song, selection, playback = {
   currentSectionId: song.sections[0]?.id ?? null,
   tempo: song.timing.tempo,
   loop: { enabled: false, startTick: 0, endTick: 1 }
-}, editor = { snap: "1/8", canPaste: false, clipboardCount: 0 }, selectedNoteIds = [], view = { mode: "combined", follow: true }, generation = {
+}, editor = { snap: "1/8", tool: "select", canPaste: false, clipboardCount: 0 }, selectedNoteIds = [], view = { mode: "combined", follow: true }, generation = {
   status: "idle",
   stale: false,
   gap: null,

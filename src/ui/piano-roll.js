@@ -152,6 +152,18 @@ export function yToMidi(y, geometry) {
   return geometry.maxMidi - Math.floor((y - geometry.top) / geometry.rowHeight);
 }
 
+export function drawNoteInputFromDrag(startPoint, currentPoint, geometry, snap = "1/8") {
+  if (!Number.isFinite(startPoint?.x) || !Number.isFinite(startPoint?.y)
+    || !Number.isFinite(currentPoint?.x) || !Number.isFinite(currentPoint?.y)
+    || !SNAP_TICKS[snap]) throw new RangeError("Invalid draw input.");
+  const firstTick = snapTick(xToTick(startPoint.x, geometry), snap);
+  const lastTick = snapTick(xToTick(currentPoint.x, geometry), snap);
+  const startTick = Math.min(firstTick, lastTick);
+  const durationTicks = Math.max(SNAP_TICKS[snap], Math.abs(lastTick - firstTick));
+  const pitch = Math.max(0, Math.min(127, yToMidi(startPoint.y, geometry)));
+  return { pitch, startTick, durationTicks };
+}
+
 export function noteHitLayout(note, x, width, geometry, notes) {
   const noteEnd = note.startTick + note.durationTicks;
   const pixelsPerTick = geometry.pixelsPerQuarter / geometry.ppq;
@@ -236,6 +248,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let ignoreNextClick = false;
   let pendingNoteClickId = null;
   let selectionDrag = null;
+  let drawDrag = null;
   let lastPlaybackTick = 0;
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
@@ -296,7 +309,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     svg.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
     svg.setAttribute("width", geometry.width);
     svg.setAttribute("height", geometry.height);
-    svg.setAttribute("aria-label", `Piano Roll, ${numerator}/${denominator}, snap ${state.editor.snap}`);
+    svg.setAttribute("aria-label", `Piano Roll, ${numerator}/${denominator}, snap ${state.editor.snap}, tool ${state.editor.tool}`);
     svg.replaceChildren();
 
     svgElement("title", {}, svg, `Piano Roll ${numerator}/${denominator}`);
@@ -563,12 +576,28 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
 
   function beginDrag(event) {
     if (event.button !== 0) return;
+    const state = commands.getState();
     const handle = event.target.closest?.('[data-action="resize-note"]');
     const group = event.target.closest?.('[data-entity="note"]');
     if (!group || !svg.contains(group)) {
       if (event.target.closest?.('[data-entity="candidate-note"], [data-action], text')) return;
       const point = pointerPoint(event);
       if (point.x < geometry.labelWidth || point.y < geometry.top || point.y >= geometry.height) return;
+      if (state.editor.tool === "draw") {
+        event.preventDefault();
+        drawDrag = {
+          pointerId: event.pointerId,
+          startX: point.x,
+          startY: point.y,
+          currentX: point.x,
+          currentY: point.y,
+          snap: state.editor.snap,
+          moved: false,
+          element: null
+        };
+        try { svg.setPointerCapture(event.pointerId); } catch {}
+        return;
+      }
       selectionDrag = {
         pointerId: event.pointerId,
         startX: point.x,
@@ -582,6 +611,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       try { svg.setPointerCapture(event.pointerId); } catch {}
       return;
     }
+    if (state.editor.tool !== "select") return;
     event.preventDefault();
     const noteId = handle?.dataset.noteId ?? group.dataset.entityId;
     const song = commands.getSong();
@@ -616,6 +646,24 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function previewDrag(event) {
+    if (drawDrag && drawDrag.pointerId === event.pointerId) {
+      const point = pointerPoint(event);
+      drawDrag.currentX = point.x;
+      drawDrag.currentY = point.y;
+      if (Math.hypot(point.x - drawDrag.startX, point.y - drawDrag.startY) >= 3) drawDrag.moved = true;
+      const input = drawNoteInputFromDrag({ x: drawDrag.startX, y: drawDrag.startY }, point, geometry, drawDrag.snap);
+      const x = tickToX(input.startTick, geometry);
+      const y = midiToY(input.pitch, geometry) + 2;
+      const width = input.durationTicks * geometry.pixelsPerQuarter / geometry.ppq;
+      if (!drawDrag.element) {
+        drawDrag.element = svgElement("rect", { class: "roll-draw-preview", "pointer-events": "none", "aria-hidden": "true" }, svg);
+      }
+      drawDrag.element.setAttribute("x", String(x));
+      drawDrag.element.setAttribute("y", String(y));
+      drawDrag.element.setAttribute("width", String(width));
+      drawDrag.element.setAttribute("height", String(geometry.rowHeight - 4));
+      return;
+    }
     if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
       const point = pointerPoint(event);
       selectionDrag.currentX = point.x;
@@ -679,6 +727,22 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function finishDrag(event, cancelled = false) {
+    if (drawDrag && drawDrag.pointerId === event.pointerId) {
+      const drag = drawDrag;
+      drawDrag = null;
+      drag.element?.remove();
+      if (!cancelled) {
+        try {
+          const point = pointerPoint(event);
+          onAddNote(drawNoteInputFromDrag({ x: drag.startX, y: drag.startY }, point, geometry, drag.snap));
+        } catch (error) {
+          onError(error);
+        }
+      }
+      ignoreNextClick = true;
+      setTimeout(() => { ignoreNextClick = false; }, 0);
+      return;
+    }
     if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
       const drag = selectionDrag;
       selectionDrag = null;
@@ -773,9 +837,9 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     const point = pointerPoint(event);
     if (point.x < geometry.labelWidth || point.y < geometry.top || point.y >= geometry.height) return;
     const state = commands.getState();
-    const pitch = Math.max(0, Math.min(127, yToMidi(point.y, geometry)));
-    const startTick = snapTick(xToTick(point.x, geometry), state.editor.snap);
-    onAddNote({ pitch, startTick, durationTicks: SNAP_TICKS[state.editor.snap] });
+    if (state.editor.tool === "select" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      commands.clearSelection();
+    }
   }
 
   svg.addEventListener("contextmenu", (event) => {

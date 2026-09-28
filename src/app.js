@@ -643,6 +643,12 @@ function renderEditorControls() {
   if (!commands) return;
   const state = commands.getState();
   byId("snap-select").value = state.editor.snap;
+  for (const button of document.querySelectorAll('[data-action="set-tool"]')) {
+    const active = button.dataset.tool === state.editor.tool;
+    button.setAttribute("aria-pressed", String(active));
+    button.dataset.active = String(active);
+  }
+  byId("piano-roll-scroll").dataset.tool = state.editor.tool;
   byId("paste-notes").disabled = !state.editor.canPaste;
   byId("copy-selection").disabled = state.selectedNoteIds.length === 0;
   byId("clear-selection").disabled = state.selectedNoteIds.length === 0 && !state.selection;
@@ -1141,6 +1147,7 @@ const publicCommands = Object.freeze({
   copySelection: commands.copySelection,
   pasteNotes: commands.pasteNotes,
   setSnap: commands.setSnap,
+  setTool: commands.setTool,
   setZoom: commands.setZoom,
   setViewMode: commands.setViewMode,
   setFollowMode: commands.setFollowMode,
@@ -1300,7 +1307,9 @@ document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
   const state = commands.getState();
-  if (target.dataset.action === "context-duplicate") {
+  if (target.dataset.action === "set-tool") {
+    run(() => commands.setTool(target.dataset.tool));
+  } else if (target.dataset.action === "context-duplicate") {
     closeNoteContextMenu();
     const notes = run(() => duplicateSelectedNotes());
     if (notes?.length) announce("notePasted", "success", { count: notes.length });
@@ -1529,7 +1538,17 @@ document.addEventListener("keydown", (event) => {
   const editorTarget = target instanceof Element
     ? target.closest("#piano-roll-scroll, #score-scroll, [data-entity='score-note']")
     : null;
+  const pianoRollTarget = target instanceof Element ? target.closest("#piano-roll-scroll") : null;
   const selectedIds = commands.getSelectedNoteIds();
+
+  if (pianoRollTarget && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+    const key = event.key.toLowerCase();
+    if (key === "v" || key === "d") {
+      event.preventDefault();
+      run(() => commands.setTool(key === "v" ? "select" : "draw"));
+      return;
+    }
+  }
 
   if (editorTarget && selectedIds.length > 0 && event.altKey && !event.ctrlKey && !event.metaKey
     && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {

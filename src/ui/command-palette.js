@@ -83,6 +83,12 @@ export function createPaletteCatalog() {
       const notes = ctx.run(() => ctx.commands.pasteNotes(ctx.commands.getState().playback.currentTick));
       if (notes?.length) ctx.announce("notePasted", "success", { count: notes.length });
     }),
+    entry("editor.toolSelect", "editor", "paletteToolSelect", { id: ["tool pilih", "cursor", "select"], en: ["select tool", "cursor", "pointer"] }, (ctx) => {
+      ctx.run(() => ctx.commands.setTool("select"));
+    }),
+    entry("editor.toolDraw", "editor", "paletteToolDraw", { id: ["tool gambar", "draw", "pensil"], en: ["draw tool", "pencil", "draw"] }, (ctx) => {
+      ctx.run(() => ctx.commands.setTool("draw"));
+    }),
     entry("editor.snapQuarter", "editor", "paletteSnapQuarter", { id: ["snap 1/4", "kasar"], en: ["snap 1/4", "coarse"] }, (ctx) => {
       ctx.run(() => ctx.commands.setSnap("1/4"));
     }),

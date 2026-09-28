@@ -623,6 +623,14 @@ p { margin: 0.45rem 0 0.8rem; }
   border-color: var(--text-muted);
   background: var(--surface-subtle);
 }
+.editor-tool-group button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.piano-roll-scroll[data-tool="draw"] #piano-roll { cursor: crosshair; }
+.piano-roll-scroll[data-tool="draw"] .roll-move-hit,
+.piano-roll-scroll[data-tool="draw"] .roll-resize-handle { cursor: default; }
 
 .piano-roll-scroll {
   width: 100%;
@@ -943,6 +951,13 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
    alpha dan akhirnya menutupi kandidat aktif. */
 .roll-candidate-ghost-layer { opacity: 0.22; }
 .roll-candidate-ghost { fill: var(--candidate-ghost); }
+.roll-draw-preview {
+  fill: var(--note-user);
+  fill-opacity: 0.34;
+  stroke: var(--note-user-stroke);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
 [data-entity="note"][data-anchor="true"] .roll-note { stroke: var(--note-anchor-stroke); }
 [data-entity="note"][data-locked="true"] .roll-note { stroke-dasharray: 2 2; }
 [data-entity="note"][data-selected="true"] .roll-note { fill: var(--highlight-selected); }

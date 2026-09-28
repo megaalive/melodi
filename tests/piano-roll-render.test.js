@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createPianoRollView, createRollGeometry } from "../src/ui/piano-roll.js";
+import { createPianoRollView, createRollGeometry, midiToY, tickToX } from "../src/ui/piano-roll.js";
 
 // Piano Roll adalah file yang menyentuh DOM, jadi tidak bisa diimpor di Node tanpa
 // stub. Stub ini cukup untuk exercise render(): yang diuji adalah apa yang digambar,
@@ -17,6 +17,7 @@ class StubElement {
     this.clientHeight = 600;
     this.scrollLeft = 0;
     this.scrollTop = 0;
+    this.listeners = new Map();
   }
 
   setAttribute(name, value) {
@@ -31,7 +32,30 @@ class StubElement {
   append(child) { child.parentElement = this; this.children.push(child); }
   replaceChildren() { this.children = []; }
   contains(node) { return node === this; }
-  addEventListener() {}
+  addEventListener(type, listener) {
+    if (!this.listeners.has(type)) this.listeners.set(type, []);
+    this.listeners.get(type).push(listener);
+  }
+  dispatch(type, event = {}) {
+    const payload = {
+      button: 0,
+      pointerId: 1,
+      clientX: 0,
+      clientY: 0,
+      shiftKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      preventDefault() {},
+      target: this,
+      ...event
+    };
+    for (const listener of this.listeners.get(type) ?? []) listener(payload);
+  }
+  remove() {
+    if (!this.parentElement) return;
+    this.parentElement.children = this.parentElement.children.filter((child) => child !== this);
+    this.parentElement = null;
+  }
   setPointerCapture() {}
   getBoundingClientRect() { return { left: 0, top: 0, width: this.clientWidth, height: this.clientHeight }; }
   querySelectorAll(selector) {
@@ -58,23 +82,25 @@ globalThis.document = {
 };
 globalThis.CSS = { escape: (value) => String(value) };
 
-function setup() {
+function setup({ tool = "select" } = {}) {
   const scroll = new StubElement("div");
   const svg = new StubElement("svg");
   scroll.append(svg);
+  const added = [];
   const state = {
     playback: { status: "stopped", currentTick: 0, currentNoteId: null },
-    editor: { snap: "1/8", zoom: 1 },
+    editor: { snap: "1/8", tool, zoom: 1 },
     selectedNoteIds: [],
     generation: null
   };
   const commands = {
     getState: () => state,
     getSong: () => state.song,
-    getSelectedNoteIds: () => state.selectedNoteIds
+    getSelectedNoteIds: () => state.selectedNoteIds,
+    clearSelection: () => { state.selectedNoteIds = []; }
   };
-  const view = createPianoRollView(svg, commands);
-  return { svg, scroll, state, view };
+  const view = createPianoRollView(svg, commands, { onAddNote: (input) => added.push(input) });
+  return { svg, scroll, state, view, added };
 }
 
 const song = (notes) => ({
@@ -202,4 +228,28 @@ test("tanpa sesi generation tidak ada ghost sama sekali", () => {
   view.render(song([note("n1", 60)]), state);
   assert.equal(svg.byClass("roll-candidate-ghost").length, 0);
   assert.equal(svg.byClass("roll-candidate-note").length, 0);
+});
+
+test("blank click is safe in Select and only Draw creates a note", () => {
+  const select = setup({ tool: "select" });
+  select.state.song = song([]);
+  select.view.render(select.state.song, select.state);
+  const selectGeometry = select.view.getGeometry();
+  const selectX = tickToX(480, selectGeometry);
+  const selectY = midiToY(60, selectGeometry) + selectGeometry.rowHeight / 2;
+  select.svg.dispatch("pointerdown", { clientX: selectX, clientY: selectY });
+  select.svg.dispatch("pointerup", { clientX: selectX, clientY: selectY });
+  select.svg.dispatch("click", { clientX: selectX, clientY: selectY });
+  assert.equal(select.added.length, 0);
+
+  const draw = setup({ tool: "draw" });
+  draw.state.song = song([]);
+  draw.view.render(draw.state.song, draw.state);
+  const drawGeometry = draw.view.getGeometry();
+  const drawX = tickToX(480, drawGeometry);
+  const drawY = midiToY(60, drawGeometry) + drawGeometry.rowHeight / 2;
+  draw.svg.dispatch("pointerdown", { clientX: drawX, clientY: drawY });
+  draw.svg.dispatch("pointerup", { clientX: drawX, clientY: drawY });
+  draw.svg.dispatch("click", { clientX: drawX, clientY: drawY });
+  assert.deepEqual(draw.added, [{ pitch: 60, startTick: 480, durationTicks: 240 }]);
 });

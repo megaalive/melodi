@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { PPQ } from "../src/core/model.js";
 import {
   createRollGeometry,
+  drawNoteInputFromDrag,
   MAX_ROLL_BARS,
   midiToY,
   moveDeltaFromDrag,
@@ -145,4 +146,22 @@ test("resize drag uses pointer delta, preserves sub-snap notes on neutral moveme
   assert.equal(resizeDurationFromDrag(1, 100, 100, geometry, "1/16"), 1);
   assert.equal(resizeDurationFromDrag(240, 100, 160, geometry, "1/16"), 600);
   assert.equal(resizeDurationFromDrag(240, 100, 40, geometry, "1/16"), 120);
+});
+
+test("draw input snaps click duration and horizontal drag without changing pitch", () => {
+  const geometry = createRollGeometry({ endTick: 1920 });
+  const y = midiToY(64, geometry) + geometry.rowHeight / 2;
+  assert.deepEqual(drawNoteInputFromDrag(
+    { x: tickToX(480, geometry), y },
+    { x: tickToX(480, geometry), y },
+    geometry,
+    "1/8"
+  ), { pitch: 64, startTick: 480, durationTicks: 240 });
+
+  assert.deepEqual(drawNoteInputFromDrag(
+    { x: tickToX(960, geometry), y },
+    { x: tickToX(240, geometry), y: midiToY(72, geometry) },
+    geometry,
+    "1/8"
+  ), { pitch: 64, startTick: 240, durationTicks: 720 });
 });

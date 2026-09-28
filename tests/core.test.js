@@ -403,7 +403,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     },
     selection: null,
     selectedNoteIds: [],
-    editor: { snap: "1/8", zoom: 1, canPaste: false, clipboardCount: 0 },
+    editor: { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 },
     view: { mode: "piano-roll", follow: true },
     generation: {
       status: "idle",
@@ -422,7 +422,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     availableActions: [
       "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
-      "setSnap", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
+      "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
       "generateGap", "getGenerationState", "selectCandidate", "auditionCandidate", "acceptCandidate",
       "lockAcceptedNotes", "clearGeneration", "regenerateGap",
@@ -555,6 +555,20 @@ test("multi-note edits commit atomically once and preserve source, anchor, and l
   assert.notDeepEqual(after, before);
 });
 
+test("editor tool is explicit runtime state and rejects unknown tools", () => {
+  const changes = [];
+  const commands = createCommands(fixture(), { onEditorChange: () => changes.push("editor") });
+  const originalSong = commands.getSong();
+  assert.equal(commands.getState().editor.tool, "select");
+  assert.equal(commands.setTool("draw"), "draw");
+  assert.equal(commands.getState().editor.tool, "draw");
+  expectCode(() => commands.setTool("erase"), "invalid-editor-tool");
+  assert.equal(commands.getState().editor.tool, "draw");
+  assert.deepEqual(commands.getSong(), originalSong);
+  assert.deepEqual(changes, ["editor"]);
+  assert.equal(commands.setTool("select"), "select");
+});
+
 test("roll zoom is editor runtime state, clamped, and not a song edit", () => {
   const changes = [];
   const commands = createCommands(fixture(), { onEditorChange: () => changes.push("editor") });
@@ -653,6 +667,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   let next = 0;
   const commands = createCommands(fixture(), { idFactory: () => `new-idea-${++next}` });
   commands.setSnap("1/16");
+  commands.setTool("draw");
   commands.selectNotes(["note-1"]);
   commands.copySelection();
   commands.setLyrics("draft lyric");
@@ -664,7 +679,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   assert.deepEqual(fresh.notes.map((note) => note.pitch), [60, 64, 69, 67]);
   assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
   assert.deepEqual(commands.getSelectedNoteIds(), []);
-  assert.deepEqual(commands.getState().editor, { snap: "1/8", zoom: 1, canPaste: false, clipboardCount: 0 });
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
   assert.equal(commands.getState().playback.status, "stopped");
   assert.equal(commands.getState().playback.currentTick, 0);
   assert.equal(Object.hasOwn(fresh, "playback"), false);

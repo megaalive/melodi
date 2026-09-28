@@ -73,3 +73,9 @@ test("history depth is only trusted when the matching capability is set", () => 
     redoDepth: 0
   });
 });
+
+test("editor tool defaults safely to select and preserves known tools", () => {
+  assert.equal(normalizeRuntimeState({ editor: { snap: "1/8", zoom: 1 } }).editor.tool, "select");
+  assert.equal(normalizeRuntimeState({ editor: { tool: "draw", zoom: 1 } }).editor.tool, "draw");
+  assert.equal(normalizeRuntimeState({ editor: { tool: "erase", zoom: 1 } }).editor.tool, "select");
+});

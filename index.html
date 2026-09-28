@@ -129,6 +129,11 @@
                 <p data-copy="pianoRollHelp"></p>
               </div>
               <div id="editor-toolbar" class="editor-toolbar" aria-label="Piano Roll controls">
+                <div class="editor-toolbar-group editor-tool-group" role="group" data-aria-copy="toolGroupLabel">
+                  <span class="editor-toolbar-label" data-copy="toolGroupLabel"></span>
+                  <button id="roll-tool-select" type="button" data-action="set-tool" data-tool="select" data-copy="toolSelectButton" data-aria-copy="toolSelectAria" aria-pressed="true"></button>
+                  <button id="roll-tool-draw" type="button" data-action="set-tool" data-tool="draw" data-copy="toolDrawButton" data-aria-copy="toolDrawAria" aria-pressed="false"></button>
+                </div>
                 <label>
                   <span data-copy="snapLabel"></span>
                   <select id="snap-select" data-action="set-snap">
