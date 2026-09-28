@@ -84,7 +84,7 @@ function validatePitchBend(points) {
 
 function validateNote(note) {
   const required = ["id", "pitch", "startTick", "durationTicks", "source", "anchor", "locked"];
-  const allowed = new Set([...required, "pitchBend"]);
+  const allowed = new Set([...required, "pitchBend", "volume", "pan"]);
   if (!isRecord(note)
     || required.some((key) => !Object.hasOwn(note, key))
     || Object.keys(note).some((key) => !allowed.has(key))) fail("invalid-note");
@@ -96,6 +96,14 @@ function validateNote(note) {
   if (note.source !== "user" && note.source !== "generated") fail("invalid-source");
   if (typeof note.anchor !== "boolean" || typeof note.locked !== "boolean") fail("invalid-note-flags");
   validatePitchBend(note.pitchBend);
+  if (Object.hasOwn(note, "volume")
+    && (typeof note.volume !== "number" || !Number.isFinite(note.volume) || note.volume < 0 || note.volume > 1)) {
+    fail("invalid-note-volume");
+  }
+  if (Object.hasOwn(note, "pan")
+    && (typeof note.pan !== "number" || !Number.isFinite(note.pan) || note.pan < -1 || note.pan > 1)) {
+    fail("invalid-note-pan");
+  }
 }
 
 function validateSong(song) {
