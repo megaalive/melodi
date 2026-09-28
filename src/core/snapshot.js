@@ -28,6 +28,7 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "moveLyricSyllable",
   "assignSyllableNotes",
   "newIdea",
+  "loadSong",
   "generateGap",
   "getGenerationState",
   "selectCandidate",
