@@ -70,9 +70,9 @@ test("initial song gets stable, project-unique IDs for each entity", () => {
   const ids = [song.id, ...song.notes.map((item) => item.id), ...song.phrases.map((item) => item.id), ...song.sections.map((item) => item.id)];
   assert.equal(new Set(ids).size, ids.length);
   assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67]);
-  assert.deepEqual(song.sections.map((section) => section.name), ["Bagian 1", "Bagian 2", "Bagian 3", "Bagian 4", "Bagian 5", "Bagian 6", "Bagian 7", "Bagian 8"]);
-  assert.equal(song.phrases.length, 8);
-  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [7, 5, 6, 3, 0, 0, 0, 0]);
+  assert.deepEqual(song.sections.map((section) => section.name), ["Melodi"]);
+  assert.equal(song.phrases.length, 1);
+  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [21]);
 });
 
 test("initial song matches the selected share project baseline", () => {
@@ -171,7 +171,7 @@ test("phrase, section, and syllable references must resolve", () => {
   expectCode(() => createSong(other), "invalid-reference");
 });
 
-test("manual notes on the eight-part baseline join the nearest phrase", () => {
+test("manual notes on the default baseline join the melody phrase", () => {
   let next = 0;
   const commands = createCommands(createInitialSong(() => `part-${++next}`), {
     idFactory: () => `new-${++next}`
@@ -181,7 +181,7 @@ test("manual notes on the eight-part baseline join the nearest phrase", () => {
   const after = commands.getSong();
 
   const phraseIndex = after.phrases.findIndex((phrase) => phrase.noteIds.includes(added.id));
-  assert.equal(phraseIndex, 1);
+  assert.equal(phraseIndex, 0);
   assert.equal(before.phrases[0].noteIds.includes(added.id), false);
 });
 
