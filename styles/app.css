@@ -2414,3 +2414,49 @@ button.danger-button:hover:not(:disabled) {
     min-height: 14rem;
   }
 }
+
+
+/* Share URL: aksi ringkas di song strip, detail hanya muncul saat perlu. */
+.song-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.shared-source {
+  padding: 0.18rem 0.42rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: var(--surface-subtle);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.song-actions button {
+  min-height: 2rem;
+  padding: 0.28rem 0.62rem;
+}
+.share-link-field {
+  display: grid;
+  gap: 0.3rem;
+}
+.share-link-field input {
+  width: 100%;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: var(--text-xs);
+}
+.share-dialog {
+  width: min(34rem, calc(100vw - 1.5rem));
+}
+@media (max-width: 46rem) {
+  .song-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+  .shared-source {
+    margin-right: auto;
+  }
+}
