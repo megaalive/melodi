@@ -2132,7 +2132,7 @@ confirmDialog?.addEventListener("click", (event) => {
 });
 
 const transientDetails = [...document.querySelectorAll(
-  ".transport-advanced, .editor-note-actions, .pane-help, .generation-options"
+  ".transport-advanced, .pane-help, .generation-options"
 )];
 for (const details of transientDetails) {
   details.addEventListener("toggle", () => {
