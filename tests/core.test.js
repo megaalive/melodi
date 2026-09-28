@@ -756,7 +756,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   const fresh = commands.newIdea();
   assert.equal(fresh.title, "Ide baru");
   assert.equal(fresh.lyrics.rawText, "");
-  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72]);
+  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72]);
   assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
