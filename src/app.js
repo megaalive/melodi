@@ -7,6 +7,7 @@ import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
 import { createScoreView } from "./ui/score.js";
 import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
+import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
@@ -17,6 +18,7 @@ let commands;
 let rollView;
 let scoreView;
 let guitarView;
+let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
 let lastFollowSyllableId = null;
@@ -340,6 +342,12 @@ function bendPreset(name) {
     { position: 0.3, semitones: 1 },
     { position: 1, semitones: 1 }
   ];
+  if (name === "half-release") return [
+    { position: 0, semitones: 0 },
+    { position: 0.22, semitones: 1 },
+    { position: 0.62, semitones: 1 },
+    { position: 1, semitones: 0 }
+  ];
   if (name === "whole") return [
     { position: 0, semitones: 0 },
     { position: 0.3, semitones: 2 },
@@ -365,6 +373,7 @@ function bendDisplay(note) {
   const signature = JSON.stringify(note?.pitchBend ?? null);
   const presets = [
     ["half", "bendHalfButton"],
+    ["half-release", "bendHalfReleaseButton"],
     ["whole", "bendWholeButton"],
     ["whole-release", "bendReleaseButton"],
     ["clear", "bendClearButton"]
@@ -738,6 +747,7 @@ function renderEditorControls() {
     button.dataset.active = String(active);
     button.setAttribute("aria-pressed", String(active));
   }
+  bendEditor?.load(selectedNotes[0] ?? null, selectedNotes.length);
   byId("piano-roll-scroll").setAttribute("aria-label", translate("pianoRollRegionLabel"));
   byId("editor-toolbar")?.setAttribute("aria-label", translate("pianoRollControlsLabel"));
   byId("roll-selection").textContent = state.selectedNoteIds.length
@@ -1269,6 +1279,18 @@ scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fal
 });
 
 guitarView = createGuitarView(byId("guitar"));
+bendEditor = createBendCurveEditor({
+  root: byId("bend-editor-details"),
+  rangeSelect: byId("bend-range"),
+  preview: byId("bend-curve-preview"),
+  list: byId("bend-point-list"),
+  stateLabel: byId("bend-curve-state"),
+  translate,
+  onApply(noteId, pitchBend) {
+    const updated = run(() => commands.updateNote(noteId, { pitchBend }, { actor: "user" }));
+    if (updated) announce(pitchBend ? "bendUpdated" : "bendCleared");
+  }
+});
 const guitarStatus = byId("guitar-status");
 const guitarLegend = byId("guitar-legend");
 const guitarPlayhead = byId("guitar-playhead");
