@@ -123,10 +123,15 @@
       <div class="workspace-grid">
         <div class="workspace-canvas">
           <section id="piano-roll-section" class="workspace-pane" data-view-region="piano-roll" aria-labelledby="piano-roll-heading">
-            <div class="pane-heading">
-              <div>
+            <div class="pane-heading compact-pane-heading">
+              <div class="pane-title-row">
                 <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
-                <p data-copy="pianoRollHelp"></p>
+                <details class="pane-help">
+                  <summary data-aria-copy="pianoRollHelpButton">?</summary>
+                  <div class="pane-help-popover">
+                    <p data-copy="pianoRollHelp"></p>
+                  </div>
+                </details>
               </div>
               <div id="editor-toolbar" class="editor-toolbar" aria-label="Piano Roll controls">
                 <div class="editor-toolbar-group editor-tool-group" role="group" data-aria-copy="toolGroupLabel">
@@ -151,26 +156,31 @@
                   <input id="roll-zoom" type="range" min="0.5" max="4" step="0.25" value="1" data-action="set-zoom" data-focus-key="roll-zoom" data-aria-copy="zoomSliderLabel">
                   <output id="roll-zoom-value" data-entity="roll-zoom">100%</output>
                 </label>
-                <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
-                  <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
-                  <button type="button" data-action="transpose-selected" data-delta="-12" data-aria-copy="transposeDownOctave" data-focus-key="transpose-down-12" disabled>−12</button>
-                  <button type="button" data-action="transpose-selected" data-delta="-1" data-aria-copy="transposeDownSemitone" data-focus-key="transpose-down-1" disabled>−1</button>
-                  <button type="button" data-action="transpose-selected" data-delta="1" data-aria-copy="transposeUpSemitone" data-focus-key="transpose-up-1" disabled>+1</button>
-                  <button type="button" data-action="transpose-selected" data-delta="12" data-aria-copy="transposeUpOctave" data-focus-key="transpose-up-12" disabled>+12</button>
-                </div>
-                <div class="editor-toolbar-group" role="group" data-aria-copy="durationGroupLabel">
-                  <span class="editor-toolbar-label" data-copy="durationGroupLabel"></span>
-                  <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
-                  <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
-                  <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
-                </div>
-                <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
-                  <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
-                  <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" data-focus-key="bend-half" disabled></button>
-                  <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" data-focus-key="bend-whole" disabled></button>
-                  <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
-                  <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
-                </div>
+                <details class="editor-note-actions">
+                  <summary data-copy="noteActionsSummary"></summary>
+                  <div class="editor-note-actions-popover">
+                    <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
+                      <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
+                      <button type="button" data-action="transpose-selected" data-delta="-12" data-aria-copy="transposeDownOctave" data-focus-key="transpose-down-12" disabled>−12</button>
+                      <button type="button" data-action="transpose-selected" data-delta="-1" data-aria-copy="transposeDownSemitone" data-focus-key="transpose-down-1" disabled>−1</button>
+                      <button type="button" data-action="transpose-selected" data-delta="1" data-aria-copy="transposeUpSemitone" data-focus-key="transpose-up-1" disabled>+1</button>
+                      <button type="button" data-action="transpose-selected" data-delta="12" data-aria-copy="transposeUpOctave" data-focus-key="transpose-up-12" disabled>+12</button>
+                    </div>
+                    <div class="editor-toolbar-group" role="group" data-aria-copy="durationGroupLabel">
+                      <span class="editor-toolbar-label" data-copy="durationGroupLabel"></span>
+                      <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
+                      <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
+                      <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
+                    </div>
+                    <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
+                      <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
+                      <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" data-focus-key="bend-half" disabled></button>
+                      <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" data-focus-key="bend-whole" disabled></button>
+                      <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
+                      <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
+                    </div>
+                  </div>
+                </details>
                 <button id="copy-selection" type="button" class="secondary" data-action="copy-selection" data-copy="copyButton"></button>
                 <button id="paste-notes" type="button" class="secondary" data-action="paste-notes" data-copy="pasteButton" disabled></button>
                 <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-copy="clearSelectionButton"></button>
