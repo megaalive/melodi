@@ -622,7 +622,6 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       setGroupSelection(noteId, event);
     }
     pendingNoteClickId = noteId;
-    const state = commands.getState();
     const currentNotes = new Map(song.notes.map((item) => [item.id, item]));
     const moveIds = !handle && state.selectedNoteIds.includes(noteId) ? state.selectedNoteIds : [noteId];
     const originals = moveIds.map((id) => currentNotes.get(id)).filter(Boolean).map((item) => ({
