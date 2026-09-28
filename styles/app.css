@@ -979,19 +979,26 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
    currentColor dipakai supaya cukup satu token yang dibaca. Selector teks dan
    path yang punya atribut sendiri sengaja dibatasi agar tidak menimpa label
    milik Melodi, yang punya warna sendiri. */
-#score { color: var(--score-ink); stroke: currentColor; fill: currentColor; }
-#score svg { stroke: currentColor; fill: currentColor; }
-#score text:not([class]) { fill: currentColor; }
-#score .vf-stem { stroke: currentColor; }
-#score path[stroke]:not([stroke="none"]) { stroke: currentColor; }
-#score path[fill="black"] { fill: currentColor; }
-/* Garis staff di dalam g.vf-stave tetap hitam walaupun root sudah benar:
-   kelompok itu tidak punya atribut stroke, tidak punya inline style, dan tidak
-   ada stylesheet yang mengaturnya, jadi pewarisannya tidak sampai. Scope pakai
-   awalan class "vf-" milik VexFlow supaya semua glyph-nya ikut ter-override,
-   tanpa pernah menyentuh label milik Melodi yang class-nya berbeda. */
-#score [class^="vf-"],
-#score [class^="vf-"] * { stroke: currentColor; fill: currentColor; }
+#score { color: var(--score-ink); }
+#score text:not([class]) { fill: currentColor; stroke: none; }
+
+/* VexFlow memakai Bravura untuk glyph musik. Jangan beri stroke global pada
+   semua glyph: outline tambahan membuat clef dan notehead tampak "bold".
+   Recolor fill dan garis secara terpisah agar tema gelap tetap terbaca tanpa
+   mengubah berat visual font/notasi. */
+#score path[fill="black"],
+#score rect[fill="black"] {
+  fill: currentColor;
+  stroke: none;
+}
+#score path[stroke="black"],
+#score line[stroke="black"],
+#score .vf-stem {
+  stroke: currentColor;
+}
+#score .vf-stave path {
+  stroke: currentColor;
+}
 .score-note[data-current="true"] { filter: drop-shadow(0 0 3px var(--highlight-current-ink)); }
 .score-note[data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)); }
 .score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)) drop-shadow(0 0 3px var(--highlight-current-ink)); }
@@ -2368,9 +2375,10 @@ button.danger-button:hover:not(:disabled) {
 /* Score: empat birama default harus terbaca sebagai score, bukan deretan glyph kecil. */
 .score-bend-label {
   fill: var(--ember);
+  stroke: none;
   font-family: system-ui, sans-serif;
   font-size: var(--text-xs);
-  font-weight: 800;
+  font-weight: 650;
   letter-spacing: 0.01em;
 }
 
