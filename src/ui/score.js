@@ -30,6 +30,17 @@ function svgElement(name, attributes, text = null) {
   return element;
 }
 
+function scoreBendLabel(note) {
+  if (!Array.isArray(note.pitchBend) || note.pitchBend.length < 2) return "";
+  const semitones = note.pitchBend.map((point) => point.semitones);
+  const max = Math.max(...semitones);
+  const min = Math.min(...semitones);
+  const release = Math.abs(semitones.at(-1) ?? 0) < 0.001;
+  if (max > 0) return `${max === 1 ? "½" : max / 2}↑${release ? "↓" : ""}`;
+  if (min < 0) return `${Math.abs(min) === 1 ? "½" : Math.abs(min) / 2}↓${release ? "↑" : ""}`;
+  return "";
+}
+
 function chordQualitySuffix(quality) {
   const normalized = quality.trim().toLowerCase();
   if (["major", "maj", "major triad"].includes(normalized)) return "";
@@ -55,17 +66,19 @@ function markNoteElement(element, segment, note, { selected, tabStop, translate 
   element.setAttribute("data-selected", String(selected));
   element.setAttribute("data-anchor", String(note.anchor));
   element.setAttribute("data-locked", String(note.locked));
+  element.setAttribute("data-pitch-bend", JSON.stringify(note.pitchBend ?? null));
   element.setAttribute("data-current", "false");
   element.setAttribute("data-focus-key", `score-note-${note.id}`);
   element.setAttribute("role", tabStop ? "button" : "presentation");
   element.setAttribute("tabindex", tabStop ? "0" : "-1");
   if (tabStop) {
     element.setAttribute("aria-pressed", String(selected));
+    const bend = scoreBendLabel(note);
     element.setAttribute("aria-label", translate("scoreNoteLabel", {
       pitch: midiToPitch(note.pitch),
       tick: note.startTick,
       duration: note.durationTicks
-    }));
+    }) + (bend ? `, bend ${bend}` : ""));
     element.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowUp Shift+ArrowDown Alt+ArrowLeft Alt+ArrowRight Delete Backspace Control+D Meta+D Enter Space Shift+F10");
   } else {
     element.removeAttribute("aria-label");
