@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260929.2">
+    <meta name="melodi-build" content="20260929.3">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260929.2">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.2"></script>
-    <script type="module" src="./src/app.js?v=20260929.2"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260929.3">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.3"></script>
+    <script type="module" src="./src/app.js?v=20260929.3"></script>
   </head>
   <body>
     <header class="page-header">
@@ -17,20 +17,22 @@
         <h1>Melodi</h1>
         <p data-copy="intro"></p>
       </div>
-      <div class="header-controls">
+      <div class="header-controls" role="group" data-aria-copy="appearanceLanguageGroupLabel">
         <button type="button" class="command-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
-          <span aria-hidden="true">⌘</span>
+          <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"></rect><path d="M5 7h1M9.5 7h1M14 7h1M5 10h1M9.5 10h1M14 10h1M6 13.5h8"></path></svg>
         </button>
         <label class="language-control">
-          <span data-copy="languageLabel"></span>
-          <select id="language" data-action="language-switch" data-focus-key="language">
+          <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.2"></circle><path d="M2.9 10h14.2M10 2.8c2 2 3 4.4 3 7.2s-1 5.2-3 7.2c-2-2-3-4.4-3-7.2s1-5.2 3-7.2Z"></path></svg>
+          <span class="visually-hidden" data-copy="languageLabel"></span>
+          <select id="language" data-action="language-switch" data-focus-key="language" data-aria-copy="languageLabel">
             <option value="id">Indonesia</option>
             <option value="en">English</option>
           </select>
         </label>
         <label class="language-control">
-          <span data-copy="themeLabel"></span>
-          <select id="theme" data-action="theme-switch" data-entity="theme" data-focus-key="theme">
+          <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M16.8 12.1A7 7 0 0 1 7.9 3.2 7.5 7.5 0 1 0 16.8 12.1Z"></path><path d="M13.7 2.5v3.2M12.1 4.1h3.2"></path></svg>
+          <span class="visually-hidden" data-copy="themeLabel"></span>
+          <select id="theme" data-action="theme-switch" data-entity="theme" data-focus-key="theme" data-aria-copy="themeLabel">
             <option value="system" data-copy="themeSystem"></option>
             <option value="light" data-copy="themeLight"></option>
             <option value="dark" data-copy="themeDark"></option>
@@ -50,14 +52,22 @@
           <div><dt data-copy="keyLabel"></dt><dd id="key-value"></dd></div>
           <div><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
         </dl>
-        <div class="song-actions">
+        <div class="song-actions project-actions" role="group" data-aria-copy="fileProjectGroupLabel">
           <span id="shared-source" class="shared-source" data-copy="sharedSourceLabel" hidden></span>
           <button id="save-shared-draft" type="button" class="secondary" data-action="save-shared-draft" data-copy="saveSharedDraftButton" hidden></button>
-          <button id="save-project-file" type="button" class="secondary" data-action="save-project-file" data-copy="saveFileButton"></button>
-          <button id="open-project-file" type="button" class="secondary" data-action="open-project-file" data-copy="openFileButton"></button>
+          <button id="new-idea" type="button" class="secondary icon-button" data-action="new-idea" data-aria-copy="newIdeaButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 4v12M4 10h12"></path><path d="M5.5 2.8h6l3 3V17H5.5z"></path></svg>
+          </button>
+          <button id="open-project-file" type="button" class="secondary icon-button" data-action="open-project-file" data-aria-copy="openFileButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M2.5 5.2h6l1.7 1.9h7.3v8.7H2.5z"></path><path d="M2.8 7.1h14.4"></path></svg>
+          </button>
+          <button id="save-project-file" type="button" class="secondary icon-button" data-action="save-project-file" data-aria-copy="saveFileButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 2.8h11l3 3V17H3z"></path><path d="M6 3v5h8V3M6.2 17v-5.5h7.6V17"></path></svg>
+          </button>
           <input id="project-file-input" type="file" accept=".melodi.json,application/json" hidden>
-          <button id="share-song" type="button" class="secondary" data-action="share-song" data-copy="shareButton"></button>
-          <button id="new-idea" type="button" class="secondary" data-action="new-idea" data-copy="newIdeaButton"></button>
+          <button id="share-song" type="button" class="secondary icon-button" data-action="share-song" data-aria-copy="shareButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="5" cy="10" r="2"></circle><circle cx="15" cy="5" r="2"></circle><circle cx="15" cy="15" r="2"></circle><path d="m6.8 9 6.4-3M6.8 11l6.4 3"></path></svg>
+          </button>
         </div>
       </section>
 
@@ -65,65 +75,71 @@
       <section class="transport-dock" aria-labelledby="playback-heading">
         <h2 id="playback-heading" class="visually-hidden" data-copy="playbackHeading"></h2>
         <div class="transport-main">
-          <div class="transport-buttons" aria-label="Playback">
-            <button id="play" type="button" data-action="play" data-aria-copy="playButton">▶</button>
-            <button id="pause" type="button" data-action="pause" data-aria-copy="pauseButton" disabled>❚❚</button>
-            <button id="stop" type="button" class="secondary" data-action="stop" data-aria-copy="stopButton">■</button>
-          </div>
-
-          <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
-            <button id="undo" type="button" class="secondary" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled>↶</button>
-            <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled>↷</button>
-          </div>
-
-          <dl id="playback-readout" class="playback-readout" aria-live="off">
-            <div><dt data-copy="playbackStatusLabel"></dt><dd id="playback-status" data-entity="playback-status"></dd></div>
-            <div class="machine-detail"><dt data-copy="currentTickLabel"></dt><dd><output id="current-tick" data-entity="current-tick">0</output></dd></div>
-            <div><dt data-copy="currentNoteLabel"></dt><dd><output id="current-note" data-entity="current-note"></output></dd></div>
-            <div class="machine-detail"><dt data-copy="currentSectionLabel"></dt><dd><output id="current-section" data-entity="current-section"></output></dd></div>
-          </dl>
-
-          <form class="transport-form tempo-control" data-action="set-tempo">
-            <label><span data-copy="tempoInputLabel"></span><input id="tempo-input" name="tempo" type="number" min="20" max="300" step="1" value="120" required data-action="set-tempo-direct"></label>
-            <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true" data-action="set-tempo" data-copy="applyTempoButton"></button>
-          </form>
-
-          <label class="loop-toggle"><input id="loop-enabled" type="checkbox" data-action="set-loop-enabled"><span data-copy="loopEnabledLabel"></span></label>
-          <button id="reset-playback-range" type="button" class="secondary range-reset" data-action="reset-loop-range" data-copy="allTimelineButton" data-aria-copy="allTimelineAria" hidden></button>
-
-          <details class="transport-advanced">
-            <summary data-copy="transportAdvanced"></summary>
-            <div class="transport-advanced-grid">
-              <form class="transport-form" data-action="seek">
-                <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
-                <button type="submit" data-action="seek" data-copy="seekButton"></button>
-              </form>
-              <form class="transport-form loop-range" data-action="set-loop">
-                <label><span data-copy="loopStartLabel"></span><input id="loop-start" name="startTick" type="number" min="0" step="1" value="0" required></label>
-                <label><span data-copy="loopEndLabel"></span><input id="loop-end" name="endTick" type="number" min="1" step="1" value="1920" required></label>
-                <button type="submit" data-action="set-loop" data-copy="applyLoopButton"></button>
-              </form>
+          <div class="transport-action-group" role="group" data-aria-copy="transportControlsGroupLabel">
+            <div class="transport-buttons">
+              <button id="play" type="button" data-action="play" data-aria-copy="playButton"><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5.5 3.5 16 10 5.5 16.5z" fill="currentColor" stroke="none"></path></svg></button>
+              <button id="pause" type="button" data-action="pause" data-aria-copy="pauseButton" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6 4v12M14 4v12" stroke-width="3"></path></svg></button>
+              <button id="stop" type="button" class="secondary" data-action="stop" data-aria-copy="stopButton"><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="5" y="5" width="10" height="10" rx="1" fill="currentColor" stroke="none"></rect></svg></button>
             </div>
-          </details>
+
+            <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
+              <button id="undo" type="button" class="secondary" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 6 3 9l4 3M3.5 9H11a5 5 0 0 1 5 5"></path></svg></button>
+              <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m13 6 4 3-4 3M16.5 9H9a5 5 0 0 0-5 5"></path></svg></button>
+            </div>
+
+            <dl id="playback-readout" class="playback-readout" aria-live="off">
+              <div><dt data-copy="playbackStatusLabel"></dt><dd id="playback-status" data-entity="playback-status"></dd></div>
+              <div class="machine-detail"><dt data-copy="currentTickLabel"></dt><dd><output id="current-tick" data-entity="current-tick">0</output></dd></div>
+              <div><dt data-copy="currentNoteLabel"></dt><dd><output id="current-note" data-entity="current-note"></output></dd></div>
+              <div class="machine-detail"><dt data-copy="currentSectionLabel"></dt><dd><output id="current-section" data-entity="current-section"></output></dd></div>
+            </dl>
+          </div>
+
+          <div class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel">
+            <form class="transport-form tempo-control" data-action="set-tempo">
+              <label><span data-copy="tempoInputLabel"></span><input id="tempo-input" name="tempo" type="number" min="20" max="300" step="1" value="120" required data-action="set-tempo-direct"></label>
+              <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true" data-action="set-tempo" data-copy="applyTempoButton"></button>
+            </form>
+
+            <label class="loop-toggle"><input id="loop-enabled" type="checkbox" data-action="set-loop-enabled"><span data-copy="loopEnabledLabel"></span></label>
+            <button id="reset-playback-range" type="button" class="secondary range-reset" data-action="reset-loop-range" data-copy="allTimelineButton" data-aria-copy="allTimelineAria" hidden></button>
+
+            <details class="transport-advanced">
+              <summary data-copy="transportAdvanced" data-aria-copy="transportAdvanced"></summary>
+              <div class="transport-advanced-grid">
+                <form class="transport-form" data-action="seek">
+                  <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
+                  <button type="submit" data-action="seek" data-copy="seekButton"></button>
+                </form>
+                <form class="transport-form loop-range" data-action="set-loop">
+                  <label><span data-copy="loopStartLabel"></span><input id="loop-start" name="startTick" type="number" min="0" step="1" value="0" required></label>
+                  <label><span data-copy="loopEndLabel"></span><input id="loop-end" name="endTick" type="number" min="1" step="1" value="1920" required></label>
+                  <button type="submit" data-action="set-loop" data-copy="applyLoopButton"></button>
+                </form>
+              </div>
+            </details>
+
+            <label class="follow-mode-control">
+              <input id="follow-mode" type="checkbox" data-action="set-follow-mode" data-entity="follow-mode">
+              <span data-copy="followModeLabel"></span>
+            </label>
+          </div>
         </div>
       </section>
 
       <section id="view-controls" class="workspace-toolbar" aria-labelledby="view-heading">
         <h2 id="view-heading" class="visually-hidden" data-copy="viewHeading"></h2>
-        <div class="editor-view-controls">
+        <div class="editor-view-controls" role="group" data-aria-copy="viewControlGroupLabel">
           <label class="compact-field">
-            <span data-copy="viewModeLabel"></span>
-            <select id="view-mode" data-action="set-view-mode" data-entity="workspace-view" data-focus-key="view-mode">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3" width="6.5" height="5.5" rx=".7"></rect><rect x="11" y="3" width="6.5" height="5.5" rx=".7"></rect><rect x="2.5" y="10.5" width="15" height="6.5" rx=".7"></rect></svg>
+            <span class="visually-hidden" data-copy="viewModeLabel"></span>
+            <select id="view-mode" data-action="set-view-mode" data-entity="workspace-view" data-focus-key="view-mode" data-aria-copy="viewModeLabel">
               <option value="score" data-copy="viewScoreOption"></option>
               <option value="piano-roll" data-copy="viewPianoRollOption"></option>
               <option value="combined" data-copy="viewCombinedOption"></option>
               <option value="lyrics" data-copy="viewLyricsOption"></option>
               <option value="guitar" data-copy="viewGuitarOption"></option>
             </select>
-          </label>
-          <label class="follow-mode-control">
-            <input id="follow-mode" type="checkbox" data-action="set-follow-mode" data-entity="follow-mode">
-            <span data-copy="followModeLabel"></span>
           </label>
         </div>
       </section>
@@ -136,6 +152,10 @@
             <div class="pane-heading compact-pane-heading">
               <div class="pane-title-row">
                 <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
+                <p id="piano-roll-collapse-summary" class="collapsed-panel-summary" hidden></p>
+                <button id="piano-roll-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="pianoRoll" aria-controls="piano-roll-content" aria-expanded="true">
+                  <svg class="toolbar-icon collapse-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
+                </button>
                 <details class="pane-help">
                   <summary data-aria-copy="pianoRollHelpButton">?</summary>
                   <div class="pane-help-popover">
@@ -172,17 +192,19 @@
                 <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-copy="clearSelectionButton"></button>
               </div>
             </div>
-            <div class="roll-surface">
-              <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
-                <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
+            <div id="piano-roll-content" class="panel-disclosure-content">
+              <div class="roll-surface">
+                <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
+                  <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
+                </div>
+                <div id="piano-roll-empty" class="roll-empty" data-entity="roll-empty" hidden>
+                  <p class="roll-empty-title" data-copy="emptyRollTitle"></p>
+                  <p class="roll-empty-hint" data-copy="emptyRollHint"></p>
+                  <p class="roll-empty-hint" data-copy="emptyRollSeedHint"></p>
+                </div>
               </div>
-              <div id="piano-roll-empty" class="roll-empty" data-entity="roll-empty" hidden>
-                <p class="roll-empty-title" data-copy="emptyRollTitle"></p>
-                <p class="roll-empty-hint" data-copy="emptyRollHint"></p>
-                <p class="roll-empty-hint" data-copy="emptyRollSeedHint"></p>
-              </div>
+              <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
             </div>
-            <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
           </section>
 
           <section id="score-section" class="workspace-pane" data-view-region="score" aria-labelledby="score-heading">
@@ -200,11 +222,18 @@
           </section>
 
             <section id="expression-panel" class="workspace-pane expression-panel" data-view-region="expression" aria-labelledby="expression-heading">
-              <div class="expression-toolbar">
-                <div>
+              <div class="expression-panel-heading">
+                <div class="expression-heading-copy">
                   <h3 id="expression-heading" data-copy="expressionHeading"></h3>
-                  <p id="expression-status" class="muted" data-entity="expression-status"></p>
+                  <p id="expression-status" class="muted expression-status" data-entity="expression-status"></p>
+                  <p id="expression-collapse-summary" class="collapsed-panel-summary" hidden></p>
                 </div>
+                <button id="expression-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="expression" aria-controls="expression-content" aria-expanded="true">
+                  <svg class="toolbar-icon collapse-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
+                </button>
+              </div>
+              <div id="expression-content" class="panel-disclosure-content">
+                <div class="expression-toolbar">
                 <div class="expression-actions">
                   <div class="expression-mode-group" role="group" data-aria-copy="expressionModeGroupLabel">
                     <button type="button" data-action="set-expression-mode" data-expression-mode="bend" data-copy="expressionBendButton" aria-pressed="true"></button>
@@ -296,6 +325,7 @@
               </details>
 
               <p class="muted expression-help" data-copy="expressionHelp"></p>
+              </div>
             </section>
 
           <section id="guitar-section" class="workspace-pane" data-view-region="guitar" aria-labelledby="guitar-heading">

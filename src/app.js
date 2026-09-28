@@ -1,17 +1,18 @@
 import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.2";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.2";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.3";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.3";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js";
-import { createScoreView } from "./ui/score.js";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.3";
+import { createScoreView } from "./ui/score.js?v=20260929.3";
 import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.3";
 import { createShareUrl, decodeShareLocation } from "./io/share.js";
 import { deserializeProject, serializeProject } from "./core/serialization.js";
 
@@ -28,6 +29,7 @@ let lastFollowSyllableId = null;
 let contextTarget = null;
 let shareSession = false;
 let shareLoadStatus = "none";
+let uiPreferences;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -53,6 +55,28 @@ function readStoredTheme() {
 }
 
 let theme = readStoredTheme();
+uiPreferences = readUiPreferences(safeStorage());
+
+const PANEL_DISCLOSURES = Object.freeze({
+  pianoRoll: {
+    key: "pianoRollCollapsed",
+    sectionId: "piano-roll-section",
+    buttonId: "piano-roll-collapse",
+    contentId: "piano-roll-content",
+    summaryId: "piano-roll-collapse-summary",
+    expandLabel: "expandPianoRoll",
+    collapseLabel: "collapsePianoRoll"
+  },
+  expression: {
+    key: "expressionCollapsed",
+    sectionId: "expression-panel",
+    buttonId: "expression-collapse",
+    contentId: "expression-content",
+    summaryId: "expression-collapse-summary",
+    expandLabel: "expandExpression",
+    collapseLabel: "collapseExpression"
+  }
+});
 
 function applyTheme() {
   // Tanpa atribut = colour-scheme dari media query, yaitu ikut sistem.
@@ -196,6 +220,67 @@ function setLanguage(next) {
   language = next === "en" ? "en" : DEFAULT_LANGUAGE;
   render();
   announce("languageChanged");
+}
+
+function renderPanelDisclosures(song, state) {
+  const expressionMode = byId("expression-lane").dataset.mode
+    ?? document.querySelector('[data-action="set-expression-mode"][aria-pressed="true"]')?.dataset.expressionMode
+    ?? "bend";
+  const expressionModeLabel = translate({
+    bend: "expressionBendButton",
+    volume: "expressionVolumeButton",
+    pan: "expressionPanButton",
+    vibrato: "expressionVibratoButton"
+  }[expressionMode] ?? "expressionBendButton");
+
+  for (const [name, panel] of Object.entries(PANEL_DISCLOSURES)) {
+    const collapsed = uiPreferences[panel.key];
+    const section = byId(panel.sectionId);
+    const button = byId(panel.buttonId);
+    const content = byId(panel.contentId);
+    const summary = byId(panel.summaryId);
+    const label = translate(collapsed ? panel.expandLabel : panel.collapseLabel);
+
+    section.dataset.collapsed = String(collapsed);
+    content.dataset.collapsed = String(collapsed);
+    content.setAttribute("aria-hidden", String(collapsed));
+    content.toggleAttribute("inert", collapsed);
+    content.inert = collapsed;
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", label);
+    button.title = label;
+    summary.hidden = !collapsed;
+
+    if (name === "pianoRoll") {
+      summary.textContent = translate("collapsedRollSummary", {
+        count: song.notes.length,
+        snap: state.editor.snap,
+        zoom: `${Math.round(state.editor.zoom * 100)}%`
+      });
+    } else {
+      summary.textContent = translate("collapsedExpressionSummary", {
+        mode: expressionModeLabel,
+        count: state.selectedNoteIds.length
+      });
+    }
+  }
+}
+
+function togglePanelDisclosure(name) {
+  const panel = PANEL_DISCLOSURES[name];
+  if (!panel) return;
+  const rollScroll = byId("piano-roll-scroll");
+  const expressionScroll = byId("expression-scroll");
+  const previousRoll = { left: rollScroll.scrollLeft, top: rollScroll.scrollTop };
+  const previousExpressionLeft = expressionScroll.scrollLeft;
+
+  uiPreferences = { ...uiPreferences, [panel.key]: !uiPreferences[panel.key] };
+  writeUiPreferences(safeStorage(), uiPreferences);
+  render();
+
+  rollScroll.scrollLeft = previousRoll.left;
+  rollScroll.scrollTop = previousRoll.top;
+  expressionScroll.scrollLeft = previousExpressionLeft;
 }
 
 applyTheme();
@@ -1151,6 +1236,7 @@ function render() {
   renderSyllables(song, state);
   renderEditorControls();
   renderGeneration(state);
+  renderPanelDisclosures(song, state);
   rollView.render(song, state);
   expressionView?.render(song, state, rollView.getGeometry());
   renderExpressionControls(state);
@@ -1711,7 +1797,9 @@ document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
   const state = commands.getState();
-  if (target.dataset.action === "set-expression-mode") {
+  if (target.dataset.action === "toggle-panel") {
+    togglePanelDisclosure(target.dataset.panelCollapse);
+  } else if (target.dataset.action === "set-expression-mode") {
     expressionView?.setMode(target.dataset.expressionMode);
     if (rollView && expressionView) expressionView.render(commands.getSong(), commands.getState(), rollView.getGeometry());
     renderExpressionControls();

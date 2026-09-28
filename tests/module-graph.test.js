@@ -85,6 +85,68 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   assert.ok(app.includes("./core/runtime-state.js?v=" + build));
   assert.ok(app.includes("./i18n/messages.js?v=" + build));
+  assert.ok(app.includes("./ui/score.js?v=" + build));
+  assert.ok(app.includes("./storage/ui-preferences.js?v=" + build));
+});
+
+test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
+
+  assert.match(html, /id="piano-roll-collapse"[^>]*data-panel-collapse="pianoRoll"[^>]*aria-controls="piano-roll-content"[^>]*aria-expanded="true"/);
+  assert.match(html, /id="expression-collapse"[^>]*data-panel-collapse="expression"[^>]*aria-controls="expression-content"[^>]*aria-expanded="true"/);
+  assert.match(html, /id="piano-roll-content" class="panel-disclosure-content"/);
+  assert.match(html, /id="expression-content" class="panel-disclosure-content"/);
+  assert.match(html, /id="piano-roll-collapse-summary"[^>]*hidden/);
+  assert.match(html, /id="expression-collapse-summary"[^>]*hidden/);
+  assert.match(app, /content\.setAttribute\("aria-hidden", String\(collapsed\)\)/);
+  assert.match(app, /content\.toggleAttribute\("inert", collapsed\)/);
+  assert.match(app, /writeUiPreferences\(safeStorage\(\), uiPreferences\)/);
+  assert.match(preferences, /pianoRollCollapsed:\s*false/);
+  assert.match(preferences, /expressionCollapsed:\s*false/);
+});
+
+test("toolbar mengelompokkan file, transport, playback settings, dan view", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+
+  const fileGroupStart = html.indexOf('data-aria-copy="fileProjectGroupLabel"');
+  const fileGroup = html.slice(fileGroupStart, html.indexOf("</div>", fileGroupStart));
+  for (const id of ["new-idea", "open-project-file", "save-project-file", "share-song"]) {
+    assert.equal((fileGroup.match(new RegExp(`id="${id}"`, "g")) ?? []).length, 1, `${id} harus tunggal di grup file`);
+  }
+
+  const transport = html.indexOf('class="transport-action-group" role="group" data-aria-copy="transportControlsGroupLabel"');
+  const settings = html.indexOf('class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel"');
+  const view = html.indexOf('class="editor-view-controls" role="group" data-aria-copy="viewControlGroupLabel"');
+  assert.ok(transport >= 0 && settings > transport && view > settings);
+  const settingsGroup = html.slice(settings, view);
+  assert.match(settingsGroup, /id="tempo-input"/);
+  assert.match(settingsGroup, /id="loop-enabled"/);
+  assert.match(settingsGroup, /class="transport-advanced"/);
+  assert.match(settingsGroup, /id="follow-mode"/);
+
+  const editorToolbar = html.slice(html.indexOf('id="editor-toolbar"'), html.indexOf('id="piano-roll-content"'));
+  for (const id of ["roll-tool-select", "roll-tool-draw", "snap-select", "roll-zoom"]) assert.ok(editorToolbar.includes(`id="${id}"`));
+  assert.match(app, /element\.setAttribute\("aria-label", label\)/);
+  assert.match(app, /element\.setAttribute\("title", label\)/);
+
+  const iconButtons = [...html.matchAll(/<button\b[^>]*class="[^"]*\bicon-button\b[^"]*"[^>]*>([\s\S]*?)<\/button>/g)];
+  assert.ok(iconButtons.length >= 4);
+  for (const [, button] of iconButtons) {
+    assert.match(button, /<svg[^>]*aria-hidden="true"/);
+  }
+  const iconTags = iconButtons.map(([tag]) => tag);
+  for (const tag of iconTags) {
+    assert.match(tag, /data-aria-copy=/);
+    assert.doesNotMatch(tag, /tabindex="-1"/);
+  }
+
+  const shortcutButton = html.match(/<button\b[^>]*data-action="command-palette"[^>]*>([\s\S]*?)<\/button>/);
+  assert.ok(shortcutButton);
+  assert.match(shortcutButton[0], /data-aria-copy=/);
+  assert.match(shortcutButton[1], /<svg[^>]*aria-hidden="true"/);
 });
 
 test("editor note dikonsolidasikan ke Expression tanpa popup kanan atas", () => {

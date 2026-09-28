@@ -118,6 +118,9 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
     if (syncingScroll) return;
     syncingScroll = true;
     target.scrollLeft = source.scrollLeft;
+    const alignedLeft = Math.min(source.scrollLeft, target.scrollLeft);
+    if (source.scrollLeft !== alignedLeft) source.scrollLeft = alignedLeft;
+    if (target.scrollLeft !== alignedLeft) target.scrollLeft = alignedLeft;
     updateFrozenLabels();
     syncingScroll = false;
   }
