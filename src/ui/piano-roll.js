@@ -328,18 +328,6 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     svgElement("title", {}, svg, `Piano Roll ${numerator}/${denominator}`);
     appendPitchTint(svg);
     svgElement("rect", { x: 0, y: 0, width: geometry.width, height: geometry.height, class: "roll-background" }, svg);
-    svgElement("rect", {
-      x: geometry.labelWidth,
-      y: 0,
-      width: geometry.width - geometry.labelWidth,
-      height: geometry.top,
-      class: "roll-ruler-hit",
-      "data-action": "seek-ruler",
-      "data-entity": "timeline-ruler",
-      role: "button",
-      tabindex: "0",
-      "aria-label": "Timeline ruler. Click or drag to move the playhead."
-    }, svg);
 
     for (let midi = geometry.maxMidi; midi >= geometry.minMidi; midi -= 1) {
       const y = midiToY(midi, geometry);
@@ -383,6 +371,20 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       if (isBar) svgElement("text", { x: x + 4, y: 18, class: "roll-bar-label" }, svg, String(tick / geometry.barTicks + 1));
     }
     svgElement("line", { x1: 0, x2: geometry.width, y1: geometry.top, y2: geometry.top, class: "roll-header-line" }, svg);
+    // Hit-layer ditempatkan setelah label/grid sehingga seluruh ruler, termasuk
+    // tepat di atas nomor birama, selalu menerima klik dan drag seek.
+    svgElement("rect", {
+      x: geometry.labelWidth,
+      y: 0,
+      width: geometry.width - geometry.labelWidth,
+      height: geometry.top,
+      class: "roll-ruler-hit",
+      "data-action": "seek-ruler",
+      "data-entity": "timeline-ruler",
+      role: "button",
+      tabindex: "0",
+      "aria-label": "Timeline ruler. Click or drag to move the playhead."
+    }, svg);
 
     const selected = new Set(state.selectedNoteIds);
     for (const note of song.notes) {
