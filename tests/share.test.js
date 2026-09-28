@@ -35,13 +35,8 @@ test("default song portable form matches the selected shared project", () => {
   const portable = toPortableProject(createInitialSong(() => `baseline-${++next}`));
   assert.deepEqual(portable.project.transport, [480, 81, 6, 8]);
   assert.deepEqual(portable.project.tonality, ["Am", "minor", [0, 2, 3, 5, 7, 8, 10]]);
-  assert.deepEqual(portable.project.arrangement.phrases, [
-    [0, 1, 2, 3, 4, 5, 6],
-    [7, 8, 9, 10, 11],
-    [12, 13, 14, 15, 16, 17],
-    [18, 19, 20],
-    [], [], [], []
-  ]);
+  assert.deepEqual(portable.project.arrangement.phrases, [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]]);
+  assert.deepEqual(portable.project.arrangement.sections, [["Melodi", [0]]]);
   const melody = portable.project.tracks.find((track) => track.id === "melody");
   assert.deepEqual(melody.events, [
     [69, 0, 480, 0],
