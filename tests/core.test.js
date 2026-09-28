@@ -69,7 +69,23 @@ test("initial song gets stable, project-unique IDs for each entity", () => {
   const song = createInitialSong(() => `generated-${++next}`);
   const ids = [song.id, ...song.notes.map((item) => item.id), ...song.phrases.map((item) => item.id), ...song.sections.map((item) => item.id)];
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 77, 77, 76, 74, 72, 74, 76, 76, 74, 72]);
+  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72]);
+});
+
+test("initial song uses 6/8 A minor phrasing with canonical pitch bends", () => {
+  let next = 0;
+  const song = createInitialSong(() => `bend-${++next}`);
+  assert.equal(song.timing.tempo, 81);
+  assert.deepEqual(song.timing.timeSignature, { numerator: 6, denominator: 8 });
+  assert.equal(song.key, "Am");
+  assert.equal(song.notes[0].startTick, 0);
+  assert.deepEqual(song.notes[3].pitchBend, [
+    { position: 0, semitones: 0 },
+    { position: 0.28, semitones: 1 },
+    { position: 1, semitones: 1 }
+  ]);
+  assert.deepEqual(song.notes[10].pitchBend.at(-1), { position: 1, semitones: 0 });
+  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 2880);
 });
 
 test("duplicate entity IDs across the project are rejected", () => {
@@ -678,7 +694,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   const fresh = commands.newIdea();
   assert.equal(fresh.title, "Ide baru");
   assert.equal(fresh.lyrics.rawText, "");
-  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 77, 77, 76, 74, 72, 74, 76, 76, 74, 72]);
+  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72]);
   assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
