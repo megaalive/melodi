@@ -248,10 +248,19 @@
                   <button type="button" data-action="set-selected-vibrato" data-vibrato="wide" data-copy="vibratoWideButton" data-focus-key="vibrato-wide" disabled></button>
                   <button type="button" data-action="set-selected-vibrato" data-vibrato="clear" data-copy="vibratoClearButton" data-focus-key="vibrato-clear" disabled></button>
                 </div>
+                <details id="expression-vibrato-details" class="expression-vibrato-details">
+                  <summary data-copy="expressionVibratoDetailsSummary"></summary>
+                  <div class="expression-vibrato-fields">
+                    <label><span data-copy="noteVibratoDepthLabel"></span><input id="expression-vibrato-depth" type="number" min="0" max="2" step="0.05"></label>
+                    <label><span data-copy="noteVibratoRateLabel"></span><input id="expression-vibrato-rate" type="number" min="0.5" max="12" step="0.1"></label>
+                    <label><span data-copy="noteVibratoDelayLabel"></span><input id="expression-vibrato-delay" type="number" min="0" max="100" step="1"></label>
+                    <button type="button" data-action="expression-apply-vibrato" data-copy="expressionApplyVibratoButton"></button>
+                  </div>
+                </details>
               </div>
 
               <details id="expression-note-details" class="expression-note-details" hidden>
-                <summary data-copy="expressionNoteDetailsSummary"></summary>
+                <summary><span id="expression-note-summary" data-copy="expressionNoteDetailsSummary"></span></summary>
                 <div class="expression-note-tools">
                   <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
                     <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
