@@ -1076,13 +1076,15 @@ function confirmInApp() {
       resolve(accepted);
     };
     dialog.addEventListener("close", finish, { once: true });
+    if (dialog.open) dialog.close("cancel");
     dialog.showModal();
+    byId("confirm-dialog-cancel")?.focus();
   });
   return confirmPromise;
 }
 
 async function requestNewIdea() {
-  if (shouldConfirmNewIdea() && !(await confirmInApp())) return false;
+  if (!(await confirmInApp())) return false;
   clearPendingForms();
   return run(() => commands.newIdea(), "newIdeaStarted");
 }
@@ -1719,6 +1721,14 @@ document.addEventListener("keydown", (event) => {
 });
 
 const confirmDialog = byId("confirm-dialog");
+byId("confirm-dialog-cancel")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  if (confirmDialog?.open) confirmDialog.close("cancel");
+});
+byId("confirm-dialog-confirm")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  if (confirmDialog?.open) confirmDialog.close("confirm");
+});
 confirmDialog?.addEventListener("click", (event) => {
   if (event.target === confirmDialog) confirmDialog.close("cancel");
 });
