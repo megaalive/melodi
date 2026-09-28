@@ -459,11 +459,11 @@ Vocal Profile dapat diganti tanpa mengubah source melody.
 
 - Format project sendiri: `.melodi.json`.
 - Share URL tanpa file:
-  - payload berada di URL fragment (`#m=...`) agar tidak dikirim ke server static hosting;
+  - link baru memakai query payload (`?m=...`) agar tahan terhadap redirect/link-wrapper; reader tetap menerima legacy fragment `#m=...`;
   - envelope versioned dan **track-oriented** sejak v1, bukan format yang hanya memahami vocal melody;
   - track awal: lead/melody + harmony; format harus dapat ditambah guitar, bass, drums, automation, dan instrument lain tanpa memutus link lama;
   - canonical UUID tidak dibawa ke URL; relasi portable memakai index dan ID baru dibuat saat link dibuka;
-  - gunakan native gzip `CompressionStream` + Base64URL bila tersedia, dengan fallback plain Base64URL tanpa runtime dependency;
+  - project kecil memakai plain Base64URL agar decode tidak bergantung browser compression API; gzip native dipakai saat payload cukup besar;
   - unknown future track boleh diabaikan oleh reader lama selama lead track yang dibutuhkan masih dapat dibaca;
   - membuka share link tidak boleh langsung menimpa autosave draft lokal; user memilih eksplisit bila ingin menjadikannya draft;
   - operasi manusia: Bagikan → salin link → penerima membuka link dan project langsung siap dimainkan;
