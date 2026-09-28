@@ -7,7 +7,7 @@
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./styles/app.css">
-    <script defer src="./vendor/vexflow/vexflow-bravura.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/abcjs@6.7.1/dist/abcjs-basic-min.js"></script>
     <script type="module" src="./src/app.js"></script>
   </head>
   <body>
@@ -246,7 +246,7 @@
               <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
             </div>
             <div id="score-scroll" class="score-scroll" role="region" tabindex="0" aria-label="Score">
-              <svg id="score"></svg>
+              <div id="score" data-renderer="abcjs"></div>
             </div>
             <div id="score-fallback" class="score-fallback" hidden></div>
           </section>
