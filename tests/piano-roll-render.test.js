@@ -279,3 +279,19 @@ test("Piano Roll menggambar ruler seek terpisah dari area note", () => {
   assert.equal(Number(rulers[0].getAttribute("height")), view.getGeometry().top);
 });
 
+test("custom playback range is visible on the timeline ruler", () => {
+  const { svg, view, state } = setup();
+  state.song = song([
+    note("n1", 60, 0, 480),
+    note("n2", 64, 1440, 480)
+  ]);
+  state.playback.loop = { enabled: false, startTick: 480, endTick: 1440 };
+  view.render(state.song, state);
+
+  const ranges = svg.byClass("roll-timeline-selection");
+  assert.equal(ranges.length, 1);
+  assert.equal(ranges[0].dataset.startTick, "480");
+  assert.equal(ranges[0].dataset.endTick, "1440");
+  assert.ok(Number(ranges[0].getAttribute("width")) > 0);
+});
+
