@@ -126,14 +126,24 @@ export function planNoteEvents(song, {
   const rawEnd = anchorTick + Math.max(0, audioNow + lookAheadSeconds - anchorAudioTime) / secondsPerTick;
   const candidates = [];
 
-  function add(note, cycle, absoluteStart, absoluteEnd) {
+  function add(note, cycle, absoluteStart, absoluteEnd, noteAbsoluteStart = note.startTick) {
     const key = eventKey(cycle, note.id);
     if (scheduledKeys.has(key) || absoluteEnd <= rawNow || absoluteStart > rawEnd) return;
     const onsetTick = Math.max(absoluteStart, rawNow, anchorTick);
     const startTime = Math.max(audioNow, anchorAudioTime + (onsetTick - anchorTick) * secondsPerTick);
     const endTime = anchorAudioTime + (absoluteEnd - anchorTick) * secondsPerTick;
     if (endTime <= startTime) return;
-    candidates.push({ key, note, cycle, startTime, endTime });
+    const progressStart = Math.max(0, Math.min(1, (onsetTick - noteAbsoluteStart) / note.durationTicks));
+    const progressEnd = Math.max(progressStart, Math.min(1, (absoluteEnd - noteAbsoluteStart) / note.durationTicks));
+    candidates.push({
+      key,
+      note,
+      cycle,
+      startTime,
+      endTime,
+      noteProgressStart: progressStart,
+      noteProgressEnd: progressEnd
+    });
   }
 
   if (!loop.enabled) {
@@ -152,7 +162,7 @@ export function planNoteEvents(song, {
     if (anchorTick < loop.startTick && rawNow < loop.endTick) {
       for (const note of song.notes) {
         if (note.startTick < loop.startTick) {
-          add(note, 0, note.startTick, Math.min(note.startTick + note.durationTicks, loop.endTick));
+          add(note, 0, note.startTick, Math.min(note.startTick + note.durationTicks, loop.endTick), note.startTick);
         }
       }
     }
@@ -167,7 +177,7 @@ export function planNoteEvents(song, {
       for (let cycle = firstCycle; cycle <= lastCycle; cycle += 1) {
         const start = Math.max(note.startTick, loop.startTick) + cycle * length;
         const end = Math.min(noteEnd, loop.endTick) + cycle * length;
-        add(note, cycle, start, end);
+        add(note, cycle, start, end, note.startTick + cycle * length);
       }
     }
   }
