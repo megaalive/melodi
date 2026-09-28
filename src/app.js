@@ -1019,6 +1019,36 @@ function shouldConfirmNewIdea() {
     || [...document.forms].some((form) => form.dataset.pending === "true");
 }
 
+let confirmPromise = null;
+
+function confirmInApp() {
+  const dialog = byId("confirm-dialog");
+  if (!dialog) return Promise.resolve(false);
+  if (confirmPromise) return confirmPromise;
+
+  const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  dialog.returnValue = "cancel";
+  confirmPromise = new Promise((resolve) => {
+    const finish = () => {
+      const accepted = dialog.returnValue === "confirm";
+      confirmPromise = null;
+      queueMicrotask(() => {
+        if (returnFocus?.isConnected) returnFocus.focus();
+      });
+      resolve(accepted);
+    };
+    dialog.addEventListener("close", finish, { once: true });
+    dialog.showModal();
+  });
+  return confirmPromise;
+}
+
+async function requestNewIdea() {
+  if (shouldConfirmNewIdea() && !(await confirmInApp())) return false;
+  clearPendingForms();
+  return run(() => commands.newIdea(), "newIdeaStarted");
+}
+
 function clearPendingForms() {
   for (const form of document.forms) {
     form.dataset.pending = "false";
@@ -1156,7 +1186,6 @@ const publicCommands = Object.freeze({
   canUndo: commands.canUndo,
   canRedo: commands.canRedo,
   newIdea: () => {
-    if (shouldConfirmNewIdea() && !window.confirm(translate("confirmNewIdea"))) return false;
     clearPendingForms();
     return commands.newIdea();
   },
@@ -1399,9 +1428,7 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.action === "merge-syllables") {
     run(() => commands.mergeLyricSyllables(target.dataset.leftId, target.dataset.rightId), "syllableMerged");
   } else if (target.dataset.action === "new-idea") {
-    if (shouldConfirmNewIdea() && !window.confirm(translate("confirmNewIdea"))) return;
-    clearPendingForms();
-    run(() => commands.newIdea(), "newIdeaStarted");
+    void requestNewIdea();
   } else if (target.dataset.action === "use-selection") {
     const selection = commands.getSelection();
     if (!selection || selection.endTick <= selection.startTick) return;
@@ -1648,6 +1675,11 @@ document.addEventListener("keydown", (event) => {
     const notes = commands.pasteNotes(commands.getState().playback.currentTick);
     announce("notePasted", "success", { count: notes.length });
   }
+});
+
+const confirmDialog = byId("confirm-dialog");
+confirmDialog?.addEventListener("click", (event) => {
+  if (event.target === confirmDialog) confirmDialog.close("cancel");
 });
 
 document.addEventListener("pointerdown", (event) => {
