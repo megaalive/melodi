@@ -69,10 +69,10 @@ test("initial song gets stable, project-unique IDs for each entity", () => {
   const song = createInitialSong(() => `generated-${++next}`);
   const ids = [song.id, ...song.notes.map((item) => item.id), ...song.phrases.map((item) => item.id), ...song.sections.map((item) => item.id)];
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72]);
-  assert.deepEqual(song.sections.map((section) => section.name), ["Bagian 1", "Bagian 2", "Bagian 3", "Bagian 4"]);
-  assert.equal(song.phrases.length, 4);
-  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [4, 3, 4, 2]);
+  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72, 69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72]);
+  assert.deepEqual(song.sections.map((section) => section.name), ["Bagian 1", "Bagian 2", "Bagian 3", "Bagian 4", "Bagian 5", "Bagian 6", "Bagian 7", "Bagian 8"]);
+  assert.equal(song.phrases.length, 8);
+  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [4, 3, 4, 2, 4, 3, 4, 2]);
 });
 
 test("initial song matches the user shared 6/8 A minor baseline", () => {
@@ -82,7 +82,7 @@ test("initial song matches the user shared 6/8 A minor baseline", () => {
   assert.deepEqual(song.timing.timeSignature, { numerator: 6, denominator: 8 });
   assert.equal(song.key, "Am");
   assert.equal(song.notes[0].startTick, 0);
-  assert.deepEqual(song.notes.map((note) => [note.pitch, note.startTick, note.durationTicks]), [
+  const firstPass = [
     [69, 0, 480],
     [74, 480, 240],
     [76, 720, 240],
@@ -96,6 +96,10 @@ test("initial song matches the user shared 6/8 A minor baseline", () => {
     [74, 3840, 720],
     [74, 4560, 720],
     [72, 5280, 480]
+  ];
+  assert.deepEqual(song.notes.map((note) => [note.pitch, note.startTick, note.durationTicks]), [
+    ...firstPass,
+    ...firstPass.map(([pitch, tick, duration]) => [pitch, tick + 5760, duration])
   ]);
   assert.deepEqual(song.notes[3].pitchBend, [
     { position: 0, semitones: 0 },
@@ -110,7 +114,28 @@ test("initial song matches the user shared 6/8 A minor baseline", () => {
     { position: 1, semitones: 0 }
   ]);
   assert.deepEqual(song.notes[11].pitchBend.at(-1), { position: 1, semitones: 0 });
-  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 5760);
+  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 11520);
+});
+
+test("loading a project resets editor/runtime state and keeps the imported canonical song", () => {
+  const commands = createCommands(fixture());
+  commands.setSnap("1/16");
+  commands.setTool("draw");
+  commands.selectNotes(["note-1"]);
+  commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 });
+  assert.equal(commands.canUndo(), true);
+
+  let next = 0;
+  const imported = createInitialSong(() => `import-${++next}`);
+  const loaded = commands.loadSong(imported);
+
+  assert.deepEqual(loaded, imported);
+  assert.deepEqual(commands.getSong(), imported);
+  assert.deepEqual(commands.getSelectedNoteIds(), []);
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
+  assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
+  assert.equal(commands.getState().playback.currentTick, 0);
+  assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 11520 });
 });
 
 test("duplicate entity IDs across the project are rejected", () => {
@@ -756,7 +781,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   const fresh = commands.newIdea();
   assert.equal(fresh.title, "Ide baru");
   assert.equal(fresh.lyrics.rawText, "");
-  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72]);
+  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72, 69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72]);
   assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
