@@ -86,6 +86,8 @@ class FakeAudioContext {
   currentTime = 0;
   destination = {};
   oscillators = [];
+  gains = [];
+  panners = [];
   listeners = new Map();
   addEventListener(name, callback) { this.listeners.set(name, callback); }
   setState(state) {
@@ -93,7 +95,14 @@ class FakeAudioContext {
     this.listeners.get("statechange")?.();
   }
   createGain() {
-    return { gain: new FakeAudioParam(), connect() {}, disconnect() {} };
+    const gain = { gain: new FakeAudioParam(), connect() {}, disconnect() {} };
+    this.gains.push(gain);
+    return gain;
+  }
+  createStereoPanner() {
+    const panner = { pan: new FakeAudioParam(), connect() {}, disconnect() {} };
+    this.panners.push(panner);
+    return panner;
   }
   createOscillator() {
     const oscillator = {
@@ -317,6 +326,30 @@ test("Web Audio schedules canonical pitch-bend curves on oscillator frequency", 
   assert.equal(events[1][2], 0.29);
   assert.equal(events[2][1], 440);
   assert.equal(events[2][2], 0.54);
+  player.cancelPreview();
+});
+
+test("Web Audio menerapkan volume dan pan canonical per note", async () => {
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => fixture(), audioContextFactory: () => context });
+  const note = {
+    id: "expression-note",
+    pitch: 69,
+    startTick: 0,
+    durationTicks: 480,
+    volume: 0.5,
+    pan: -0.4
+  };
+
+  await player.playPreview([note], { tempo: 120 });
+  assert.equal(context.panners.length, 1);
+  assert.deepEqual(context.panners[0].pan.events[0].slice(0, 2), ["set", -0.4]);
+
+  assert.equal(context.oscillators.length, 1);
+  assert.equal(context.gains.length, 2, "master gain + envelope note");
+  const envelopeEvents = context.gains[1].gain.events;
+  assert.ok(Math.abs(envelopeEvents[1][1] - 0.09) < 1e-12, "peak gain mengikuti volume 50%");
+  assert.ok(Math.abs(envelopeEvents[2][1] - 0.07) < 1e-12, "sustain gain mengikuti volume 50%");
   player.cancelPreview();
 });
 

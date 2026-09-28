@@ -526,6 +526,25 @@ function renderNotes(song, state) {
     );
     timing.append(timingSummary, timingGrid);
 
+    const expression = document.createElement("details");
+    expression.className = "note-expression-details";
+    const expressionSummary = document.createElement("summary");
+    expressionSummary.textContent = translate("noteExpressionSummary");
+    const expressionGrid = document.createElement("div");
+    expressionGrid.className = "form-grid note-expression-fields";
+    expressionGrid.append(
+      makeInputLabel(translate("noteVolumeLabel"), "number", Math.round((note.volume ?? 1) * 100), `volume-${note.id}`, {
+        min: 0, max: 100, step: 1, focusKey: `volume-${note.id}`
+      }),
+      makeInputLabel(translate("notePanLabel"), "number", Math.round((note.pan ?? 0) * 100), `pan-${note.id}`, {
+        min: -100, max: 100, step: 1, focusKey: `pan-${note.id}`
+      })
+    );
+    const expressionHint = document.createElement("p");
+    expressionHint.className = "muted note-expression-hint";
+    expressionHint.textContent = translate("noteExpressionHelp");
+    expression.append(expressionSummary, expressionGrid, expressionHint);
+
     const flags = document.createElement("div");
     flags.className = "note-flags";
     flags.append(
@@ -555,7 +574,7 @@ function renderNotes(song, state) {
       id
     );
 
-    fieldset.append(grid, flags, actions, timing);
+    fieldset.append(grid, flags, expression, actions, timing);
     form.append(fieldset);
     item.append(form);
     list.append(item);
@@ -1481,7 +1500,9 @@ document.addEventListener("submit", (event) => {
     result = run(() => commands.updateNote(form.dataset.noteId, {
       pitch: pitchToMidi(data.get(`pitch-${form.dataset.noteId}`)),
       startTick: Number(data.get(`start-${form.dataset.noteId}`)),
-      durationTicks: Number(data.get(`duration-${form.dataset.noteId}`))
+      durationTicks: Number(data.get(`duration-${form.dataset.noteId}`)),
+      volume: Number(data.get(`volume-${form.dataset.noteId}`)) / 100,
+      pan: Number(data.get(`pan-${form.dataset.noteId}`)) / 100
     }), "noteSaved");
   } else if (action === "set-lyrics") {
     result = run(() => commands.setLyrics(data.get("rawText")), "lyricsSaved");

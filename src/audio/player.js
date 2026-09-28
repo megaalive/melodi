@@ -148,6 +148,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
   function scheduleVoice(event) {
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
+    const panner = typeof context.createStereoPanner === "function" ? context.createStereoPanner() : null;
     const duration = event.endTime - event.startTime;
     const attack = Math.min(0.012, duration * 0.2);
     const release = Math.min(0.035, duration * 0.25);
@@ -164,19 +165,29 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
         oscillator.frequency.linearRampToValueAtTime(bendFrequency, Math.min(event.endTime, bendTime));
       }
     }
+    const noteVolume = note.volume ?? 1;
     envelope.gain.setValueAtTime(0, event.startTime);
-    envelope.gain.linearRampToValueAtTime(0.18, event.startTime + attack);
-    envelope.gain.setValueAtTime(0.14, sustainAt);
+    envelope.gain.linearRampToValueAtTime(0.18 * noteVolume, event.startTime + attack);
+    envelope.gain.setValueAtTime(0.14 * noteVolume, sustainAt);
     envelope.gain.linearRampToValueAtTime(0, event.endTime);
     oscillator.connect(envelope);
-    envelope.connect(masterGain);
+    if (panner) {
+      const pan = Math.max(-1, Math.min(1, note.pan ?? 0));
+      if (typeof panner.pan?.setValueAtTime === "function") panner.pan.setValueAtTime(pan, event.startTime);
+      else if (panner.pan) panner.pan.value = pan;
+      envelope.connect(panner);
+      panner.connect(masterGain);
+    } else {
+      envelope.connect(masterGain);
+    }
 
     const id = ++nextVoiceId;
-    const voice = { oscillator, gain: envelope, startTime: event.startTime, stopped: false };
+    const voice = { oscillator, gain: envelope, panner, startTime: event.startTime, stopped: false };
     voices.set(id, voice);
     oscillator.addEventListener("ended", () => {
       try { oscillator.disconnect(); } catch {}
       try { envelope.disconnect(); } catch {}
+      try { panner?.disconnect(); } catch {}
       voices.delete(id);
     }, { once: true });
     oscillator.start(event.startTime);

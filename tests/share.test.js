@@ -99,10 +99,32 @@ test("portable share round-trip preserves musical data while regenerating IDs", 
   assert.equal(restored.chords[0].quality, "m");
 });
 
+test("share v2 mempertahankan bend volume dan pan sementara v1 tetap dapat dibaca", () => {
+  const song = fixture();
+  song.notes[0].volume = 0.66;
+  song.notes[0].pan = -0.35;
+  const portable = toPortableProject(song);
+  const event = portable.project.tracks.find((track) => track.id === "melody").events[0];
+  assert.deepEqual(event.at(-1), [0.66, -0.35]);
+
+  const restored = fromPortableProject(portable, deterministicIds("expression"));
+  assert.equal(restored.notes[0].volume, 0.66);
+  assert.equal(restored.notes[0].pan, -0.35);
+
+  const legacy = structuredClone(portable);
+  legacy.version = 1;
+  legacy.project.tracks.find((track) => track.id === "melody").events =
+    legacy.project.tracks.find((track) => track.id === "melody").events.map((row) => row.slice(0, 5));
+  const legacyRestored = fromPortableProject(legacy, deterministicIds("legacy"));
+  assert.equal(Object.hasOwn(legacyRestored.notes[0], "volume"), false);
+  assert.equal(Object.hasOwn(legacyRestored.notes[0], "pan"), false);
+});
+
 test("share payload encodes and decodes without external compression libraries", async () => {
   const song = fixture();
   const payload = await encodeSharePayload(song, { CompressionStreamCtor: null });
-  assert.match(payload, /^1\.j\.[A-Za-z0-9_-]+$/);
+  assert.equal(payload.startsWith(`${SHARE_VERSION}.j.`), true);
+  assert.match(payload.split(".").at(-1), /^[A-Za-z0-9_-]+$/);
   const restored = await decodeSharePayload(payload, {
     DecompressionStreamCtor: null,
     idFactory: deterministicIds("raw")
@@ -117,7 +139,8 @@ test("gzip share payload round-trips when native compression streams are availab
   }
   const song = fixture();
   const payload = await encodeSharePayload(song, { compressAboveBytes: 0 });
-  assert.match(payload, /^1\.g\.[A-Za-z0-9_-]+$/);
+  assert.equal(payload.startsWith(`${SHARE_VERSION}.g.`), true);
+  assert.match(payload.split(".").at(-1), /^[A-Za-z0-9_-]+$/);
   const restored = await decodeSharePayload(payload, { idFactory: deterministicIds("gzip") });
   assert.deepEqual(toPortableProject(restored), toPortableProject(song));
 });
@@ -131,7 +154,9 @@ test("share URL uses query payload so redirects do not drop the project", async 
   assert.equal(url.origin + url.pathname, "https://megaalive.github.io/melodi/");
   assert.equal(url.searchParams.get("lang"), "id");
   assert.equal(url.searchParams.has("utm_source"), false);
-  assert.match(url.searchParams.get("m"), /^1\.j\.[A-Za-z0-9_-]+$/);
+  const queryPayload = url.searchParams.get("m");
+  assert.equal(queryPayload.startsWith(`${SHARE_VERSION}.j.`), true);
+  assert.match(queryPayload.split(".").at(-1), /^[A-Za-z0-9_-]+$/);
   assert.equal(url.hash, "");
 
   const restored = await decodeShareLocation(url, {
@@ -152,7 +177,7 @@ test("old hash share links remain readable", async () => {
 });
 
 test("share decoder rejects malformed or unsupported envelopes", async () => {
-  await assert.rejects(() => decodeSharePayload("2.j.AA", { DecompressionStreamCtor: null }), {
+  await assert.rejects(() => decodeSharePayload(`${SHARE_VERSION + 1}.j.AA`, { DecompressionStreamCtor: null }), {
     code: "unsupported-share"
   });
   assert.throws(() => fromPortableProject({ format: "other", version: 1, project: {} }), {

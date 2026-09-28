@@ -33,9 +33,17 @@ function validatePitchBendPatch(value) {
 function validatePatch(patch) {
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) fail("invalid-note");
   const keys = Object.keys(patch);
-  const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend"]);
+  const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan"]);
   if (keys.length === 0 || keys.some((key) => !allowed.has(key))) fail("invalid-note-patch");
   if (Object.hasOwn(patch, "pitchBend")) validatePitchBendPatch(patch.pitchBend);
+  if (Object.hasOwn(patch, "volume")
+    && (typeof patch.volume !== "number" || !Number.isFinite(patch.volume) || patch.volume < 0 || patch.volume > 1)) {
+    fail("invalid-note-volume");
+  }
+  if (Object.hasOwn(patch, "pan")
+    && (typeof patch.pan !== "number" || !Number.isFinite(patch.pan) || patch.pan < -1 || patch.pan > 1)) {
+    fail("invalid-note-pan");
+  }
 }
 
 function applyNotePatch(note, patch) {
@@ -642,7 +650,7 @@ export function createCommands(initialSong, {
     addNote(input, { actor = "user" } = {}) {
       validateActor(actor);
       if (input === null || typeof input !== "object" || Array.isArray(input)) fail("invalid-note");
-      const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend"]);
+      const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan"]);
       if (Object.keys(input).some((key) => !allowed.has(key))) fail("invalid-note");
       const note = {
         id: idFactory(),
@@ -650,6 +658,8 @@ export function createCommands(initialSong, {
         startTick: input.startTick,
         durationTicks: input.durationTicks,
         ...(input.pitchBend ? { pitchBend: cloneData(input.pitchBend) } : {}),
+        ...(Object.hasOwn(input, "volume") ? { volume: input.volume } : {}),
+        ...(Object.hasOwn(input, "pan") ? { pan: input.pan } : {}),
         source: actor === "generator" ? "generated" : "user",
         anchor: false,
         locked: false
@@ -855,7 +865,9 @@ export function createCommands(initialSong, {
           pitchOffset: note.pitch - first.pitch,
           startOffset: note.startTick - startTick,
           durationTicks: note.durationTicks,
-          ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {})
+          ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {}),
+          ...(Object.hasOwn(note, "volume") ? { volume: note.volume } : {}),
+          ...(Object.hasOwn(note, "pan") ? { pan: note.pan } : {})
         }))
       };
       notifyEditorChange();
@@ -871,6 +883,8 @@ export function createCommands(initialSong, {
         startTick: targetTick + note.startOffset,
         durationTicks: note.durationTicks,
         ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {}),
+        ...(Object.hasOwn(note, "volume") ? { volume: note.volume } : {}),
+        ...(Object.hasOwn(note, "pan") ? { pan: note.pan } : {}),
         source: "user",
         anchor: false,
         locked: false

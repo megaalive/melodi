@@ -262,6 +262,22 @@ test("blank click is safe in Select and only Draw creates a note", () => {
   assert.deepEqual(draw.added, [{ pitch: 60, startTick: 480, durationTicks: 240 }]);
 });
 
+test("piano roll mengekspos volume dan pan serta menampilkan indikator expression", () => {
+  const { svg, view, state } = setup();
+  const expressive = { ...note("expr", 60, 0, 960), volume: 0.72, pan: -0.35 };
+  view.render(song([expressive]), state);
+
+  const group = svg.querySelector('[data-entity="note"]');
+  assert.ok(group);
+  assert.equal(group.dataset.volume, "0.72");
+  assert.equal(group.dataset.pan, "-0.35");
+  assert.match(group.getAttribute("aria-label"), /V72/);
+  assert.match(group.getAttribute("aria-label"), /L35/);
+  const labels = svg.byClass("roll-note-expression");
+  assert.equal(labels.length, 1);
+  assert.equal(labels[0].textContent, "V72 L35");
+});
+
 test("timeline ruler memetakan klik ke tick terdekat sesuai Snap", () => {
   const geometry = createRollGeometry({
     endTick: 5760,

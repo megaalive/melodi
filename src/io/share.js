@@ -1,7 +1,8 @@
 import { PPQ, createId, createSong, MelodiError } from "../core/model.js";
 
 export const SHARE_FORMAT = "melodi-share";
-export const SHARE_VERSION = 1;
+export const SHARE_VERSION = 2;
+const SUPPORTED_SHARE_VERSIONS = new Set([1, 2]);
 export const SHARE_HASH_KEY = "m";
 export const MAX_SHARE_COMPRESSED_BYTES = 64 * 1024;
 export const MAX_SHARE_DECODED_BYTES = 512 * 1024;
@@ -87,15 +88,19 @@ function noteFlags(note) {
 
 function encodeNote(note) {
   const tuple = [note.pitch, note.startTick, note.durationTicks, noteFlags(note)];
-  if (Array.isArray(note.pitchBend)) {
-    tuple.push(note.pitchBend.map((point) => [point.position, point.semitones]));
-  }
+  const bend = Array.isArray(note.pitchBend)
+    ? note.pitchBend.map((point) => [point.position, point.semitones])
+    : null;
+  const hasExpression = Object.hasOwn(note, "volume") || Object.hasOwn(note, "pan");
+  if (bend || hasExpression) tuple.push(bend);
+  if (hasExpression) tuple.push([note.volume ?? 1, note.pan ?? 0]);
   return tuple;
 }
 
-function decodeNote(tuple, idFactory) {
-  if (!Array.isArray(tuple) || tuple.length < 4 || tuple.length > 5) fail("malformed-share");
-  const [pitch, startTick, durationTicks, flags, bend] = tuple;
+function decodeNote(tuple, idFactory, version = SHARE_VERSION) {
+  const maximumLength = version >= 2 ? 6 : 5;
+  if (!Array.isArray(tuple) || tuple.length < 4 || tuple.length > maximumLength) fail("malformed-share");
+  const [pitch, startTick, durationTicks, flags, bend, expression] = tuple;
   if (!Number.isSafeInteger(flags) || flags < 0 || flags > 7) fail("malformed-share");
   const note = {
     id: idFactory(),
@@ -106,12 +111,18 @@ function decodeNote(tuple, idFactory) {
     anchor: Boolean(flags & 2),
     locked: Boolean(flags & 4)
   };
-  if (bend !== undefined) {
+  if (bend !== undefined && bend !== null) {
     if (!Array.isArray(bend)) fail("malformed-share");
     note.pitchBend = bend.map((point) => {
       if (!Array.isArray(point) || point.length !== 2) fail("malformed-share");
       return { position: point[0], semitones: point[1] };
     });
+  }
+  if (expression !== undefined) {
+    if (version < 2 || !Array.isArray(expression) || expression.length !== 2) fail("malformed-share");
+    const [volume, pan] = expression;
+    if (volume !== 1) note.volume = volume;
+    if (pan !== 0) note.pan = pan;
   }
   return note;
 }
@@ -167,7 +178,7 @@ export function toPortableProject(song) {
 }
 
 export function fromPortableProject(envelope, idFactory = createId) {
-  if (!isRecord(envelope) || envelope.format !== SHARE_FORMAT || envelope.version !== SHARE_VERSION
+  if (!isRecord(envelope) || envelope.format !== SHARE_FORMAT || !SUPPORTED_SHARE_VERSIONS.has(envelope.version)
     || !isRecord(envelope.project)) fail("unsupported-share");
 
   const project = envelope.project;
@@ -188,7 +199,7 @@ export function fromPortableProject(envelope, idFactory = createId) {
   if (!melodyTrack || !Array.isArray(melodyTrack.events)) fail("malformed-share");
   const harmonyTrack = project.tracks.find((track) => isRecord(track) && track.kind === "chords");
 
-  const notes = melodyTrack.events.map((event) => decodeNote(event, idFactory));
+  const notes = melodyTrack.events.map((event) => decodeNote(event, idFactory, envelope.version));
   const phraseRows = project.arrangement.phrases;
   const sectionRows = project.arrangement.sections;
   if (!Array.isArray(phraseRows) || !Array.isArray(sectionRows)) fail("malformed-share");
@@ -276,7 +287,8 @@ export async function decodeSharePayload(payload, {
 } = {}) {
   if (typeof payload !== "string") fail("malformed-share");
   const [versionText, encoding, encoded, ...rest] = payload.split(".");
-  if (rest.length > 0 || Number(versionText) !== SHARE_VERSION || !encoded) fail("unsupported-share");
+  const payloadVersion = Number(versionText);
+  if (rest.length > 0 || !SUPPORTED_SHARE_VERSIONS.has(payloadVersion) || !encoded) fail("unsupported-share");
 
   const bytes = base64UrlToBytes(encoded);
   if (bytes.byteLength > MAX_SHARE_COMPRESSED_BYTES) fail("share-too-large");
@@ -303,6 +315,7 @@ export async function decodeSharePayload(payload, {
   } catch {
     fail("malformed-share");
   }
+  if (envelope?.version !== payloadVersion) fail("unsupported-share");
   return fromPortableProject(envelope, idFactory);
 }
 
