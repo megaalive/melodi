@@ -125,66 +125,6 @@
             <input id="follow-mode" type="checkbox" data-action="set-follow-mode" data-entity="follow-mode">
             <span data-copy="followModeLabel"></span>
           </label>
-          <details class="editor-note-actions">
-            <summary><span id="note-actions-label" data-copy="noteActionsSummary"></span></summary>
-            <div class="editor-note-actions-popover">
-              <ol id="note-list" class="note-list note-menu-list" data-entity="note-list"></ol>
-              <div id="note-bend-status" class="note-menu-status" data-entity="note-bend-status"></div>
-              <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
-                <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
-                <button type="button" data-action="transpose-selected" data-delta="-12" data-aria-copy="transposeDownOctave" data-focus-key="transpose-down-12" disabled>−12</button>
-                <button type="button" data-action="transpose-selected" data-delta="-1" data-aria-copy="transposeDownSemitone" data-focus-key="transpose-down-1" disabled>−1</button>
-                <button type="button" data-action="transpose-selected" data-delta="1" data-aria-copy="transposeUpSemitone" data-focus-key="transpose-up-1" disabled>+1</button>
-                <button type="button" data-action="transpose-selected" data-delta="12" data-aria-copy="transposeUpOctave" data-focus-key="transpose-up-12" disabled>+12</button>
-              </div>
-              <div class="editor-toolbar-group" role="group" data-aria-copy="durationGroupLabel">
-                <span class="editor-toolbar-label" data-copy="durationGroupLabel"></span>
-                <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
-                <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
-                <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
-              </div>
-              <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
-                <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
-                <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" data-focus-key="bend-half" disabled></button>
-                <button type="button" data-action="set-selected-bend" data-bend="half-release" data-copy="bendHalfReleaseButton" data-focus-key="bend-half-release" disabled></button>
-                <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" data-focus-key="bend-whole" disabled></button>
-                <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
-                <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
-              </div>
-              <div class="editor-toolbar-group vibrato-tool-group" role="group" data-aria-copy="vibratoGroupLabel">
-                <span class="editor-toolbar-label" data-copy="vibratoGroupLabel"></span>
-                <button type="button" data-action="set-selected-vibrato" data-vibrato="subtle" data-copy="vibratoSubtleButton" data-focus-key="vibrato-subtle" disabled></button>
-                <button type="button" data-action="set-selected-vibrato" data-vibrato="vocal" data-copy="vibratoVocalButton" data-focus-key="vibrato-vocal" disabled></button>
-                <button type="button" data-action="set-selected-vibrato" data-vibrato="wide" data-copy="vibratoWideButton" data-focus-key="vibrato-wide" disabled></button>
-                <button type="button" data-action="set-selected-vibrato" data-vibrato="clear" data-copy="vibratoClearButton" data-focus-key="vibrato-clear" disabled></button>
-              </div>
-              <details id="bend-editor-details" class="bend-curve-editor">
-                <summary data-copy="bendCurveSummary"></summary>
-                <div class="bend-curve-body">
-                  <div class="bend-curve-head">
-                    <label>
-                      <span data-copy="bendRangeLabel"></span>
-                      <select id="bend-range" data-focus-key="bend-range">
-                        <option value="1">±½</option>
-                        <option value="2" selected>±1</option>
-                        <option value="3">±1½</option>
-                        <option value="4">±2</option>
-                      </select>
-                    </label>
-                    <span id="bend-curve-state" class="muted" data-entity="bend-curve-state"></span>
-                  </div>
-                  <svg id="bend-curve-preview" class="bend-curve-preview" viewBox="0 0 320 120" role="img" data-aria-copy="bendCurvePreviewLabel"></svg>
-                  <div id="bend-point-list" class="bend-point-list" data-entity="bend-point-list"></div>
-                  <div class="bend-curve-actions">
-                    <button type="button" class="secondary" data-action="bend-add-point" data-copy="bendAddPointButton"></button>
-                    <button type="button" class="secondary" data-action="bend-reset-curve" data-copy="bendResetCurveButton"></button>
-                    <button type="button" data-action="bend-apply-curve" data-copy="bendApplyCurveButton"></button>
-                  </div>
-                  <p class="muted bend-curve-help" data-copy="bendCurveHelp"></p>
-                </div>
-              </details>
-            </div>
-          </details>
         </div>
       </section>
 
@@ -263,6 +203,73 @@
               <div id="expression-scroll" class="expression-scroll" role="region" tabindex="0" data-aria-copy="expressionRegionLabel">
                 <svg id="expression-lane" role="img" data-aria-copy="expressionLaneLabel"></svg>
               </div>
+
+              <div id="expression-bend-tools" class="expression-context-tools" hidden>
+                <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
+                  <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
+                  <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" data-focus-key="bend-half" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="half-release" data-copy="bendHalfReleaseButton" data-focus-key="bend-half-release" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" data-focus-key="bend-whole" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
+                </div>
+                <details id="bend-editor-details" class="bend-curve-editor">
+                  <summary data-copy="bendCurveSummary"></summary>
+                  <div class="bend-curve-body">
+                    <div class="bend-curve-head">
+                      <label>
+                        <span data-copy="bendRangeLabel"></span>
+                        <select id="bend-range" data-focus-key="bend-range">
+                          <option value="1">±½</option>
+                          <option value="2" selected>±1</option>
+                          <option value="3">±1½</option>
+                          <option value="4">±2</option>
+                        </select>
+                      </label>
+                      <span id="bend-curve-state" class="muted" data-entity="bend-curve-state"></span>
+                    </div>
+                    <svg id="bend-curve-preview" class="bend-curve-preview" viewBox="0 0 320 120" role="img" data-aria-copy="bendCurvePreviewLabel"></svg>
+                    <div id="bend-point-list" class="bend-point-list" data-entity="bend-point-list"></div>
+                    <div class="bend-curve-actions">
+                      <button type="button" class="secondary" data-action="bend-add-point" data-copy="bendAddPointButton"></button>
+                      <button type="button" class="secondary" data-action="bend-reset-curve" data-copy="bendResetCurveButton"></button>
+                      <button type="button" data-action="bend-apply-curve" data-copy="bendApplyCurveButton"></button>
+                    </div>
+                    <p class="muted bend-curve-help" data-copy="bendCurveHelp"></p>
+                  </div>
+                </details>
+              </div>
+
+              <div id="expression-vibrato-tools" class="expression-context-tools" hidden>
+                <div class="editor-toolbar-group vibrato-tool-group" role="group" data-aria-copy="vibratoGroupLabel">
+                  <span class="editor-toolbar-label" data-copy="vibratoGroupLabel"></span>
+                  <button type="button" data-action="set-selected-vibrato" data-vibrato="subtle" data-copy="vibratoSubtleButton" data-focus-key="vibrato-subtle" disabled></button>
+                  <button type="button" data-action="set-selected-vibrato" data-vibrato="vocal" data-copy="vibratoVocalButton" data-focus-key="vibrato-vocal" disabled></button>
+                  <button type="button" data-action="set-selected-vibrato" data-vibrato="wide" data-copy="vibratoWideButton" data-focus-key="vibrato-wide" disabled></button>
+                  <button type="button" data-action="set-selected-vibrato" data-vibrato="clear" data-copy="vibratoClearButton" data-focus-key="vibrato-clear" disabled></button>
+                </div>
+              </div>
+
+              <details id="expression-note-details" class="expression-note-details" hidden>
+                <summary data-copy="expressionNoteDetailsSummary"></summary>
+                <div class="expression-note-tools">
+                  <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
+                    <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
+                    <button type="button" data-action="transpose-selected" data-delta="-12" data-aria-copy="transposeDownOctave" data-focus-key="transpose-down-12" disabled>−12</button>
+                    <button type="button" data-action="transpose-selected" data-delta="-1" data-aria-copy="transposeDownSemitone" data-focus-key="transpose-down-1" disabled>−1</button>
+                    <button type="button" data-action="transpose-selected" data-delta="1" data-aria-copy="transposeUpSemitone" data-focus-key="transpose-up-1" disabled>+1</button>
+                    <button type="button" data-action="transpose-selected" data-delta="12" data-aria-copy="transposeUpOctave" data-focus-key="transpose-up-12" disabled>+12</button>
+                  </div>
+                  <div class="editor-toolbar-group" role="group" data-aria-copy="durationGroupLabel">
+                    <span class="editor-toolbar-label" data-copy="durationGroupLabel"></span>
+                    <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
+                    <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
+                    <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
+                  </div>
+                  <ol id="note-list" class="note-list expression-note-list" data-entity="note-list"></ol>
+                </div>
+              </details>
+
               <p class="muted expression-help" data-copy="expressionHelp"></p>
             </section>
           </section>
