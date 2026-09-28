@@ -69,29 +69,24 @@ test("initial song gets stable, project-unique IDs for each entity", () => {
   const song = createInitialSong(() => `generated-${++next}`);
   const ids = [song.id, ...song.notes.map((item) => item.id), ...song.phrases.map((item) => item.id), ...song.sections.map((item) => item.id)];
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67, 62, 67, 67, 69, 67, 62, 62, 67, 64, 62, 57]);
+  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67]);
   assert.deepEqual(song.sections.map((section) => section.name), ["Bagian 1", "Bagian 2", "Bagian 3", "Bagian 4", "Bagian 5", "Bagian 6", "Bagian 7", "Bagian 8"]);
   assert.equal(song.phrases.length, 8);
-  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [7, 5, 6, 3, 3, 3, 1, 4]);
+  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [7, 5, 6, 3, 0, 0, 0, 0]);
 });
 
-test("initial song matches the eight user-supplied tab sections", () => {
+test("initial song matches the selected share project baseline", () => {
   let next = 0;
   const song = createInitialSong(() => `bend-${++next}`);
   assert.equal(song.timing.tempo, 81);
   assert.deepEqual(song.timing.timeSignature, { numerator: 6, denominator: 8 });
   assert.equal(song.key, "Am");
-  assert.equal(song.notes[0].startTick, 0);
-  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67, 62, 67, 67, 69, 67, 62, 62, 67, 64, 62, 57]);
+  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67]);
   assert.deepEqual(song.notes.map((note) => [note.startTick, note.durationTicks]), [
     [0, 480], [480, 240], [720, 240], [960, 720], [1680, 480], [2160, 240], [2400, 480],
     [2880, 480], [3360, 240], [3600, 720], [4320, 720], [5040, 720],
-    [5760, 480], [6240, 240], [6480, 240], [6720, 720], [7440, 720], [8160, 480],
-    [8640, 720], [9360, 720], [10080, 1440],
-    [11520, 960], [12480, 720], [13200, 960],
-    [14400, 720], [15120, 720], [15840, 1440],
-    [17280, 2880],
-    [20160, 960], [21120, 480], [21600, 720], [22320, 720]
+    [5760, 240], [6000, 240], [6240, 240], [6480, 720], [7200, 720], [7920, 720],
+    [8640, 720], [9360, 720], [10080, 1440]
   ]);
   assert.deepEqual(song.notes[3].pitchBend, [
     { position: 0, semitones: 0 },
@@ -99,10 +94,10 @@ test("initial song matches the eight user-supplied tab sections", () => {
     { position: 1, semitones: 1 }
   ]);
   assert.deepEqual(song.notes[10].pitchBend.at(-1), { position: 1, semitones: 0 });
-  assert.deepEqual(song.notes[21].pitchBend.at(-1), { position: 1, semitones: 2 });
-  assert.deepEqual(song.notes[26].pitchBend.map((point) => point.semitones), [0, -2, -2, 0, 0]);
-  assert.deepEqual(song.notes[27].pitchBend.map((point) => point.semitones), [0, 1, 1, 0]);
-  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 23040);
+  assert.deepEqual(song.notes[15].pitchBend.at(-1), { position: 1, semitones: 2 });
+  assert.deepEqual(song.notes[16].pitchBend.at(-1), { position: 1, semitones: 0 });
+  assert.deepEqual(song.notes[20].pitchBend.at(-1), { position: 1, semitones: 2 });
+  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 11520);
 });
 
 test("loading a project resets editor/runtime state and keeps the imported canonical song", () => {
@@ -123,7 +118,7 @@ test("loading a project resets editor/runtime state and keeps the imported canon
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
   assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
   assert.equal(commands.getState().playback.currentTick, 0);
-  assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 23040 });
+  assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 11520 });
 });
 
 test("duplicate entity IDs across the project are rejected", () => {
@@ -769,7 +764,7 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   const fresh = commands.newIdea();
   assert.equal(fresh.title, "Ide baru");
   assert.equal(fresh.lyrics.rawText, "");
-  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67, 62, 67, 67, 69, 67, 62, 62, 67, 64, 62, 57]);
+  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67]);
   assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
