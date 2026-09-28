@@ -458,6 +458,16 @@ Vocal Profile dapat diganti tanpa mengubah source melody.
 ### Task
 
 - Format project sendiri: `.melodi.json`.
+- Share URL tanpa file:
+  - payload berada di URL fragment (`#m=...`) agar tidak dikirim ke server static hosting;
+  - envelope versioned dan **track-oriented** sejak v1, bukan format yang hanya memahami vocal melody;
+  - track awal: lead/melody + harmony; format harus dapat ditambah guitar, bass, drums, automation, dan instrument lain tanpa memutus link lama;
+  - canonical UUID tidak dibawa ke URL; relasi portable memakai index dan ID baru dibuat saat link dibuka;
+  - gunakan native gzip `CompressionStream` + Base64URL bila tersedia, dengan fallback plain Base64URL tanpa runtime dependency;
+  - unknown future track boleh diabaikan oleh reader lama selama lead track yang dibutuhkan masih dapat dibaca;
+  - membuka share link tidak boleh langsung menimpa autosave draft lokal; user memilih eksplisit bila ingin menjadikannya draft;
+  - operasi manusia: Bagikan → salin link → penerima membuka link dan project langsung siap dimainkan;
+  - expose pembuatan share URL pada browser automation contract.
 - MIDI export:
   - melody
   - tempo
@@ -474,7 +484,7 @@ Vocal Profile dapat diganti tanpa mengubah source melody.
 
 ### Selesai bila
 
-Project bisa dipindahkan tanpa kehilangan state dan melody bisa dibawa ke tool musik lain.
+Project bisa dipindahkan tanpa kehilangan state, link share lama tetap dapat dibuka setelah model instrument bertambah, dan melody bisa dibawa ke tool musik lain.
 
 ---
 
