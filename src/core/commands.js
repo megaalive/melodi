@@ -537,9 +537,15 @@ export function createCommands(initialSong, {
       clearAuditionState();
       playRequest += 1;
       if (audioPlayer) audioPlayer.stop();
+      loopRangeMode = "auto";
+      playback.loop = {
+        ...playback.loop,
+        startTick: 0,
+        endTick: Math.max(1, songEndTick())
+      };
       playback.status = "stopped";
       activeNoteSuppressed = true;
-      setPlaybackPosition(playback.loop.startTick);
+      setPlaybackPosition(0);
       notifyPlaybackChange();
       return readPlayback();
     },
