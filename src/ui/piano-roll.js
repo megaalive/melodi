@@ -138,6 +138,13 @@ export function xToTick(x, geometry) {
   return Math.round(geometry.startTick + (x - geometry.labelWidth) * geometry.ppq / geometry.pixelsPerQuarter);
 }
 
+export function rulerSeekTick(x, geometry, snap = "1/8") {
+  if (!Number.isFinite(x) || !geometry || !SNAP_TICKS[snap]) throw new RangeError("Invalid ruler seek input.");
+  const boundedX = Math.max(geometry.labelWidth, Math.min(geometry.width, x));
+  const tick = snapTick(xToTick(boundedX, geometry), snap);
+  return Math.max(geometry.startTick, Math.min(geometry.endTick, tick));
+}
+
 export function midiToY(midi, geometry) {
   return geometry.top + (geometry.maxMidi - midi) * geometry.rowHeight;
 }
@@ -254,6 +261,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let pendingNoteClickId = null;
   let selectionDrag = null;
   let drawDrag = null;
+  let seekDrag = null;
   let lastPlaybackTick = 0;
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
@@ -320,6 +328,18 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     svgElement("title", {}, svg, `Piano Roll ${numerator}/${denominator}`);
     appendPitchTint(svg);
     svgElement("rect", { x: 0, y: 0, width: geometry.width, height: geometry.height, class: "roll-background" }, svg);
+    svgElement("rect", {
+      x: geometry.labelWidth,
+      y: 0,
+      width: geometry.width - geometry.labelWidth,
+      height: geometry.top,
+      class: "roll-ruler-hit",
+      "data-action": "seek-ruler",
+      "data-entity": "timeline-ruler",
+      role: "button",
+      tabindex: "0",
+      "aria-label": "Timeline ruler. Click or drag to move the playhead."
+    }, svg);
 
     for (let midi = geometry.maxMidi; midi >= geometry.minMidi; midi -= 1) {
       const y = midiToY(midi, geometry);
@@ -519,7 +539,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     svgElement("line", {
       x1: playheadX,
       x2: playheadX,
-      y1: geometry.top,
+      y1: 0,
       y2: geometry.height,
       class: "roll-playhead",
       "data-entity": "playhead",
@@ -593,9 +613,28 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     }
   }
 
+  function seekFromRulerPointer(event, state = commands.getState()) {
+    const point = pointerPoint(event);
+    const tick = rulerSeekTick(point.x, geometry, state.editor.snap);
+    commands.seek(tick);
+    return tick;
+  }
+
   function beginDrag(event) {
     if (event.button !== 0) return;
     const state = commands.getState();
+    const ruler = event.target.closest?.('[data-action="seek-ruler"]');
+    if (ruler && svg.contains(ruler)) {
+      event.preventDefault();
+      try {
+        const tick = seekFromRulerPointer(event, state);
+        seekDrag = { pointerId: event.pointerId, tick };
+        svg.setPointerCapture?.(event.pointerId);
+      } catch (error) {
+        onError(error);
+      }
+      return;
+    }
     const handle = event.target.closest?.('[data-action="resize-note"]');
     const group = event.target.closest?.('[data-entity="note"]');
     if (!group || !svg.contains(group)) {
@@ -664,6 +703,18 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function previewDrag(event) {
+    if (seekDrag && seekDrag.pointerId === event.pointerId) {
+      try {
+        const tick = rulerSeekTick(pointerPoint(event).x, geometry, commands.getState().editor.snap);
+        if (tick !== seekDrag.tick) {
+          seekDrag.tick = tick;
+          commands.seek(tick);
+        }
+      } catch (error) {
+        onError(error);
+      }
+      return;
+    }
     if (drawDrag && drawDrag.pointerId === event.pointerId) {
       const point = pointerPoint(event);
       drawDrag.currentX = point.x;
@@ -745,6 +796,13 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function finishDrag(event, cancelled = false) {
+    if (seekDrag && seekDrag.pointerId === event.pointerId) {
+      seekDrag = null;
+      try { svg.releasePointerCapture?.(event.pointerId); } catch {}
+      ignoreNextClick = true;
+      setTimeout(() => { ignoreNextClick = false; }, 0);
+      return;
+    }
     if (drawDrag && drawDrag.pointerId === event.pointerId) {
       const drag = drawDrag;
       drawDrag = null;
@@ -886,6 +944,20 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       clientX: event.clientX,
       clientY: event.clientY
     });
+  });
+
+  svg.addEventListener("keydown", (event) => {
+    const ruler = event.target.closest?.('[data-action="seek-ruler"]');
+    if (!ruler || !svg.contains(ruler)) return;
+    const state = commands.getState();
+    const interval = SNAP_TICKS[state.editor.snap] ?? SNAP_TICKS["1/8"];
+    let nextTick = state.playback.currentTick;
+    if (event.key === "ArrowLeft") nextTick -= interval;
+    else if (event.key === "ArrowRight") nextTick += interval;
+    else if (event.key === "Home") nextTick = geometry.startTick;
+    else return;
+    event.preventDefault();
+    commands.seek(Math.max(geometry.startTick, Math.min(geometry.endTick, nextTick)));
   });
 
   svg.addEventListener("pointerdown", beginDrag);
