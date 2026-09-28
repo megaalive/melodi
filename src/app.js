@@ -983,6 +983,11 @@ function renderPlayback() {
   if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
   if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
   byId("loop-enabled").checked = playback.loop.enabled;
+  const songEndTick = Math.max(1, song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0));
+  const customPlaybackRange = playback.loop.startTick !== 0 || playback.loop.endTick !== songEndTick;
+  byId("reset-playback-range").hidden = !customPlaybackRange;
+  byId("reset-playback-range").dataset.startTick = String(playback.loop.startTick);
+  byId("reset-playback-range").dataset.endTick = String(playback.loop.endTick);
   const active = document.activeElement;
   const textEntryActive = active instanceof HTMLTextAreaElement
     || (active instanceof HTMLInputElement && !["checkbox", "radio", "button", "submit", "range"].includes(active.type));
@@ -1381,6 +1386,7 @@ const publicCommands = Object.freeze({
   seek: commands.seek,
   setTempo: commands.setTempo,
   setLoop: commands.setLoop,
+  resetLoopRange: commands.resetLoopRange,
   setLoopEnabled: commands.setLoopEnabled,
   generateGap: commands.generateGap,
   getGenerationState: commands.getGenerationState,
@@ -1524,6 +1530,8 @@ document.addEventListener("click", (event) => {
   const state = commands.getState();
   if (target.dataset.action === "set-tool") {
     run(() => commands.setTool(target.dataset.tool));
+  } else if (target.dataset.action === "reset-loop-range") {
+    run(() => commands.resetLoopRange(), "playbackRangeReset");
   } else if (target.dataset.action === "context-duplicate") {
     closeNoteContextMenu();
     const notes = run(() => duplicateSelectedNotes());
