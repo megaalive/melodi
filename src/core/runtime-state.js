@@ -6,6 +6,7 @@ const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar
 export const VIEW_REGION_MODES = Object.freeze({
   score: ["score", "combined"],
   "piano-roll": ["piano-roll", "combined"],
+  expression: ["score", "piano-roll", "combined", "guitar"],
   lyrics: ["lyrics"],
   guitar: ["guitar"]
 });
