@@ -69,22 +69,47 @@ test("initial song gets stable, project-unique IDs for each entity", () => {
   const song = createInitialSong(() => `generated-${++next}`);
   const ids = [song.id, ...song.notes.map((item) => item.id), ...song.phrases.map((item) => item.id), ...song.sections.map((item) => item.id)];
   assert.equal(new Set(ids).size, ids.length);
-  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72]);
+  assert.deepEqual(song.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 72, 74, 74, 74, 72]);
+  assert.deepEqual(song.sections.map((section) => section.name), ["Bagian 1", "Bagian 2", "Bagian 3", "Bagian 4"]);
+  assert.equal(song.phrases.length, 4);
+  assert.deepEqual(song.phrases.map((phrase) => phrase.noteIds.length), [4, 3, 4, 2]);
 });
 
-test("initial song uses 6/8 A minor phrasing with canonical pitch bends", () => {
+test("initial song matches the user shared 6/8 A minor baseline", () => {
   let next = 0;
   const song = createInitialSong(() => `bend-${++next}`);
   assert.equal(song.timing.tempo, 81);
   assert.deepEqual(song.timing.timeSignature, { numerator: 6, denominator: 8 });
   assert.equal(song.key, "Am");
   assert.equal(song.notes[0].startTick, 0);
+  assert.deepEqual(song.notes.map((note) => [note.pitch, note.startTick, note.durationTicks]), [
+    [69, 0, 480],
+    [74, 480, 240],
+    [76, 720, 240],
+    [76, 960, 720],
+    [76, 1680, 480],
+    [76, 2160, 240],
+    [74, 2400, 480],
+    [72, 2880, 240],
+    [72, 3120, 480],
+    [74, 3600, 240],
+    [74, 3840, 720],
+    [74, 4560, 720],
+    [72, 5280, 480]
+  ]);
   assert.deepEqual(song.notes[3].pitchBend, [
     { position: 0, semitones: 0 },
     { position: 0.3, semitones: 1 },
     { position: 1, semitones: 1 }
   ]);
-  assert.deepEqual(song.notes[10].pitchBend.at(-1), { position: 1, semitones: 0 });
+  assert.deepEqual(song.notes[8].pitchBend, [
+    { position: 0, semitones: 0 },
+    { position: 0.22, semitones: 2 },
+    { position: 0.35, semitones: 2 },
+    { position: 0.5, semitones: 0 },
+    { position: 1, semitones: 0 }
+  ]);
+  assert.deepEqual(song.notes[11].pitchBend.at(-1), { position: 1, semitones: 0 });
   assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 5760);
 });
 
@@ -136,6 +161,20 @@ test("phrase, section, and syllable references must resolve", () => {
   const other = fixture();
   other.sections[0].phraseIds = ["missing-phrase"];
   expectCode(() => createSong(other), "invalid-reference");
+});
+
+test("manual notes on the four-part baseline join the nearest phrase", () => {
+  let next = 0;
+  const commands = createCommands(createInitialSong(() => `part-${++next}`), {
+    idFactory: () => `new-${++next}`
+  });
+  const before = commands.getSong();
+  const added = commands.addNote({ pitch: 71, startTick: 3300, durationTicks: 120 });
+  const after = commands.getSong();
+
+  const phraseIndex = after.phrases.findIndex((phrase) => phrase.noteIds.includes(added.id));
+  assert.equal(phraseIndex, 2);
+  assert.equal(before.phrases[0].noteIds.includes(added.id), false);
 });
 
 test("generator cannot update an anchor note", () => {
