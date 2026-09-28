@@ -294,6 +294,32 @@ test("Web Audio engine uses audio timestamps, de-duplicates wakes, and cancels o
   player.stop();
 });
 
+test("Web Audio schedules canonical pitch-bend curves on oscillator frequency", async () => {
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => fixture(), audioContextFactory: () => context });
+  const note = {
+    id: "bend-note",
+    pitch: 69,
+    startTick: 0,
+    durationTicks: 480,
+    pitchBend: [
+      { position: 0, semitones: 0 },
+      { position: 0.5, semitones: 1 },
+      { position: 1, semitones: 0 }
+    ]
+  };
+
+  await player.playPreview([note], { tempo: 120 });
+  const events = context.oscillators[0].frequency.events;
+  assert.equal(events[0][0], "set");
+  assert.equal(events[0][1], 440);
+  assert.ok(Math.abs(events[1][1] - 440 * 2 ** (1 / 12)) < 1e-9);
+  assert.equal(events[1][2], 0.29);
+  assert.equal(events[2][1], 440);
+  assert.equal(events[2][2], 0.54);
+  player.cancelPreview();
+});
+
 test("candidate preview reuses the player, replaces an earlier audition, and cancels without leaking voices", async () => {
   const song = fixture();
   const context = new FakeAudioContext();
