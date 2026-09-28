@@ -465,7 +465,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
       "generateGap", "getGenerationState", "selectCandidate", "auditionCandidate", "acceptCandidate",
       "lockAcceptedNotes", "clearGeneration", "regenerateGap",
-      "play", "pause", "stop", "seek", "setTempo", "setLoop", "setLoopEnabled", "setViewMode", "setFollowMode",
+      "play", "pause", "stop", "seek", "setTempo", "setLoop", "resetLoopRange", "setLoopEnabled", "setViewMode", "setFollowMode",
       "undo", "redo", "canUndo", "canRedo"
     ]
   };
@@ -848,3 +848,17 @@ test("history depth is reported per direction and stays bounded", () => {
   for (let index = 0; index < 120; index += 1) commands.setLyrics(`long session ${index}`);
   assert.equal(commands.getState().history.undoDepth, 100);
 });
+
+test("reset loop range restores the full timeline without changing loop mode", () => {
+  const commands = createCommands(fixture());
+  commands.setLoop(480, 1440);
+  commands.setLoopEnabled(false);
+  commands.seek(960);
+
+  const reset = commands.resetLoopRange();
+
+  assert.deepEqual(reset, { enabled: false, startTick: 0, endTick: 1920 });
+  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 0, endTick: 1920 });
+  assert.equal(commands.getState().playback.currentTick, 960);
+});
+
