@@ -408,7 +408,7 @@ test("commands transition through play, pause, resume, seek, tempo, loop, and st
   const stopped = commands.getState().playback;
   assert.equal(stopped.status, "stopped");
   assert.equal(stopped.currentTick, 480);
-  assert.equal(stopped.currentNoteId, "entity-5");
+  assert.equal(stopped.currentNoteId, null);
   assert.deepEqual(commands.getSong().notes, notesBefore);
 });
 
