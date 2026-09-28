@@ -235,8 +235,8 @@ test("blank click is safe in Select and only Draw creates a note", () => {
   select.state.song = song([]);
   select.view.render(select.state.song, select.state);
   const selectGeometry = select.view.getGeometry();
-  const selectX = tickToX(480, selectGeometry);
-  const selectY = midiToY(60, selectGeometry) + selectGeometry.rowHeight / 2;
+  const selectX = tickToX(480, selectGeometry) * select.svg.clientWidth / selectGeometry.width;
+  const selectY = (midiToY(60, selectGeometry) + selectGeometry.rowHeight / 2) * select.svg.clientHeight / selectGeometry.height;
   select.svg.dispatch("pointerdown", { clientX: selectX, clientY: selectY });
   select.svg.dispatch("pointerup", { clientX: selectX, clientY: selectY });
   select.svg.dispatch("click", { clientX: selectX, clientY: selectY });
@@ -246,8 +246,8 @@ test("blank click is safe in Select and only Draw creates a note", () => {
   draw.state.song = song([]);
   draw.view.render(draw.state.song, draw.state);
   const drawGeometry = draw.view.getGeometry();
-  const drawX = tickToX(480, drawGeometry);
-  const drawY = midiToY(60, drawGeometry) + drawGeometry.rowHeight / 2;
+  const drawX = tickToX(480, drawGeometry) * draw.svg.clientWidth / drawGeometry.width;
+  const drawY = (midiToY(60, drawGeometry) + drawGeometry.rowHeight / 2) * draw.svg.clientHeight / drawGeometry.height;
   draw.svg.dispatch("pointerdown", { clientX: drawX, clientY: drawY });
   draw.svg.dispatch("pointerup", { clientX: drawX, clientY: drawY });
   draw.svg.dispatch("click", { clientX: drawX, clientY: drawY });

@@ -594,7 +594,7 @@ test("copy and paste create new user notes with relative timing and pitch but no
   const commands = createCommands(fixture(), { idFactory: () => `paste-${++nextId}` });
   commands.selectNotes(["note-1", "note-3"]);
   assert.equal(commands.copySelection(), 2);
-  assert.deepEqual(commands.getState().editor, { snap: "1/8", zoom: 1, canPaste: true, clipboardCount: 2 });
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: true, clipboardCount: 2 });
 
   const pasted = commands.pasteNotes(1920, 72);
   assert.deepEqual(pasted.map(({ pitch, startTick, durationTicks, source, anchor, locked }) => ({ pitch, startTick, durationTicks, source, anchor, locked })), [
