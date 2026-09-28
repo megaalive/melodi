@@ -56,7 +56,7 @@ test("setiap import di dalam src menunjuk file yang benar-benar ada", () => {
         );
         continue;
       }
-      const target = resolve(dirname(full), spec);
+      const target = resolve(dirname(full), spec.split(/[?#]/, 1)[0]);
       assert.ok(
         statSync(target, { throwIfNoEntry: false })?.isFile(),
         `${rel} mengimpor "${spec}" yang tidak ada`
@@ -81,6 +81,10 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(html.includes("styles/app.css?v=" + build));
   assert.ok(html.includes("vendor/abcjs/abcjs-basic-min.js?v=" + build));
   assert.ok(html.includes("src/app.js?v=" + build));
+
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  assert.ok(app.includes("./core/runtime-state.js?v=" + build));
+  assert.ok(app.includes("./i18n/messages.js?v=" + build));
 });
 
 test("editor note dikonsolidasikan ke Expression tanpa popup kanan atas", () => {
