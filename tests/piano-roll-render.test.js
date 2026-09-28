@@ -295,3 +295,27 @@ test("custom playback range is visible on the timeline ruler", () => {
   assert.ok(Number(ranges[0].getAttribute("width")) > 0);
 });
 
+test("updatePlayback redraws the ruler when the playback range changes", () => {
+  const { svg, view, state } = setup();
+  state.song = song([
+    note("n1", 60, 0, 480),
+    note("n2", 64, 1440, 480)
+  ]);
+  state.playback.loop = { enabled: true, startTick: 480, endTick: 1440 };
+  view.render(state.song, state);
+  let ranges = svg.byClass("roll-timeline-selection");
+  assert.equal(ranges.length, 1);
+  assert.equal(ranges[0].dataset.startTick, "480");
+
+  state.playback.loop = { enabled: true, startTick: 960, endTick: 1920 };
+  view.updatePlayback(state.playback);
+  ranges = svg.byClass("roll-timeline-selection");
+  assert.equal(ranges.length, 1);
+  assert.equal(ranges[0].dataset.startTick, "960");
+  assert.equal(ranges[0].dataset.endTick, "1920");
+
+  state.playback.loop = { enabled: true, startTick: 0, endTick: 1920 };
+  view.updatePlayback(state.playback);
+  assert.equal(svg.byClass("roll-timeline-selection").length, 0);
+});
+
