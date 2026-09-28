@@ -109,6 +109,7 @@ function markNoteElement(element, note, selected, tabStop, translate) {
   element.dataset.pitchBend = JSON.stringify(note.pitchBend ?? null);
   element.dataset.volume = String(note.volume ?? 1);
   element.dataset.pan = String(note.pan ?? 0);
+  element.dataset.vibrato = JSON.stringify(note.vibrato ?? null);
   element.dataset.current = "false";
   element.dataset.focusKey = `score-note-${note.id}`;
   element.setAttribute("role", tabStop ? "button" : "presentation");
