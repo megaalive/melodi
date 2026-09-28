@@ -155,7 +155,15 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     const note = event.note;
 
     oscillator.type = "triangle";
-    oscillator.frequency.setValueAtTime(440 * 2 ** ((note.pitch - 69) / 12), event.startTime);
+    const baseFrequency = 440 * 2 ** ((note.pitch - 69) / 12);
+    oscillator.frequency.setValueAtTime(baseFrequency, event.startTime);
+    if (Array.isArray(note.pitchBend) && note.pitchBend.length > 1) {
+      for (const point of note.pitchBend.slice(1)) {
+        const bendTime = event.startTime + duration * point.position;
+        const bendFrequency = baseFrequency * 2 ** (point.semitones / 12);
+        oscillator.frequency.linearRampToValueAtTime(bendFrequency, Math.min(event.endTime, bendTime));
+      }
+    }
     envelope.gain.setValueAtTime(0, event.startTime);
     envelope.gain.linearRampToValueAtTime(0.18, event.startTime + attack);
     envelope.gain.setValueAtTime(0.14, sustainAt);
