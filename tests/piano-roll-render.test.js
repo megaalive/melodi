@@ -59,8 +59,16 @@ class StubElement {
   setPointerCapture() {}
   getBoundingClientRect() { return { left: 0, top: 0, width: this.clientWidth, height: this.clientHeight }; }
   querySelectorAll(selector) {
-    const wanted = selector.replace(/^\[|\]$/g, "").split("=");
-    return this.walk().filter((el) => wanted[1] && el.dataset[wanted[0]] === wanted[1]);
+    if (selector.startsWith(".")) {
+      const className = selector.slice(1);
+      return this.walk().filter((el) => String(el.getAttribute("class") ?? "").split(/\s+/).includes(className));
+    }
+    const match = /^\[data-([a-z0-9-]+)="([^"]+)"\]$/.exec(selector);
+    if (match) {
+      const key = match[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+      return this.walk().filter((el) => el.dataset[key] === match[2]);
+    }
+    return [];
   }
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
   closest() { return null; }
@@ -317,5 +325,23 @@ test("updatePlayback redraws the ruler when the playback range changes", () => {
   state.playback.loop = { enabled: true, startTick: 0, endTick: 1920 };
   view.updatePlayback(state.playback);
   assert.equal(svg.byClass("roll-timeline-selection").length, 0);
+});
+
+test("pitch label gutter stays frozen during horizontal scroll", () => {
+  const { svg, scroll, view, state } = setup();
+  view.render(song([
+    note("n1", 60, 0, 480),
+    note("n2", 64, 3840, 480)
+  ]), state);
+
+  const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
+  assert.ok(layer, "frozen pitch label layer exists");
+  assert.equal(layer.getAttribute("transform"), "translate(0 0)");
+
+  scroll.scrollLeft = 240;
+  scroll.dispatch("scroll");
+
+  assert.equal(layer.getAttribute("transform"), "translate(240 0)");
+  assert.equal(svg.byClass("roll-pitch-label-gutter").length, 1);
 });
 
