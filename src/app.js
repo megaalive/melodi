@@ -1181,8 +1181,11 @@ function hasMeaningfulEdits(song) {
   if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0 || song.notes.length !== starter.notes.length) return true;
   return song.notes.some((note, index) => {
     const initial = starter.notes[index];
-    return !initial || ["pitch", "startTick", "durationTicks", "source", "anchor", "locked"]
-      .some((key) => note[key] !== initial[key]);
+    if (!initial) return true;
+    for (const key of ["pitch", "startTick", "durationTicks", "source", "anchor", "locked", "volume", "pan"]) {
+      if ((note[key] ?? null) !== (initial[key] ?? null)) return true;
+    }
+    return JSON.stringify(note.pitchBend ?? null) !== JSON.stringify(initial.pitchBend ?? null);
   });
 }
 
