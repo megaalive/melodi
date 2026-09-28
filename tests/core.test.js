@@ -526,7 +526,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
       "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
-      "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea",
+      "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea", "loadSong",
       "generateGap", "getGenerationState", "selectCandidate", "auditionCandidate", "acceptCandidate",
       "lockAcceptedNotes", "clearGeneration", "regenerateGap",
       "play", "pause", "stop", "seek", "setTempo", "setLoop", "resetLoopRange", "setLoopEnabled", "setViewMode", "setFollowMode",
