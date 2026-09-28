@@ -646,6 +646,111 @@ p { margin: 0.45rem 0 0.8rem; }
 #piano-roll { display: block; max-width: none; }
 .selection-readout { min-height: 1.2rem; margin: 0.42rem 0 0; }
 
+.expression-panel {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+}
+.expression-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.45rem;
+}
+.expression-toolbar h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.expression-toolbar p { margin: 0.12rem 0 0; }
+.expression-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+.expression-mode-group {
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+  padding: 0.16rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--surface-subtle);
+}
+.expression-mode-group button,
+.expression-actions > button {
+  min-height: 2rem;
+  padding: 0.32rem 0.55rem;
+  font-size: var(--text-xs);
+}
+.expression-mode-group button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.expression-scroll {
+  width: 100%;
+  max-width: 100%;
+  height: 8rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  touch-action: pan-x;
+}
+#expression-lane { display: block; max-width: none; }
+.expression-help { margin: 0.35rem 0 0; line-height: 1.35; }
+.expression-background { fill: var(--surface); }
+.expression-guide { stroke: var(--border); stroke-width: 1; }
+.expression-zero-line { stroke: var(--border-strong); stroke-width: 1.3; }
+.expression-beat-line { stroke: var(--border); stroke-width: 1; }
+.expression-bar-line { stroke: var(--text-muted); stroke-width: 1.4; opacity: 0.7; }
+.expression-label-layer { isolation: isolate; }
+.expression-label-gutter { fill: var(--surface); fill-opacity: 0.98; }
+.expression-label-divider { stroke: var(--border-strong); stroke-width: 1.5; }
+.expression-axis-label {
+  fill: var(--text-muted);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+.expression-note-hit { cursor: ns-resize; }
+#expression-lane[data-mode="bend"] .expression-note-hit { cursor: pointer; }
+.expression-note[data-selected="true"] .expression-note-hit {
+  fill: var(--accent-soft);
+  fill-opacity: 0.22;
+}
+.expression-note[data-current="true"] .expression-note-hit {
+  fill: var(--highlight-current);
+  fill-opacity: 0.16;
+}
+.expression-value-line,
+.expression-bend-curve {
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.expression-value-point,
+.expression-bend-point { fill: var(--accent-strong); }
+.expression-note[data-selected="true"] .expression-value-line,
+.expression-note[data-selected="true"] .expression-bend-curve { stroke-width: 3; }
+.expression-note[data-current="true"] .expression-value-point,
+.expression-note[data-current="true"] .expression-bend-point { r: 5px; }
+.expression-value-label {
+  fill: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 750;
+  pointer-events: none;
+}
+
+
 .score-scroll {
   width: 100%;
   max-width: 100%;

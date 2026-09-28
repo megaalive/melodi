@@ -5,6 +5,7 @@ import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
+import { createExpressionLaneView } from "./ui/expression-lane.js";
 import { createScoreView } from "./ui/score.js";
 import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
@@ -17,6 +18,7 @@ import { deserializeProject, serializeProject } from "./core/serialization.js";
 let language = DEFAULT_LANGUAGE;
 let commands;
 let rollView;
+let expressionView;
 let scoreView;
 let guitarView;
 let bendEditor;
@@ -368,6 +370,59 @@ function setSelectedBend(name) {
   const preset = bendPreset(name);
   if (preset === undefined) return [];
   return updateSelectedNotes(() => ({ pitchBend: preset }));
+}
+
+function openBendEditor(noteId = null) {
+  if (noteId) commands.selectNotes([noteId]);
+  const notes = commands.getSelectedNoteIds();
+  if (notes.length !== 1) return false;
+  const menu = document.querySelector(".editor-note-actions");
+  const details = byId("bend-editor-details");
+  if (menu) menu.open = true;
+  if (details) {
+    details.open = true;
+    details.scrollIntoView?.({ block: "nearest" });
+  }
+  return true;
+}
+
+function setExpressionForNotes(noteIds, mode, value) {
+  if (!Array.isArray(noteIds) || noteIds.length === 0) return [];
+  if (mode !== "volume" && mode !== "pan") return [];
+  return commands.updateNotes(noteIds.map((noteId) => ({
+    noteId,
+    patch: { [mode]: value }
+  })));
+}
+
+function resetSelectedExpression(mode) {
+  if (mode === "bend") return updateSelectedNotes(() => ({ pitchBend: null }));
+  if (mode === "volume") return updateSelectedNotes(() => ({ volume: 1 }));
+  if (mode === "pan") return updateSelectedNotes(() => ({ pan: 0 }));
+  return [];
+}
+
+function renderExpressionControls(state = normalizeRuntimeState(commands.getState())) {
+  if (!expressionView) return;
+  const mode = expressionView.getMode();
+  const selectedCount = state.selectedNoteIds.length;
+  for (const button of document.querySelectorAll('[data-action="set-expression-mode"]')) {
+    const active = button.dataset.expressionMode === mode;
+    button.setAttribute("aria-pressed", String(active));
+    button.dataset.active = String(active);
+  }
+  const editBend = byId("expression-edit-bend");
+  editBend.hidden = mode !== "bend";
+  editBend.disabled = selectedCount !== 1;
+  byId("expression-reset-selected").disabled = selectedCount === 0;
+  const modeLabel = translate({
+    bend: "expressionBendButton",
+    volume: "expressionVolumeButton",
+    pan: "expressionPanButton"
+  }[mode]);
+  byId("expression-status").textContent = selectedCount
+    ? translate("expressionStatusSelected", { mode: modeLabel, count: selectedCount })
+    : translate("expressionStatusNone", { mode: modeLabel });
 }
 
 function bendDisplay(note) {
@@ -1013,6 +1068,7 @@ function renderPlayback() {
     || (active instanceof HTMLInputElement && !["checkbox", "radio", "button", "submit", "range"].includes(active.type));
   const follow = state.view.follow && playback.status === "playing" && !textEntryActive && !pointerInteractionActive;
   rollView?.updatePlayback(playback, { follow });
+  expressionView?.updatePlayback(playback);
   scoreView?.updatePlayback(playback, { ...state.view, follow });
   if (guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
@@ -1088,6 +1144,8 @@ function render() {
   renderEditorControls();
   renderGeneration(state);
   rollView.render(song, state);
+  expressionView?.render(song, state, rollView.getGeometry());
+  renderExpressionControls(state);
   byId("piano-roll-empty").hidden = song.notes.length > 0;
   byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
   scoreView.render(song, state);
@@ -1123,8 +1181,11 @@ function hasMeaningfulEdits(song) {
   if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0 || song.notes.length !== starter.notes.length) return true;
   return song.notes.some((note, index) => {
     const initial = starter.notes[index];
-    return !initial || ["pitch", "startTick", "durationTicks", "source", "anchor", "locked"]
-      .some((key) => note[key] !== initial[key]);
+    if (!initial) return true;
+    for (const key of ["pitch", "startTick", "durationTicks", "source", "anchor", "locked", "volume", "pan"]) {
+      if ((note[key] ?? null) !== (initial[key] ?? null)) return true;
+    }
+    return JSON.stringify(note.pitchBend ?? null) !== JSON.stringify(initial.pitchBend ?? null);
   });
 }
 
@@ -1300,7 +1361,13 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
   },
   onEditorChange() {
     renderEditorControls();
-    if (rollView) rollView.render(commands.getSong(), commands.getState());
+    if (rollView) {
+      const state = commands.getState();
+      rollView.render(commands.getSong(), state);
+      expressionView?.render(commands.getSong(), state, rollView.getGeometry());
+      scoreView?.updateSelection(state.selectedNoteIds ?? []);
+      renderExpressionControls(normalizeRuntimeState(state));
+    }
   },
   onPlaybackChange: renderPlayback,
   onPlaybackEvent(event, error) {
@@ -1323,6 +1390,31 @@ rollView = createPianoRollView(byId("piano-roll"), commands, {
   onContextMenu: showNoteContextMenu,
   onError: reportError
 });
+
+expressionView = createExpressionLaneView(
+  byId("expression-lane"),
+  byId("expression-scroll"),
+  byId("piano-roll-scroll"),
+  {
+    onSelectNote(noteId, additive) {
+      const selected = commands.getSelectedNoteIds();
+      const next = additive
+        ? selected.includes(noteId) ? selected.filter((id) => id !== noteId) : [...selected, noteId]
+        : [noteId];
+      run(() => commands.selectNotes(next));
+    },
+    onChange(noteIds, mode, value) {
+      const updated = run(() => setExpressionForNotes(noteIds, mode, value));
+      if (updated?.length) announce("expressionUpdated");
+    },
+    onEditBend(noteId) {
+      openBendEditor(noteId);
+    },
+    onInteractionChange(active) {
+      pointerInteractionActive = active;
+    }
+  }
+);
 
 scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fallback"), byId("score-scroll"), translate, {
   onSelectNote(noteId, additive) {
@@ -1612,7 +1704,17 @@ document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
   const state = commands.getState();
-  if (target.dataset.action === "set-tool") {
+  if (target.dataset.action === "set-expression-mode") {
+    expressionView?.setMode(target.dataset.expressionMode);
+    if (rollView && expressionView) expressionView.render(commands.getSong(), commands.getState(), rollView.getGeometry());
+    renderExpressionControls();
+  } else if (target.dataset.action === "expression-edit-bend") {
+    openBendEditor();
+  } else if (target.dataset.action === "expression-reset-selected") {
+    const mode = expressionView?.getMode();
+    const notes = run(() => resetSelectedExpression(mode));
+    if (notes?.length) announce(mode === "bend" ? "bendCleared" : "expressionReset");
+  } else if (target.dataset.action === "set-tool") {
     run(() => commands.setTool(target.dataset.tool));
   } else if (target.dataset.action === "reset-loop-range") {
     run(() => commands.resetLoopRange(), "playbackRangeReset");
