@@ -312,7 +312,7 @@ export function createCommands(initialSong, {
       onComplete() {
         playback.status = "stopped";
         activeNoteSuppressed = true;
-        setPlaybackPosition(0);
+        setPlaybackPosition(playback.loop.startTick);
         notifyPlaybackChange();
         notifyPlaybackEvent("ended");
       },
@@ -513,7 +513,7 @@ export function createCommands(initialSong, {
       clearAuditionState();
       const request = ++playRequest;
       let tick = playback.currentTick;
-      if (!playback.loop.enabled && tick >= songEndTick()) tick = 0;
+      if (tick < playback.loop.startTick || tick >= playback.loop.endTick) tick = playback.loop.startTick;
       const started = await audioPlayer.play(tick, { tempo: song.timing.tempo, loop: playback.loop });
       if (!started || request !== playRequest) return readPlayback();
       playback.status = "playing";
@@ -539,7 +539,7 @@ export function createCommands(initialSong, {
       if (audioPlayer) audioPlayer.stop();
       playback.status = "stopped";
       activeNoteSuppressed = true;
-      setPlaybackPosition(0);
+      setPlaybackPosition(playback.loop.startTick);
       notifyPlaybackChange();
       return readPlayback();
     },
@@ -581,6 +581,22 @@ export function createCommands(initialSong, {
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       playback.loop = { ...playback.loop, ...nextLoop };
       const position = wrapLoopTick(tick, playback.loop);
+      playRequest += 1;
+      updatePlayerSafely(() => audioPlayer?.updateLoop(playback.loop, position, playback.status === "playing"));
+      setPlaybackPosition(position);
+      notifyPlaybackChange();
+      return { ...playback.loop };
+    },
+    resetLoopRange() {
+      clearAuditionState();
+      loopRangeMode = "auto";
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      playback.loop = {
+        ...playback.loop,
+        startTick: 0,
+        endTick: Math.max(1, songEndTick())
+      };
+      const position = tick >= playback.loop.endTick ? playback.loop.startTick : Math.max(playback.loop.startTick, tick);
       playRequest += 1;
       updatePlayerSafely(() => audioPlayer?.updateLoop(playback.loop, position, playback.status === "playing"));
       setPlaybackPosition(position);
