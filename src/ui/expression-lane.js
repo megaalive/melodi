@@ -89,6 +89,7 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
   let activeNoteId = null;
   let labelLayer = null;
   let drag = null;
+  let suppressClick = false;
   let syncingScroll = false;
 
   function localPoint(event) {
@@ -248,7 +249,10 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
   }
 
   svgRoot.addEventListener("click", (event) => {
-    if (drag) return;
+    if (drag || suppressClick) {
+      suppressClick = false;
+      return;
+    }
     const target = closestExpressionNote(event.target, svgRoot);
     if (target) onSelectNote(target.dataset.noteId, Boolean(event.shiftKey || event.ctrlKey || event.metaKey));
   });
@@ -293,6 +297,7 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
     if (!drag || drag.pointerId !== event.pointerId) return;
     const completed = drag;
     drag = null;
+    suppressClick = !cancelled;
     onInteractionChange(false);
     if (!cancelled) onChange(completed.noteIds, mode, completed.value);
     else if (song && state && geometry) render(song, state, geometry);
