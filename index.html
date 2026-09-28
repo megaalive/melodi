@@ -134,6 +134,10 @@
                   <button id="roll-tool-select" type="button" data-action="set-tool" data-tool="select" data-copy="toolSelectButton" data-aria-copy="toolSelectAria" aria-pressed="true"></button>
                   <button id="roll-tool-draw" type="button" data-action="set-tool" data-tool="draw" data-copy="toolDrawButton" data-aria-copy="toolDrawAria" aria-pressed="false"></button>
                 </div>
+                <div class="editor-meter" data-entity="time-signature">
+                  <span data-copy="meterLabel"></span>
+                  <output id="editor-meter">4/4</output>
+                </div>
                 <label>
                   <span data-copy="snapLabel"></span>
                   <select id="snap-select" data-action="set-snap">
@@ -159,6 +163,13 @@
                   <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
                   <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
                   <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
+                </div>
+                <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
+                  <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
+                  <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" data-focus-key="bend-half" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" data-focus-key="bend-whole" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
                 </div>
                 <button id="copy-selection" type="button" class="secondary" data-action="copy-selection" data-copy="copyButton"></button>
                 <button id="paste-notes" type="button" class="secondary" data-action="paste-notes" data-copy="pasteButton" disabled></button>
