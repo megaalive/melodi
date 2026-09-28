@@ -358,6 +358,20 @@ function setSelectedBend(name) {
   return updateSelectedNotes(() => ({ pitchBend: preset }));
 }
 
+function bendDisplay(note) {
+  const signature = JSON.stringify(note?.pitchBend ?? null);
+  const presets = [
+    ["half", "bendHalfButton"],
+    ["whole", "bendWholeButton"],
+    ["whole-release", "bendReleaseButton"],
+    ["clear", "bendClearButton"]
+  ];
+  for (const [name, key] of presets) {
+    if (signature === JSON.stringify(bendPreset(name) ?? null)) return translate(key);
+  }
+  return note?.pitchBend ? translate("bendCustomLabel") : translate("bendClearButton");
+}
+
 function moveSelectedNotes(deltaTicks) {
   if (!Number.isSafeInteger(deltaTicks) || deltaTicks === 0) return [];
   const notes = selectedSongNotes();
@@ -454,7 +468,8 @@ function renderNotes(song, state) {
     list.append(item);
     return;
   }
-  for (const note of song.notes) {
+  if (selectedNotes.length === 0) return;
+  for (const note of selectedNotes) {
     const pitch = midiToPitch(note.pitch);
     const item = document.createElement("li");
     item.dataset.entity = "note";
@@ -485,7 +500,7 @@ function renderNotes(song, state) {
     const timing = document.createElement("details");
     timing.className = "note-timing-details";
     const timingSummary = document.createElement("summary");
-    timingSummary.textContent = translate("generationAdvanced");
+    timingSummary.textContent = translate("noteTimingSummary");
     const timingGrid = document.createElement("div");
     timingGrid.className = "form-grid note-timing-fields";
     timingGrid.append(
@@ -691,6 +706,27 @@ function renderEditorControls() {
     button.disabled = state.selectedNoteIds.length === 0;
   }
   const selectedNotes = song.notes.filter((note) => state.selectedNoteIds.includes(note.id));
+  const noteMenu = document.querySelector(".editor-note-actions");
+  const noteMenuLabel = byId("note-actions-label");
+  const noteBendStatus = byId("note-bend-status");
+  if (noteMenu && noteMenuLabel && noteBendStatus) {
+    noteMenu.dataset.hasSelection = String(selectedNotes.length > 0);
+    if (selectedNotes.length === 0) {
+      noteMenuLabel.textContent = translate("noteActionsSummary");
+      noteBendStatus.textContent = translate("noNotesSelected");
+      if (noteMenu.open) noteMenu.removeAttribute("open");
+    } else if (selectedNotes.length === 1) {
+      const note = selectedNotes[0];
+      const bend = bendDisplay(note);
+      noteMenuLabel.textContent = `${midiToPitch(note.pitch)} · ${bend}`;
+      noteBendStatus.textContent = `${translate("bendGroupLabel")}: ${bend}`;
+    } else {
+      const bends = new Set(selectedNotes.map((note) => bendDisplay(note)));
+      const bend = bends.size === 1 ? [...bends][0] : translate("bendMixedLabel");
+      noteMenuLabel.textContent = translate("noteActionsMultiple", { count: selectedNotes.length, bend });
+      noteBendStatus.textContent = `${translate("bendGroupLabel")}: ${bend}`;
+    }
+  }
   const bendSignature = (note) => JSON.stringify(note.pitchBend ?? null);
   for (const button of document.querySelectorAll('[data-action="set-selected-bend"]')) {
     const preset = bendPreset(button.dataset.bend);
@@ -1572,6 +1608,16 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    const opened = transientDetails.filter((details) => details.open);
+    if (opened.length) {
+      event.preventDefault();
+      const last = opened.at(-1);
+      last.removeAttribute("open");
+      last.querySelector("summary")?.focus();
+      return;
+    }
+  }
   const target = event.target;
   if (event.isComposing || event.repeat || target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement
     || target?.isContentEditable) return;
@@ -1732,6 +1778,26 @@ byId("confirm-dialog-confirm")?.addEventListener("click", (event) => {
 confirmDialog?.addEventListener("click", (event) => {
   if (event.target === confirmDialog) confirmDialog.close("cancel");
 });
+
+const transientDetails = [...document.querySelectorAll(
+  ".transport-advanced, .editor-note-actions, .pane-help, .generation-options"
+)];
+for (const details of transientDetails) {
+  details.addEventListener("toggle", () => {
+    if (!details.open) return;
+    for (const other of transientDetails) {
+      if (other !== details && other.open) other.removeAttribute("open");
+    }
+  });
+}
+
+document.addEventListener("pointerdown", (event) => {
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  for (const details of transientDetails) {
+    if (details.open && !details.contains(target)) details.removeAttribute("open");
+  }
+}, true);
 
 document.addEventListener("pointerdown", (event) => {
   pointerInteractionActive = true;
