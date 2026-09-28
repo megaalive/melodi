@@ -509,3 +509,35 @@ test("seek state snapshots are detached from transport runtime", () => {
   assert.equal(commands.getState().playback.loop.enabled, true);
   assert.equal(commands.getState().playback.currentNoteId, "entity-5");
 });
+
+test("manual playback range works once when Loop is off", async () => {
+  const ref = {};
+  const commands = createCommands(fixture(), { audioPlayerFactory: fakePlayerFactory(ref) });
+  commands.setLoop(480, 1440);
+  commands.setLoopEnabled(false);
+  commands.seek(0);
+
+  await commands.play();
+
+  assert.deepEqual(ref.calls.find((call) => call[0] === "play").slice(0, 2), ["play", 480]);
+  assert.equal(commands.getState().playback.currentTick, 480);
+  commands.stop();
+  assert.equal(commands.getState().playback.currentTick, 480);
+});
+
+test("normal scheduler clips notes to the playback range", () => {
+  const song = fixture();
+  const events = planNoteEvents(song, {
+    audioNow: 0,
+    anchorAudioTime: 0,
+    anchorTick: 480,
+    tempo: 120,
+    lookAheadSeconds: 1,
+    loop: { enabled: false, startTick: 480, endTick: 960 }
+  });
+
+  assert.ok(events.length > 0);
+  assert.ok(events.every((event) => event.note.startTick < 960));
+  assert.ok(events.every((event) => event.endTime <= ticksToSeconds(480, 120) + 1e-10));
+});
+
