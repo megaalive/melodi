@@ -137,8 +137,12 @@ export function planNoteEvents(song, {
   }
 
   if (!loop.enabled) {
+    const rangeStart = loop?.startTick ?? 0;
+    const rangeEnd = loop?.endTick ?? Number.POSITIVE_INFINITY;
     for (const note of song.notes) {
-      add(note, 0, note.startTick, note.startTick + note.durationTicks);
+      const noteEnd = note.startTick + note.durationTicks;
+      if (note.startTick >= rangeEnd || noteEnd <= rangeStart) continue;
+      add(note, 0, Math.max(note.startTick, rangeStart), Math.min(noteEnd, rangeEnd));
     }
   } else {
     const length = loop.endTick - loop.startTick;
