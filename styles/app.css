@@ -1040,11 +1040,32 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .neck-string[data-string="1"] { stroke-width: 1; }
 .neck-string-label { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); font-weight: 600; }
 .neck-string-number { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); }
-/* Semua posisi yang bisa dimainkan memakai warna yang sama. Warna berbeda
-   hanya untuk senar terbuka, jadi tidak ada posisi yang terlihat "salah". */
-.neck-hit { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; }
+/* Satu jalur fingering utama harus terbaca saat playback. Posisi alternatif
+   tetap terlihat, tetapi tidak bersaing dengan posisi yang disarankan. */
+.neck-hit {
+  fill: var(--note-user);
+  stroke: var(--note-user-stroke);
+  stroke-width: 1.5;
+}
+.neck-hit-primary {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--note-user) 55%, transparent));
+}
+.neck-hit-alternative {
+  fill: var(--text-muted);
+  stroke: var(--border-strong);
+  opacity: 0.32;
+}
 .neck-hit-open { fill: none; stroke: var(--note-user); stroke-width: 2.5; }
-.neck-hit-current { stroke: var(--ember); stroke-width: 3; }
+.neck-hit-alternative.neck-hit-open {
+  stroke: var(--text-muted);
+  opacity: 0.42;
+}
+.neck-hit-current {
+  fill: var(--highlight-current);
+  stroke: var(--ember);
+  stroke-width: 3;
+  opacity: 1;
+}
 
 .guitar-playhead {
   margin: 0;
