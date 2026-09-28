@@ -80,16 +80,33 @@ export function createCommands(initialSong, {
   const songEndTick = () => song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
 
   /*
-   * Note yang dibuat manual harus masuk ke phrase, kalau tidak phrase berhenti
-   * mencerminkan song. Akibatnya generateGap selalu gagal dengan
-   * "generation-cross-phrase", karena kedua anchor tidak pernah berada di phrase
-   * yang sama. Urutan phrase mengikuti tick, karena acceptCandidate menyisipkan
-   * note baru tepat sebelum anchor kanan dengan cara mengindex noteIds.
+   * Note manual harus masuk ke phrase terdekat secara waktu. Baseline sekarang
+   * punya beberapa phrase/bagian, jadi selalu memakai phrases[0] akan merusak
+   * struktur section dan membuat note baru muncul di bagian yang salah.
    */
   function registerNoteInPhrase(targetSong, note) {
-    const phrase = targetSong.phrases[0];
-    if (!phrase) return;
-    const tickOf = (noteId) => targetSong.notes.find((item) => item.id === noteId)?.startTick ?? Number.POSITIVE_INFINITY;
+    if (!targetSong.phrases.length) return;
+    const noteById = new Map(targetSong.notes.map((item) => [item.id, item]));
+    const ranges = targetSong.phrases.map((phrase) => {
+      const items = phrase.noteIds.map((id) => noteById.get(id)).filter(Boolean);
+      if (!items.length) return { phrase, start: Number.POSITIVE_INFINITY, end: Number.POSITIVE_INFINITY };
+      return {
+        phrase,
+        start: Math.min(...items.map((item) => item.startTick)),
+        end: Math.max(...items.map((item) => item.startTick + item.durationTicks))
+      };
+    });
+    const containing = ranges.find((range) => range.start <= note.startTick && note.startTick < range.end);
+    const chosen = containing ?? ranges
+      .filter((range) => Number.isFinite(range.start))
+      .sort((left, right) => {
+        const leftDistance = note.startTick < left.start ? left.start - note.startTick : note.startTick - left.end;
+        const rightDistance = note.startTick < right.start ? right.start - note.startTick : note.startTick - right.end;
+        return leftDistance - rightDistance || left.start - right.start;
+      })[0] ?? ranges[0];
+
+    const phrase = chosen.phrase;
+    const tickOf = (noteId) => noteById.get(noteId)?.startTick ?? Number.POSITIVE_INFINITY;
     const index = phrase.noteIds.findIndex((noteId) => tickOf(noteId) > note.startTick);
     if (index < 0) phrase.noteIds.push(note.id);
     else phrase.noteIds.splice(index, 0, note.id);
