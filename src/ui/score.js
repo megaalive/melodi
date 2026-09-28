@@ -134,7 +134,7 @@ function markNoteElement(element, note, selected, tabStop, translate) {
   );
 }
 
-function appendBendOverlay(svg, element, note) {
+function appendBendOverlay(svg, element, note, selected) {
   if (!Array.isArray(note.pitchBend) || note.pitchBend.length < 2) return;
   const box = element.getBBox();
   const width = 34;
@@ -149,6 +149,8 @@ function appendBendOverlay(svg, element, note) {
     class: "score-expression-overlay score-bend-overlay",
     "data-entity": "score-bend",
     "data-note-id": note.id,
+    "data-selected": String(selected),
+    "data-current": "false",
     "pointer-events": "none",
     "aria-hidden": "true"
   });
@@ -164,7 +166,7 @@ function appendBendOverlay(svg, element, note) {
   svg.append(group);
 }
 
-function appendMixOverlay(svg, element, note) {
+function appendMixOverlay(svg, element, note, selected) {
   const summary = expressionSummary(note);
   if (!summary) return;
   const box = element.getBBox();
@@ -175,6 +177,8 @@ function appendMixOverlay(svg, element, note) {
     class: "score-expression-label",
     "data-entity": "score-expression",
     "data-note-id": note.id,
+    "data-selected": String(selected),
+    "data-current": "false",
     "pointer-events": "none",
     "aria-hidden": "true"
   }, summary));
@@ -305,8 +309,17 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
   function applyCurrentNote(noteId) {
     if (activeNoteId === noteId) return;
     for (const element of noteElementsById.get(activeNoteId) ?? []) element.dataset.current = "false";
+    setExpressionOverlayState(activeNoteId, "current", false);
     activeNoteId = noteId ?? null;
     for (const element of noteElementsById.get(activeNoteId) ?? []) element.dataset.current = "true";
+    setExpressionOverlayState(activeNoteId, "current", true);
+  }
+
+  function setExpressionOverlayState(noteId, state, value) {
+    if (!noteId) return;
+    for (const element of host.querySelectorAll('[data-entity="score-bend"], [data-entity="score-expression"]')) {
+      if (element.dataset.noteId === noteId) element.dataset[state] = String(value);
+    }
   }
 
   function applyCurrentSyllables(syllableIds) {
@@ -332,6 +345,7 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
         element.dataset.selected = String(active);
         if (element.getAttribute("role") === "button") element.setAttribute("aria-pressed", String(active));
       }
+      setExpressionOverlayState(noteId, "selected", active);
     }
   }
 
@@ -407,8 +421,8 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
         noteId === focusNoteId && index === 0,
         translate
       ));
-      appendBendOverlay(svg, elements[0], note);
-      appendMixOverlay(svg, elements[0], note);
+      appendBendOverlay(svg, elements[0], note, selected.has(noteId));
+      appendMixOverlay(svg, elements[0], note, selected.has(noteId));
     }
 
     renderLyricOverlay(svg, song, noteElementsById, syllableElementsById, translate);

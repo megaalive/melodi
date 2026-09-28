@@ -1,0 +1,42 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  DEFAULT_UI_PREFERENCES,
+  normalizeUiPreferences,
+  readUiPreferences,
+  writeUiPreferences
+} from "../src/storage/ui-preferences.js";
+
+function memoryStorage(initial = {}) {
+  const values = new Map(Object.entries(initial));
+  return {
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { values.set(key, String(value)); },
+    values
+  };
+}
+
+test("panel disclosure preferences default expanded and normalize fields independently", () => {
+  assert.deepEqual(normalizeUiPreferences(), DEFAULT_UI_PREFERENCES);
+  assert.deepEqual(normalizeUiPreferences({ pianoRollCollapsed: true, expressionCollapsed: "yes" }), {
+    pianoRollCollapsed: true,
+    expressionCollapsed: false
+  });
+});
+
+test("panel disclosure preferences persist independently without storing song data", () => {
+  const storage = memoryStorage();
+  assert.equal(writeUiPreferences(storage, { pianoRollCollapsed: true, expressionCollapsed: false }), true);
+  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false });
+  assert.equal(storage.values.size, 1);
+  assert.deepEqual(JSON.parse(storage.values.get("melodi.ui-preferences")), {
+    pianoRollCollapsed: true,
+    expressionCollapsed: false
+  });
+});
+
+test("invalid or unavailable UI preference storage falls back safely", () => {
+  assert.deepEqual(readUiPreferences(memoryStorage({ "melodi.ui-preferences": "{" })), DEFAULT_UI_PREFERENCES);
+  assert.deepEqual(readUiPreferences(null), DEFAULT_UI_PREFERENCES);
+  assert.equal(writeUiPreferences(null, DEFAULT_UI_PREFERENCES), false);
+});

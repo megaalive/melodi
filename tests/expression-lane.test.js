@@ -17,7 +17,8 @@ class StubElement {
     this.dataset = {};
     this.listeners = new Map();
     this.textContent = "";
-    this.scrollLeft = 0;
+    this._scrollLeft = 0;
+    this.maxScrollLeft = Number.POSITIVE_INFINITY;
     this.clientWidth = 900;
     this.clientHeight = 126;
   }
@@ -29,6 +30,8 @@ class StubElement {
     }
   }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
+  get scrollLeft() { return this._scrollLeft; }
+  set scrollLeft(value) { this._scrollLeft = Math.max(0, Math.min(Number(value) || 0, this.maxScrollLeft)); }
   append(...items) {
     for (const item of items) {
       item.parentElement = this;
@@ -223,4 +226,19 @@ test("expression labels stay frozen and horizontal scroll stays synchronized", (
   f.scroll.scrollLeft = 240;
   f.scroll.dispatch("scroll");
   assert.equal(f.peer.scrollLeft, 240);
+});
+
+test("expression and piano roll stay aligned when one viewport reaches its scroll boundary", () => {
+  const f = fixture();
+  f.view.render(f.song, f.state, f.geometry);
+  f.scroll.maxScrollLeft = 520;
+  f.peer.maxScrollLeft = 180;
+
+  f.scroll.scrollLeft = 320;
+  f.scroll.dispatch("scroll");
+
+  assert.equal(f.scroll.scrollLeft, 180);
+  assert.equal(f.peer.scrollLeft, 180);
+  const labels = f.svg.querySelector('[data-entity="expression-label-layer"]');
+  assert.equal(labels.getAttribute("transform"), "translate(180 0)");
 });
