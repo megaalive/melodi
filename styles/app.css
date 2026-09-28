@@ -2215,3 +2215,151 @@ button.danger-button:hover:not(:disabled) {
     max-width: none;
   }
 }
+
+
+/* Menu kontekstual tunggal: note tidak lagi punya inspector kedua di sidebar. */
+.workspace-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 17rem);
+}
+.workspace-sidebar {
+  gap: 0.45rem;
+}
+.editor-view-controls .editor-note-actions {
+  margin-left: 0.1rem;
+}
+.editor-view-controls .editor-note-actions > summary {
+  white-space: nowrap;
+}
+.editor-note-actions[data-has-selection="false"] > summary {
+  color: var(--text-muted);
+}
+.editor-note-actions-popover {
+  width: min(23rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: min(34rem, 76vh);
+  overflow: auto;
+  gap: 0.45rem;
+}
+.note-menu-list {
+  margin: 0;
+}
+.note-menu-list:empty {
+  display: none;
+}
+.note-menu-list .note-card {
+  padding: 0.5rem;
+  border-color: var(--border);
+  background: var(--surface-subtle);
+}
+.note-menu-list .note-card fieldset {
+  gap: 0.42rem;
+}
+.note-menu-list .note-card legend {
+  display: none;
+}
+.note-menu-list .form-grid {
+  margin-bottom: 0;
+}
+.note-menu-list .note-primary-fields label > span {
+  display: none;
+}
+.note-menu-list .note-primary-fields input {
+  font-weight: 750;
+}
+.note-menu-list .note-timing-details {
+  margin-top: 0;
+  padding-top: 0.35rem;
+}
+.note-menu-list .multi-note-summary {
+  padding: 0.5rem 0.55rem;
+}
+.note-menu-list .multi-note-summary .muted {
+  display: none;
+}
+.note-menu-status {
+  min-height: 1.2rem;
+  padding: 0.15rem 0.15rem 0.35rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.editor-note-actions-popover > .editor-toolbar-group {
+  display: grid;
+  grid-template-columns: 4.5rem repeat(4, minmax(2rem, 1fr));
+  width: 100%;
+}
+.editor-note-actions-popover > .editor-toolbar-group:nth-last-child(2) {
+  grid-template-columns: 4.5rem repeat(3, minmax(2rem, 1fr));
+}
+.editor-note-actions-popover .editor-toolbar-label {
+  min-width: 0;
+}
+
+/* Transport detail harus kecil dan lokal, bukan panel 40rem yang menutupi kanvas. */
+.transport-advanced[open] .transport-advanced-grid {
+  width: min(24rem, calc(100vw - 1.5rem));
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  padding: 0.55rem;
+}
+.transport-advanced-grid .transport-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem;
+  align-items: end;
+}
+.transport-advanced-grid .loop-range {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.transport-advanced-grid .loop-range button {
+  grid-column: 1 / -1;
+}
+.transport-advanced-grid input,
+.transport-advanced-grid button {
+  min-height: 2rem;
+}
+
+/* Sidebar sekarang hanya untuk fungsi yang memang bukan edit note langsung. */
+.note-inspector {
+  display: none !important;
+}
+#generation-panel {
+  order: 1;
+}
+.utility-card {
+  order: 2;
+}
+
+@media (max-width: 68rem) {
+  .workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-sidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #generation-panel,
+  .utility-card {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 46rem) {
+  .editor-view-controls {
+    flex-wrap: wrap;
+  }
+  .editor-view-controls .editor-note-actions {
+    margin-left: auto;
+  }
+  .editor-note-actions-popover {
+    position: fixed;
+    left: 0.6rem;
+    right: 0.6rem;
+    top: auto;
+    bottom: calc(4.8rem + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 68vh;
+  }
+  .transport-advanced[open] .transport-advanced-grid {
+    width: auto;
+  }
+}
