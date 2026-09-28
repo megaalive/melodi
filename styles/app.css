@@ -2403,7 +2403,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Menu kontekstual tunggal: note tidak lagi punya inspector kedua di sidebar. */
+/* Workspace utama tetap memberi ruang untuk utilitas tanpa membuat editor note kedua. */
 .workspace-grid {
   grid-template-columns: minmax(0, 1fr) minmax(15rem, 17rem);
 }
