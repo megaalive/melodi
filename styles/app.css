@@ -992,6 +992,13 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 [data-entity="note"][data-selected="true"] .roll-note { fill: var(--highlight-selected); }
 [data-entity="note"][data-current="true"] .roll-note { fill: var(--highlight-current); stroke: var(--highlight-current-ink); }
 .roll-note-mark { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-2xs); font-weight: 700; pointer-events: none; }
+.roll-note-expression {
+  fill: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.78;
+}
 .roll-resize-handle { fill: transparent; cursor: ew-resize; touch-action: none; }
 .roll-move-hit { fill: transparent; cursor: grab; touch-action: none; }
 .roll-playhead { stroke: var(--playhead); stroke-width: 2; }
