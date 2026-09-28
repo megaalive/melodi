@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createInitialSong, MelodiError } from "../src/core/model.js";
+import { createSong, MelodiError, PPQ } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { createAudioPlayer } from "../src/audio/player.js";
 import {
@@ -15,8 +15,23 @@ import {
 } from "../src/audio/transport.js";
 
 function fixture() {
-  let next = 0;
-  return createInitialSong(() => `entity-${++next}`);
+  return createSong({
+    id: "entity-1",
+    title: "Ide awal",
+    timing: { ppq: PPQ, tempo: 120, timeSignature: { numerator: 4, denominator: 4 } },
+    key: "C",
+    scale: { name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] },
+    sections: [{ id: "entity-2", name: "Verse", phraseIds: ["entity-3"] }],
+    phrases: [{ id: "entity-3", noteIds: ["entity-4", "entity-5", "entity-6", "entity-7"] }],
+    notes: [
+      { id: "entity-4", pitch: 60, startTick: 0, durationTicks: 480, source: "user", anchor: false, locked: false },
+      { id: "entity-5", pitch: 64, startTick: 480, durationTicks: 480, source: "user", anchor: false, locked: false },
+      { id: "entity-6", pitch: 69, startTick: 960, durationTicks: 480, source: "user", anchor: false, locked: false },
+      { id: "entity-7", pitch: 67, startTick: 1440, durationTicks: 480, source: "user", anchor: false, locked: false }
+    ],
+    lyrics: { rawText: "", syllables: [] },
+    chords: []
+  });
 }
 
 function fakePlayerFactory(ref) {
