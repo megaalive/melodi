@@ -246,13 +246,17 @@ export function fromPortableProject(envelope, idFactory = createId) {
 }
 
 export async function encodeSharePayload(song, {
-  CompressionStreamCtor = globalThis.CompressionStream
+  CompressionStreamCtor = globalThis.CompressionStream,
+  compressAboveBytes = 4096
 } = {}) {
   const json = JSON.stringify(toPortableProject(song));
   const raw = new TextEncoder().encode(json);
   if (raw.byteLength > MAX_SHARE_DECODED_BYTES) fail("share-too-large");
 
-  if (typeof CompressionStreamCtor === "function") {
+  // Project kecil lebih andal dibawa sebagai Base64URL biasa. Gzip baru dipakai
+  // ketika benar-benar menghemat URL; ini juga menghindari ketergantungan pada
+  // DecompressionStream untuk share sederhana.
+  if (raw.byteLength > compressAboveBytes && typeof CompressionStreamCtor === "function") {
     try {
       const compressed = await transformBytes(raw, CompressionStreamCtor, "gzip", MAX_SHARE_COMPRESSED_BYTES);
       return `${SHARE_VERSION}.g.${bytesToBase64Url(compressed)}`;
@@ -305,7 +309,11 @@ export async function decodeSharePayload(payload, {
 export async function createShareUrl(song, href = globalThis.location?.href ?? "https://example.invalid/", options = {}) {
   const url = new URL(href);
   const payload = await encodeSharePayload(song, options);
-  url.hash = `${SHARE_HASH_KEY}=${payload}`;
+  url.searchParams.set(SHARE_HASH_KEY, payload);
+  url.searchParams.delete("utm_source");
+  url.searchParams.delete("utm_medium");
+  url.searchParams.delete("utm_campaign");
+  url.hash = "";
   return url.toString();
 }
 
@@ -315,4 +323,13 @@ export async function decodeShareHash(hash, options = {}) {
   const payload = params.get(SHARE_HASH_KEY);
   if (!payload) return null;
   return decodeSharePayload(payload, options);
+}
+
+export async function decodeShareLocation(locationLike = globalThis.location, options = {}) {
+  const search = typeof locationLike?.search === "string" ? locationLike.search : "";
+  const searchParams = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const queryPayload = searchParams.get(SHARE_HASH_KEY);
+  if (queryPayload) return decodeSharePayload(queryPayload, options);
+
+  return decodeShareHash(typeof locationLike?.hash === "string" ? locationLike.hash : "", options);
 }
