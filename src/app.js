@@ -1201,9 +1201,10 @@ const guitarLegend = byId("guitar-legend");
 const guitarPlayhead = byId("guitar-playhead");
 
 function renderGuitar(state) {
-  const { note, positions, sounding, playheadTick } = guitarView.render(state);
+  const { note, positions, primaryPosition, sounding, playheadTick } = guitarView.render(state);
   const pitch = note ? midiToPitch(note.pitch) : null;
   const labels = positions.map((position) => translate("guitarPosition", position));
+  const primaryLabel = primaryPosition ? translate("guitarPosition", primaryPosition) : null;
   // Neck gitar tidak punya sumbu waktu, jadi playhead-nya berupa posisi bar dan
   // ketukan, bukan garis yang bergerak di sepanjang fret.
   // Snapshot tidak mengekspos song.timing, hanya timeSignature dan tempo di
@@ -1224,9 +1225,21 @@ function renderGuitar(state) {
   }
   guitarStatus.textContent = positions.length === 0
     ? translate("guitarUnplayable", { pitch })
-    : translate("guitarPositions", { pitch, count: positions.length, positions: labels.join(", ") });
+    : translate("guitarRecommended", {
+        pitch,
+        primary: primaryLabel,
+        count: Math.max(0, positions.length - 1),
+        alternatives: positions
+          .filter((position) => !primaryPosition
+            || position.string !== primaryPosition.string
+            || position.fret !== primaryPosition.fret)
+          .map((position) => translate("guitarPosition", position))
+          .join(", ")
+      });
   guitarLegend.textContent = translate("guitarTuning");
-  guitarPlayhead.textContent = sounding ? translate("guitarSounding", { position }) : "";
+  guitarPlayhead.textContent = sounding && primaryLabel
+    ? translate("guitarSoundingAt", { position, fingering: primaryLabel })
+    : "";
 }
 
 const publicCommands = Object.freeze({
