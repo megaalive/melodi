@@ -943,6 +943,21 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .roll-beat-line { stroke: var(--border-strong); stroke-width: 1; }
 .roll-bar-line { stroke: var(--text-muted); stroke-width: 2; }
 .roll-header-line { stroke: var(--text-muted); stroke-width: 1.5; }
+.roll-ruler-hit {
+  fill: transparent;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.roll-ruler-hit:hover {
+  fill: var(--accent-soft);
+  fill-opacity: 0.24;
+}
+.roll-ruler-hit:focus {
+  outline: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
 .roll-note { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; cursor: grab; touch-action: none; }
 .roll-note-generated { fill: var(--note-generated); stroke: var(--text-muted); stroke-dasharray: 4 2; }
 .roll-candidate-note { fill: var(--candidate-ghost); fill-opacity: 0.58; stroke: var(--candidate-ghost-active); stroke-width: 2; stroke-dasharray: 5 3; pointer-events: all; }
