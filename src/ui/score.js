@@ -323,6 +323,17 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     activeSyllableIds = next;
   }
 
+  function updateSelection(selectedNoteIds = []) {
+    const selected = new Set(selectedNoteIds);
+    for (const [noteId, elements] of noteElementsById) {
+      const active = selected.has(noteId);
+      for (const element of elements) {
+        element.dataset.selected = String(active);
+        if (element.getAttribute("role") === "button") element.setAttribute("aria-pressed", String(active));
+      }
+    }
+  }
+
   function updatePlayback(playback = {}, view) {
     playback = normalizePlaybackState(playback);
     view = normalizeViewState(view);
@@ -422,5 +433,5 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     updatePlayback(state.playback ?? {}, { ...(state.view ?? {}), follow: false });
   }
 
-  return Object.freeze({ render, updatePlayback, getProjection: () => projection });
+  return Object.freeze({ render, updatePlayback, updateSelection, getProjection: () => projection });
 }
