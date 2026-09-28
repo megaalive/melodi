@@ -99,7 +99,7 @@ export function createCommands(initialSong, {
     currentTick: 0,
     currentNoteId: null,
     currentSectionId: null,
-    loop: { enabled: false, startTick: 0, endTick: Math.max(1, songEndTick()) }
+    loop: { enabled: true, startTick: 0, endTick: Math.max(1, songEndTick()) }
   };
   let loopRangeMode = "auto";
   let activeNoteSuppressed = true;
@@ -887,7 +887,7 @@ export function createCommands(initialSong, {
       loopRangeMode = "auto";
       playback.status = "stopped";
       activeNoteSuppressed = true;
-      playback.loop = { enabled: false, startTick: 0, endTick: Math.max(1, songEndTick()) };
+      playback.loop = { enabled: true, startTick: 0, endTick: Math.max(1, songEndTick()) };
       setPlaybackPosition(0);
       notifyPlaybackChange();
       notifyChange("song");
