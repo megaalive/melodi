@@ -38,7 +38,7 @@ test("default 6/8 phrase projects to four score measures", () => {
   assert.equal(projection.ticksPerMeasure, 1440);
   assert.equal(projection.measures.length, 4);
   assert.equal(projection.totalMeasureCount, 4);
-  assert.equal(projection.status, "ok");
+  assert.equal(projection.status, "ready");
 });
 
 test("score projection calculates 3/4 and 6/8 measure lengths from PPQ", () => {
