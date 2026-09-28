@@ -176,13 +176,16 @@ export function createBendCurveEditor({
   }
 
   function renderState() {
-    root.dataset.available = String(selectedCount === 1);
-    const controls = root.querySelectorAll("input, select, button");
-    for (const control of controls) {
-      if (control.closest("summary")) continue;
-      if (selectedCount !== 1) control.disabled = true;
+    const available = selectedCount === 1;
+    root.dataset.available = String(available);
+    rangeSelect.disabled = !available;
+    for (const button of root.querySelectorAll(
+      '[data-action="bend-add-point"], [data-action="bend-reset-curve"], [data-action="bend-apply-curve"]'
+    )) button.disabled = !available;
+    if (!available) {
+      for (const control of list.querySelectorAll("input, select, button")) control.disabled = true;
     }
-    stateLabel.textContent = selectedCount === 1
+    stateLabel.textContent = available
       ? dirty ? translate("bendCurveDirty") : translate("bendCurveReady")
       : translate("bendCurveSingleNote");
   }
