@@ -373,9 +373,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       if (isBar) svgElement("text", { x: x + 4, y: 18, class: "roll-bar-label" }, svg, String(tick / geometry.barTicks + 1));
     }
     svgElement("line", { x1: 0, x2: geometry.width, y1: geometry.top, y2: geometry.top, class: "roll-header-line" }, svg);
-    const rangeStart = Math.max(geometry.startTick, state.playback.loop.startTick);
-    const rangeEnd = Math.min(geometry.endTick, state.playback.loop.endTick);
-    const hasCustomRange = state.playback.loop.startTick !== 0 || state.playback.loop.endTick !== timelineEndTick;
+    const playbackRange = state.playback.loop ?? { enabled: false, startTick: 0, endTick: timelineEndTick };
+    const rangeStart = Math.max(geometry.startTick, playbackRange.startTick);
+    const rangeEnd = Math.min(geometry.endTick, playbackRange.endTick);
+    const hasCustomRange = playbackRange.startTick !== 0 || playbackRange.endTick !== timelineEndTick;
     if (hasCustomRange && rangeEnd > rangeStart) {
       const rangeX = tickToX(rangeStart, geometry);
       const rangeRight = tickToX(rangeEnd, geometry);
@@ -386,8 +387,8 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         height: geometry.top,
         class: "roll-timeline-selection",
         "data-entity": "timeline-selection",
-        "data-start-tick": state.playback.loop.startTick,
-        "data-end-tick": state.playback.loop.endTick,
+        "data-start-tick": playbackRange.startTick,
+        "data-end-tick": playbackRange.endTick,
         "pointer-events": "none",
         "aria-hidden": "true"
       }, svg);
