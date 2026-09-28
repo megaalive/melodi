@@ -1365,6 +1365,7 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
       const state = commands.getState();
       rollView.render(commands.getSong(), state);
       expressionView?.render(commands.getSong(), state, rollView.getGeometry());
+      scoreView?.updateSelection(state.selectedNoteIds ?? []);
       renderExpressionControls(normalizeRuntimeState(state));
     }
   },
