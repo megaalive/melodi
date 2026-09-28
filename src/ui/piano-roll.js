@@ -251,6 +251,7 @@ function expressionLabel(note) {
     const amount = Math.round(Math.abs(note.pan) * 100);
     parts.push(note.pan < 0 ? `L${amount}` : `R${amount}`);
   }
+  if (note.vibrato) parts.push(`~${Number(note.vibrato.depthSemitones.toFixed(2))}`);
   return parts.join(" ");
 }
 
@@ -454,6 +455,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         "data-duration-ticks": note.durationTicks,
         "data-volume": note.volume ?? 1,
         "data-pan": note.pan ?? 0,
+        "data-vibrato": JSON.stringify(note.vibrato ?? null),
         role: "img",
         "aria-label": noteDescription(note, isSelected, isCurrent)
       }, svg);

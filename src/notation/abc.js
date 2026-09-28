@@ -131,5 +131,8 @@ export function expressionSummary(note) {
     const amount = Math.round(Math.abs(note.pan) * 100);
     parts.push(note.pan < 0 ? `L ${amount}` : `R ${amount}`);
   }
+  if (note.vibrato) {
+    parts.push(`Vib ${Number(note.vibrato.rateHz.toFixed(1))}Hz ±${Number(note.vibrato.depthSemitones.toFixed(2))}`);
+  }
   return parts.join(" · ");
 }

@@ -1,8 +1,8 @@
 import { PPQ, createId, createSong, MelodiError } from "../core/model.js";
 
 export const SHARE_FORMAT = "melodi-share";
-export const SHARE_VERSION = 2;
-const SUPPORTED_SHARE_VERSIONS = new Set([1, 2]);
+export const SHARE_VERSION = 3;
+const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3]);
 export const SHARE_HASH_KEY = "m";
 export const MAX_SHARE_COMPRESSED_BYTES = 64 * 1024;
 export const MAX_SHARE_DECODED_BYTES = 512 * 1024;
@@ -91,16 +91,22 @@ function encodeNote(note) {
   const bend = Array.isArray(note.pitchBend)
     ? note.pitchBend.map((point) => [point.position, point.semitones])
     : null;
-  const hasExpression = Object.hasOwn(note, "volume") || Object.hasOwn(note, "pan");
-  if (bend || hasExpression) tuple.push(bend);
-  if (hasExpression) tuple.push([note.volume ?? 1, note.pan ?? 0]);
+  const expression = Object.hasOwn(note, "volume") || Object.hasOwn(note, "pan")
+    ? [note.volume ?? 1, note.pan ?? 0]
+    : null;
+  const vibrato = note.vibrato
+    ? [note.vibrato.rateHz, note.vibrato.depthSemitones, note.vibrato.delayPosition]
+    : null;
+  if (bend || expression || vibrato) tuple.push(bend);
+  if (expression || vibrato) tuple.push(expression);
+  if (vibrato) tuple.push(vibrato);
   return tuple;
 }
 
 function decodeNote(tuple, idFactory, version = SHARE_VERSION) {
-  const maximumLength = version >= 2 ? 6 : 5;
+  const maximumLength = version >= 3 ? 7 : version >= 2 ? 6 : 5;
   if (!Array.isArray(tuple) || tuple.length < 4 || tuple.length > maximumLength) fail("malformed-share");
-  const [pitch, startTick, durationTicks, flags, bend, expression] = tuple;
+  const [pitch, startTick, durationTicks, flags, bend, expression, vibrato] = tuple;
   if (!Number.isSafeInteger(flags) || flags < 0 || flags > 7) fail("malformed-share");
   const note = {
     id: idFactory(),
@@ -118,11 +124,15 @@ function decodeNote(tuple, idFactory, version = SHARE_VERSION) {
       return { position: point[0], semitones: point[1] };
     });
   }
-  if (expression !== undefined) {
+  if (expression !== undefined && expression !== null) {
     if (version < 2 || !Array.isArray(expression) || expression.length !== 2) fail("malformed-share");
     const [volume, pan] = expression;
     if (volume !== 1) note.volume = volume;
     if (pan !== 0) note.pan = pan;
+  }
+  if (vibrato !== undefined && vibrato !== null) {
+    if (version < 3 || !Array.isArray(vibrato) || vibrato.length !== 3) fail("malformed-share");
+    note.vibrato = { rateHz: vibrato[0], depthSemitones: vibrato[1], delayPosition: vibrato[2] };
   }
   return note;
 }

@@ -82,9 +82,21 @@ function validatePitchBend(points) {
   if (points[0].position !== 0) fail("invalid-pitch-bend");
 }
 
+function validateVibrato(vibrato) {
+  if (vibrato === undefined) return;
+  if (!isRecord(vibrato)) fail("invalid-vibrato");
+  requireKeys(vibrato, ["rateHz", "depthSemitones", "delayPosition"], "invalid-vibrato");
+  if (typeof vibrato.rateHz !== "number" || !Number.isFinite(vibrato.rateHz)
+    || vibrato.rateHz < 0.5 || vibrato.rateHz > 12) fail("invalid-vibrato");
+  if (typeof vibrato.depthSemitones !== "number" || !Number.isFinite(vibrato.depthSemitones)
+    || vibrato.depthSemitones <= 0 || vibrato.depthSemitones > 2) fail("invalid-vibrato");
+  if (typeof vibrato.delayPosition !== "number" || !Number.isFinite(vibrato.delayPosition)
+    || vibrato.delayPosition < 0 || vibrato.delayPosition > 1) fail("invalid-vibrato");
+}
+
 function validateNote(note) {
   const required = ["id", "pitch", "startTick", "durationTicks", "source", "anchor", "locked"];
-  const allowed = new Set([...required, "pitchBend", "volume", "pan"]);
+  const allowed = new Set([...required, "pitchBend", "volume", "pan", "vibrato"]);
   if (!isRecord(note)
     || required.some((key) => !Object.hasOwn(note, key))
     || Object.keys(note).some((key) => !allowed.has(key))) fail("invalid-note");
@@ -96,6 +108,7 @@ function validateNote(note) {
   if (note.source !== "user" && note.source !== "generated") fail("invalid-source");
   if (typeof note.anchor !== "boolean" || typeof note.locked !== "boolean") fail("invalid-note-flags");
   validatePitchBend(note.pitchBend);
+  validateVibrato(note.vibrato);
   if (Object.hasOwn(note, "volume")
     && (typeof note.volume !== "number" || !Number.isFinite(note.volume) || note.volume < 0 || note.volume > 1)) {
     fail("invalid-note-volume");

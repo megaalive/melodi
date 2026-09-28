@@ -268,11 +268,23 @@ test("volume dan pan adalah expression canonical yang tervalidasi", () => {
   expectCode(() => commands.updateNote("note-4", { pan: -1.01 }), "invalid-note-pan");
 });
 
-test("copy paste mempertahankan bend volume dan pan tetapi membuat ID baru", () => {
+test("vibrato canonical tervalidasi dan dapat dihapus", () => {
+  const commands = createCommands(fixture());
+  const vibrato = { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 };
+  commands.updateNote("note-4", { vibrato });
+  assert.deepEqual(commands.getSong().notes.find((note) => note.id === "note-4").vibrato, vibrato);
+  commands.updateNote("note-4", { vibrato: null });
+  assert.equal(Object.hasOwn(commands.getSong().notes.find((note) => note.id === "note-4"), "vibrato"), false);
+  expectCode(() => commands.updateNote("note-4", { vibrato: { rateHz: 20, depthSemitones: 0.3, delayPosition: 0.2 } }), "invalid-vibrato");
+  expectCode(() => commands.updateNote("note-4", { vibrato: { rateHz: 5.8, depthSemitones: 0, delayPosition: 0.2 } }), "invalid-vibrato");
+});
+
+test("copy paste mempertahankan bend volume pan dan vibrato tetapi membuat ID baru", () => {
   let nextId = 0;
   const commands = createCommands(fixture(), { idFactory: () => `expression-copy-${++nextId}` });
   const bend = [{ position: 0, semitones: 0 }, { position: 1, semitones: 2 }];
-  commands.updateNote("note-4", { pitchBend: bend, volume: 0.7, pan: 0.25 });
+  const vibrato = { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 };
+  commands.updateNote("note-4", { pitchBend: bend, volume: 0.7, pan: 0.25, vibrato });
   commands.selectNotes(["note-4"]);
   assert.equal(commands.copySelection(), 1);
 
@@ -280,6 +292,7 @@ test("copy paste mempertahankan bend volume dan pan tetapi membuat ID baru", () 
   assert.deepEqual(pasted.pitchBend, bend);
   assert.equal(pasted.volume, 0.7);
   assert.equal(pasted.pan, 0.25);
+  assert.deepEqual(pasted.vibrato, vibrato);
   assert.notEqual(pasted.id, "note-4");
 });
 

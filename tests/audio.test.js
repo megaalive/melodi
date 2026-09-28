@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createSong, MelodiError, PPQ } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
-import { createAudioPlayer } from "../src/audio/player.js";
+import { createAudioPlayer, pitchBendAt } from "../src/audio/player.js";
 import {
   findCurrentNoteId,
   findCurrentSectionId,
@@ -107,6 +107,7 @@ class FakeAudioContext {
   createOscillator() {
     const oscillator = {
       frequency: new FakeAudioParam(),
+      detune: new FakeAudioParam(),
       listeners: {},
       addEventListener(name, callback) { this.listeners[name] = callback; },
       connect() {},
@@ -267,6 +268,8 @@ test("loop scheduler retriggers a note crossing loop start when playback seeks i
   assert.ok(crossing);
   assert.equal(crossing.startTime, audioNow);
   assert.equal(crossing.endTime, audioNow + ticksToSeconds(120, 120));
+  assert.equal(crossing.noteProgressStart, 0.75);
+  assert.equal(crossing.noteProgressEnd, 1);
 
   const nextCycle = planNoteEvents(song, {
     audioNow: ticksToSeconds(540, 120),
@@ -303,7 +306,9 @@ test("Web Audio engine uses audio timestamps, de-duplicates wakes, and cancels o
   player.stop();
 });
 
-test("Web Audio schedules canonical pitch-bend curves on oscillator frequency", async () => {
+test("pitch bend is interpolated in semitones and scheduled on detune", async () => {
+  assert.equal(pitchBendAt([{ position: 0, semitones: 0 }, { position: 1, semitones: 2 }], 0.5), 1);
+
   const context = new FakeAudioContext();
   const player = createAudioPlayer({ getSong: () => fixture(), audioContextFactory: () => context });
   const note = {
@@ -319,14 +324,62 @@ test("Web Audio schedules canonical pitch-bend curves on oscillator frequency", 
   };
 
   await player.playPreview([note], { tempo: 120 });
-  const events = context.oscillators[0].frequency.events;
-  assert.equal(events[0][0], "set");
-  assert.equal(events[0][1], 440);
-  assert.ok(Math.abs(events[1][1] - 440 * 2 ** (1 / 12)) < 1e-9);
-  assert.equal(events[1][2], 0.29);
-  assert.equal(events[2][1], 440);
-  assert.equal(events[2][2], 0.54);
+  assert.deepEqual(context.oscillators[0].frequency.events[0].slice(0, 2), ["set", 440]);
+  const events = context.oscillators[0].detune.events;
+  assert.deepEqual(events, [
+    ["set", 0, 0.04],
+    ["ramp", 100, 0.29],
+    ["ramp", 0, 0.54]
+  ]);
   player.cancelPreview();
+});
+
+test("seek into a bent note resumes the canonical curve instead of compressing it", async () => {
+  const song = fixture();
+  song.notes = [{
+    id: "resume-bend",
+    pitch: 69,
+    startTick: 0,
+    durationTicks: 480,
+    source: "user",
+    anchor: false,
+    locked: false,
+    pitchBend: [{ position: 0, semitones: 0 }, { position: 1, semitones: 2 }]
+  }];
+  song.phrases[0].noteIds = ["resume-bend"];
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, audioContextFactory: () => context });
+
+  await player.play(240, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 480 } });
+  const events = context.oscillators[0].detune.events;
+  assert.deepEqual(events[0], ["set", 100, 0]);
+  assert.deepEqual(events[1], ["ramp", 200, 0.25]);
+  player.stop();
+});
+
+test("vibrato uses an LFO on detune after the canonical delay", async () => {
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => fixture(), audioContextFactory: () => context });
+  const note = {
+    id: "vibrato-note",
+    pitch: 69,
+    startTick: 0,
+    durationTicks: 480,
+    vibrato: { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.25 }
+  };
+
+  await player.playPreview([note], { tempo: 120 });
+  assert.equal(context.oscillators.length, 2, "main oscillator + vibrato LFO");
+  const lfo = context.oscillators[1];
+  assert.equal(lfo.type, "sine");
+  assert.deepEqual(lfo.frequency.events[0], ["set", 5.8, 0.165]);
+  assert.equal(lfo.startTime, 0.165);
+  assert.equal(lfo.stopTime, 0.54);
+  assert.equal(context.gains.length, 3, "master + envelope + vibrato depth");
+  assert.deepEqual(context.gains[2].gain.events[0], ["set", 30, 0.165]);
+
+  player.cancelPreview();
+  assert.equal(lfo.stopTime, 0, "cancel preview menghentikan LFO juga");
 });
 
 test("Web Audio menerapkan volume dan pan canonical per note", async () => {

@@ -1,7 +1,7 @@
 import { tickToX } from "./piano-roll.js";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const MODES = new Set(["bend", "volume", "pan"]);
+const MODES = new Set(["bend", "volume", "pan", "vibrato"]);
 const HEIGHT = 126;
 const TOP = 20;
 const BOTTOM = 106;
@@ -22,6 +22,7 @@ export function expressionY(mode, value, { top = TOP, bottom = BOTTOM, bendRange
   const height = bottom - top;
   if (mode === "volume") return top + (1 - clamp(value, 0, 1)) * height;
   if (mode === "pan") return top + (1 - (clamp(value, -1, 1) + 1) / 2) * height;
+  if (mode === "vibrato") return top + (1 - clamp(value, 0, 2) / 2) * height;
   if (mode === "bend") return top + (1 - (clamp(value, -bendRange, bendRange) + bendRange) / (bendRange * 2)) * height;
   throw new RangeError("invalid-expression-mode");
 }
@@ -30,6 +31,7 @@ export function valueFromExpressionY(mode, y, { top = TOP, bottom = BOTTOM } = {
   const ratio = clamp((y - top) / Math.max(1, bottom - top), 0, 1);
   if (mode === "volume") return Number((1 - ratio).toFixed(2));
   if (mode === "pan") return Number((1 - ratio * 2).toFixed(2));
+  if (mode === "vibrato") return Number((Math.round((1 - ratio) * 40) / 20).toFixed(2));
   throw new RangeError("expression-mode-not-editable");
 }
 
@@ -49,6 +51,7 @@ function valueLabel(mode, value) {
     if (amount === 0) return "C";
     return value < 0 ? `L${amount}` : `R${amount}`;
   }
+  if (mode === "vibrato") return value > 0 ? `±${Number(value.toFixed(2))}` : "Off";
   return "";
 }
 
@@ -62,6 +65,11 @@ function axis(mode, bendRange) {
     { value: 1, label: "R" },
     { value: 0, label: "C" },
     { value: -1, label: "L" }
+  ];
+  if (mode === "vibrato") return [
+    { value: 2, label: "±2" },
+    { value: 1, label: "±1" },
+    { value: 0, label: "Off" }
   ];
   return [
     { value: bendRange, label: `+${bendRange}` },
@@ -167,7 +175,9 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
   }
 
   function renderScalar(note, group, x, width) {
-    const value = mode === "volume" ? note.volume ?? 1 : note.pan ?? 0;
+    const value = mode === "volume" ? note.volume ?? 1
+      : mode === "pan" ? note.pan ?? 0
+        : note.vibrato?.depthSemitones ?? 0;
     const y = expressionY(mode, value);
     svg("line", {
       x1: x + 3, x2: Math.max(x + 3, x + width - 3), y1: y, y2: y,

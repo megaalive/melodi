@@ -150,6 +150,13 @@
                 <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
                 <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
               </div>
+              <div class="editor-toolbar-group vibrato-tool-group" role="group" data-aria-copy="vibratoGroupLabel">
+                <span class="editor-toolbar-label" data-copy="vibratoGroupLabel"></span>
+                <button type="button" data-action="set-selected-vibrato" data-vibrato="subtle" data-copy="vibratoSubtleButton" data-focus-key="vibrato-subtle" disabled></button>
+                <button type="button" data-action="set-selected-vibrato" data-vibrato="vocal" data-copy="vibratoVocalButton" data-focus-key="vibrato-vocal" disabled></button>
+                <button type="button" data-action="set-selected-vibrato" data-vibrato="wide" data-copy="vibratoWideButton" data-focus-key="vibrato-wide" disabled></button>
+                <button type="button" data-action="set-selected-vibrato" data-vibrato="clear" data-copy="vibratoClearButton" data-focus-key="vibrato-clear" disabled></button>
+              </div>
               <details id="bend-editor-details" class="bend-curve-editor">
                 <summary data-copy="bendCurveSummary"></summary>
                 <div class="bend-curve-body">
@@ -246,6 +253,7 @@
                     <button type="button" data-action="set-expression-mode" data-expression-mode="bend" data-copy="expressionBendButton" aria-pressed="true"></button>
                     <button type="button" data-action="set-expression-mode" data-expression-mode="volume" data-copy="expressionVolumeButton" aria-pressed="false"></button>
                     <button type="button" data-action="set-expression-mode" data-expression-mode="pan" data-copy="expressionPanButton" aria-pressed="false"></button>
+                    <button type="button" data-action="set-expression-mode" data-expression-mode="vibrato" data-copy="expressionVibratoButton" aria-pressed="false"></button>
                   </div>
                   <button id="expression-edit-bend" type="button" class="secondary" data-action="expression-edit-bend" data-copy="expressionEditBendButton"></button>
                   <button id="expression-reset-selected" type="button" class="secondary" data-action="expression-reset-selected" data-copy="expressionResetButton"></button>

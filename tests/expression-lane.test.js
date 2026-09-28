@@ -120,6 +120,7 @@ function fixture() {
       {
         id: "n1", pitch: 60, startTick: 0, durationTicks: 960,
         volume: 0.72, pan: -0.35,
+        vibrato: { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 },
         pitchBend: [{ position: 0, semitones: 0 }, { position: 0.5, semitones: 2 }, { position: 1, semitones: 0 }]
       },
       { id: "n2", pitch: 64, startTick: 960, durationTicks: 480, volume: 0.9, pan: 0.2 }
@@ -136,13 +137,16 @@ function fixture() {
   return { scroll, peer, svg, view, song, state, geometry, changes, selections, edits, interactions };
 }
 
-test("expression scale maps volume and pan in both directions", () => {
+test("expression scale maps volume, pan, and vibrato in both directions", () => {
   assert.equal(expressionY("volume", 1), 20);
   assert.equal(expressionY("volume", 0), 106);
   assert.equal(valueFromExpressionY("volume", 63), 0.5);
   assert.equal(expressionY("pan", 0), 63);
   assert.equal(valueFromExpressionY("pan", 20), 1);
   assert.equal(valueFromExpressionY("pan", 106), -1);
+  assert.equal(expressionY("vibrato", 1), 63);
+  assert.equal(valueFromExpressionY("vibrato", 63), 1);
+  assert.equal(valueFromExpressionY("vibrato", 106), 0);
 });
 
 test("bend lane range expands without clipping large canonical bends", () => {
@@ -152,7 +156,7 @@ test("bend lane range expands without clipping large canonical bends", () => {
   assert.equal(bendLaneRange([{ pitchBend: [{ semitones: 8 }, { semitones: 0 }] }]), 12);
 });
 
-test("lane renders bend, volume, and pan from the same piano-roll geometry", () => {
+test("lane renders bend, volume, pan, and vibrato from the same piano-roll geometry", () => {
   const f = fixture();
   f.view.render(f.song, f.state, f.geometry);
   assert.equal(f.svg.dataset.mode, "bend");
@@ -164,6 +168,9 @@ test("lane renders bend, volume, and pan from the same piano-roll geometry", () 
 
   f.view.setMode("pan");
   assert.ok(f.svg.querySelectorAll(".expression-value-label").some((el) => el.textContent === "L35"));
+
+  f.view.setMode("vibrato");
+  assert.ok(f.svg.querySelectorAll(".expression-value-label").some((el) => el.textContent === "±0.3"));
 });
 
 test("volume drag edits the whole current multi-selection in one callback", () => {
@@ -177,6 +184,18 @@ test("volume drag edits the whole current multi-selection in one callback", () =
 
   assert.deepEqual(f.interactions, [true, false]);
   assert.deepEqual(f.changes, [[["n1", "n2"], "volume", 0.5]]);
+});
+
+test("vibrato drag edits depth for the whole current multi-selection", () => {
+  const f = fixture();
+  f.view.setMode("vibrato");
+  f.view.render(f.song, f.state, f.geometry);
+  const target = f.svg.querySelectorAll('[data-entity="expression-note"]')[0].querySelector(".expression-note-hit");
+
+  f.svg.dispatch("pointerdown", { target, clientY: 63 });
+  f.svg.dispatch("pointerup", { target, clientY: 63 });
+
+  assert.deepEqual(f.changes, [[["n1", "n2"], "vibrato", 1]]);
 });
 
 test("double-click bend selects the note and opens the detailed curve editor", () => {

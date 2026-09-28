@@ -99,17 +99,28 @@ test("portable share round-trip preserves musical data while regenerating IDs", 
   assert.equal(restored.chords[0].quality, "m");
 });
 
-test("share v2 mempertahankan bend volume dan pan sementara v1 tetap dapat dibaca", () => {
+test("share v3 mempertahankan expression dan vibrato sementara v1/v2 tetap dapat dibaca", () => {
   const song = fixture();
   song.notes[0].volume = 0.66;
   song.notes[0].pan = -0.35;
+  song.notes[0].vibrato = { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 };
   const portable = toPortableProject(song);
   const event = portable.project.tracks.find((track) => track.id === "melody").events[0];
-  assert.deepEqual(event.at(-1), [0.66, -0.35]);
+  assert.deepEqual(event.at(-1), [5.8, 0.3, 0.2]);
 
   const restored = fromPortableProject(portable, deterministicIds("expression"));
   assert.equal(restored.notes[0].volume, 0.66);
   assert.equal(restored.notes[0].pan, -0.35);
+  assert.deepEqual(restored.notes[0].vibrato, song.notes[0].vibrato);
+
+  const v2 = structuredClone(portable);
+  v2.version = 2;
+  v2.project.tracks.find((track) => track.id === "melody").events =
+    v2.project.tracks.find((track) => track.id === "melody").events.map((row) => row.slice(0, 6));
+  const v2Restored = fromPortableProject(v2, deterministicIds("v2"));
+  assert.equal(v2Restored.notes[0].volume, 0.66);
+  assert.equal(v2Restored.notes[0].pan, -0.35);
+  assert.equal(Object.hasOwn(v2Restored.notes[0], "vibrato"), false);
 
   const legacy = structuredClone(portable);
   legacy.version = 1;
@@ -118,6 +129,7 @@ test("share v2 mempertahankan bend volume dan pan sementara v1 tetap dapat dibac
   const legacyRestored = fromPortableProject(legacy, deterministicIds("legacy"));
   assert.equal(Object.hasOwn(legacyRestored.notes[0], "volume"), false);
   assert.equal(Object.hasOwn(legacyRestored.notes[0], "pan"), false);
+  assert.equal(Object.hasOwn(legacyRestored.notes[0], "vibrato"), false);
 });
 
 test("share payload encodes and decodes without external compression libraries", async () => {
