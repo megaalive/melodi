@@ -63,7 +63,11 @@ test("ABC projection creates bounded extra voices for overlapping melody notes",
   assert.match(result.abc, /\[V:2\]/);
 });
 
-test("expression summary stays empty at defaults and describes intentional pan and volume", () => {
+test("expression summary stays empty at defaults and describes mix plus vibrato", () => {
   assert.equal(expressionSummary(note("plain", 60, 0, 480)), "");
-  assert.equal(expressionSummary(note("expr", 60, 0, 480, { volume: 0.72, pan: -0.35 })), "V 72% · L 35");
+  assert.equal(expressionSummary(note("expr", 60, 0, 480, {
+    volume: 0.72,
+    pan: -0.35,
+    vibrato: { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 }
+  })), "V 72% · L 35 · Vib 5.8Hz ±0.3");
 });
