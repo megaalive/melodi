@@ -185,6 +185,29 @@ test("provenance is independent from mutation actor", () => {
   expectCode(() => commands.updateNote("note-1", { pitch: 61 }, { actor: "generator" }), "protected-note");
 });
 
+test("user can add, replace, and clear canonical pitch bend", () => {
+  const commands = createCommands(fixture());
+  const bend = [
+    { position: 0, semitones: 0 },
+    { position: 0.3, semitones: 2 },
+    { position: 1, semitones: 2 }
+  ];
+  commands.updateNote("note-4", { pitchBend: bend });
+  assert.deepEqual(commands.getSong().notes.find((note) => note.id === "note-4").pitchBend, bend);
+
+  commands.updateNotes([
+    { noteId: "note-3", patch: { pitchBend: bend } },
+    { noteId: "note-4", patch: { pitchBend: null } }
+  ]);
+  assert.deepEqual(commands.getSong().notes.find((note) => note.id === "note-3").pitchBend, bend);
+  assert.equal(Object.hasOwn(commands.getSong().notes.find((note) => note.id === "note-4"), "pitchBend"), false);
+
+  expectCode(() => commands.updateNote("note-3", { pitchBend: [{ position: 0, semitones: 0 }] }), "invalid-pitch-bend");
+  expectCode(() => commands.updateNote("note-3", {
+    pitchBend: [{ position: 0, semitones: 0 }, { position: 0.5, semitones: 13 }]
+  }), "invalid-pitch-bend");
+});
+
 test("user can explicitly edit an anchor and locked note", () => {
   const commands = createCommands(fixture());
   commands.updateNote("note-1", { pitch: 61 }, { actor: "user" });
