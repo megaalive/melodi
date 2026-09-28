@@ -2436,6 +2436,8 @@ button.danger-button:hover:not(:disabled) {
   margin-left: auto;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 .shared-source {
