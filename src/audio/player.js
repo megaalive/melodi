@@ -5,6 +5,31 @@ const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
 const ACTIVATION_TIMEOUT_MS = 1500;
 
+export function pitchBendAt(points, position) {
+  if (!Array.isArray(points) || points.length < 2) return 0;
+  const p = Math.max(0, Math.min(1, Number(position) || 0));
+  if (p <= points[0].position) return points[0].semitones;
+  for (let index = 1; index < points.length; index += 1) {
+    const right = points[index];
+    const left = points[index - 1];
+    if (p > right.position) continue;
+    const span = right.position - left.position;
+    if (span <= 0) return right.semitones;
+    const ratio = (p - left.position) / span;
+    return left.semitones + (right.semitones - left.semitones) * ratio;
+  }
+  return points.at(-1).semitones;
+}
+
+function progressTime(event, position) {
+  const start = event.noteProgressStart ?? 0;
+  const end = event.noteProgressEnd ?? 1;
+  if (end <= start) return event.startTime;
+  const ratio = (position - start) / (end - start);
+  return event.startTime + Math.max(0, Math.min(1, ratio)) * (event.endTime - event.startTime);
+}
+
+
 function fail(code) {
   throw new MelodiError(code);
 }
@@ -99,6 +124,11 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     for (const voice of voices.values()) {
       if (voice.stopped) continue;
       voice.stopped = true;
+      for (const modulator of voice.modulators ?? []) {
+        try { modulator.oscillator.stop(now); } catch {}
+        try { modulator.oscillator.disconnect(); } catch {}
+        try { modulator.gain.disconnect(); } catch {}
+      }
       try {
         const parameter = voice.gain.gain;
         parameter.cancelScheduledValues(now);
@@ -158,11 +188,50 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     oscillator.type = "triangle";
     const baseFrequency = 440 * 2 ** ((note.pitch - 69) / 12);
     oscillator.frequency.setValueAtTime(baseFrequency, event.startTime);
-    if (Array.isArray(note.pitchBend) && note.pitchBend.length > 1) {
-      for (const point of note.pitchBend.slice(1)) {
-        const bendTime = event.startTime + duration * point.position;
-        const bendFrequency = baseFrequency * 2 ** (point.semitones / 12);
-        oscillator.frequency.linearRampToValueAtTime(bendFrequency, Math.min(event.endTime, bendTime));
+
+    // Bend dijadwalkan di detune (cents), bukan frequency. Dengan begitu garis
+    // lurus di model berarti interval pitch yang lurus, dan vibrato bisa ditambah
+    // secara aditif tanpa menimpa automation bend.
+    const progressStart = event.noteProgressStart ?? 0;
+    const progressEnd = event.noteProgressEnd ?? 1;
+    const bend = Array.isArray(note.pitchBend) && note.pitchBend.length > 1 ? note.pitchBend : null;
+    if (oscillator.detune) {
+      const initialDetune = pitchBendAt(bend, progressStart) * 100;
+      oscillator.detune.setValueAtTime(initialDetune, event.startTime);
+      if (bend) {
+        let lastScheduledPosition = progressStart;
+        for (const point of bend) {
+          if (point.position <= progressStart || point.position > progressEnd) continue;
+          oscillator.detune.linearRampToValueAtTime(
+            point.semitones * 100,
+            Math.min(event.endTime, progressTime(event, point.position))
+          );
+          lastScheduledPosition = point.position;
+        }
+        if (progressEnd > lastScheduledPosition + 1e-9) {
+          oscillator.detune.linearRampToValueAtTime(
+            pitchBendAt(bend, progressEnd) * 100,
+            event.endTime
+          );
+        }
+      }
+    }
+
+    const modulators = [];
+    if (note.vibrato && oscillator.detune) {
+      const startProgress = Math.max(progressStart, note.vibrato.delayPosition);
+      if (startProgress < progressEnd) {
+        const vibratoOscillator = context.createOscillator();
+        const vibratoGain = context.createGain();
+        const vibratoStart = progressTime(event, startProgress);
+        vibratoOscillator.type = "sine";
+        vibratoOscillator.frequency.setValueAtTime(note.vibrato.rateHz, vibratoStart);
+        vibratoGain.gain.setValueAtTime(note.vibrato.depthSemitones * 100, vibratoStart);
+        vibratoOscillator.connect(vibratoGain);
+        vibratoGain.connect(oscillator.detune);
+        vibratoOscillator.start(vibratoStart);
+        vibratoOscillator.stop(event.endTime);
+        modulators.push({ oscillator: vibratoOscillator, gain: vibratoGain });
       }
     }
     const noteVolume = note.volume ?? 1;
@@ -182,12 +251,16 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     }
 
     const id = ++nextVoiceId;
-    const voice = { oscillator, gain: envelope, panner, startTime: event.startTime, stopped: false };
+    const voice = { oscillator, gain: envelope, panner, modulators, startTime: event.startTime, stopped: false };
     voices.set(id, voice);
     oscillator.addEventListener("ended", () => {
       try { oscillator.disconnect(); } catch {}
       try { envelope.disconnect(); } catch {}
       try { panner?.disconnect(); } catch {}
+      for (const modulator of modulators) {
+        try { modulator.oscillator.disconnect(); } catch {}
+        try { modulator.gain.disconnect(); } catch {}
+      }
       voices.delete(id);
     }, { once: true });
     oscillator.start(event.startTime);
