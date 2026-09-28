@@ -176,7 +176,7 @@ test("phrase, section, and syllable references must resolve", () => {
   expectCode(() => createSong(other), "invalid-reference");
 });
 
-test("manual notes on the four-part baseline join the nearest phrase", () => {
+test("manual notes on the eight-part baseline join the nearest phrase", () => {
   let next = 0;
   const commands = createCommands(createInitialSong(() => `part-${++next}`), {
     idFactory: () => `new-${++next}`
@@ -186,7 +186,7 @@ test("manual notes on the four-part baseline join the nearest phrase", () => {
   const after = commands.getSong();
 
   const phraseIndex = after.phrases.findIndex((phrase) => phrase.noteIds.includes(added.id));
-  assert.equal(phraseIndex, 2);
+  assert.equal(phraseIndex, 1);
   assert.equal(before.phrases[0].noteIds.includes(added.id), false);
 });
 
