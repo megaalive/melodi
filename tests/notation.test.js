@@ -32,6 +32,15 @@ test("score projection calculates 4/4 measure math and maps leading, inner, and 
   ]);
 });
 
+test("default 6/8 phrase projects to four score measures", () => {
+  const song = createInitialSong((() => { let id = 0; return () => `default-score-${++id}`; })());
+  const projection = projectSongToScore(song);
+  assert.equal(projection.ticksPerMeasure, 1440);
+  assert.equal(projection.measures.length, 4);
+  assert.equal(projection.totalMeasureCount, 4);
+  assert.equal(projection.status, "ok");
+});
+
 test("score projection calculates 3/4 and 6/8 measure lengths from PPQ", () => {
   assert.equal(projectSongToScore(makeSong({ timeSignature: { numerator: 3, denominator: 4 }, notes: [] })).ticksPerMeasure, 1440);
   assert.equal(projectSongToScore(makeSong({ timeSignature: { numerator: 6, denominator: 8 }, notes: [] })).ticksPerMeasure, 1440);
