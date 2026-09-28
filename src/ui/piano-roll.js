@@ -278,6 +278,13 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     };
   }
 
+  function syncFrozenPitchLabels() {
+    const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
+    if (!layer) return;
+    const left = scrollContainer?.scrollLeft ?? 0;
+    layer.setAttribute("transform", `translate(${left} 0)`);
+  }
+
   function setGroupSelection(noteId, event) {
     const current = commands.getSelectedNoteIds();
     let next;
@@ -348,14 +355,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         y2: y + geometry.rowHeight,
         class: "roll-row-line"
       }, svg);
-      // Label di setiap baris, bukan hanya C, supaya nada bisa dibaca tanpa menghitung
-      // dari C. Black key diredupkan supaya 12 label per oktaf tidak berteriak.
-      svgElement("text", {
-        x: geometry.labelWidth - 7,
-        y: y + 14,
-        "text-anchor": "end",
-        class: isBlackKey(midi) ? "roll-pitch-label roll-pitch-label-black" : "roll-pitch-label"
-      }, svg, midiToPitch(midi));
+
     }
 
     const subdivisionTicks = SNAP_TICKS[state.editor.snap] ?? geometry.beatTicks;
@@ -572,6 +572,36 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       "data-tick": state.playback.currentTick,
       "pointer-events": "none"
     }, svg);
+
+    const pitchLayer = svgElement("g", {
+      class: "roll-pitch-label-layer",
+      "data-entity": "pitch-label-layer",
+      "pointer-events": "none"
+    }, svg);
+    svgElement("rect", {
+      x: 0,
+      y: geometry.top,
+      width: geometry.labelWidth,
+      height: geometry.height - geometry.top,
+      class: "roll-pitch-label-gutter"
+    }, pitchLayer);
+    for (let midi = geometry.maxMidi; midi >= geometry.minMidi; midi -= 1) {
+      const y = midiToY(midi, geometry);
+      svgElement("text", {
+        x: geometry.labelWidth - 7,
+        y: y + 14,
+        "text-anchor": "end",
+        class: isBlackKey(midi) ? "roll-pitch-label roll-pitch-label-black" : "roll-pitch-label"
+      }, pitchLayer, midiToPitch(midi));
+    }
+    svgElement("line", {
+      x1: geometry.labelWidth,
+      x2: geometry.labelWidth,
+      y1: geometry.top,
+      y2: geometry.height,
+      class: "roll-pitch-label-divider"
+    }, pitchLayer);
+
     if (scrollContainer) {
       // Auto-scroll hanya boleh jalan kalau tujuan fokus benar-benar BERUBAH.
       // Sebelumnya setiap render memaksa scrollLeft ke focusTick, dan focusTick
@@ -586,6 +616,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         scrollContainer.scrollLeft = savedLeft;
       }
       scrollContainer.scrollTop = savedTop;
+      syncFrozenPitchLabels();
     }
     lastFocusTick = focusTick;
   }
@@ -1022,6 +1053,8 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     event.preventDefault();
     commands.seek(Math.max(geometry.startTick, Math.min(geometry.endTick, nextTick)));
   });
+
+  scrollContainer?.addEventListener("scroll", syncFrozenPitchLabels, { passive: true });
 
   svg.addEventListener("pointerdown", beginDrag);
   svg.addEventListener("pointermove", previewDrag);
