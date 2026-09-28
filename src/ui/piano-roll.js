@@ -224,8 +224,19 @@ function appendPitchTint(svg) {
   svgElement("stop", { offset: "100%", class: "pitch-tint-low" }, gradient);
 }
 
+function bendLabel(note) {
+  if (!Array.isArray(note.pitchBend) || note.pitchBend.length < 2) return "";
+  const semitones = note.pitchBend.map((point) => point.semitones);
+  const max = Math.max(...semitones);
+  const min = Math.min(...semitones);
+  const endsAtBase = Math.abs(semitones.at(-1) ?? 0) < 0.001;
+  if (max > 0) return `bend +${max}${endsAtBase ? " release" : ""}`;
+  if (min < 0) return `bend ${min}${endsAtBase ? " release" : ""}`;
+  return "bend";
+}
+
 function noteDescription(note, selected, current) {
-  const states = [note.source, note.anchor ? "anchor" : "", note.locked ? "locked" : "", selected ? "selected" : "", current ? "playing" : ""]
+  const states = [note.source, note.anchor ? "anchor" : "", note.locked ? "locked" : "", bendLabel(note), selected ? "selected" : "", current ? "playing" : ""]
     .filter(Boolean).join(", ");
   return `${midiToPitch(note.pitch)}, tick ${note.startTick}, duration ${note.durationTicks}, ${states}`;
 }
@@ -389,6 +400,20 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         "data-note-shape": "true"
       }, group);
       if (isSelected) shape.setAttribute("stroke-width", "3");
+      if (Array.isArray(note.pitchBend) && note.pitchBend.length > 1 && width >= 18) {
+        const maxAbs = Math.max(1, ...note.pitchBend.map((point) => Math.abs(point.semitones)));
+        const curvePoints = note.pitchBend.map((point) => {
+          const curveX = x + 3 + (Math.max(6, width - 6) * point.position);
+          const curveY = y + (geometry.rowHeight - 4) * 0.72 - (point.semitones / maxAbs) * (geometry.rowHeight - 8) * 0.42;
+          return `${curveX},${curveY}`;
+        }).join(" ");
+        svgElement("polyline", {
+          points: curvePoints,
+          class: "roll-note-bend",
+          "pointer-events": "none",
+          "aria-hidden": "true"
+        }, group);
+      }
       if (note.anchor) {
         svgElement("text", { x: x + 5, y: y + 13, class: "roll-note-mark" }, group, "A");
       }
