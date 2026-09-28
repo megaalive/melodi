@@ -1801,3 +1801,71 @@ body[data-view-mode="combined"] .score-scroll {
 /* `hidden` dari UA stylesheet kalah spesifisitas dari `display: grid` di atas,
    jadi tanpa ini empty state selalu tampil. */
 .roll-empty[hidden] { display: none; }
+
+
+/* Konfirmasi destruktif internal. Tidak memakai chrome dialog bawaan browser. */
+.confirm-dialog {
+  width: min(28rem, calc(100vw - 1.5rem));
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: calc(var(--radius) + 0.1rem);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 60px rgba(10, 16, 20, 0.22);
+  overflow: hidden;
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(12, 16, 20, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+:root[data-theme="dark"] .confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.confirm-dialog-card {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 1.05rem;
+}
+
+.confirm-dialog-copy h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.confirm-dialog-copy p {
+  margin: 0.45rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+button.danger-button {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+button.danger-button:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+@media (max-width: 32rem) {
+  .confirm-dialog {
+    width: calc(100vw - 1rem);
+  }
+
+  .confirm-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
