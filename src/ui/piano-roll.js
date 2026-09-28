@@ -261,7 +261,8 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let pendingNoteClickId = null;
   let selectionDrag = null;
   let drawDrag = null;
-  let seekDrag = null;
+  let rulerDrag = null;
+  let timelineEndTick = 1;
   let lastPlaybackTick = 0;
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
@@ -291,7 +292,8 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     state = normalizeRuntimeState(state);
     const savedLeft = scrollContainer?.scrollLeft ?? 0;
     const savedTop = scrollContainer?.scrollTop ?? 0;
-    const endTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), state.playback.currentTick);
+    timelineEndTick = Math.max(1, song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0));
+    const endTick = Math.max(timelineEndTick, state.playback.currentTick);
     const selectedNote = [...state.selectedNoteIds].reverse().map((id) => song.notes.find((note) => note.id === id)).find(Boolean);
     const activeCandidate = state.generation?.candidates?.find((candidate) => candidate.id === state.generation.activeCandidateId);
     const focusTick = focusTickOverride ?? (activeCandidate ? state.generation.gap?.startTick : null) ?? selectedNote?.startTick ?? state.playback.currentTick;
@@ -371,8 +373,27 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       if (isBar) svgElement("text", { x: x + 4, y: 18, class: "roll-bar-label" }, svg, String(tick / geometry.barTicks + 1));
     }
     svgElement("line", { x1: 0, x2: geometry.width, y1: geometry.top, y2: geometry.top, class: "roll-header-line" }, svg);
-    // Hit-layer ditempatkan setelah label/grid sehingga seluruh ruler, termasuk
-    // tepat di atas nomor birama, selalu menerima klik dan drag seek.
+    const rangeStart = Math.max(geometry.startTick, state.playback.loop.startTick);
+    const rangeEnd = Math.min(geometry.endTick, state.playback.loop.endTick);
+    const hasCustomRange = state.playback.loop.startTick !== 0 || state.playback.loop.endTick !== timelineEndTick;
+    if (hasCustomRange && rangeEnd > rangeStart) {
+      const rangeX = tickToX(rangeStart, geometry);
+      const rangeRight = tickToX(rangeEnd, geometry);
+      svgElement("rect", {
+        x: rangeX,
+        y: 0,
+        width: Math.max(1, rangeRight - rangeX),
+        height: geometry.top,
+        class: "roll-timeline-selection",
+        "data-entity": "timeline-selection",
+        "data-start-tick": state.playback.loop.startTick,
+        "data-end-tick": state.playback.loop.endTick,
+        "pointer-events": "none",
+        "aria-hidden": "true"
+      }, svg);
+    }
+    // Hit-layer ditempatkan setelah label/grid/selection sehingga seluruh ruler,
+    // termasuk tepat di atas nomor birama, menerima click seek dan drag range.
     svgElement("rect", {
       x: geometry.labelWidth,
       y: 0,
@@ -383,7 +404,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       "data-entity": "timeline-ruler",
       role: "button",
       tabindex: "0",
-      "aria-label": "Timeline ruler. Click or drag to move the playhead."
+      "aria-label": "Timeline ruler. Click to move the playhead; drag to select a playback range."
     }, svg);
 
     const selected = new Set(state.selectedNoteIds);
@@ -615,13 +636,6 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     }
   }
 
-  function seekFromRulerPointer(event, state = commands.getState()) {
-    const point = pointerPoint(event);
-    const tick = rulerSeekTick(point.x, geometry, state.editor.snap);
-    commands.seek(tick);
-    return tick;
-  }
-
   function beginDrag(event) {
     if (event.button !== 0) return;
     const state = commands.getState();
@@ -629,8 +643,16 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     if (ruler && svg.contains(ruler)) {
       event.preventDefault();
       try {
-        const tick = seekFromRulerPointer(event, state);
-        seekDrag = { pointerId: event.pointerId, tick };
+        const point = pointerPoint(event);
+        const tick = Math.min(timelineEndTick, rulerSeekTick(point.x, geometry, state.editor.snap));
+        rulerDrag = {
+          pointerId: event.pointerId,
+          startX: point.x,
+          startTick: tick,
+          currentTick: tick,
+          moved: false,
+          element: null
+        };
         svg.setPointerCapture?.(event.pointerId);
       } catch (error) {
         onError(error);
@@ -705,13 +727,28 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function previewDrag(event) {
-    if (seekDrag && seekDrag.pointerId === event.pointerId) {
+    if (rulerDrag && rulerDrag.pointerId === event.pointerId) {
       try {
-        const tick = rulerSeekTick(pointerPoint(event).x, geometry, commands.getState().editor.snap);
-        if (tick !== seekDrag.tick) {
-          seekDrag.tick = tick;
-          commands.seek(tick);
+        const point = pointerPoint(event);
+        const tick = Math.min(timelineEndTick, rulerSeekTick(point.x, geometry, commands.getState().editor.snap));
+        if (!rulerDrag.moved && Math.abs(point.x - rulerDrag.startX) < 4) return;
+        rulerDrag.moved = true;
+        rulerDrag.currentTick = tick;
+        const startTick = Math.min(rulerDrag.startTick, tick);
+        const endTick = Math.max(rulerDrag.startTick, tick);
+        const x = tickToX(startTick, geometry);
+        const right = tickToX(endTick, geometry);
+        if (!rulerDrag.element) {
+          rulerDrag.element = svgElement("rect", {
+            y: 0,
+            height: geometry.top,
+            class: "roll-timeline-selection roll-timeline-selection-preview",
+            "pointer-events": "none",
+            "aria-hidden": "true"
+          }, svg);
         }
+        rulerDrag.element.setAttribute("x", String(x));
+        rulerDrag.element.setAttribute("width", String(Math.max(1, right - x)));
       } catch (error) {
         onError(error);
       }
@@ -798,9 +835,25 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function finishDrag(event, cancelled = false) {
-    if (seekDrag && seekDrag.pointerId === event.pointerId) {
-      seekDrag = null;
+    if (rulerDrag && rulerDrag.pointerId === event.pointerId) {
+      const drag = rulerDrag;
+      rulerDrag = null;
+      drag.element?.remove();
       try { svg.releasePointerCapture?.(event.pointerId); } catch {}
+      if (!cancelled) {
+        try {
+          if (!drag.moved || drag.startTick === drag.currentTick) {
+            commands.seek(drag.startTick);
+          } else {
+            const startTick = Math.min(drag.startTick, drag.currentTick);
+            const endTick = Math.max(drag.startTick, drag.currentTick);
+            commands.setLoop(startTick, endTick);
+            commands.seek(startTick);
+          }
+        } catch (error) {
+          onError(error);
+        }
+      }
       ignoreNextClick = true;
       setTimeout(() => { ignoreNextClick = false; }, 0);
       return;
