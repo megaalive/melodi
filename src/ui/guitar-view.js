@@ -59,6 +59,93 @@ export function findGuitarPositions(midiPitch, { tuning = STANDARD_TUNING, maxFr
   return positions;
 }
 
+
+/**
+ * Pilih satu jalur fingering yang stabil untuk seluruh frase. Posisi alternatif
+ * tetap tersedia di UI, tetapi jalur utama meminimalkan lompatan fret/senar.
+ * Bias fret 14 membuat frase lead default jatuh ke area G/B string yang natural
+ * (14-17), bukan meloncat ke semua duplikasi pitch di sepanjang neck.
+ */
+export function chooseGuitarFingering(notes, {
+  tuning = STANDARD_TUNING,
+  maxFret = MAX_FRET,
+  targetFret = 14,
+  stringChangeCost = 1.5
+} = {}) {
+  const ordered = [...(Array.isArray(notes) ? notes : [])]
+    .filter((note) => note && typeof note.id === "string" && Number.isInteger(note.pitch))
+    .sort((left, right) => left.startTick - right.startTick || left.pitch - right.pitch || left.id.localeCompare(right.id));
+  const playable = ordered.map((note) => ({
+    note,
+    positions: findGuitarPositions(note.pitch, { tuning, maxFret })
+  }));
+  const route = new Map();
+  if (!playable.length) return route;
+
+  let previousCosts = [];
+  let previousLinks = [];
+  const costRows = [];
+  const linkRows = [];
+
+  for (let index = 0; index < playable.length; index += 1) {
+    const positions = playable[index].positions;
+    const costs = [];
+    const links = [];
+    for (let positionIndex = 0; positionIndex < positions.length; positionIndex += 1) {
+      const position = positions[positionIndex];
+      if (index === 0) {
+        costs.push(Math.abs(position.fret - targetFret) * 0.3 + (position.fret === 0 ? 2 : 0));
+        links.push(-1);
+        continue;
+      }
+      const previousPositions = playable[index - 1].positions;
+      if (!previousPositions.length) {
+        costs.push(Math.abs(position.fret - targetFret) * 0.3);
+        links.push(-1);
+        continue;
+      }
+      let bestCost = Number.POSITIVE_INFINITY;
+      let bestLink = -1;
+      for (let previousIndex = 0; previousIndex < previousPositions.length; previousIndex += 1) {
+        const previous = previousPositions[previousIndex];
+        const highFretPenalty = position.fret > 19 ? (position.fret - 19) * 0.5 : 0;
+        const cost = previousCosts[previousIndex]
+          + Math.abs(position.fret - previous.fret)
+          + Math.abs(position.string - previous.string) * stringChangeCost
+          + highFretPenalty;
+        if (cost < bestCost) {
+          bestCost = cost;
+          bestLink = previousIndex;
+        }
+      }
+      costs.push(bestCost);
+      links.push(bestLink);
+    }
+    costRows.push(costs);
+    linkRows.push(links);
+    previousCosts = costs;
+    previousLinks = links;
+  }
+
+  let lastPlayableIndex = playable.length - 1;
+  while (lastPlayableIndex >= 0 && playable[lastPlayableIndex].positions.length === 0) lastPlayableIndex -= 1;
+  if (lastPlayableIndex < 0) return route;
+
+  let positionIndex = costRows[lastPlayableIndex].reduce(
+    (best, cost, index, values) => cost < values[best] ? index : best,
+    0
+  );
+  for (let index = lastPlayableIndex; index >= 0; index -= 1) {
+    const positions = playable[index].positions;
+    if (!positions.length) continue;
+    const selected = positions[positionIndex] ?? positions[0];
+    route.set(playable[index].note.id, selected);
+    const link = linkRows[index][positionIndex];
+    positionIndex = link >= 0 ? link : 0;
+  }
+  return route;
+}
+
 export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_FRET } = {}) {
   let lastSoundingKey = null;
 
@@ -127,7 +214,7 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
     }
   }
 
-  function drawPositions(positions, noteId, isCurrent) {
+  function drawPositions(positions, primaryPosition, noteId, isCurrent) {
     for (const position of positions) {
       const index = tuning.length - position.string;
       const x = centerX(position.fret);
@@ -139,13 +226,20 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
         role: "img",
         "aria-label": `String ${position.string}, fret ${position.fret}`
       }, svg);
-      const classes = ["neck-hit"];
-      // Yang ditandai hanya teknik yang memang berbeda: senar terbuka, dan nada
-      // yang sedang berbunyi. Tidak ada lagi dua warna yang menyiratkan posisi
-      // yang benar dan yang salah.
+      const primary = Boolean(primaryPosition
+        && primaryPosition.string === position.string
+        && primaryPosition.fret === position.fret);
+      const classes = ["neck-hit", primary ? "neck-hit-primary" : "neck-hit-alternative"];
       if (position.fret === 0) classes.push("neck-hit-open");
-      if (isCurrent) classes.push("neck-hit-current");
-      svgElement("circle", { cx: x, cy: stringY(index), r: 9, class: classes.join(" ") }, group);
+      if (isCurrent && primary) classes.push("neck-hit-current");
+      group.setAttribute("data-primary", String(primary));
+      group.setAttribute("aria-label", `String ${position.string}, fret ${position.fret}${primary ? ", recommended" : ", alternative"}`);
+      svgElement("circle", {
+        cx: x,
+        cy: stringY(index),
+        r: primary ? 9 : 5.5,
+        class: classes.join(" ")
+      }, group);
     }
   }
 
@@ -154,17 +248,19 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
       // Urutan fokus: note yang dipilih, note yang sedang berbunyi, lalu note
       // pertama. Tanpa fallback terakhir, view akan kosong setiap kali transport
       // berhenti dan tidak ada yang dipilih, padahal lagunya jelas berisi nada.
-      const focusedId = state.selectedNoteIds[0] ?? state.playback.currentNoteId ?? null;
-      const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
-      const positions = note ? findGuitarPositions(note.pitch, { tuning, maxFret }) : [];
-      // Playhead: posisi yang sedang berbunyi ditandai penuh, dan fret yang
-      // dipakai ikut diberi label serta garis tebal. Tanpa ini neck terlihat
-      // diam dan tidak ada yang menghubungkan posisi gitar dengan transport.
       const playingNoteId = state.playback.currentNoteId ?? null;
       const isPlaying = state.playback.status === "playing" || state.playback.status === "paused";
+      const followPlayback = state.view?.follow !== false;
+      const focusedId = isPlaying && followPlayback && playingNoteId
+        ? playingNoteId
+        : state.selectedNoteIds[0] ?? playingNoteId ?? null;
+      const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
+      const positions = note ? findGuitarPositions(note.pitch, { tuning, maxFret }) : [];
+      const fingering = chooseGuitarFingering(state.song.notes, { tuning, maxFret });
+      const primaryPosition = note ? fingering.get(note.id) ?? positions[0] ?? null : null;
       const sounding = isPlaying && playingNoteId === note?.id;
       const hitFrets = new Set(positions.map((position) => position.fret));
-      const currentFrets = sounding ? hitFrets : new Set();
+      const currentFrets = sounding && primaryPosition ? new Set([primaryPosition.fret]) : new Set();
 
       svg.setAttribute("viewBox", `0 0 ${width()} ${height()}`);
       svg.setAttribute("width", width());
@@ -175,9 +271,9 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
       svg.replaceChildren();
 
       drawNeck(hitFrets, currentFrets);
-      if (positions.length > 0) drawPositions(positions, note.id, sounding);
+      if (positions.length > 0) drawPositions(positions, primaryPosition, note.id, sounding);
       lastSoundingKey = `${note?.id ?? ""}:${sounding}`;
-      return { note, positions, sounding, playheadTick: state.playback.currentTick };
+      return { note, positions, primaryPosition, sounding, playheadTick: state.playback.currentTick };
     },
 
     /**
@@ -186,9 +282,13 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
      * membuat ulang seluruh neck.
      */
     updatePlayback(state) {
-      const focusedId = state.selectedNoteIds[0] ?? state.playback.currentNoteId ?? null;
-      const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
+      const playingNoteId = state.playback.currentNoteId ?? null;
       const isPlaying = state.playback.status === "playing" || state.playback.status === "paused";
+      const followPlayback = state.view?.follow !== false;
+      const focusedId = isPlaying && followPlayback && playingNoteId
+        ? playingNoteId
+        : state.selectedNoteIds[0] ?? playingNoteId ?? null;
+      const note = state.song.notes.find((item) => item.id === focusedId) ?? state.song.notes[0] ?? null;
       const sounding = isPlaying && (state.playback.currentNoteId ?? null) === note?.id;
       const key = `${note?.id ?? ""}:${sounding}`;
       if (key === lastSoundingKey) return false;
