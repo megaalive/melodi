@@ -191,155 +191,88 @@ export function createSong(data) {
 
 export function createInitialSong(idFactory = createId) {
   const songId = idFactory();
-  const sectionTicks = PPQ * 3 * 2; // Dua birama 6/8 per bagian.
 
-  // Urutan pitch berasal dari tab yang diberikan user. Timing di bawah adalah
-  // interpretasi playback Melodi agar frase tetap lambat/lega pada q.=54
-  // (81 quarter-note BPM internal). Artikulasi slide/pull-off/hammer-on sementara
-  // direpresentasikan lewat pitchBend sampai performance model khusus tersedia.
-  const parts = [
-    // Bagian 1: G14, B15, B17, B17b18, B17b18, B17, B15
-    [
-      { pitch: 69, startTick: 0, durationTicks: 480 },
-      { pitch: 74, startTick: 480, durationTicks: 240 },
-      { pitch: 76, startTick: 720, durationTicks: 240 },
-      {
-        pitch: 76, startTick: 960, durationTicks: 720,
-        pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
-      },
-      {
-        pitch: 76, startTick: 1680, durationTicks: 480,
-        pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
-      },
-      { pitch: 76, startTick: 2160, durationTicks: 240 },
-      { pitch: 74, startTick: 2400, durationTicks: 480 }
-    ],
+  // Baseline ini persis mengikuti project share yang dipilih user:
+  // 81 BPM internal, A minor, 6/8, 21 note, panjang 8 birama.
+  const defaultMelody = [
+    { pitch: 69, startTick: 0, durationTicks: 480 },
+    { pitch: 74, startTick: 480, durationTicks: 240 },
+    { pitch: 76, startTick: 720, durationTicks: 240 },
+    {
+      pitch: 76, startTick: 960, durationTicks: 720,
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
+    },
+    {
+      pitch: 76, startTick: 1680, durationTicks: 480,
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
+    },
+    { pitch: 76, startTick: 2160, durationTicks: 240 },
+    { pitch: 74, startTick: 2400, durationTicks: 480 },
 
-    // Bagian 2: B13, B15, B15b17, B15b17r15, B13
-    [
-      { pitch: 72, startTick: 0, durationTicks: 480 },
-      { pitch: 74, startTick: 480, durationTicks: 240 },
-      {
-        pitch: 74, startTick: 720, durationTicks: 720,
-        pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
-      },
-      {
-        pitch: 74, startTick: 1440, durationTicks: 720,
-        pitchBend: [
-          { position: 0, semitones: 0 },
-          { position: 0.22, semitones: 2 },
-          { position: 0.42, semitones: 2 },
-          { position: 1, semitones: 0 }
-        ]
-      },
-      { pitch: 72, startTick: 2160, durationTicks: 720 }
-    ],
+    { pitch: 72, startTick: 2880, durationTicks: 480 },
+    { pitch: 74, startTick: 3360, durationTicks: 240 },
+    {
+      pitch: 74, startTick: 3600, durationTicks: 720,
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
+    },
+    {
+      pitch: 74, startTick: 4320, durationTicks: 720,
+      pitchBend: [
+        { position: 0, semitones: 0 },
+        { position: 0.22, semitones: 2 },
+        { position: 0.42, semitones: 2 },
+        { position: 1, semitones: 0 }
+      ]
+    },
+    { pitch: 72, startTick: 5040, durationTicks: 720 },
 
-    // Bagian 3: B10, B12, B13, B13b15, B13b15r13, B12
-    [
-      { pitch: 69, startTick: 0, durationTicks: 480 },
-      { pitch: 71, startTick: 480, durationTicks: 240 },
-      { pitch: 72, startTick: 720, durationTicks: 240 },
-      {
-        pitch: 72, startTick: 960, durationTicks: 720,
-        pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
-      },
-      {
-        pitch: 72, startTick: 1680, durationTicks: 720,
-        pitchBend: [
-          { position: 0, semitones: 0 },
-          { position: 0.22, semitones: 2 },
-          { position: 0.42, semitones: 2 },
-          { position: 1, semitones: 0 }
-        ]
-      },
-      { pitch: 71, startTick: 2400, durationTicks: 480 }
-    ],
+    { pitch: 69, startTick: 5760, durationTicks: 240 },
+    { pitch: 71, startTick: 6000, durationTicks: 240 },
+    { pitch: 72, startTick: 6240, durationTicks: 240 },
+    {
+      pitch: 72, startTick: 6480, durationTicks: 720,
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
+    },
+    {
+      pitch: 72, startTick: 7200, durationTicks: 720,
+      pitchBend: [
+        { position: 0, semitones: 0 },
+        { position: 0.22, semitones: 2 },
+        { position: 0.42, semitones: 2 },
+        { position: 1, semitones: 0 }
+      ]
+    },
+    { pitch: 71, startTick: 7920, durationTicks: 720 },
 
-    // Bagian 4: B10, G12, G12b14
-    [
-      { pitch: 69, startTick: 0, durationTicks: 720 },
-      { pitch: 67, startTick: 720, durationTicks: 720 },
-      {
-        pitch: 67, startTick: 1440, durationTicks: 1440,
-        pitchBend: [{ position: 0, semitones: 0 }, { position: 0.24, semitones: 2 }, { position: 1, semitones: 2 }]
-      }
-    ],
-
-    // Bagian 5: G7\\9, B8, B8
-    [
-      {
-        pitch: 62, startTick: 0, durationTicks: 960,
-        pitchBend: [{ position: 0, semitones: 0 }, { position: 0.85, semitones: 2 }, { position: 1, semitones: 2 }]
-      },
-      { pitch: 67, startTick: 960, durationTicks: 720 },
-      { pitch: 67, startTick: 1680, durationTicks: 960 }
-    ],
-
-    // Bagian 6: high-E5, B8, G7p5h7
-    [
-      { pitch: 69, startTick: 0, durationTicks: 720 },
-      { pitch: 67, startTick: 720, durationTicks: 720 },
-      {
-        pitch: 62, startTick: 1440, durationTicks: 1440,
-        pitchBend: [
-          { position: 0, semitones: 0 },
-          { position: 0.34, semitones: -2 },
-          { position: 0.6, semitones: -2 },
-          { position: 0.82, semitones: 0 },
-          { position: 1, semitones: 0 }
-        ]
-      }
-    ],
-
-    // Bagian 7: G7b8r7
-    [
-      {
-        pitch: 62, startTick: 0, durationTicks: 2880,
-        pitchBend: [
-          { position: 0, semitones: 0 },
-          { position: 0.24, semitones: 1 },
-          { position: 0.58, semitones: 1 },
-          { position: 1, semitones: 0 }
-        ]
-      }
-    ],
-
-    // Bagian 8: B8b10r8, B5, G7, D7
-    [
-      {
-        pitch: 67, startTick: 0, durationTicks: 960,
-        pitchBend: [
-          { position: 0, semitones: 0 },
-          { position: 0.22, semitones: 2 },
-          { position: 0.48, semitones: 2 },
-          { position: 1, semitones: 0 }
-        ]
-      },
-      { pitch: 64, startTick: 960, durationTicks: 480 },
-      { pitch: 62, startTick: 1440, durationTicks: 720 },
-      { pitch: 57, startTick: 2160, durationTicks: 720 }
-    ]
+    { pitch: 69, startTick: 8640, durationTicks: 720 },
+    { pitch: 67, startTick: 9360, durationTicks: 720 },
+    {
+      pitch: 67, startTick: 10080, durationTicks: 1440,
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.24, semitones: 2 }, { position: 1, semitones: 2 }]
+    }
   ];
-
-  const defaultMelody = parts.flatMap((part, index) => part.map((note) => ({
-    ...cloneData(note),
-    startTick: note.startTick + index * sectionTicks
-  })));
 
   const notes = defaultMelody.map((note) => ({
     id: idFactory(),
-    ...note,
+    ...cloneData(note),
     source: "user",
     anchor: false,
     locked: false
   }));
 
-  const phrases = parts.map((_, index) => ({
+  const phraseNoteIndexes = [
+    [0, 1, 2, 3, 4, 5, 6],
+    [7, 8, 9, 10, 11],
+    [12, 13, 14, 15, 16, 17],
+    [18, 19, 20],
+    [],
+    [],
+    [],
+    []
+  ];
+  const phrases = phraseNoteIndexes.map((indexes) => ({
     id: idFactory(),
-    noteIds: notes
-      .filter((note) => note.startTick >= index * sectionTicks && note.startTick < (index + 1) * sectionTicks)
-      .map((note) => note.id)
+    noteIds: indexes.map((index) => notes[index].id)
   }));
   const sections = phrases.map((phrase, index) => ({
     id: idFactory(),
