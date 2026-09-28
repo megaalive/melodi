@@ -11,7 +11,7 @@ import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
-import { createShareUrl, decodeShareHash } from "./io/share.js";
+import { createShareUrl, decodeShareLocation } from "./io/share.js";
 import { deserializeProject, serializeProject } from "./core/serialization.js";
 
 let language = DEFAULT_LANGUAGE;
@@ -1140,9 +1140,10 @@ function confirmInApp() {
   return confirmPromise;
 }
 
-function clearShareHash() {
+function clearShareLocation() {
   try {
     const url = new URL(globalThis.location.href);
+    url.searchParams.delete("m");
     url.hash = "";
     globalThis.history?.replaceState?.(null, "", url.toString());
   } catch {}
@@ -1151,7 +1152,7 @@ function clearShareHash() {
 function leaveShareSession() {
   if (!shareSession) return;
   shareSession = false;
-  clearShareHash();
+  clearShareLocation();
 }
 
 function openShareDialog(url) {
@@ -1264,13 +1265,13 @@ const persistence = createDraftPersistence({
 const draft = persistence.load();
 let sharedSong = null;
 try {
-  sharedSong = await decodeShareHash(globalThis.location?.hash ?? "");
+  sharedSong = await decodeShareLocation(globalThis.location);
   if (sharedSong) {
     shareSession = true;
     shareLoadStatus = "loaded";
   }
-} catch {
-  shareLoadStatus = "invalid";
+} catch (error) {
+  shareLoadStatus = error?.code ?? "invalid";
 }
 
 commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
@@ -2024,7 +2025,7 @@ document.querySelectorAll("details").forEach((details) => { details.open = false
 
 render();
 if (shareLoadStatus === "loaded") announce("shareLoaded");
-else if (shareLoadStatus === "invalid") announce("shareInvalid", "error");
+else if (shareLoadStatus !== "none") announce("shareInvalid", "error");
 else if (draft.status === "restored") announce("draftRestored");
 else if (draft.status === "invalid") announce("draftInvalid", "error");
 else if (draft.status === "unavailable") announce("draftUnavailable", "error");
