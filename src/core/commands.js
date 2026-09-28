@@ -14,11 +14,35 @@ function validateActor(actor) {
   if (actor !== "user" && actor !== "generator") fail("invalid-actor");
 }
 
+function validatePitchBendPatch(value) {
+  if (value === null) return;
+  if (!Array.isArray(value) || value.length < 2 || value.length > 16) fail("invalid-pitch-bend");
+  let previousPosition = -1;
+  for (const point of value) {
+    if (point === null || typeof point !== "object" || Array.isArray(point)) fail("invalid-pitch-bend");
+    if (Object.keys(point).sort().join(",") !== "position,semitones") fail("invalid-pitch-bend");
+    if (typeof point.position !== "number" || !Number.isFinite(point.position)
+      || point.position < 0 || point.position > 1 || point.position <= previousPosition) fail("invalid-pitch-bend");
+    if (typeof point.semitones !== "number" || !Number.isFinite(point.semitones)
+      || point.semitones < -12 || point.semitones > 12) fail("invalid-pitch-bend");
+    previousPosition = point.position;
+  }
+  if (value[0].position !== 0) fail("invalid-pitch-bend");
+}
+
 function validatePatch(patch) {
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) fail("invalid-note");
   const keys = Object.keys(patch);
-  const allowed = new Set(["pitch", "startTick", "durationTicks"]);
+  const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend"]);
   if (keys.length === 0 || keys.some((key) => !allowed.has(key))) fail("invalid-note-patch");
+  if (Object.hasOwn(patch, "pitchBend")) validatePitchBendPatch(patch.pitchBend);
+}
+
+function applyNotePatch(note, patch) {
+  for (const [key, value] of Object.entries(patch)) {
+    if (key === "pitchBend" && value === null) delete note.pitchBend;
+    else note[key] = value;
+  }
 }
 
 function reportUnobservedNotificationError(error) {
@@ -579,13 +603,14 @@ export function createCommands(initialSong, {
     addNote(input, { actor = "user" } = {}) {
       validateActor(actor);
       if (input === null || typeof input !== "object" || Array.isArray(input)) fail("invalid-note");
-      const allowed = new Set(["pitch", "startTick", "durationTicks"]);
+      const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend"]);
       if (Object.keys(input).some((key) => !allowed.has(key))) fail("invalid-note");
       const note = {
         id: idFactory(),
         pitch: input.pitch,
         startTick: input.startTick,
         durationTicks: input.durationTicks,
+        ...(input.pitchBend ? { pitchBend: cloneData(input.pitchBend) } : {}),
         source: actor === "generator" ? "generated" : "user",
         anchor: false,
         locked: false
@@ -615,7 +640,7 @@ export function createCommands(initialSong, {
       });
       commit((candidate) => {
         for (const { noteId, patch } of validated) {
-          Object.assign(candidate.notes.find((item) => item.id === noteId), patch);
+          applyNotePatch(candidate.notes.find((item) => item.id === noteId), patch);
         }
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
@@ -630,7 +655,7 @@ export function createCommands(initialSong, {
       if (actor === "generator" && (note.anchor || note.locked)) fail("protected-note");
       commit((candidate) => {
         const target = candidate.notes.find((item) => item.id === noteId);
-        Object.assign(target, patch);
+        applyNotePatch(target, patch);
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
