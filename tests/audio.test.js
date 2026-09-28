@@ -407,8 +407,9 @@ test("commands transition through play, pause, resume, seek, tempo, loop, and st
   commands.stop();
   const stopped = commands.getState().playback;
   assert.equal(stopped.status, "stopped");
-  assert.equal(stopped.currentTick, 480);
+  assert.equal(stopped.currentTick, 0);
   assert.equal(stopped.currentNoteId, null);
+  assert.deepEqual(stopped.loop, { enabled: true, startTick: 0, endTick: 1920 });
   assert.deepEqual(commands.getSong().notes, notesBefore);
 });
 
@@ -522,7 +523,8 @@ test("manual playback range works once when Loop is off", async () => {
   assert.deepEqual(ref.calls.find((call) => call[0] === "play").slice(0, 2), ["play", 480]);
   assert.equal(commands.getState().playback.currentTick, 480);
   commands.stop();
-  assert.equal(commands.getState().playback.currentTick, 480);
+  assert.equal(commands.getState().playback.currentTick, 0);
+  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 0, endTick: 1920 });
 });
 
 test("normal scheduler clips notes to the playback range", () => {
@@ -539,5 +541,19 @@ test("normal scheduler clips notes to the playback range", () => {
   assert.ok(events.length > 0);
   assert.ok(events.every((event) => event.note.startTick < 960));
   assert.ok(events.every((event) => event.endTime <= ticksToSeconds(480, 120) + 1e-10));
+});
+
+test("Stop clears a manual playback range back to the full timeline", () => {
+  const ref = {};
+  const commands = createCommands(fixture(), { audioPlayerFactory: fakePlayerFactory(ref) });
+  commands.setLoop(480, 1440);
+  commands.setLoopEnabled(true);
+  commands.seek(960);
+
+  const stopped = commands.stop();
+
+  assert.equal(stopped.status, "stopped");
+  assert.equal(stopped.currentTick, 0);
+  assert.deepEqual(stopped.loop, { enabled: true, startTick: 0, endTick: 1920 });
 });
 
