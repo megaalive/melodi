@@ -194,11 +194,13 @@ export function createInitialSong(idFactory = createId) {
 
   // Baseline ini berasal dari project share yang diberikan user. Tempo internal
   // memakai quarter-note BPM; 81 BPM ekuivalen dengan dotted-quarter 54 pada 6/8.
-  const defaultMelody = [
+  // Empat bar pertama adalah material user. Bar 5-8 adalah reprise identik supaya
+  // baseline delapan bagian tidak mengambil transkripsi tambahan dari sumber lain.
+  const fourBarMelody = [
     // Bar 1 / Bagian 1
-    { pitch: 69, startTick: 0, durationTicks: 480 },     // A4
-    { pitch: 74, startTick: 480, durationTicks: 240 },  // D5
-    { pitch: 76, startTick: 720, durationTicks: 240 },  // E5
+    { pitch: 69, startTick: 0, durationTicks: 480 },
+    { pitch: 74, startTick: 480, durationTicks: 240 },
+    { pitch: 76, startTick: 720, durationTicks: 240 },
     {
       pitch: 76, startTick: 960, durationTicks: 720,
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
@@ -209,11 +211,11 @@ export function createInitialSong(idFactory = createId) {
       pitch: 76, startTick: 1680, durationTicks: 480,
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
     },
-    { pitch: 76, startTick: 2160, durationTicks: 240 },  // E5
-    { pitch: 74, startTick: 2400, durationTicks: 480 }, // D5
+    { pitch: 76, startTick: 2160, durationTicks: 240 },
+    { pitch: 74, startTick: 2400, durationTicks: 480 },
 
     // Bar 3 / Bagian 3
-    { pitch: 72, startTick: 2880, durationTicks: 240 }, // C5
+    { pitch: 72, startTick: 2880, durationTicks: 240 },
     {
       pitch: 72, startTick: 3120, durationTicks: 480,
       pitchBend: [
@@ -224,7 +226,7 @@ export function createInitialSong(idFactory = createId) {
         { position: 1, semitones: 0 }
       ]
     },
-    { pitch: 74, startTick: 3600, durationTicks: 240 }, // D5
+    { pitch: 74, startTick: 3600, durationTicks: 240 },
     {
       pitch: 74, startTick: 3840, durationTicks: 720,
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
@@ -235,7 +237,16 @@ export function createInitialSong(idFactory = createId) {
       pitch: 74, startTick: 4560, durationTicks: 720,
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.22, semitones: 2 }, { position: 0.4, semitones: 2 }, { position: 1, semitones: 0 }]
     },
-    { pitch: 72, startTick: 5280, durationTicks: 480 }  // C5
+    { pitch: 72, startTick: 5280, durationTicks: 480 }
+  ];
+
+  const repriseOffset = PPQ * 3 * 4;
+  const defaultMelody = [
+    ...fourBarMelody,
+    ...fourBarMelody.map((note) => ({
+      ...cloneData(note),
+      startTick: note.startTick + repriseOffset
+    }))
   ];
 
   const notes = defaultMelody.map((note) => ({
@@ -246,8 +257,8 @@ export function createInitialSong(idFactory = createId) {
     locked: false
   }));
 
-  const barTicks = PPQ * 3; // 6/8 = enam eighth-note = tiga quarter-note.
-  const phrases = Array.from({ length: 4 }, (_, index) => ({
+  const barTicks = PPQ * 3;
+  const phrases = Array.from({ length: 8 }, (_, index) => ({
     id: idFactory(),
     noteIds: notes
       .filter((note) => note.startTick >= index * barTicks && note.startTick < (index + 1) * barTicks)
