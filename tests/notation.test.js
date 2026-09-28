@@ -32,12 +32,12 @@ test("score projection calculates 4/4 measure math and maps leading, inner, and 
   ]);
 });
 
-test("default 6/8 phrase projects to four score measures", () => {
+test("default 6/8 phrase projects to eight score measures", () => {
   const song = createInitialSong((() => { let id = 0; return () => `default-score-${++id}`; })());
   const projection = projectSongToScore(song);
   assert.equal(projection.ticksPerMeasure, 1440);
-  assert.equal(projection.measures.length, 4);
-  assert.equal(projection.totalMeasureCount, 4);
+  assert.equal(projection.measures.length, 8);
+  assert.equal(projection.totalMeasureCount, 8);
   assert.equal(projection.status, "ready");
 });
 
