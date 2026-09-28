@@ -80,3 +80,12 @@ test("UI tidak memakai dialog blocking bawaan browser", () => {
   assert.match(html, /<dialog[^>]+id="confirm-dialog"/);
 });
 
+test("Score tidak mengulang clef di setiap birama atau menebalkan semua glyph", () => {
+  const score = readFileSync(resolve("src/ui/score.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+
+  assert.match(score, /if \(measure\.index === 0\) \{\s*stave\.addClef\("treble"\);/);
+  assert.doesNotMatch(css, /#score \[class\^="vf-"\][\s\S]*stroke:\s*currentColor;\s*fill:\s*currentColor/);
+  assert.match(css, /#score path\[fill="black"\][\s\S]*stroke:\s*none/);
+});
+
