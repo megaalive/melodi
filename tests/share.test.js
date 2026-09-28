@@ -154,7 +154,9 @@ test("share URL uses query payload so redirects do not drop the project", async 
   assert.equal(url.origin + url.pathname, "https://megaalive.github.io/melodi/");
   assert.equal(url.searchParams.get("lang"), "id");
   assert.equal(url.searchParams.has("utm_source"), false);
-  assert.match(url.searchParams.get("m"), /^1\.j\.[A-Za-z0-9_-]+$/);
+  const queryPayload = url.searchParams.get("m");
+  assert.equal(queryPayload.startsWith(`${SHARE_VERSION}.j.`), true);
+  assert.match(queryPayload.split(".").at(-1), /^[A-Za-z0-9_-]+$/);
   assert.equal(url.hash, "");
 
   const restored = await decodeShareLocation(url, {
