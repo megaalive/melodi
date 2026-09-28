@@ -366,6 +366,20 @@ function bendPreset(name) {
   return undefined;
 }
 
+function vibratoPreset(name) {
+  if (name === "subtle") return { rateHz: 5.5, depthSemitones: 0.15, delayPosition: 0.3 };
+  if (name === "vocal") return { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 };
+  if (name === "wide") return { rateHz: 5, depthSemitones: 0.6, delayPosition: 0.15 };
+  if (name === "clear") return null;
+  return undefined;
+}
+
+function setSelectedVibrato(name) {
+  const preset = vibratoPreset(name);
+  if (preset === undefined) return [];
+  return updateSelectedNotes(() => ({ vibrato: preset }));
+}
+
 function setSelectedBend(name) {
   const preset = bendPreset(name);
   if (preset === undefined) return [];
@@ -388,17 +402,33 @@ function openBendEditor(noteId = null) {
 
 function setExpressionForNotes(noteIds, mode, value) {
   if (!Array.isArray(noteIds) || noteIds.length === 0) return [];
-  if (mode !== "volume" && mode !== "pan") return [];
-  return commands.updateNotes(noteIds.map((noteId) => ({
-    noteId,
-    patch: { [mode]: value }
-  })));
+  const noteById = new Map(commands.getSong().notes.map((note) => [note.id, note]));
+  if (mode === "volume" || mode === "pan") {
+    return commands.updateNotes(noteIds.map((noteId) => ({
+      noteId,
+      patch: { [mode]: value }
+    })));
+  }
+  if (mode === "vibrato") {
+    return commands.updateNotes(noteIds.map((noteId) => {
+      const note = noteById.get(noteId);
+      const base = note?.vibrato ?? vibratoPreset("vocal");
+      return {
+        noteId,
+        patch: {
+          vibrato: value <= 0 ? null : { ...base, depthSemitones: value }
+        }
+      };
+    }));
+  }
+  return [];
 }
 
 function resetSelectedExpression(mode) {
   if (mode === "bend") return updateSelectedNotes(() => ({ pitchBend: null }));
   if (mode === "volume") return updateSelectedNotes(() => ({ volume: 1 }));
   if (mode === "pan") return updateSelectedNotes(() => ({ pan: 0 }));
+  if (mode === "vibrato") return updateSelectedNotes(() => ({ vibrato: null }));
   return [];
 }
 
@@ -418,7 +448,8 @@ function renderExpressionControls(state = normalizeRuntimeState(commands.getStat
   const modeLabel = translate({
     bend: "expressionBendButton",
     volume: "expressionVolumeButton",
-    pan: "expressionPanButton"
+    pan: "expressionPanButton",
+    vibrato: "expressionVibratoButton"
   }[mode]);
   byId("expression-status").textContent = selectedCount
     ? translate("expressionStatusSelected", { mode: modeLabel, count: selectedCount })
@@ -593,6 +624,15 @@ function renderNotes(song, state) {
       }),
       makeInputLabel(translate("notePanLabel"), "number", Math.round((note.pan ?? 0) * 100), `pan-${note.id}`, {
         min: -100, max: 100, step: 1, focusKey: `pan-${note.id}`
+      }),
+      makeInputLabel(translate("noteVibratoDepthLabel"), "number", note.vibrato?.depthSemitones ?? 0, `vibrato-depth-${note.id}`, {
+        min: 0, max: 2, step: 0.05, focusKey: `vibrato-depth-${note.id}`
+      }),
+      makeInputLabel(translate("noteVibratoRateLabel"), "number", note.vibrato?.rateHz ?? 5.8, `vibrato-rate-${note.id}`, {
+        min: 0.5, max: 12, step: 0.1, focusKey: `vibrato-rate-${note.id}`
+      }),
+      makeInputLabel(translate("noteVibratoDelayLabel"), "number", Math.round((note.vibrato?.delayPosition ?? 0.2) * 100), `vibrato-delay-${note.id}`, {
+        min: 0, max: 100, step: 1, focusKey: `vibrato-delay-${note.id}`
       })
     );
     const expressionHint = document.createElement("p");
@@ -789,7 +829,7 @@ function renderEditorControls() {
   // Toolbar transpose dan durasi adalah jalur eksplisit; context menu tetap ada
   // sebagai pintasan, bukan satu-satunya jalan (PLAN.md: fungsi penting tidak
   // boleh hanya tersedia lewat context menu).
-  for (const button of document.querySelectorAll('[data-action="transpose-selected"], [data-action="set-selected-duration"], [data-action="set-selected-bend"]')) {
+  for (const button of document.querySelectorAll('[data-action="transpose-selected"], [data-action="set-selected-duration"], [data-action="set-selected-bend"], [data-action="set-selected-vibrato"]')) {
     button.disabled = state.selectedNoteIds.length === 0;
   }
   const selectedNotes = song.notes.filter((note) => state.selectedNoteIds.includes(note.id));
@@ -819,6 +859,14 @@ function renderEditorControls() {
     const preset = bendPreset(button.dataset.bend);
     const targetSignature = JSON.stringify(preset ?? null);
     const active = selectedNotes.length > 0 && selectedNotes.every((note) => bendSignature(note) === targetSignature);
+    button.dataset.active = String(active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  const vibratoSignature = (note) => JSON.stringify(note.vibrato ?? null);
+  for (const button of document.querySelectorAll('[data-action="set-selected-vibrato"]')) {
+    const preset = vibratoPreset(button.dataset.vibrato);
+    const targetSignature = JSON.stringify(preset ?? null);
+    const active = selectedNotes.length > 0 && selectedNotes.every((note) => vibratoSignature(note) === targetSignature);
     button.dataset.active = String(active);
     button.setAttribute("aria-pressed", String(active));
   }
@@ -1185,7 +1233,8 @@ function hasMeaningfulEdits(song) {
     for (const key of ["pitch", "startTick", "durationTicks", "source", "anchor", "locked", "volume", "pan"]) {
       if ((note[key] ?? null) !== (initial[key] ?? null)) return true;
     }
-    return JSON.stringify(note.pitchBend ?? null) !== JSON.stringify(initial.pitchBend ?? null);
+    return JSON.stringify(note.pitchBend ?? null) !== JSON.stringify(initial.pitchBend ?? null)
+      || JSON.stringify(note.vibrato ?? null) !== JSON.stringify(initial.vibrato ?? null);
   });
 }
 
@@ -1594,7 +1643,14 @@ document.addEventListener("submit", (event) => {
       startTick: Number(data.get(`start-${form.dataset.noteId}`)),
       durationTicks: Number(data.get(`duration-${form.dataset.noteId}`)),
       volume: Number(data.get(`volume-${form.dataset.noteId}`)) / 100,
-      pan: Number(data.get(`pan-${form.dataset.noteId}`)) / 100
+      pan: Number(data.get(`pan-${form.dataset.noteId}`)) / 100,
+      vibrato: Number(data.get(`vibrato-depth-${form.dataset.noteId}`)) > 0
+        ? {
+            depthSemitones: Number(data.get(`vibrato-depth-${form.dataset.noteId}`)),
+            rateHz: Number(data.get(`vibrato-rate-${form.dataset.noteId}`)),
+            delayPosition: Number(data.get(`vibrato-delay-${form.dataset.noteId}`)) / 100
+          }
+        : null
     }), "noteSaved");
   } else if (action === "set-lyrics") {
     result = run(() => commands.setLyrics(data.get("rawText")), "lyricsSaved");
@@ -1756,6 +1812,9 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.action === "set-selected-bend") {
     const notes = run(() => setSelectedBend(target.dataset.bend));
     if (notes?.length) announce(target.dataset.bend === "clear" ? "bendCleared" : "bendUpdated");
+  } else if (target.dataset.action === "set-selected-vibrato") {
+    const notes = run(() => setSelectedVibrato(target.dataset.vibrato));
+    if (notes?.length) announce(target.dataset.vibrato === "clear" ? "vibratoCleared" : "vibratoUpdated");
   } else if (target.dataset.action === "context-add-note") {
     const context = contextTarget ? { ...contextTarget } : null;
     closeNoteContextMenu();
