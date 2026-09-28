@@ -1,5 +1,5 @@
 import { MelodiError, PPQ } from "../core/model.js";
-import { planNoteEvents, tickAtAudioTime, validateTempo } from "./transport.js";
+import { planNoteEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
@@ -354,7 +354,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     seek(tick, options) { reanchor(tick, options.tempo, options.loop, options.playing); },
     updateTempo(nextTempo, tick, shouldPlay) { reanchor(tick, nextTempo, loop, shouldPlay); },
     updateLoop(nextLoop, tick, shouldPlay) { reanchor(tick, tempo, nextLoop, shouldPlay); },
-    songChanged(tick) { reanchor(tick, tempo, loop, playing); },
+    songChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
     playPreview,
     cancelPreview() {
       if (playing) return false;
