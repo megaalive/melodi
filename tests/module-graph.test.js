@@ -72,3 +72,11 @@ test("modul DOM di daftar pengecualian memang ada dan tetap ada di sana", () => 
     );
   }
 });
+
+test("UI tidak memakai dialog blocking bawaan browser", () => {
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const html = readFileSync(resolve("index.html"), "utf8");
+  assert.doesNotMatch(app, /\b(?:window\.)?(?:alert|confirm|prompt)\s*\(/);
+  assert.match(html, /<dialog[^>]+id="confirm-dialog"/);
+});
+
