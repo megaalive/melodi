@@ -49,7 +49,12 @@
           <div><dt data-copy="keyLabel"></dt><dd id="key-value"></dd></div>
           <div><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
         </dl>
-        <button id="new-idea" type="button" class="secondary" data-action="new-idea" data-copy="newIdeaButton"></button>
+        <div class="song-actions">
+          <span id="shared-source" class="shared-source" data-copy="sharedSourceLabel" hidden></span>
+          <button id="save-shared-draft" type="button" class="secondary" data-action="save-shared-draft" data-copy="saveSharedDraftButton" hidden></button>
+          <button id="share-song" type="button" class="secondary" data-action="share-song" data-copy="shareButton"></button>
+          <button id="new-idea" type="button" class="secondary" data-action="new-idea" data-copy="newIdeaButton"></button>
+        </div>
       </section>
 
       <div class="workspace-chrome">
@@ -378,6 +383,23 @@
           <button type="button" role="menuitem" data-action="context-select-all" data-copy="contextSelectAll"></button>
         </div>
       </div>
+
+      <dialog id="share-dialog" class="confirm-dialog share-dialog" aria-labelledby="share-dialog-title">
+        <div class="confirm-dialog-card">
+          <div class="confirm-dialog-copy">
+            <h2 id="share-dialog-title" data-copy="shareDialogTitle"></h2>
+            <p data-copy="shareDialogHelp"></p>
+          </div>
+          <label class="share-link-field">
+            <span class="visually-hidden" data-copy="shareLinkLabel"></span>
+            <input id="share-link" type="text" readonly spellcheck="false">
+          </label>
+          <div class="confirm-dialog-actions">
+            <button id="share-dialog-close" type="button" class="secondary" data-action="close-share-dialog" data-copy="closeButton"></button>
+            <button id="share-dialog-copy" type="button" data-action="copy-share-link" data-copy="copyShareLinkButton"></button>
+          </div>
+        </div>
+      </dialog>
 
       <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
         <form method="dialog" class="confirm-dialog-card">
