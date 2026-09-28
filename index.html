@@ -195,7 +195,16 @@
                 <h2 id="score-heading" data-copy="scoreHeading"></h2>
                 <p data-copy="scoreHelp"></p>
               </div>
-              <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
+              <div class="score-heading-tools">
+                <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
+                  <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
+                  <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" disabled></button>
+                  <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" disabled></button>
+                </div>
+                <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
+              </div>
             </div>
             <div id="score-scroll" class="score-scroll" role="region" tabindex="0" aria-label="Score">
               <svg id="score"></svg>
