@@ -27,6 +27,9 @@ function fixture() {
   const right = { id: "anchor-right", pitch: 67, startTick: 1440, durationTicks: 480, source: "user", anchor: true, locked: false };
   return createSong({
     ...song,
+    timing: { ...song.timing, tempo: 120, timeSignature: { numerator: 4, denominator: 4 } },
+    key: "C",
+    scale: { name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] },
     sections: [{ ...song.sections[0], phraseIds: ["phrase-main"] }],
     notes: [left, right],
     phrases: [{ id: "phrase-main", noteIds: [left.id, right.id] }]
