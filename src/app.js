@@ -1162,13 +1162,8 @@ async function copyText(value) {
 
 async function shareCurrentSong() {
   const url = await createShareUrl(commands.getSong(), globalThis.location?.href);
-  byId("share-link").value = url;
-  if (await copyText(url)) {
-    announce("shareCopied");
-    return url;
-  }
   openShareDialog(url);
-  announce("shareClipboardFailed", "error");
+  announce("shareReady");
   return url;
 }
 
