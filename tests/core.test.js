@@ -255,6 +255,34 @@ test("user can add, replace, and clear canonical pitch bend", () => {
   }), "invalid-pitch-bend");
 });
 
+test("volume dan pan adalah expression canonical yang tervalidasi", () => {
+  const commands = createCommands(fixture());
+  commands.updateNote("note-4", { volume: 0.65, pan: -0.4 });
+  const note = commands.getSong().notes.find((item) => item.id === "note-4");
+  assert.equal(note.volume, 0.65);
+  assert.equal(note.pan, -0.4);
+
+  expectCode(() => commands.updateNote("note-4", { volume: 1.01 }), "invalid-note-volume");
+  expectCode(() => commands.updateNote("note-4", { volume: -0.01 }), "invalid-note-volume");
+  expectCode(() => commands.updateNote("note-4", { pan: 1.01 }), "invalid-note-pan");
+  expectCode(() => commands.updateNote("note-4", { pan: -1.01 }), "invalid-note-pan");
+});
+
+test("copy paste mempertahankan bend volume dan pan tetapi membuat ID baru", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `expression-copy-${++nextId}` });
+  const bend = [{ position: 0, semitones: 0 }, { position: 1, semitones: 2 }];
+  commands.updateNote("note-4", { pitchBend: bend, volume: 0.7, pan: 0.25 });
+  commands.selectNotes(["note-4"]);
+  assert.equal(commands.copySelection(), 1);
+
+  const [pasted] = commands.pasteNotes(2400, 72);
+  assert.deepEqual(pasted.pitchBend, bend);
+  assert.equal(pasted.volume, 0.7);
+  assert.equal(pasted.pan, 0.25);
+  assert.notEqual(pasted.id, "note-4");
+});
+
 test("user can explicitly edit an anchor and locked note", () => {
   const commands = createCommands(fixture());
   commands.updateNote("note-1", { pitch: 61 }, { actor: "user" });
@@ -330,6 +358,8 @@ test("invalid command input leaves song and change count untouched", () => {
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, source: "generated" }), "invalid-note");
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, anchor: true }), "invalid-note");
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, locked: true }), "invalid-note");
+  expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, volume: 2 }), "invalid-note-volume");
+  expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, pan: -2 }), "invalid-note-pan");
   assert.throws(
     () => commands.updateNote("note-4", { pitch: 128 }),
     (error) => error instanceof MelodiError && error.code === "invalid-pitch"
