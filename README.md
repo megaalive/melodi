@@ -62,6 +62,17 @@ window.melodi.commands.clearGeneration()
 
 `getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, a bounded `generation` summary, edit `history` depths, and available commands. `getGenerationState()` includes the bounded candidate list with candidate IDs, note timing and pitches, score breakdown, and factual metadata. Candidate step and leap counts describe intervals between generated notes; `landingInterval` describes the final generated note to the right anchor. Candidate IDs are session identifiers; candidate-local note IDs are not canonical Song IDs. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
 
+## Project files
+
+Use **Save file** to download the canonical project as `.melodi.json`, and **Open file** to load it back into Melodi. The file is versioned through `schemaVersion` and stores the canonical music project, including timing, key/scale, sections, phrases, notes, pitch bend, lyrics mappings, and chords. Playback/editor runtime state is intentionally not stored.
+
+Browser agents can use:
+
+```js
+const text = window.melodi.commands.exportProject();
+window.melodi.commands.importProject(text);
+```
+
 ## Share URL
 
 Melodi can package the current project into the URL fragment, for example `#m=1.g....`. The fragment is decoded entirely in the browser and is not sent to GitHub Pages as a server request.
