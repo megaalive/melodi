@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { findGuitarPositions, fretCenterX, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
+import { chooseGuitarFingering, findGuitarPositions, fretCenterX, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
+import { createInitialSong } from "../src/core/model.js";
 
 test("standard tuning spans E2 to E4 across six strings", () => {
   assert.deepEqual(STANDARD_TUNING, [40, 45, 50, 55, 59, 64]);
@@ -99,3 +100,24 @@ test("a shorter neck drops the high positions and keeps the low ones", () => {
   ]);
   assert.ok(wide.length > short.length);
 });
+
+test("fingering route follows one playable path instead of highlighting every duplicate equally", () => {
+  let next = 0;
+  const song = createInitialSong(() => `guitar-route-${++next}`);
+  const route = chooseGuitarFingering(song.notes);
+  const ordered = [...song.notes].sort((a, b) => a.startTick - b.startTick);
+
+  assert.deepEqual(route.get(ordered[0].id), { string: 3, fret: 14 });
+  assert.deepEqual(route.get(ordered[1].id), { string: 2, fret: 15 });
+  assert.deepEqual(route.get(ordered[2].id), { string: 2, fret: 17 });
+  assert.deepEqual(route.get(ordered[7].id), { string: 2, fret: 13 });
+
+  for (const note of ordered) {
+    const chosen = route.get(note.id);
+    assert.ok(chosen, `missing fingering for ${note.id}`);
+    assert.ok(findGuitarPositions(note.pitch).some(
+      (position) => position.string === chosen.string && position.fret === chosen.fret
+    ));
+  }
+});
+
