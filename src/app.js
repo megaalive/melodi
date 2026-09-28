@@ -331,6 +331,33 @@ function setSelectedDuration(durationTicks) {
   return updateSelectedNotes(() => ({ durationTicks }));
 }
 
+function bendPreset(name) {
+  if (name === "half") return [
+    { position: 0, semitones: 0 },
+    { position: 0.3, semitones: 1 },
+    { position: 1, semitones: 1 }
+  ];
+  if (name === "whole") return [
+    { position: 0, semitones: 0 },
+    { position: 0.3, semitones: 2 },
+    { position: 1, semitones: 2 }
+  ];
+  if (name === "whole-release") return [
+    { position: 0, semitones: 0 },
+    { position: 0.22, semitones: 2 },
+    { position: 0.62, semitones: 2 },
+    { position: 1, semitones: 0 }
+  ];
+  if (name === "clear") return null;
+  return undefined;
+}
+
+function setSelectedBend(name) {
+  const preset = bendPreset(name);
+  if (preset === undefined) return [];
+  return updateSelectedNotes(() => ({ pitchBend: preset }));
+}
+
 function moveSelectedNotes(deltaTicks) {
   if (!Number.isSafeInteger(deltaTicks) || deltaTicks === 0) return [];
   const notes = selectedSongNotes();
@@ -642,7 +669,9 @@ function textForNote(song, noteId) {
 function renderEditorControls() {
   if (!commands) return;
   const state = commands.getState();
+  const song = commands.getSong();
   byId("snap-select").value = state.editor.snap;
+  byId("editor-meter").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   for (const button of document.querySelectorAll('[data-action="set-tool"]')) {
     const active = button.dataset.tool === state.editor.tool;
     button.setAttribute("aria-pressed", String(active));
@@ -658,8 +687,17 @@ function renderEditorControls() {
   // Toolbar transpose dan durasi adalah jalur eksplisit; context menu tetap ada
   // sebagai pintasan, bukan satu-satunya jalan (PLAN.md: fungsi penting tidak
   // boleh hanya tersedia lewat context menu).
-  for (const button of document.querySelectorAll('[data-action="transpose-selected"], [data-action="set-selected-duration"]')) {
+  for (const button of document.querySelectorAll('[data-action="transpose-selected"], [data-action="set-selected-duration"], [data-action="set-selected-bend"]')) {
     button.disabled = state.selectedNoteIds.length === 0;
+  }
+  const selectedNotes = song.notes.filter((note) => state.selectedNoteIds.includes(note.id));
+  const bendSignature = (note) => JSON.stringify(note.pitchBend ?? null);
+  for (const button of document.querySelectorAll('[data-action="set-selected-bend"]')) {
+    const preset = bendPreset(button.dataset.bend);
+    const targetSignature = JSON.stringify(preset ?? null);
+    const active = selectedNotes.length > 0 && selectedNotes.every((note) => bendSignature(note) === targetSignature);
+    button.dataset.active = String(active);
+    button.setAttribute("aria-pressed", String(active));
   }
   byId("piano-roll-scroll").setAttribute("aria-label", translate("pianoRollRegionLabel"));
   byId("editor-toolbar")?.setAttribute("aria-label", translate("pianoRollControlsLabel"));
@@ -1373,6 +1411,9 @@ document.addEventListener("click", (event) => {
     closeNoteContextMenu();
     const notes = run(() => setSelectedDuration(durationTicks));
     if (notes?.length) announce("noteSaved");
+  } else if (target.dataset.action === "set-selected-bend") {
+    const notes = run(() => setSelectedBend(target.dataset.bend));
+    if (notes?.length) announce(target.dataset.bend === "clear" ? "bendCleared" : "bendUpdated");
   } else if (target.dataset.action === "context-add-note") {
     const context = contextTarget ? { ...contextTarget } : null;
     closeNoteContextMenu();
