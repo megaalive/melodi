@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createPianoRollView, createRollGeometry, midiToY, tickToX } from "../src/ui/piano-roll.js";
+import { createPianoRollView, createRollGeometry, midiToY, rulerSeekTick, tickToX } from "../src/ui/piano-roll.js";
 
 // Piano Roll adalah file yang menyentuh DOM, jadi tidak bisa diimpor di Node tanpa
 // stub. Stub ini cukup untuk exercise render(): yang diuji adalah apa yang digambar,
@@ -253,3 +253,29 @@ test("blank click is safe in Select and only Draw creates a note", () => {
   draw.svg.dispatch("click", { clientX: drawX, clientY: drawY });
   assert.deepEqual(draw.added, [{ pitch: 60, startTick: 480, durationTicks: 240 }]);
 });
+
+test("timeline ruler memetakan klik ke tick terdekat sesuai Snap", () => {
+  const geometry = createRollGeometry({
+    endTick: 5760,
+    focusTick: 0,
+    ppq: 480,
+    numerator: 6,
+    denominator: 8,
+    viewportWidth: 900
+  });
+  const x = tickToX(1510, geometry);
+  assert.equal(rulerSeekTick(x, geometry, "1/8"), 1440);
+  assert.equal(rulerSeekTick(tickToX(1620, geometry), geometry, "1/8"), 1680);
+  assert.equal(rulerSeekTick(-999, geometry, "1/8"), geometry.startTick);
+  assert.equal(rulerSeekTick(geometry.width + 999, geometry, "1/8"), geometry.endTick);
+});
+
+test("Piano Roll menggambar ruler seek terpisah dari area note", () => {
+  const { svg, view, state } = setup();
+  view.render(song([note("n1", 60)]), state);
+  const rulers = svg.byClass("roll-ruler-hit");
+  assert.equal(rulers.length, 1);
+  assert.equal(rulers[0].dataset.action, "seek-ruler");
+  assert.equal(Number(rulers[0].getAttribute("height")), view.getGeometry().top);
+});
+
