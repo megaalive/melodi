@@ -1417,6 +1417,11 @@ const publicCommands = Object.freeze({
     leaveShareSession();
     return commands.newIdea();
   },
+  loadSong: (song) => {
+    clearPendingForms();
+    leaveShareSession();
+    return commands.loadSong(song);
+  },
   exportProject: () => serializeProject(commands.getSong()),
   importProject: (input) => {
     clearPendingForms();
@@ -1445,9 +1450,16 @@ const publicSurface = Object.freeze({ getState: commands.getState, commands: pub
 Object.defineProperty(window, "melodi", { value: publicSurface, enumerable: true, writable: false, configurable: false });
 
 byId("project-file-input")?.addEventListener("change", (event) => {
-  const file = event.target.files?.[0] ?? null;
+  const input = event.target;
+  const file = input.files?.[0] ?? null;
   if (!file) return;
-  runAsync(() => loadProjectFile(file));
+  runAsync(async () => {
+    try {
+      return await loadProjectFile(file);
+    } finally {
+      input.value = "";
+    }
+  });
 });
 
 document.addEventListener("submit", (event) => {
