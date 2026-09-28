@@ -77,9 +77,19 @@ export function createCommands(initialSong, {
     currentSectionId: null,
     loop: { enabled: false, startTick: 0, endTick: Math.max(1, songEndTick()) }
   };
+  let loopRangeMode = "auto";
   let activeNoteSuppressed = true;
   let audioPlayer = null;
   let playRequest = 0;
+
+  function syncAutomaticLoopRange() {
+    if (loopRangeMode !== "auto") return false;
+    const nextStartTick = 0;
+    const nextEndTick = Math.max(1, songEndTick());
+    if (playback.loop.startTick === nextStartTick && playback.loop.endTick === nextEndTick) return false;
+    playback.loop = { ...playback.loop, startTick: nextStartTick, endTick: nextEndTick };
+    return true;
+  }
 
   function notifyChange(kind = "song") {
     try {
@@ -238,13 +248,14 @@ export function createCommands(initialSong, {
     lastAcceptedNoteIds = [];
     try { audioPlayer?.cancelPreview?.(); } catch {}
     song = validated;
+    syncAutomaticLoopRange();
     selection = null;
     selectedNoteIds = [];
     let tick = playback.currentTick;
     if (playback.status === "playing" && audioPlayer) {
       try { tick = audioPlayer.getPosition(); } catch {}
     }
-    updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+    updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
     notifyChange("song");
     return cloneData(song);
   }
@@ -255,6 +266,7 @@ export function createCommands(initialSong, {
     const validated = createSong(candidate);
     pushHistory();
     song = validated;
+    syncAutomaticLoopRange();
     canonicalRevision += 1;
     if (generationSession?.auditionCandidateId) {
       generationSession.auditionCandidateId = null;
@@ -432,7 +444,7 @@ export function createCommands(initialSong, {
         if (playback.status === "playing" && audioPlayer) {
           try { tick = audioPlayer.getPosition(); } catch {}
         }
-        updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+        updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       }).map((note) => cloneData(note));
     },
     clearGeneration() {
@@ -541,6 +553,7 @@ export function createCommands(initialSong, {
     setLoop(startTick, endTick) {
       const nextLoop = validateLoop(startTick, endTick);
       clearAuditionState();
+      loopRangeMode = "manual";
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       playback.loop = { ...playback.loop, ...nextLoop };
       const position = wrapLoopTick(tick, playback.loop);
@@ -553,6 +566,7 @@ export function createCommands(initialSong, {
     setLoopEnabled(enabled) {
       if (typeof enabled !== "boolean") fail("invalid-loop");
       clearAuditionState();
+      if (enabled) syncAutomaticLoopRange();
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       playback.loop = { ...playback.loop, enabled };
       const position = wrapLoopTick(tick, playback.loop);
@@ -581,7 +595,7 @@ export function createCommands(initialSong, {
         registerNoteInPhrase(candidate, note);
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
-      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(note);
     },
     updateNotes(updates, { actor = "user" } = {}) {
@@ -605,7 +619,7 @@ export function createCommands(initialSong, {
         }
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
-      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return validated.map(({ noteId }) => cloneData(song.notes.find((item) => item.id === noteId)));
     },
     updateNote(noteId, patch, { actor = "user" } = {}) {
@@ -619,7 +633,7 @@ export function createCommands(initialSong, {
         Object.assign(target, patch);
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
-      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(song.notes.find((item) => item.id === noteId));
     },
     deleteNote(noteId, { actor = "user" } = {}) {
@@ -642,7 +656,7 @@ export function createCommands(initialSong, {
         selectedNoteIds = selectedNoteIds.filter((id) => id !== noteId);
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
-      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return true;
     },
     setLyrics(rawText) {
@@ -805,7 +819,7 @@ export function createCommands(initialSong, {
         selectedNoteIds = pasted.map((note) => note.id);
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
-      updatePlayerSafely(() => audioPlayer?.songChanged(tick));
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(pasted);
     },
     setSnap(value) {
@@ -843,6 +857,7 @@ export function createCommands(initialSong, {
       copiedNotes = null;
       snap = DEFAULT_SNAP;
       tool = DEFAULT_EDITOR_TOOL;
+      loopRangeMode = "auto";
       playback.status = "stopped";
       activeNoteSuppressed = true;
       playback.loop = { enabled: false, startTick: 0, endTick: Math.max(1, songEndTick()) };
