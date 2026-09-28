@@ -75,11 +75,11 @@ window.melodi.commands.importProject(text);
 
 ## Share URL
 
-Melodi can package the current project into the URL fragment, for example `#m=1.g....`. The fragment is decoded entirely in the browser and is not sent to GitHub Pages as a server request.
+Melodi packages new share links in the query string, for example `?m=1.j....`. Query payloads survive external redirects and link wrappers more reliably than fragments. Existing `#m=...` links remain supported for backward compatibility.
 
 The v1 share envelope is deliberately track-oriented. Today it carries the lead melody/lyrics track and a harmony/chord track; future readers can add guitar, bass, drums, automation, and other instrument tracks without changing old links. Canonical entity UUIDs are not embedded in the URL. Portable relationships use indexes and fresh IDs are generated when a shared project is opened.
 
-The encoder uses native gzip `CompressionStream` when available and falls back to uncompressed Base64URL without adding a runtime dependency. Opening a share link is ephemeral: it does not overwrite the existing local autosave draft until the user explicitly chooses **Save draft**.
+Small projects use plain Base64URL (`1.j`) so opening a simple link does not depend on browser decompression support. Larger projects use native gzip `CompressionStream` (`1.g`) when available. Opening a share link is ephemeral: it does not overwrite the existing local autosave draft until the user explicitly chooses **Save draft**.
 
 ## Edit history
 
