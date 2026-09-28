@@ -273,7 +273,7 @@ export function createInitialSong(idFactory = createId) {
         pitchBend: [{ position: 0, semitones: 0 }, { position: 0.85, semitones: 2 }, { position: 1, semitones: 2 }]
       },
       { pitch: 67, startTick: 960, durationTicks: 720 },
-      { pitch: 67, startTick: 1680, durationTicks: 1200 }
+      { pitch: 67, startTick: 1680, durationTicks: 960 }
     ],
 
     // Bagian 6: high-E5, B8, G7p5h7
