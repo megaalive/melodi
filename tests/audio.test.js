@@ -401,7 +401,7 @@ test("commands transition through play, pause, resume, seek, tempo, loop, and st
   commands.setTempo(84);
   assert.equal(commands.getSong().timing.tempo, 84);
   assert.deepEqual(ref.calls.find((call) => call[0] === "tempo"), ["tempo", 84, 960, true]);
-  assert.deepEqual(commands.setLoop(480, 1440), { enabled: false, startTick: 480, endTick: 1440 });
+  assert.deepEqual(commands.setLoop(480, 1440), { enabled: true, startTick: 480, endTick: 1440 });
   commands.setLoopEnabled(true);
   assert.equal(commands.getState().playback.loop.enabled, true);
   commands.stop();
@@ -416,14 +416,11 @@ test("automatic loop range follows song length until the user sets a manual rang
   const ref = {};
   const commands = createCommands(fixture(), { audioPlayerFactory: fakePlayerFactory(ref) });
 
-  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 0, endTick: 1920 });
+  assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 1920 });
 
   commands.addNote({ pitch: 72, startTick: 3840, durationTicks: 480 });
-  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 0, endTick: 4320 });
-  assert.deepEqual(ref.calls.at(-1), ["song", 0, { enabled: false, startTick: 0, endTick: 4320 }]);
-
-  commands.setLoopEnabled(true);
   assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 4320 });
+  assert.deepEqual(ref.calls.at(-1), ["song", 0, { enabled: true, startTick: 0, endTick: 4320 }]);
 
   commands.setLoop(480, 1440);
   commands.setLoopEnabled(false);
@@ -506,9 +503,9 @@ test("seek state snapshots are detached from transport runtime", () => {
   commands.seek(480);
   const snapshot = commands.getState();
   snapshot.playback.currentTick = 9000;
-  snapshot.playback.loop.enabled = true;
+  snapshot.playback.loop.enabled = false;
   snapshot.playback.currentNoteId = "changed";
   assert.equal(commands.getState().playback.currentTick, 480);
-  assert.equal(commands.getState().playback.loop.enabled, false);
+  assert.equal(commands.getState().playback.loop.enabled, true);
   assert.equal(commands.getState().playback.currentNoteId, "entity-5");
 });
