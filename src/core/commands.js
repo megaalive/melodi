@@ -790,7 +790,8 @@ export function createCommands(initialSong, {
         notes: notes.map((note) => ({
           pitchOffset: note.pitch - first.pitch,
           startOffset: note.startTick - startTick,
-          durationTicks: note.durationTicks
+          durationTicks: note.durationTicks,
+          ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {})
         }))
       };
       notifyEditorChange();
@@ -805,6 +806,7 @@ export function createCommands(initialSong, {
         pitch: targetPitch + note.pitchOffset,
         startTick: targetTick + note.startOffset,
         durationTicks: note.durationTicks,
+        ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {}),
         source: "user",
         anchor: false,
         locked: false
