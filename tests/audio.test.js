@@ -86,6 +86,7 @@ class FakeAudioContext {
   currentTime = 0;
   destination = {};
   oscillators = [];
+  gains = [];
   panners = [];
   listeners = new Map();
   addEventListener(name, callback) { this.listeners.set(name, callback); }
@@ -94,7 +95,9 @@ class FakeAudioContext {
     this.listeners.get("statechange")?.();
   }
   createGain() {
-    return { gain: new FakeAudioParam(), connect() {}, disconnect() {} };
+    const gain = { gain: new FakeAudioParam(), connect() {}, disconnect() {} };
+    this.gains.push(gain);
+    return gain;
   }
   createStereoPanner() {
     const panner = { pan: new FakeAudioParam(), connect() {}, disconnect() {} };
@@ -342,11 +345,11 @@ test("Web Audio menerapkan volume dan pan canonical per note", async () => {
   assert.equal(context.panners.length, 1);
   assert.deepEqual(context.panners[0].pan.events[0].slice(0, 2), ["set", -0.4]);
 
-  const gainEvents = context.oscillators.length ? null : null;
-  // Envelope dibuat sebelum panner; peak 0.18 dikalikan volume canonical.
-  // Fake context tidak menyimpan gain nodes global, jadi pan menjadi bukti routing
-  // dan validasi volume dikunci di command/model tests.
   assert.equal(context.oscillators.length, 1);
+  assert.equal(context.gains.length, 2, "master gain + envelope note");
+  const envelopeEvents = context.gains[1].gain.events;
+  assert.ok(Math.abs(envelopeEvents[1][1] - 0.09) < 1e-12, "peak gain mengikuti volume 50%");
+  assert.ok(Math.abs(envelopeEvents[2][1] - 0.07) < 1e-12, "sustain gain mengikuti volume 50%");
   player.cancelPreview();
 });
 
