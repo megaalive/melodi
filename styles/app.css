@@ -646,11 +646,7 @@ p { margin: 0.45rem 0 0.8rem; }
 #piano-roll { display: block; max-width: none; }
 .selection-readout { min-height: 1.2rem; margin: 0.42rem 0 0; }
 
-.expression-panel {
-  margin-top: 0.55rem;
-  padding-top: 0.55rem;
-  border-top: 1px solid var(--border);
-}
+.expression-panel { min-width: 0; }
 .expression-toolbar {
   display: flex;
   align-items: center;
@@ -832,7 +828,8 @@ p { margin: 0.45rem 0 0.8rem; }
 #score > svg { display: block; max-width: none; min-width: 100%; }
 
 body[data-view-mode="combined"] #piano-roll-section,
-body[data-view-mode="combined"] #score-section { min-width: 0; }
+body[data-view-mode="combined"] #score-section,
+body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 
 @media (min-width: 78rem) {
   body[data-view-mode="combined"] .workspace-canvas {
@@ -841,6 +838,7 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
   }
   body[data-view-mode="combined"] #piano-roll-section { grid-column: 1; }
   body[data-view-mode="combined"] #score-section { grid-column: 2; }
+  body[data-view-mode="combined"] #expression-panel { grid-column: 1 / -1; }
   body[data-view-mode="combined"] #score-scroll { max-height: 42rem; }
 }
 
