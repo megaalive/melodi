@@ -355,6 +355,19 @@
         </div>
       </div>
 
+      <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
+        <form method="dialog" class="confirm-dialog-card">
+          <div class="confirm-dialog-copy">
+            <h2 id="confirm-dialog-title" data-copy="newIdeaDialogTitle"></h2>
+            <p id="confirm-dialog-message" data-copy="confirmNewIdea"></p>
+          </div>
+          <div class="confirm-dialog-actions">
+            <button id="confirm-dialog-cancel" type="submit" value="cancel" class="secondary" data-copy="cancelButton" autofocus></button>
+            <button id="confirm-dialog-confirm" type="submit" value="confirm" class="danger-button" data-copy="confirmNewIdeaButton"></button>
+          </div>
+        </form>
+      </dialog>
+
       <dialog id="command-palette" class="command-palette" data-action="command-palette" aria-labelledby="command-palette-heading">
         <h2 id="command-palette-heading" class="visually-hidden" data-copy="paletteHeading"></h2>
         <div class="palette-search">
