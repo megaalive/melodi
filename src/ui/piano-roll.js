@@ -264,6 +264,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let rulerDrag = null;
   let timelineEndTick = 1;
   let lastPlaybackTick = 0;
+  let lastPlaybackRange = "0:1";
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
 
@@ -374,6 +375,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     }
     svgElement("line", { x1: 0, x2: geometry.width, y1: geometry.top, y2: geometry.top, class: "roll-header-line" }, svg);
     const playbackRange = state.playback.loop ?? { enabled: false, startTick: 0, endTick: timelineEndTick };
+    lastPlaybackRange = `${playbackRange.startTick}:${playbackRange.endTick}`;
     const rangeStart = Math.max(geometry.startTick, playbackRange.startTick);
     const rangeEnd = Math.min(geometry.endTick, playbackRange.endTick);
     const hasCustomRange = playbackRange.startTick !== 0 || playbackRange.endTick !== timelineEndTick;
@@ -589,6 +591,11 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function updatePlayback(playback, { follow = true } = {}) {
+    const rangeSignature = `${playback.loop?.startTick ?? 0}:${playback.loop?.endTick ?? timelineEndTick}`;
+    if (rangeSignature !== lastPlaybackRange) {
+      render(commands.getSong(), commands.getState());
+      return;
+    }
     const playbackTickChanged = playback.currentTick !== lastPlaybackTick;
     lastPlaybackTick = playback.currentTick;
     if (playback.currentTick < geometry.startTick || playback.currentTick >= geometry.endTick) {
