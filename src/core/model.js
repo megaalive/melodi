@@ -260,25 +260,19 @@ export function createInitialSong(idFactory = createId) {
     locked: false
   }));
 
-  const phraseNoteIndexes = [
-    [0, 1, 2, 3, 4, 5, 6],
-    [7, 8, 9, 10, 11],
-    [12, 13, 14, 15, 16, 17],
-    [18, 19, 20],
-    [],
-    [],
-    [],
-    []
-  ];
-  const phrases = phraseNoteIndexes.map((indexes) => ({
+  // Struktur internal default sengaja sederhana: satu phrase untuk seluruh
+  // excerpt 8 birama. Jangan membuat section kosong hanya karena payload lama
+  // pernah membawa struktur "Bagian 1..8" hasil iterasi UI sebelumnya.
+  const phrase = {
     id: idFactory(),
-    noteIds: indexes.map((index) => notes[index].id)
-  }));
-  const sections = phrases.map((phrase, index) => ({
+    noteIds: notes.map((note) => note.id)
+  };
+  const phrases = [phrase];
+  const sections = [{
     id: idFactory(),
-    name: `Bagian ${index + 1}`,
+    name: "Melodi",
     phraseIds: [phrase.id]
-  }));
+  }];
 
   return createSong({
     id: songId,
