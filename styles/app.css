@@ -996,9 +996,6 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 #score .vf-stem {
   stroke: currentColor;
 }
-#score .vf-stave path {
-  stroke: currentColor;
-}
 .score-note[data-current="true"] { filter: drop-shadow(0 0 3px var(--highlight-current-ink)); }
 .score-note[data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)); }
 .score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)) drop-shadow(0 0 3px var(--highlight-current-ink)); }
