@@ -799,21 +799,25 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .note-card legend { margin-bottom: 0.2rem; font-size: var(--text-sm); font-weight: 750; }
 .note-card .form-grid { grid-template-columns: 1fr; }
 .note-primary-fields { margin-bottom: 0; }
-.note-timing-details {
+.note-timing-details,
+.note-expression-details {
   margin-top: 0.1rem;
   padding-top: 0.45rem;
   border-top: 1px solid var(--border);
 }
-.note-timing-details > summary {
+.note-timing-details > summary,
+.note-expression-details > summary {
   cursor: pointer;
   color: var(--text-muted);
   font-size: var(--text-sm);
   font-weight: 700;
 }
-.note-timing-fields {
+.note-timing-fields,
+.note-expression-fields {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   margin-top: 0.5rem;
 }
+.note-expression-hint { margin: 0.35rem 0 0; }
 .note-flags,
 .note-actions {
   display: flex;
