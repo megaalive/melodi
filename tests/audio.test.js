@@ -51,7 +51,7 @@ function fakePlayerFactory(ref) {
         ref.calls.push(["loop", loop, tick, playing]);
         ref.position = tick;
       },
-      songChanged(tick) { ref.calls.push(["song", tick]); }
+      songChanged(tick, loop) { ref.calls.push(["song", tick, loop]); }
     };
     return ref.player;
   };
@@ -369,6 +369,28 @@ test("commands transition through play, pause, resume, seek, tempo, loop, and st
   assert.equal(stopped.currentTick, 0);
   assert.equal(stopped.currentNoteId, null);
   assert.deepEqual(commands.getSong().notes, notesBefore);
+});
+
+test("automatic loop range follows song length until the user sets a manual range", () => {
+  const ref = {};
+  const commands = createCommands(fixture(), { audioPlayerFactory: fakePlayerFactory(ref) });
+
+  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 0, endTick: 1920 });
+
+  commands.addNote({ pitch: 72, startTick: 3840, durationTicks: 480 });
+  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 0, endTick: 4320 });
+  assert.deepEqual(ref.calls.at(-1), ["song", 0, { enabled: false, startTick: 0, endTick: 4320 }]);
+
+  commands.setLoopEnabled(true);
+  assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 4320 });
+
+  commands.setLoop(480, 1440);
+  commands.setLoopEnabled(false);
+  commands.addNote({ pitch: 74, startTick: 4800, durationTicks: 480 });
+  assert.deepEqual(commands.getState().playback.loop, { enabled: false, startTick: 480, endTick: 1440 });
+
+  commands.setLoopEnabled(true);
+  assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 480, endTick: 1440 });
 });
 
 test("seeking to or beyond an enabled loop end normalizes the playhead to the loop range", () => {
