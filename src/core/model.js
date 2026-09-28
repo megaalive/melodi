@@ -193,34 +193,39 @@ export function createInitialSong(idFactory = createId) {
   const songId = idFactory();
   const sectionId = idFactory();
   const phraseId = idFactory();
-  // Frase dua bar dari tab yang diberikan user. Lagu aslinya berasa 6/8.
-  // Bend disimpan sebagai kurva relatif supaya playback berbunyi seperti teknik
-  // gitar: 17b18 = E5 naik setengah nada; 15b17r15 = D5 naik satu nada lalu turun.
+  // Frase dari tab yang diberikan user dibentangkan menjadi empat bar 6/8.
+  // Clock Melodi memakai quarter-note BPM: q.=54 pada 6/8 ekuivalen dengan
+  // quarter-note 81 BPM. Yang sebelumnya terdengar terburu-buru adalah phrasing
+  // dua bar yang terlalu dipadatkan, bukan clock 81 BPM-nya.
   const defaultMelody = [
-    // Bar 1 — 6/8
-    { pitch: 69, startTick: 0, durationTicks: 240 },    // A4
-    { pitch: 74, startTick: 240, durationTicks: 120 }, // D5
-    { pitch: 76, startTick: 360, durationTicks: 120 }, // E5
+    // Bar 1 — bagian awal frase pertama.
+    { pitch: 69, startTick: 0, durationTicks: 480 },     // A4
+    { pitch: 74, startTick: 480, durationTicks: 240 },  // D5
+    { pitch: 76, startTick: 720, durationTicks: 240 },  // E5
     {
-      pitch: 76, startTick: 480, durationTicks: 360,   // E5 -> F5
-      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 1 }, { position: 1, semitones: 1 }]
-    },
-    {
-      pitch: 76, startTick: 840, durationTicks: 240,   // E5 -> F5
+      pitch: 76, startTick: 960, durationTicks: 480,    // E5 -> F5, 17b18
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
     },
-    { pitch: 76, startTick: 1080, durationTicks: 120 }, // E5
-    { pitch: 74, startTick: 1200, durationTicks: 240 }, // D5
 
-    // Bar 2 — 6/8
-    { pitch: 72, startTick: 1440, durationTicks: 360 }, // C5
-    { pitch: 74, startTick: 1800, durationTicks: 120 }, // D5
+    // Bar 2 — sustain bend kedua lalu turun ke D5.
     {
-      pitch: 74, startTick: 1920, durationTicks: 360,   // D5 -> E5
+      pitch: 76, startTick: 1440, durationTicks: 720,   // E5 -> F5, 17b18
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 1 }, { position: 1, semitones: 1 }]
+    },
+    { pitch: 76, startTick: 2160, durationTicks: 240 }, // E5
+    { pitch: 74, startTick: 2400, durationTicks: 480 }, // D5
+
+    // Bar 3 — awal frase kedua.
+    { pitch: 72, startTick: 2880, durationTicks: 720 }, // C5
+    { pitch: 74, startTick: 3600, durationTicks: 240 }, // D5
+    {
+      pitch: 74, startTick: 3840, durationTicks: 720,   // D5 -> E5, 15b17
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
     },
+
+    // Bar 4 — bend-release lalu resolusi ke C5.
     {
-      pitch: 74, startTick: 2280, durationTicks: 360,   // D5 -> E5 -> D5
+      pitch: 74, startTick: 4560, durationTicks: 720,   // D5 -> E5 -> D5, 15b17r15
       pitchBend: [
         { position: 0, semitones: 0 },
         { position: 0.22, semitones: 2 },
@@ -228,7 +233,7 @@ export function createInitialSong(idFactory = createId) {
         { position: 1, semitones: 0 }
       ]
     },
-    { pitch: 72, startTick: 2640, durationTicks: 240 }  // C5
+    { pitch: 72, startTick: 5280, durationTicks: 480 }  // C5
   ];
   const notes = defaultMelody.map((note) => ({
     id: idFactory(),
