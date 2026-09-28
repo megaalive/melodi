@@ -438,7 +438,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
       currentSyllableIds: [],
       currentSectionId: "section-1",
       tempo: 96,
-      loop: { enabled: false, startTick: 0, endTick: 1920 }
+      loop: { enabled: true, startTick: 0, endTick: 1920 }
     },
     selection: null,
     selectedNoteIds: [],
