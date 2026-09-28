@@ -1,8 +1,8 @@
 import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.2";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.2";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
 import { createExpressionLaneView } from "./ui/expression-lane.js";
@@ -390,9 +390,11 @@ function openBendEditor(noteId = null) {
   if (noteId) commands.selectNotes([noteId]);
   const notes = commands.getSelectedNoteIds();
   if (notes.length !== 1) return false;
-  const menu = document.querySelector(".editor-note-actions");
+  expressionView?.setMode("bend");
+  const state = normalizeRuntimeState(commands.getState());
+  if (rollView && expressionView) expressionView.render(commands.getSong(), state, rollView.getGeometry());
+  renderExpressionControls(state);
   const details = byId("bend-editor-details");
-  if (menu) menu.open = true;
   if (details) {
     details.open = true;
     details.scrollIntoView?.({ block: "nearest" });
@@ -435,16 +437,52 @@ function resetSelectedExpression(mode) {
 function renderExpressionControls(state = normalizeRuntimeState(commands.getState())) {
   if (!expressionView) return;
   const mode = expressionView.getMode();
-  const selectedCount = state.selectedNoteIds.length;
+  const selectedNotes = commands.getSong().notes.filter((note) => state.selectedNoteIds.includes(note.id));
+  const selectedCount = selectedNotes.length;
+
   for (const button of document.querySelectorAll('[data-action="set-expression-mode"]')) {
     const active = button.dataset.expressionMode === mode;
     button.setAttribute("aria-pressed", String(active));
     button.dataset.active = String(active);
   }
+
+  const bendTools = byId("expression-bend-tools");
+  const vibratoTools = byId("expression-vibrato-tools");
+  if (bendTools) bendTools.hidden = mode !== "bend";
+  if (vibratoTools) vibratoTools.hidden = mode !== "vibrato";
+
   const editBend = byId("expression-edit-bend");
   editBend.hidden = mode !== "bend";
   editBend.disabled = selectedCount !== 1;
   byId("expression-reset-selected").disabled = selectedCount === 0;
+
+  const noteDetails = byId("expression-note-details");
+  const noteSummary = byId("expression-note-summary");
+  noteDetails.hidden = selectedCount === 0;
+  if (selectedCount === 1) {
+    noteSummary.textContent = `${midiToPitch(selectedNotes[0].pitch)} · ${translate("expressionNoteDetailsSummary")}`;
+  } else if (selectedCount > 1) {
+    noteSummary.textContent = `${selectedCount} · ${translate("expressionNoteDetailsSummary")}`;
+  } else {
+    noteSummary.textContent = translate("expressionNoteDetailsSummary");
+    if (noteDetails.open) noteDetails.removeAttribute("open");
+  }
+
+  const vibratoDepth = byId("expression-vibrato-depth");
+  const vibratoRate = byId("expression-vibrato-rate");
+  const vibratoDelay = byId("expression-vibrato-delay");
+  const applyVibrato = document.querySelector('[data-action="expression-apply-vibrato"]');
+  const single = selectedCount === 1 ? selectedNotes[0] : null;
+  for (const control of [vibratoDepth, vibratoRate, vibratoDelay, applyVibrato]) {
+    if (control) control.disabled = !single;
+  }
+  if (single) {
+    const vibrato = single.vibrato ?? { rateHz: 5.8, depthSemitones: 0, delayPosition: 0.2 };
+    if (document.activeElement !== vibratoDepth) vibratoDepth.value = String(vibrato.depthSemitones);
+    if (document.activeElement !== vibratoRate) vibratoRate.value = String(vibrato.rateHz);
+    if (document.activeElement !== vibratoDelay) vibratoDelay.value = String(Math.round(vibrato.delayPosition * 100));
+  }
+
   const modeLabel = translate({
     bend: "expressionBendButton",
     volume: "expressionVolumeButton",
@@ -456,20 +494,6 @@ function renderExpressionControls(state = normalizeRuntimeState(commands.getStat
     : translate("expressionStatusNone", { mode: modeLabel });
 }
 
-function bendDisplay(note) {
-  const signature = JSON.stringify(note?.pitchBend ?? null);
-  const presets = [
-    ["half", "bendHalfButton"],
-    ["half-release", "bendHalfReleaseButton"],
-    ["whole", "bendWholeButton"],
-    ["whole-release", "bendReleaseButton"],
-    ["clear", "bendClearButton"]
-  ];
-  for (const [name, key] of presets) {
-    if (signature === JSON.stringify(bendPreset(name) ?? null)) return translate(key);
-  }
-  return note?.pitchBend ? translate("bendCustomLabel") : translate("bendClearButton");
-}
 
 function moveSelectedNotes(deltaTicks) {
   if (!Number.isSafeInteger(deltaTicks) || deltaTicks === 0) return [];
@@ -553,6 +577,7 @@ function renderNotes(song, state) {
   list.replaceChildren();
   const selected = new Set(state.selectedNoteIds);
   const selectedNotes = song.notes.filter((note) => selected.has(note.id));
+
   if (selectedNotes.length > 1) {
     const item = document.createElement("li");
     item.className = "note-card multi-note-summary";
@@ -568,112 +593,68 @@ function renderNotes(song, state) {
     return;
   }
   if (selectedNotes.length === 0) return;
-  for (const note of selectedNotes) {
-    const pitch = midiToPitch(note.pitch);
-    const item = document.createElement("li");
-    item.dataset.entity = "note";
-    item.dataset.entityId = note.id;
-    item.dataset.source = note.source;
-    item.dataset.anchor = String(note.anchor);
-    item.dataset.locked = String(note.locked);
-    item.dataset.selected = String(selected.has(note.id));
-    item.className = "note-card";
 
-    const form = document.createElement("form");
-    form.dataset.action = "update-note";
-    form.dataset.noteId = note.id;
+  const note = selectedNotes[0];
+  const pitch = midiToPitch(note.pitch);
+  const item = document.createElement("li");
+  item.dataset.entity = "note";
+  item.dataset.entityId = note.id;
+  item.dataset.source = note.source;
+  item.dataset.anchor = String(note.anchor);
+  item.dataset.locked = String(note.locked);
+  item.dataset.selected = "true";
+  item.className = "note-card";
 
-    const fieldset = document.createElement("fieldset");
-    const legend = document.createElement("legend");
-    legend.textContent = translate("noteLegend", { pitch, tick: note.startTick });
-    fieldset.append(legend);
+  const form = document.createElement("form");
+  form.dataset.action = "update-note";
+  form.dataset.noteId = note.id;
 
-    const grid = document.createElement("div");
-    grid.className = "form-grid note-primary-fields";
-    grid.append(
-      makeInputLabel(translate("notePitchLabel", { pitch }), "text", pitch, `pitch-${note.id}`, {
-        pattern: "[A-Ga-g][#b]?-?[0-9]+", action: "edit-note-pitch", focusKey: `pitch-${note.id}`
-      })
-    );
+  const fieldset = document.createElement("fieldset");
+  const legend = document.createElement("legend");
+  legend.textContent = translate("noteLegend", { pitch, tick: note.startTick });
 
-    const timing = document.createElement("details");
-    timing.className = "note-timing-details";
-    const timingSummary = document.createElement("summary");
-    timingSummary.textContent = translate("noteTimingSummary");
-    const timingGrid = document.createElement("div");
-    timingGrid.className = "form-grid note-timing-fields";
-    timingGrid.append(
-      makeInputLabel(translate("noteStartTickLabel", { pitch }), "number", note.startTick, `start-${note.id}`, {
-        min: 0, step: 1, action: "edit-note-start", focusKey: `start-${note.id}`
-      }),
-      makeInputLabel(translate("noteDurationLabel", { pitch }), "number", note.durationTicks, `duration-${note.id}`, {
-        min: 1, step: 1, action: "edit-note-duration", focusKey: `duration-${note.id}`
-      })
-    );
-    timing.append(timingSummary, timingGrid);
+  const grid = document.createElement("div");
+  grid.className = "form-grid expression-note-fields";
+  grid.append(
+    makeInputLabel(translate("notePitchLabel", { pitch }), "text", pitch, `pitch-${note.id}`, {
+      pattern: "[A-Ga-g][#b]?-?[0-9]+", action: "edit-note-pitch", focusKey: `pitch-${note.id}`
+    }),
+    makeInputLabel(translate("noteStartTickLabel", { pitch }), "number", note.startTick, `start-${note.id}`, {
+      min: 0, step: 1, action: "edit-note-start", focusKey: `start-${note.id}`
+    }),
+    makeInputLabel(translate("noteDurationLabel", { pitch }), "number", note.durationTicks, `duration-${note.id}`, {
+      min: 1, step: 1, action: "edit-note-duration", focusKey: `duration-${note.id}`
+    })
+  );
 
-    const expression = document.createElement("details");
-    expression.className = "note-expression-details";
-    const expressionSummary = document.createElement("summary");
-    expressionSummary.textContent = translate("noteExpressionSummary");
-    const expressionGrid = document.createElement("div");
-    expressionGrid.className = "form-grid note-expression-fields";
-    expressionGrid.append(
-      makeInputLabel(translate("noteVolumeLabel"), "number", Math.round((note.volume ?? 1) * 100), `volume-${note.id}`, {
-        min: 0, max: 100, step: 1, focusKey: `volume-${note.id}`
-      }),
-      makeInputLabel(translate("notePanLabel"), "number", Math.round((note.pan ?? 0) * 100), `pan-${note.id}`, {
-        min: -100, max: 100, step: 1, focusKey: `pan-${note.id}`
-      }),
-      makeInputLabel(translate("noteVibratoDepthLabel"), "number", note.vibrato?.depthSemitones ?? 0, `vibrato-depth-${note.id}`, {
-        min: 0, max: 2, step: 0.05, focusKey: `vibrato-depth-${note.id}`
-      }),
-      makeInputLabel(translate("noteVibratoRateLabel"), "number", note.vibrato?.rateHz ?? 5.8, `vibrato-rate-${note.id}`, {
-        min: 0.5, max: 12, step: 0.1, focusKey: `vibrato-rate-${note.id}`
-      }),
-      makeInputLabel(translate("noteVibratoDelayLabel"), "number", Math.round((note.vibrato?.delayPosition ?? 0.2) * 100), `vibrato-delay-${note.id}`, {
-        min: 0, max: 100, step: 1, focusKey: `vibrato-delay-${note.id}`
-      })
-    );
-    const expressionHint = document.createElement("p");
-    expressionHint.className = "muted note-expression-hint";
-    expressionHint.textContent = translate("noteExpressionHelp");
-    expression.append(expressionSummary, expressionGrid, expressionHint);
+  const flags = document.createElement("div");
+  flags.className = "note-flags";
+  flags.append(
+    makeCheckboxLabel(translate("anchorLabel"), note.anchor, "set-anchor", { noteId: note.id, focusKey: `anchor-${note.id}` }),
+    makeCheckboxLabel(translate("lockedLabel"), note.locked, "set-locked", { noteId: note.id, focusKey: `locked-${note.id}` })
+  );
 
-    const flags = document.createElement("div");
-    flags.className = "note-flags";
-    flags.append(
-      makeCheckboxLabel(translate("anchorLabel"), note.anchor, "set-anchor", { noteId: note.id, focusKey: `anchor-${note.id}` }),
-      makeCheckboxLabel(translate("lockedLabel"), note.locked, "set-locked", { noteId: note.id, focusKey: `locked-${note.id}` })
-    );
+  const actions = document.createElement("div");
+  actions.className = "note-actions";
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.dataset.focusKey = `save-${note.id}`;
+  save.textContent = translate("saveNoteButton");
+  const deleteButton = makeButton(translate("deleteNoteButton"), "delete-note", {
+    noteId: note.id,
+    focusFallback: "view-mode"
+  });
+  deleteButton.className = "secondary";
+  deleteButton.dataset.focusKey = `delete-${note.id}`;
+  const id = document.createElement("span");
+  id.className = "entity-id";
+  id.textContent = `${translate("noteId")}: ${note.id}`;
 
-    const actions = document.createElement("div");
-    actions.className = "note-actions";
-    const save = document.createElement("button");
-    save.type = "submit";
-    save.dataset.focusKey = `save-${note.id}`;
-    save.textContent = translate("saveNoteButton");
-    const deleteButton = makeButton(translate("deleteNoteButton"), "delete-note", {
-      noteId: note.id,
-      focusFallback: "view-mode"
-    });
-    deleteButton.className = "secondary";
-    deleteButton.dataset.focusKey = `delete-${note.id}`;
-    const id = document.createElement("span");
-    id.className = "entity-id";
-    id.textContent = `${translate("noteId")}: ${note.id}`;
-    actions.append(
-      makeCheckboxLabel(translate("noteSelectLabel", { pitch, tick: note.startTick }), selected.has(note.id), "toggle-note-selection", { noteId: note.id, focusKey: `select-${note.id}` }),
-      save,
-      deleteButton,
-      id
-    );
-
-    fieldset.append(grid, flags, expression, actions, timing);
-    form.append(fieldset);
-    item.append(form);
-    list.append(item);
-  }
+  actions.append(save, deleteButton, id);
+  fieldset.append(legend, grid, flags, actions);
+  form.append(fieldset);
+  item.append(form);
+  list.append(item);
 }
 
 function renderSyllables(song, state) {
@@ -833,27 +814,6 @@ function renderEditorControls() {
     button.disabled = state.selectedNoteIds.length === 0;
   }
   const selectedNotes = song.notes.filter((note) => state.selectedNoteIds.includes(note.id));
-  const noteMenu = document.querySelector(".editor-note-actions");
-  const noteMenuLabel = byId("note-actions-label");
-  const noteBendStatus = byId("note-bend-status");
-  if (noteMenu && noteMenuLabel && noteBendStatus) {
-    noteMenu.dataset.hasSelection = String(selectedNotes.length > 0);
-    if (selectedNotes.length === 0) {
-      noteMenuLabel.textContent = translate("noteActionsSummary");
-      noteBendStatus.textContent = translate("noNotesSelected");
-      if (noteMenu.open) noteMenu.removeAttribute("open");
-    } else if (selectedNotes.length === 1) {
-      const note = selectedNotes[0];
-      const bend = bendDisplay(note);
-      noteMenuLabel.textContent = `${midiToPitch(note.pitch)} · ${bend}`;
-      noteBendStatus.textContent = `${translate("bendGroupLabel")}: ${bend}`;
-    } else {
-      const bends = new Set(selectedNotes.map((note) => bendDisplay(note)));
-      const bend = bends.size === 1 ? [...bends][0] : translate("bendMixedLabel");
-      noteMenuLabel.textContent = translate("noteActionsMultiple", { count: selectedNotes.length, bend });
-      noteBendStatus.textContent = `${translate("bendGroupLabel")}: ${bend}`;
-    }
-  }
   const bendSignature = (note) => JSON.stringify(note.pitchBend ?? null);
   for (const button of document.querySelectorAll('[data-action="set-selected-bend"]')) {
     const preset = bendPreset(button.dataset.bend);
@@ -1641,16 +1601,7 @@ document.addEventListener("submit", (event) => {
     result = run(() => commands.updateNote(form.dataset.noteId, {
       pitch: pitchToMidi(data.get(`pitch-${form.dataset.noteId}`)),
       startTick: Number(data.get(`start-${form.dataset.noteId}`)),
-      durationTicks: Number(data.get(`duration-${form.dataset.noteId}`)),
-      volume: Number(data.get(`volume-${form.dataset.noteId}`)) / 100,
-      pan: Number(data.get(`pan-${form.dataset.noteId}`)) / 100,
-      vibrato: Number(data.get(`vibrato-depth-${form.dataset.noteId}`)) > 0
-        ? {
-            depthSemitones: Number(data.get(`vibrato-depth-${form.dataset.noteId}`)),
-            rateHz: Number(data.get(`vibrato-rate-${form.dataset.noteId}`)),
-            delayPosition: Number(data.get(`vibrato-delay-${form.dataset.noteId}`)) / 100
-          }
-        : null
+      durationTicks: Number(data.get(`duration-${form.dataset.noteId}`))
     }), "noteSaved");
   } else if (action === "set-lyrics") {
     result = run(() => commands.setLyrics(data.get("rawText")), "lyricsSaved");
@@ -1770,6 +1721,17 @@ document.addEventListener("click", (event) => {
     const mode = expressionView?.getMode();
     const notes = run(() => resetSelectedExpression(mode));
     if (notes?.length) announce(mode === "bend" ? "bendCleared" : "expressionReset");
+  } else if (target.dataset.action === "expression-apply-vibrato") {
+    const [noteId] = commands.getSelectedNoteIds();
+    if (commands.getSelectedNoteIds().length === 1 && noteId) {
+      const depth = Number(byId("expression-vibrato-depth").value);
+      const rateHz = Number(byId("expression-vibrato-rate").value);
+      const delayPosition = Number(byId("expression-vibrato-delay").value) / 100;
+      const updated = run(() => commands.updateNote(noteId, {
+        vibrato: depth > 0 ? { depthSemitones: depth, rateHz, delayPosition } : null
+      }, { actor: "user" }));
+      if (updated) announce(depth > 0 ? "vibratoUpdated" : "vibratoCleared");
+    }
   } else if (target.dataset.action === "set-tool") {
     run(() => commands.setTool(target.dataset.tool));
   } else if (target.dataset.action === "reset-loop-range") {
@@ -2170,7 +2132,7 @@ confirmDialog?.addEventListener("click", (event) => {
 });
 
 const transientDetails = [...document.querySelectorAll(
-  ".transport-advanced, .editor-note-actions, .pane-help, .generation-options"
+  ".transport-advanced, .pane-help, .generation-options"
 )];
 for (const details of transientDetails) {
   details.addEventListener("toggle", () => {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { normalizeRuntimeState } from "../src/core/runtime-state.js";
+import { VIEW_REGION_MODES, normalizeRuntimeState } from "../src/core/runtime-state.js";
 
 test("R3-A runtime state defaults R3 view fields without changing the source", () => {
   const legacyState = {
@@ -78,4 +78,10 @@ test("editor tool defaults safely to select and preserves known tools", () => {
   assert.equal(normalizeRuntimeState({ editor: { snap: "1/8", zoom: 1 } }).editor.tool, "select");
   assert.equal(normalizeRuntimeState({ editor: { tool: "draw", zoom: 1 } }).editor.tool, "draw");
   assert.equal(normalizeRuntimeState({ editor: { tool: "erase", zoom: 1 } }).editor.tool, "select");
+});
+
+
+test("Expression tetap tersedia di semua view yang mengedit note", () => {
+  assert.deepEqual(VIEW_REGION_MODES.expression, ["score", "piano-roll", "combined", "guitar"]);
+  assert.equal(VIEW_REGION_MODES.expression.includes("lyrics"), false);
 });
