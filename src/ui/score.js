@@ -486,8 +486,8 @@ export function createScoreView(svg, status, fallback, scrollContainer, translat
     for (const measure of projection.measures) {
       const stave = new VF.Stave(16 + measure.index * measureWidth, 30, measureWidth - 30, 100);
       stavesByMeasure.set(measure.index, stave);
-      stave.addClef("treble");
       if (measure.index === 0) {
+        stave.addClef("treble");
         stave.addKeySignature(projection.keySignature);
         stave.addTimeSignature(`${projection.timeSignature.numerator}/${projection.timeSignature.denominator}`);
       }
