@@ -940,6 +940,15 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 .roll-pitch-label, .roll-bar-label { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
 /* Black key diredupkan supaya oktaf penuh (12 label) tetap ringan dibaca. */
 .roll-pitch-label-black { fill: var(--text-muted); }
+.roll-pitch-label-layer { isolation: isolate; }
+.roll-pitch-label-gutter {
+  fill: var(--surface);
+  fill-opacity: 0.98;
+}
+.roll-pitch-label-divider {
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
 .roll-beat-line { stroke: var(--border-strong); stroke-width: 1; }
 .roll-bar-line { stroke: var(--text-muted); stroke-width: 2; }
 .roll-header-line { stroke: var(--text-muted); stroke-width: 1.5; }
