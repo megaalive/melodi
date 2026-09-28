@@ -657,7 +657,8 @@ p { margin: 0.45rem 0 0.8rem; }
   border-radius: 0.45rem;
   background: var(--surface);
 }
-#score { display: block; max-width: none; }
+#score { display: block; min-width: 0; color: var(--score-ink); }
+#score > svg { display: block; max-width: none; min-width: 100%; }
 
 body[data-view-mode="combined"] #piano-roll-section,
 body[data-view-mode="combined"] #score-section { min-width: 0; }
@@ -993,37 +994,63 @@ body[data-view-mode="combined"] #score-section { min-width: 0; }
 
 .score-measure-label { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
 
-/* VexFlow menulis warna sebagai presentation attribute dan sisanya diwarisi.
-   Garis staff adalah <path> yang TIDAK punya atribut stroke sama sekali, jadi
-   mewarisi stroke="black" dari root svg. Karena itu override harus dipasang di
-   root: fill dan stroke di situ diwarisi seluruh keturunan, termasuk garis
-   staff, bar line, dan stem. Atribut presentasi selalu kalah dari aturan CSS,
-   jadi ini mengalahkan nilai hardcoded VexFlow tanpa menulis literal warna ke
-   DOM, dan pergantian tema tidak butuh render ulang.
-   currentColor dipakai supaya cukup satu token yang dibaca. Selector teks dan
-   path yang punya atribut sendiri sengaja dibatasi agar tidak menimpa label
-   milik Melodi, yang punya warna sendiri. */
-#score { color: var(--score-ink); }
-#score text:not([class]) { fill: currentColor; stroke: none; }
-
-/* VexFlow memakai Bravura untuk glyph musik. Jangan beri stroke global pada
-   semua glyph: outline tambahan membuat clef dan notehead tampak "bold".
-   Recolor fill dan garis secara terpisah agar tema gelap tetap terbaca tanpa
-   mengubah berat visual font/notasi. */
-#score path[fill="black"],
-#score rect[fill="black"] {
-  fill: currentColor;
-  stroke: none;
+/* abcjs hanya menjadi backend engraving. Warna dan state interaktif tetap
+   dikendalikan CSS Melodi supaya renderer tidak menjadi sumber kebenaran UI. */
+#score svg { color: var(--score-ink); }
+#score .abcjs-note,
+#score .abcjs-rest,
+#score .abcjs-staff,
+#score .abcjs-stem,
+#score .abcjs-beam-elem,
+#score .abcjs-clef,
+#score .abcjs-key-signature,
+#score .abcjs-time-signature,
+#score .abcjs-bar,
+#score .abcjs-tie,
+#score .abcjs-slur {
+  color: var(--score-ink);
 }
-#score path[stroke="black"],
-#score line[stroke="black"],
-#score .vf-stem {
-  stroke: currentColor;
-}
+#score .abcjs-note path,
+#score .abcjs-note ellipse,
+#score .abcjs-rest path,
+#score .abcjs-clef path,
+#score .abcjs-key-signature path,
+#score .abcjs-time-signature path { fill: currentColor; }
+#score .abcjs-staff,
+#score .abcjs-stem,
+#score .abcjs-beam-elem,
+#score .abcjs-bar,
+#score .abcjs-tie,
+#score .abcjs-slur { stroke: currentColor; }
+.score-note { cursor: pointer; }
 .score-note[data-current="true"] { filter: drop-shadow(0 0 3px var(--highlight-current-ink)); }
 .score-note[data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)); }
 .score-note[data-current="true"][data-selected="true"] { filter: drop-shadow(0 0 2px var(--highlight-selected-ink)) drop-shadow(0 0 3px var(--highlight-current-ink)); }
-.score-note:focus-visible { filter: drop-shadow(0 0 4px var(--focus)); }
+.score-note:focus-visible { outline: none; filter: drop-shadow(0 0 4px var(--focus)); }
+.score-expression-overlay { color: var(--accent-strong); }
+.score-bend-curve {
+  fill: none;
+  stroke: var(--accent-strong);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.score-bend-label,
+.score-expression-label {
+  fill: var(--text-muted);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+.score-syllable {
+  fill: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-sm);
+}
+.score-syllable[data-current="true"] { fill: var(--highlight-current-ink); font-weight: 750; }
+.score-melisma { stroke: var(--text-muted); stroke-width: 1; }
+.score-melisma[data-current="true"] { stroke: var(--highlight-current-ink); stroke-width: 2; }
+
 .score-chord { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-sm); font-weight: 650; }
 .score-syllable { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
 .score-syllable[data-current="true"] { fill: var(--highlight-current-ink); font-weight: 700; }
