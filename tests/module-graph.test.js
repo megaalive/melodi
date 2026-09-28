@@ -10,6 +10,7 @@ import { test } from "node:test";
 const DOM_TOUCHING = new Set([
   "app.js",
   "ui/guitar-view.js",
+  "ui/expression-lane.js",
   "ui/piano-roll.js",
   "ui/score.js",
 ]);
