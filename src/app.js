@@ -10,6 +10,7 @@ import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
+import { createShareUrl, decodeShareHash } from "./io/share.js";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -20,6 +21,8 @@ let statusTimer;
 let pointerInteractionActive = false;
 let lastFollowSyllableId = null;
 let contextTarget = null;
+let shareSession = false;
+let shareLoadStatus = "none";
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -1025,6 +1028,8 @@ function render() {
   byId("key-value").textContent = `${song.key} ${song.scale.name}`;
   byId("time-signature-value").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   byId("song-title").textContent = song.title;
+  byId("shared-source").hidden = !shareSession;
+  byId("save-shared-draft").hidden = !shareSession;
   document.body.dataset.viewMode = state.view.mode;
   if (viewMarkup.modeControl) viewMarkup.modeControl.value = state.view.mode;
   if (viewMarkup.followControl) viewMarkup.followControl.checked = state.view.follow;
@@ -1119,9 +1124,72 @@ function confirmInApp() {
   return confirmPromise;
 }
 
+function clearShareHash() {
+  try {
+    const url = new URL(globalThis.location.href);
+    url.hash = "";
+    globalThis.history?.replaceState?.(null, "", url.toString());
+  } catch {}
+}
+
+function leaveShareSession() {
+  if (!shareSession) return;
+  shareSession = false;
+  clearShareHash();
+}
+
+function openShareDialog(url) {
+  const dialog = byId("share-dialog");
+  const input = byId("share-link");
+  if (!dialog || !input) return false;
+  input.value = url;
+  if (!dialog.open) dialog.showModal();
+  input.focus();
+  input.select();
+  return true;
+}
+
+async function copyText(value) {
+  const clipboard = globalThis.navigator?.clipboard;
+  if (!clipboard?.writeText) return false;
+  try {
+    await clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function shareCurrentSong() {
+  const url = await createShareUrl(commands.getSong(), globalThis.location?.href);
+  byId("share-link").value = url;
+  if (await copyText(url)) {
+    announce("shareCopied");
+    return url;
+  }
+  openShareDialog(url);
+  announce("shareClipboardFailed", "error");
+  return url;
+}
+
+function saveSharedAsDraft() {
+  if (!shareSession) return false;
+  const scheduled = persistence.schedule(commands.getSong());
+  const saved = scheduled && persistence.flush();
+  if (!saved) {
+    announce("draftSaveFailed", "error");
+    return false;
+  }
+  leaveShareSession();
+  render();
+  announce("shareSavedAsDraft");
+  return true;
+}
+
 async function requestNewIdea() {
   if (!(await confirmInApp())) return false;
   clearPendingForms();
+  leaveShareSession();
   return run(() => commands.newIdea(), "newIdeaStarted");
 }
 
@@ -1146,11 +1214,21 @@ const persistence = createDraftPersistence({
   }
 });
 const draft = persistence.load();
+let sharedSong = null;
+try {
+  sharedSong = await decodeShareHash(globalThis.location?.hash ?? "");
+  if (sharedSong) {
+    shareSession = true;
+    shareLoadStatus = "loaded";
+  }
+} catch {
+  shareLoadStatus = "invalid";
+}
 
-commands = createCommands(draft.song ?? createInitialSong(), {
+commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
   onChange(change) {
     render();
-    if (change?.kind === "song") persistence.schedule(commands.getSong());
+    if (change?.kind === "song" && !shareSession) persistence.schedule(commands.getSong());
   },
   onEditorChange() {
     renderEditorControls();
@@ -1276,8 +1354,10 @@ const publicCommands = Object.freeze({
   canRedo: commands.canRedo,
   newIdea: () => {
     clearPendingForms();
+    leaveShareSession();
     return commands.newIdea();
   },
+  getShareUrl: () => createShareUrl(commands.getSong(), globalThis.location?.href),
   play: commands.play,
   pause: commands.pause,
   stop: commands.stop,
@@ -1519,6 +1599,24 @@ document.addEventListener("click", (event) => {
     run(() => commands.moveLyricSyllable(target.dataset.syllableId, Number(target.dataset.targetIndex)), "syllableMoved");
   } else if (target.dataset.action === "merge-syllables") {
     run(() => commands.mergeLyricSyllables(target.dataset.leftId, target.dataset.rightId), "syllableMerged");
+  } else if (target.dataset.action === "share-song") {
+    runAsync(() => shareCurrentSong());
+  } else if (target.dataset.action === "save-shared-draft") {
+    saveSharedAsDraft();
+  } else if (target.dataset.action === "copy-share-link") {
+    const value = byId("share-link").value;
+    runAsync(async () => {
+      if (await copyText(value)) {
+        announce("shareCopied");
+        byId("share-dialog")?.close();
+        return true;
+      }
+      announce("shareClipboardFailed", "error");
+      byId("share-link")?.select();
+      return false;
+    });
+  } else if (target.dataset.action === "close-share-dialog") {
+    byId("share-dialog")?.close();
   } else if (target.dataset.action === "new-idea") {
     void requestNewIdea();
   } else if (target.dataset.action === "use-selection") {
@@ -1779,6 +1877,11 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+const shareDialog = byId("share-dialog");
+shareDialog?.addEventListener("click", (event) => {
+  if (event.target === shareDialog) shareDialog.close();
+});
+
 const confirmDialog = byId("confirm-dialog");
 byId("confirm-dialog-cancel")?.addEventListener("click", (event) => {
   event.preventDefault();
@@ -1829,6 +1932,8 @@ window.addEventListener("pagehide", () => persistence.flush());
 document.querySelectorAll("details").forEach((details) => { details.open = false; });
 
 render();
-if (draft.status === "restored") announce("draftRestored");
+if (shareLoadStatus === "loaded") announce("shareLoaded");
+else if (shareLoadStatus === "invalid") announce("shareInvalid", "error");
+else if (draft.status === "restored") announce("draftRestored");
 else if (draft.status === "invalid") announce("draftInvalid", "error");
 else if (draft.status === "unavailable") announce("draftUnavailable", "error");
