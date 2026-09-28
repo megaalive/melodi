@@ -67,8 +67,27 @@ function requireUniqueReferences(values) {
   }
 }
 
+function validatePitchBend(points) {
+  if (points === undefined) return;
+  if (!Array.isArray(points) || points.length < 2 || points.length > 16) fail("invalid-pitch-bend");
+  let previousPosition = -1;
+  for (const point of points) {
+    requireKeys(point, ["position", "semitones"], "invalid-pitch-bend");
+    if (typeof point.position !== "number" || !Number.isFinite(point.position)
+      || point.position < 0 || point.position > 1 || point.position <= previousPosition) fail("invalid-pitch-bend");
+    if (typeof point.semitones !== "number" || !Number.isFinite(point.semitones)
+      || point.semitones < -12 || point.semitones > 12) fail("invalid-pitch-bend");
+    previousPosition = point.position;
+  }
+  if (points[0].position !== 0) fail("invalid-pitch-bend");
+}
+
 function validateNote(note) {
-  requireKeys(note, ["id", "pitch", "startTick", "durationTicks", "source", "anchor", "locked"], "invalid-note");
+  const required = ["id", "pitch", "startTick", "durationTicks", "source", "anchor", "locked"];
+  const allowed = new Set([...required, "pitchBend"]);
+  if (!isRecord(note)
+    || required.some((key) => !Object.hasOwn(note, key))
+    || Object.keys(note).some((key) => !allowed.has(key))) fail("invalid-note");
   requireId(note.id);
   if (!Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch > 127) fail("invalid-pitch");
   requireTick(note.startTick);
@@ -76,6 +95,7 @@ function validateNote(note) {
   if (!Number.isSafeInteger(note.startTick + note.durationTicks)) fail("invalid-tick");
   if (note.source !== "user" && note.source !== "generated") fail("invalid-source");
   if (typeof note.anchor !== "boolean" || typeof note.locked !== "boolean") fail("invalid-note-flags");
+  validatePitchBend(note.pitchBend);
 }
 
 function validateSong(song) {
@@ -173,23 +193,42 @@ export function createInitialSong(idFactory = createId) {
   const songId = idFactory();
   const sectionId = idFactory();
   const phraseId = idFactory();
-  // Frase default diambil dari tab yang diberikan user. Model canonical saat
-  // ini belum menyimpan pitch bend, jadi bend direpresentasikan pada pitch tujuan
-  // dan bend-release dipecah menjadi dua note agar contour melodinya tetap terbaca.
+  // Frase dua bar dari tab yang diberikan user. Lagu aslinya berasa 6/8.
+  // Bend disimpan sebagai kurva relatif supaya playback berbunyi seperti teknik
+  // gitar: 17b18 = E5 naik setengah nada; 15b17r15 = D5 naik satu nada lalu turun.
   const defaultMelody = [
-    { pitch: 69, startTick: 120, durationTicks: 240 },  // A4
-    { pitch: 74, startTick: 360, durationTicks: 240 },  // D5
-    { pitch: 76, startTick: 600, durationTicks: 120 },  // E5
-    { pitch: 77, startTick: 720, durationTicks: 360 },  // F5, 17b18
-    { pitch: 77, startTick: 1080, durationTicks: 360 }, // F5, 17b18
-    { pitch: 76, startTick: 1440, durationTicks: 240 }, // E5
-    { pitch: 74, startTick: 1680, durationTicks: 240 }, // D5
-    { pitch: 72, startTick: 2040, durationTicks: 240 }, // C5
-    { pitch: 74, startTick: 2280, durationTicks: 240 }, // D5
-    { pitch: 76, startTick: 2520, durationTicks: 360 }, // E5, 15b17
-    { pitch: 76, startTick: 2880, durationTicks: 240 }, // E5, bend target
-    { pitch: 74, startTick: 3120, durationTicks: 240 }, // D5, release to 15
-    { pitch: 72, startTick: 3360, durationTicks: 480 }  // C5
+    // Bar 1 — 6/8
+    { pitch: 69, startTick: 0, durationTicks: 240 },    // A4
+    { pitch: 74, startTick: 240, durationTicks: 120 }, // D5
+    { pitch: 76, startTick: 360, durationTicks: 120 }, // E5
+    {
+      pitch: 76, startTick: 480, durationTicks: 360,   // E5 -> F5
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 1 }, { position: 1, semitones: 1 }]
+    },
+    {
+      pitch: 76, startTick: 840, durationTicks: 240,   // E5 -> F5
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
+    },
+    { pitch: 76, startTick: 1080, durationTicks: 120 }, // E5
+    { pitch: 74, startTick: 1200, durationTicks: 240 }, // D5
+
+    // Bar 2 — 6/8
+    { pitch: 72, startTick: 1440, durationTicks: 360 }, // C5
+    { pitch: 74, startTick: 1800, durationTicks: 120 }, // D5
+    {
+      pitch: 74, startTick: 1920, durationTicks: 360,   // D5 -> E5
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
+    },
+    {
+      pitch: 74, startTick: 2280, durationTicks: 360,   // D5 -> E5 -> D5
+      pitchBend: [
+        { position: 0, semitones: 0 },
+        { position: 0.22, semitones: 2 },
+        { position: 0.62, semitones: 2 },
+        { position: 1, semitones: 0 }
+      ]
+    },
+    { pitch: 72, startTick: 2640, durationTicks: 240 }  // C5
   ];
   const notes = defaultMelody.map((note) => ({
     id: idFactory(),
@@ -201,9 +240,9 @@ export function createInitialSong(idFactory = createId) {
   const song = {
     id: songId,
     title: "Ide baru",
-    timing: { ppq: PPQ, tempo: 120, timeSignature: { numerator: 4, denominator: 4 } },
-    key: "C",
-    scale: { name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] },
+    timing: { ppq: PPQ, tempo: 81, timeSignature: { numerator: 6, denominator: 8 } },
+    key: "Am",
+    scale: { name: "minor", intervals: [0, 2, 3, 5, 7, 8, 10] },
     sections: [{ id: sectionId, name: "Verse", phraseIds: [phraseId] }],
     phrases: [{ id: phraseId, noteIds: notes.map((note) => note.id) }],
     notes,
