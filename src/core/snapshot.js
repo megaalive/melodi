@@ -42,6 +42,7 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "seek",
   "setTempo",
   "setLoop",
+  "resetLoopRange",
   "setLoopEnabled",
   "setViewMode",
   "setFollowMode",
