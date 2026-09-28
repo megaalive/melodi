@@ -30,12 +30,25 @@ function validatePitchBendPatch(value) {
   if (value[0].position !== 0) fail("invalid-pitch-bend");
 }
 
+function validateVibratoPatch(value) {
+  if (value === null) return;
+  if (value === undefined || value === null || typeof value !== "object" || Array.isArray(value)) fail("invalid-vibrato");
+  if (Object.keys(value).sort().join(",") !== "delayPosition,depthSemitones,rateHz") fail("invalid-vibrato");
+  if (typeof value.rateHz !== "number" || !Number.isFinite(value.rateHz)
+    || value.rateHz < 0.5 || value.rateHz > 12) fail("invalid-vibrato");
+  if (typeof value.depthSemitones !== "number" || !Number.isFinite(value.depthSemitones)
+    || value.depthSemitones <= 0 || value.depthSemitones > 2) fail("invalid-vibrato");
+  if (typeof value.delayPosition !== "number" || !Number.isFinite(value.delayPosition)
+    || value.delayPosition < 0 || value.delayPosition > 1) fail("invalid-vibrato");
+}
+
 function validatePatch(patch) {
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) fail("invalid-note");
   const keys = Object.keys(patch);
-  const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan"]);
+  const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan", "vibrato"]);
   if (keys.length === 0 || keys.some((key) => !allowed.has(key))) fail("invalid-note-patch");
   if (Object.hasOwn(patch, "pitchBend")) validatePitchBendPatch(patch.pitchBend);
+  if (Object.hasOwn(patch, "vibrato")) validateVibratoPatch(patch.vibrato);
   if (Object.hasOwn(patch, "volume")
     && (typeof patch.volume !== "number" || !Number.isFinite(patch.volume) || patch.volume < 0 || patch.volume > 1)) {
     fail("invalid-note-volume");
@@ -48,7 +61,7 @@ function validatePatch(patch) {
 
 function applyNotePatch(note, patch) {
   for (const [key, value] of Object.entries(patch)) {
-    if (key === "pitchBend" && value === null) delete note.pitchBend;
+    if ((key === "pitchBend" || key === "vibrato") && value === null) delete note[key];
     else note[key] = value;
   }
 }
@@ -650,7 +663,7 @@ export function createCommands(initialSong, {
     addNote(input, { actor = "user" } = {}) {
       validateActor(actor);
       if (input === null || typeof input !== "object" || Array.isArray(input)) fail("invalid-note");
-      const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan"]);
+      const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan", "vibrato"]);
       if (Object.keys(input).some((key) => !allowed.has(key))) fail("invalid-note");
       const note = {
         id: idFactory(),
@@ -660,6 +673,7 @@ export function createCommands(initialSong, {
         ...(input.pitchBend ? { pitchBend: cloneData(input.pitchBend) } : {}),
         ...(Object.hasOwn(input, "volume") ? { volume: input.volume } : {}),
         ...(Object.hasOwn(input, "pan") ? { pan: input.pan } : {}),
+        ...(input.vibrato ? { vibrato: cloneData(input.vibrato) } : {}),
         source: actor === "generator" ? "generated" : "user",
         anchor: false,
         locked: false
@@ -867,7 +881,8 @@ export function createCommands(initialSong, {
           durationTicks: note.durationTicks,
           ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {}),
           ...(Object.hasOwn(note, "volume") ? { volume: note.volume } : {}),
-          ...(Object.hasOwn(note, "pan") ? { pan: note.pan } : {})
+          ...(Object.hasOwn(note, "pan") ? { pan: note.pan } : {}),
+          ...(note.vibrato ? { vibrato: cloneData(note.vibrato) } : {})
         }))
       };
       notifyEditorChange();
@@ -885,6 +900,7 @@ export function createCommands(initialSong, {
         ...(note.pitchBend ? { pitchBend: cloneData(note.pitchBend) } : {}),
         ...(Object.hasOwn(note, "volume") ? { volume: note.volume } : {}),
         ...(Object.hasOwn(note, "pan") ? { pan: note.pan } : {}),
+        ...(note.vibrato ? { vibrato: cloneData(note.vibrato) } : {}),
         source: "user",
         anchor: false,
         locked: false
