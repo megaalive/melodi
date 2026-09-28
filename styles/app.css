@@ -2710,3 +2710,26 @@ button.danger-button:hover:not(:disabled) {
     flex: 1 1 auto;
   }
 }
+
+
+/* Timeline range: klik ruler = seek, drag ruler = playback range. */
+.roll-timeline-selection {
+  fill: var(--accent-soft);
+  fill-opacity: 0.72;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+.roll-timeline-selection-preview {
+  fill-opacity: 0.46;
+  stroke-dasharray: 4 3;
+}
+.roll-ruler-hit {
+  cursor: crosshair;
+}
+.range-reset {
+  min-height: 2rem;
+  padding: 0.28rem 0.55rem;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
