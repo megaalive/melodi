@@ -183,7 +183,23 @@
               </div>
             </div>
             <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
-            <section id="expression-panel" class="expression-panel" aria-labelledby="expression-heading">
+          </section>
+
+          <section id="score-section" class="workspace-pane" data-view-region="score" aria-labelledby="score-heading">
+            <div class="pane-heading">
+              <div>
+                <h2 id="score-heading" data-copy="scoreHeading"></h2>
+                <p data-copy="scoreHelp"></p>
+              </div>
+              <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
+            </div>
+            <div id="score-scroll" class="score-scroll" role="region" tabindex="0" aria-label="Score">
+              <div id="score" data-renderer="abcjs"></div>
+            </div>
+            <div id="score-fallback" class="score-fallback" hidden></div>
+          </section>
+
+            <section id="expression-panel" class="workspace-pane expression-panel" data-view-region="expression" aria-labelledby="expression-heading">
               <div class="expression-toolbar">
                 <div>
                   <h3 id="expression-heading" data-copy="expressionHeading"></h3>
@@ -281,21 +297,6 @@
 
               <p class="muted expression-help" data-copy="expressionHelp"></p>
             </section>
-          </section>
-
-          <section id="score-section" class="workspace-pane" data-view-region="score" aria-labelledby="score-heading">
-            <div class="pane-heading">
-              <div>
-                <h2 id="score-heading" data-copy="scoreHeading"></h2>
-                <p data-copy="scoreHelp"></p>
-              </div>
-              <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
-            </div>
-            <div id="score-scroll" class="score-scroll" role="region" tabindex="0" aria-label="Score">
-              <div id="score" data-renderer="abcjs"></div>
-            </div>
-            <div id="score-fallback" class="score-fallback" hidden></div>
-          </section>
 
           <section id="guitar-section" class="workspace-pane" data-view-region="guitar" aria-labelledby="guitar-heading">
             <div class="pane-heading">
