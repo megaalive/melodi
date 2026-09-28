@@ -173,12 +173,27 @@ export function createInitialSong(idFactory = createId) {
   const songId = idFactory();
   const sectionId = idFactory();
   const phraseId = idFactory();
-  const pitches = [60, 64, 69, 67];
-  const notes = pitches.map((pitch, index) => ({
+  // Frase default diambil dari tab yang diberikan user. Model canonical saat
+  // ini belum menyimpan pitch bend, jadi bend direpresentasikan pada pitch tujuan
+  // dan bend-release dipecah menjadi dua note agar contour melodinya tetap terbaca.
+  const defaultMelody = [
+    { pitch: 69, startTick: 120, durationTicks: 240 },  // A4
+    { pitch: 74, startTick: 360, durationTicks: 240 },  // D5
+    { pitch: 76, startTick: 600, durationTicks: 120 },  // E5
+    { pitch: 77, startTick: 720, durationTicks: 360 },  // F5, 17b18
+    { pitch: 77, startTick: 1080, durationTicks: 360 }, // F5, 17b18
+    { pitch: 76, startTick: 1440, durationTicks: 240 }, // E5
+    { pitch: 74, startTick: 1680, durationTicks: 240 }, // D5
+    { pitch: 72, startTick: 2040, durationTicks: 240 }, // C5
+    { pitch: 74, startTick: 2280, durationTicks: 240 }, // D5
+    { pitch: 76, startTick: 2520, durationTicks: 360 }, // E5, 15b17
+    { pitch: 76, startTick: 2880, durationTicks: 240 }, // E5, bend target
+    { pitch: 74, startTick: 3120, durationTicks: 240 }, // D5, release to 15
+    { pitch: 72, startTick: 3360, durationTicks: 480 }  // C5
+  ];
+  const notes = defaultMelody.map((note) => ({
     id: idFactory(),
-    pitch,
-    startTick: index * PPQ,
-    durationTicks: PPQ,
+    ...note,
     source: "user",
     anchor: false,
     locked: false
