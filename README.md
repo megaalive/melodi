@@ -62,6 +62,14 @@ window.melodi.commands.clearGeneration()
 
 `getState()` returns a detached snapshot with song identity and musical context, selection, anchor and locked note IDs, playback status, integer playhead tick, current note and section IDs, tempo, loop range, a bounded `generation` summary, edit `history` depths, and available commands. `getGenerationState()` includes the bounded candidate list with candidate IDs, note timing and pitches, score breakdown, and factual metadata. Candidate step and leap counts describe intervals between generated notes; `landingInterval` describes the final generated note to the right anchor. Candidate IDs are session identifiers; candidate-local note IDs are not canonical Song IDs. Song and snapshot reads return copies. Invalid commands throw a `MelodiError` with a stable `code` and leave canonical state unchanged. UI controls and browser automation use the same command layer. The public browser surface exposes bounded user commands only; it does not expose AudioContext or scheduler internals.
 
+## Share URL
+
+Melodi can package the current project into the URL fragment, for example `#m=1.g....`. The fragment is decoded entirely in the browser and is not sent to GitHub Pages as a server request.
+
+The v1 share envelope is deliberately track-oriented. Today it carries the lead melody/lyrics track and a harmony/chord track; future readers can add guitar, bass, drums, automation, and other instrument tracks without changing old links. Canonical entity UUIDs are not embedded in the URL. Portable relationships use indexes and fresh IDs are generated when a shared project is opened.
+
+The encoder uses native gzip `CompressionStream` when available and falls back to uncompressed Base64URL without adding a runtime dependency. Opening a share link is ephemeral: it does not overwrite the existing local autosave draft until the user explicitly chooses **Save draft**.
+
 ## Edit history
 
 `undo()` and `redo()` restore canonical song snapshots. Every canonical mutation goes through one commit path, so history covers notes, lyrics, tempo, and `newIdea()`. Selection, clipboard, loop, snap, and view mode are not canonical and are deliberately excluded: undoing them would move state the user never chose to change.
