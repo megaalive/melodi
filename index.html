@@ -235,6 +235,27 @@
               </div>
             </div>
             <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
+            <section id="expression-panel" class="expression-panel" aria-labelledby="expression-heading">
+              <div class="expression-toolbar">
+                <div>
+                  <h3 id="expression-heading" data-copy="expressionHeading"></h3>
+                  <p id="expression-status" class="muted" data-entity="expression-status"></p>
+                </div>
+                <div class="expression-actions">
+                  <div class="expression-mode-group" role="group" data-aria-copy="expressionModeGroupLabel">
+                    <button type="button" data-action="set-expression-mode" data-expression-mode="bend" data-copy="expressionBendButton" aria-pressed="true"></button>
+                    <button type="button" data-action="set-expression-mode" data-expression-mode="volume" data-copy="expressionVolumeButton" aria-pressed="false"></button>
+                    <button type="button" data-action="set-expression-mode" data-expression-mode="pan" data-copy="expressionPanButton" aria-pressed="false"></button>
+                  </div>
+                  <button id="expression-edit-bend" type="button" class="secondary" data-action="expression-edit-bend" data-copy="expressionEditBendButton"></button>
+                  <button id="expression-reset-selected" type="button" class="secondary" data-action="expression-reset-selected" data-copy="expressionResetButton"></button>
+                </div>
+              </div>
+              <div id="expression-scroll" class="expression-scroll" role="region" tabindex="0" data-aria-copy="expressionRegionLabel">
+                <svg id="expression-lane" role="img" data-aria-copy="expressionLaneLabel"></svg>
+              </div>
+              <p class="muted expression-help" data-copy="expressionHelp"></p>
+            </section>
           </section>
 
           <section id="score-section" class="workspace-pane" data-view-region="score" aria-labelledby="score-heading">
