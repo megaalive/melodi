@@ -6,6 +6,7 @@ import {
   SHARE_VERSION,
   createShareUrl,
   decodeShareHash,
+  decodeShareLocation,
   decodeSharePayload,
   encodeSharePayload,
   fromPortableProject,
@@ -115,23 +116,35 @@ test("gzip share payload round-trips when native compression streams are availab
     return;
   }
   const song = fixture();
-  const payload = await encodeSharePayload(song);
+  const payload = await encodeSharePayload(song, { compressAboveBytes: 0 });
   assert.match(payload, /^1\.g\.[A-Za-z0-9_-]+$/);
   const restored = await decodeSharePayload(payload, { idFactory: deterministicIds("gzip") });
   assert.deepEqual(toPortableProject(restored), toPortableProject(song));
 });
 
-test("share URL uses the fragment and decodes independently of query parameters", async () => {
+test("share URL uses query payload so redirects do not drop the project", async () => {
   const song = fixture();
-  const urlText = await createShareUrl(song, "https://megaalive.github.io/melodi/?lang=id#old", {
+  const urlText = await createShareUrl(song, "https://megaalive.github.io/melodi/?lang=id&utm_source=test#old", {
     CompressionStreamCtor: null
   });
   const url = new URL(urlText);
   assert.equal(url.origin + url.pathname, "https://megaalive.github.io/melodi/");
-  assert.equal(url.search, "?lang=id");
-  assert.match(url.hash, /^#m=1\.j\./);
+  assert.equal(url.searchParams.get("lang"), "id");
+  assert.equal(url.searchParams.has("utm_source"), false);
+  assert.match(url.searchParams.get("m"), /^1\.j\.[A-Za-z0-9_-]+$/);
+  assert.equal(url.hash, "");
 
-  const restored = await decodeShareHash(url.hash, {
+  const restored = await decodeShareLocation(url, {
+    DecompressionStreamCtor: null,
+    idFactory: deterministicIds("query")
+  });
+  assert.deepEqual(toPortableProject(restored), toPortableProject(song));
+});
+
+test("old hash share links remain readable", async () => {
+  const song = fixture();
+  const payload = await encodeSharePayload(song, { CompressionStreamCtor: null });
+  const restored = await decodeShareHash(`#m=${payload}`, {
     DecompressionStreamCtor: null,
     idFactory: deterministicIds("hash")
   });
