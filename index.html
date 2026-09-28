@@ -141,10 +141,36 @@
               <div class="editor-toolbar-group bend-tool-group" role="group" data-aria-copy="bendGroupLabel">
                 <span class="editor-toolbar-label" data-copy="bendGroupLabel"></span>
                 <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton" data-focus-key="bend-half" disabled></button>
+                <button type="button" data-action="set-selected-bend" data-bend="half-release" data-copy="bendHalfReleaseButton" data-focus-key="bend-half-release" disabled></button>
                 <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton" data-focus-key="bend-whole" disabled></button>
                 <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton" data-focus-key="bend-release" disabled></button>
                 <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
               </div>
+              <details id="bend-editor-details" class="bend-curve-editor">
+                <summary data-copy="bendCurveSummary"></summary>
+                <div class="bend-curve-body">
+                  <div class="bend-curve-head">
+                    <label>
+                      <span data-copy="bendRangeLabel"></span>
+                      <select id="bend-range" data-focus-key="bend-range">
+                        <option value="1">±½</option>
+                        <option value="2" selected>±1</option>
+                        <option value="3">±1½</option>
+                        <option value="4">±2</option>
+                      </select>
+                    </label>
+                    <span id="bend-curve-state" class="muted" data-entity="bend-curve-state"></span>
+                  </div>
+                  <svg id="bend-curve-preview" class="bend-curve-preview" viewBox="0 0 320 120" role="img" data-aria-copy="bendCurvePreviewLabel"></svg>
+                  <div id="bend-point-list" class="bend-point-list" data-entity="bend-point-list"></div>
+                  <div class="bend-curve-actions">
+                    <button type="button" class="secondary" data-action="bend-add-point" data-copy="bendAddPointButton"></button>
+                    <button type="button" class="secondary" data-action="bend-reset-curve" data-copy="bendResetCurveButton"></button>
+                    <button type="button" data-action="bend-apply-curve" data-copy="bendApplyCurveButton"></button>
+                  </div>
+                  <p class="muted bend-curve-help" data-copy="bendCurveHelp"></p>
+                </div>
+              </details>
             </div>
           </details>
         </div>
@@ -372,6 +398,7 @@
           <div class="context-group-label" data-copy="bendGroupLabel"></div>
           <div class="context-inline-actions bend-context-actions">
             <button type="button" data-action="set-selected-bend" data-bend="half" data-copy="bendHalfButton"></button>
+            <button type="button" data-action="set-selected-bend" data-bend="half-release" data-copy="bendHalfReleaseButton"></button>
             <button type="button" data-action="set-selected-bend" data-bend="whole" data-copy="bendWholeButton"></button>
             <button type="button" data-action="set-selected-bend" data-bend="whole-release" data-copy="bendReleaseButton"></button>
             <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton"></button>
