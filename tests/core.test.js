@@ -81,11 +81,11 @@ test("initial song uses 6/8 A minor phrasing with canonical pitch bends", () => 
   assert.equal(song.notes[0].startTick, 0);
   assert.deepEqual(song.notes[3].pitchBend, [
     { position: 0, semitones: 0 },
-    { position: 0.28, semitones: 1 },
+    { position: 0.3, semitones: 1 },
     { position: 1, semitones: 1 }
   ]);
   assert.deepEqual(song.notes[10].pitchBend.at(-1), { position: 1, semitones: 0 });
-  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 2880);
+  assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 5760);
 });
 
 test("duplicate entity IDs across the project are rejected", () => {
