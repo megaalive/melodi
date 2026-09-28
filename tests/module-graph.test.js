@@ -74,6 +74,15 @@ test("modul DOM di daftar pengecualian memang ada dan tetap ada di sana", () => 
   }
 });
 
+test("entry assets GitHub Pages memakai build token yang sama", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const build = /<meta name="melodi-build" content="([^"]+)">/.exec(html)?.[1];
+  assert.ok(build, "melodi-build harus ada");
+  assert.ok(html.includes("styles/app.css?v=" + build));
+  assert.ok(html.includes("vendor/abcjs/abcjs-basic-min.js?v=" + build));
+  assert.ok(html.includes("src/app.js?v=" + build));
+});
+
 test("UI tidak memakai dialog blocking bawaan browser", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   const html = readFileSync(resolve("index.html"), "utf8");
