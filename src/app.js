@@ -1,6 +1,6 @@
 import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js";
 import { createCommands } from "./core/commands.js";
-import { ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
+import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js";
 import { createAudioPlayer } from "./audio/player.js";
@@ -1604,7 +1604,8 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     // Handler ini tidak punya state di scope, jadi dibaca lewat commands.
     const currentZoom = commands.getState().editor.zoom;
-    const next = event.key === "0" ? 1 : event.key === "-" ? currentZoom - ROLL_ZOOM_STEP : currentZoom + ROLL_ZOOM_STEP;
+    const rawNext = event.key === "0" ? 1 : event.key === "-" ? currentZoom - ROLL_ZOOM_STEP : currentZoom + ROLL_ZOOM_STEP;
+    const next = Math.min(MAX_ROLL_ZOOM, Math.max(MIN_ROLL_ZOOM, rawNext));
     run(() => commands.setZoom(Number(next.toFixed(2))));
     return;
   }

@@ -1,4 +1,4 @@
-import { DEFAULT_EDITOR_TOOL, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM } from "./editor.js";
+import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM } from "./editor.js";
 
 const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar"]);
 
@@ -57,7 +57,7 @@ export function normalizeHistoryState(history) {
 
 /** Zoom horizontal editor, clamped ke rentang yang diizinkan command layer. */
 export function normalizeEditorState(editor) {
-  const zoom = Number.isFinite(editor?.zoom) ? editor.zoom : MIN_ROLL_ZOOM;
+  const zoom = Number.isFinite(editor?.zoom) ? editor.zoom : DEFAULT_ROLL_ZOOM;
   return {
     ...editor,
     tool: EDITOR_TOOLS.includes(editor?.tool) ? editor.tool : DEFAULT_EDITOR_TOOL,

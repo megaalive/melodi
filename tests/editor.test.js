@@ -77,22 +77,26 @@ test("bounded roll windows can focus and round-trip late absolute ticks", () => 
   assert.equal(geometry.startTick % geometry.barTicks, 0);
 });
 
-test("roll zoom is a multiplier that widens the grid and is clamped", () => {
-  const base = createRollGeometry({ endTick: 2880, viewportWidth: 1113 });
-  assert.equal(createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 1 }).width, base.width);
+test("roll zoom supports real zoom-out, fit at 100%, and zoom-in", () => {
+  const base = createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 1 });
+  const out75 = createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 0.75 });
+  const out50 = createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 0.5 });
   const zoomed = createRollGeometry({ endTick: 2880, viewportWidth: 1113, zoom: 2 });
+
+  assert.ok(out75.endTick > base.endTick, "75% harus menampilkan lebih banyak timeline");
+  assert.ok(out50.endTick > out75.endTick, "50% harus menampilkan timeline lebih luas dari 75%");
+  assert.ok(out50.width >= 1113 * 0.9, "zoom-out tidak boleh meninggalkan ruang mati besar");
   assert.equal(zoomed.pixelsPerQuarter, base.pixelsPerQuarter * 2);
-  assert.ok(zoomed.width > base.width, "zooming in must widen the grid so the panel scrolls");
-  // Zoomed in, the grid is wider than the panel, which is the whole point.
-  assert.ok(zoomed.width > 1113);
-  // Ticks must still round-trip at any zoom, otherwise drag and click-to-add
-  // would drift off the grid.
-  for (const tick of [0, 120, 240, 480, 1440, 2880]) {
-    assert.equal(xToTick(tickToX(tick, zoomed), zoomed), tick);
-    assert.ok(Number.isSafeInteger(xToTick(tickToX(tick, zoomed), zoomed)));
+  assert.ok(zoomed.width > base.width, "zoom-in harus memperlebar grid agar panel scroll");
+
+  for (const geometry of [out50, out75, base, zoomed]) {
+    for (const tick of [0, 120, 240, 480, 1440, 2880]) {
+      assert.equal(xToTick(tickToX(tick, geometry), geometry), tick);
+      assert.ok(Number.isSafeInteger(xToTick(tickToX(tick, geometry), geometry)));
+    }
   }
-  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: 0.5 }), /Invalid roll zoom/);
-  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: 8 }), /Invalid roll zoom/);
+  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: 0.25 }), /Invalid roll zoom/);
+  assert.throws(() => createRollGeometry({ endTick: 2880, zoom: 4.25 }), /Invalid roll zoom/);
   assert.throws(() => createRollGeometry({ endTick: 2880, zoom: Number.NaN }), /Invalid roll zoom/);
 });
 

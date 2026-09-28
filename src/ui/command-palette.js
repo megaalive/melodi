@@ -1,3 +1,5 @@
+import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP } from "../core/editor.js";
+
 /*
  * Command palette.
  *
@@ -99,10 +101,12 @@ export function createPaletteCatalog() {
       ctx.run(() => ctx.commands.setSnap("1/16"));
     }),
     entry("editor.zoomIn", "editor", "paletteZoomIn", { id: ["zoom", "besar", "perbesar", "membesar"], en: ["zoom in", "bigger", "larger"] }, (ctx) => {
-      ctx.run(() => ctx.commands.setZoom(Number((ctx.commands.getState().editor.zoom + 0.25).toFixed(2))));
+      const current = ctx.commands.getState().editor.zoom;
+      ctx.run(() => ctx.commands.setZoom(Math.min(MAX_ROLL_ZOOM, Number((current + ROLL_ZOOM_STEP).toFixed(2)))));
     }),
     entry("editor.zoomOut", "editor", "paletteZoomOut", { id: ["zoom", "kecil", "perkecil", "mengecil"], en: ["zoom out", "smaller"] }, (ctx) => {
-      ctx.run(() => ctx.commands.setZoom(Number((ctx.commands.getState().editor.zoom - 0.25).toFixed(2))));
+      const current = ctx.commands.getState().editor.zoom;
+      ctx.run(() => ctx.commands.setZoom(Math.max(MIN_ROLL_ZOOM, Number((current - ROLL_ZOOM_STEP).toFixed(2)))));
     }),
     entry("editor.zoomReset", "editor", "paletteZoomReset", { id: ["zoom", "reset", "normal", "kembalikan"], en: ["zoom", "reset", "normal", "default"] }, (ctx) => {
       ctx.run(() => ctx.commands.setZoom(1));

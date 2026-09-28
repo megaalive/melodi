@@ -576,13 +576,15 @@ test("roll zoom is editor runtime state, clamped, and not a song edit", () => {
   assert.equal(commands.getState().editor.zoom, 1);
   assert.equal(commands.setZoom(2), 2);
   assert.equal(commands.getState().editor.zoom, 2);
-  expectCode(() => commands.setZoom(0.5), "invalid-zoom");
+  assert.equal(commands.setZoom(0.5), 0.5);
+  assert.equal(commands.getState().editor.zoom, 0.5);
+  expectCode(() => commands.setZoom(0.25), "invalid-zoom");
   expectCode(() => commands.setZoom(4.5), "invalid-zoom");
   expectCode(() => commands.setZoom("2"), "invalid-zoom");
   expectCode(() => commands.setZoom(Number.NaN), "invalid-zoom");
-  assert.equal(commands.getState().editor.zoom, 2);
+  assert.equal(commands.getState().editor.zoom, 0.5);
   assert.deepEqual(commands.getSong(), originalSong);
-  assert.deepEqual(changes, ["editor"]);
+  assert.deepEqual(changes, ["editor", "editor"]);
   // Batas atas dan bawah diterima.
   assert.equal(commands.setZoom(4), 4);
   assert.equal(commands.setZoom(1), 1);

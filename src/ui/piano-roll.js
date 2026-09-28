@@ -1,5 +1,5 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
+import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
 
 export { SNAP_TICKS };
@@ -63,7 +63,7 @@ export function createRollGeometry({
   labelWidth = PIANO_LABEL_WIDTH,
   pixelsPerQuarter = PIXELS_PER_QUARTER,
   viewportWidth = 0,
-  zoom = MIN_ROLL_ZOOM
+  zoom = DEFAULT_ROLL_ZOOM
 } = {}) {
   if (!Number.isSafeInteger(ppq) || ppq <= 0 || !Number.isSafeInteger(numerator) || numerator <= 0
     || !Number.isSafeInteger(denominator) || denominator <= 0) throw new RangeError("Invalid musical grid.");
@@ -75,30 +75,24 @@ export function createRollGeometry({
   if (!Number.isSafeInteger(beatTicks) || !Number.isSafeInteger(barTicks) || barTicks <= 0) throw new RangeError("Invalid musical grid.");
   const barsToCoverSong = Math.max(1, Math.ceil(endTick / barTicks) + 1);
   const fitsWholeSong = barsToCoverSong <= MAX_ROLL_BARS;
-  const requestedBars = fitsWholeSong ? barsToCoverSong : MAX_ROLL_BARS;
+  const baseRequestedBars = fitsWholeSong ? barsToCoverSong : MAX_ROLL_BARS;
+  // Di bawah 100%, isi ruang yang terbuka dengan bar tambahan. Inilah yang
+  // membuat zoom-out menambah konteks waktu alih-alih hanya mengecilkan kanvas.
+  const requestedBars = zoom < DEFAULT_ROLL_ZOOM
+    ? Math.min(MAX_ROLL_BARS, Math.ceil(baseRequestedBars / zoom))
+    : baseRequestedBars;
   const maxGridTicks = barTicks * MAX_ROLL_BARS;
+  const baseGridTicks = baseRequestedBars * barTicks;
   const gridTicks = requestedBars * barTicks;
   const usableViewportWidth = Number.isFinite(viewportWidth) && viewportWidth > labelWidth
     ? viewportWidth - labelWidth
     : 0;
+  // Fit dihitung terhadap jendela 100%. Bar tambahan saat zoom-out tidak boleh
+  // ikut mengubah baseline, kalau tidak multiplier <1 akan saling membatalkan.
   const fittedPixelsPerQuarter = usableViewportWidth > 0
-    ? usableViewportWidth * ppq / gridTicks
+    ? usableViewportWidth * ppq / baseGridTicks
     : pixelsPerQuarter;
-  // Zoom mengikuti lebar panel, dengan batas bawah saja. Dulu ada batas atas 2x,
-  // dan itulah penyebab panel menyisakan ruang mati di kanan untuk lagu pendek:
-  // satu bar di viewport 1113px butuh 264px per nada, lalu dipaksa turun ke
-  // 160px sehingga 417px grid tidak pernah digambar. Batas bawah tetap
-  // diperlukan supaya nada tidak terlalu rapat; kalau grid melebihi viewport,
-  // panel yang menggulir secara horizontal, bukan grid yang mengecil.
-  // Zoom memakai kelipatan, bukan nilai absolut, supaya tetap berlaku ketika
-  // jendela diubah ukurannya. Rentang 1x sampai 4x: di bawah 1x tidak
-  // menawarkan apa pun karena grid sudah pas di panel.
-  // Zoom memakai kelipatan, bukan nilai absolut, supaya tetap berlaku ketika
-  // jendela diubah ukurannya. Rentang 1x sampai 4x: di bawah 1x tidak
-  // menawarkan apa pun karena grid sudah pas di panel.
-  // Pixels per quarter adalah ukuran piksel, jadi dibulatkan. Nilai pecahan
-  // tidak merepresentasikan apa pun dan hanya menambah galat floating point
-  // pada xToTick, yang TomeZone dipakai untuk drag dan klik tambah note.
+  // Pixels per quarter dibulatkan agar xToTick tetap deterministik pada drag.
   const resolvedPixelsPerQuarter = Math.round(Math.max(pixelsPerQuarter, fittedPixelsPerQuarter) * zoom);
   /*
    * Jendela grid SELALU mulai dari bar 1 selama seluruh lagu masih muat dalam
