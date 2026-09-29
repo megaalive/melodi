@@ -3464,3 +3464,186 @@ details[open] > .disclosure-summary .disclosure-chevron {
     max-height: 20rem;
   }
 }
+
+
+/* Guitar/Fretted: TAB adalah timeline canonical, Fretboard adalah projection posisi. */
+.guitar-pane-heading { align-items: center; }
+.guitar-heading-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.guitar-local-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.guitar-layout-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--surface-subtle);
+}
+.guitar-layout-group button {
+  min-height: 1.95rem;
+  padding: 0.28rem 0.5rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.guitar-layout-group button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.guitar-status {
+  min-height: 1.1rem;
+  margin: 0 0 0.4rem;
+  font-size: var(--text-xs);
+}
+.guitar-tab-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  padding-bottom: 0.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  overscroll-behavior: contain;
+}
+#guitar-tab {
+  display: block;
+  max-width: none;
+  color: var(--text);
+}
+.guitar-tab-string {
+  stroke: var(--border-strong);
+  stroke-width: 1.2;
+}
+.guitar-tab-string-label {
+  fill: var(--text-muted);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.guitar-tab-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.guitar-tab-bar {
+  stroke: var(--border-strong);
+  stroke-width: 1.4;
+}
+.guitar-tab-bar-label {
+  fill: var(--text-muted);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-2xs);
+  font-weight: 650;
+}
+.guitar-tab-note {
+  cursor: pointer;
+  outline: none;
+}
+.guitar-tab-duration {
+  stroke: var(--note-user-stroke);
+  stroke-width: 2;
+  opacity: 0.42;
+}
+.guitar-tab-fret-bg {
+  fill: var(--surface-float);
+  stroke: var(--note-user-stroke);
+  stroke-width: 1.3;
+}
+.guitar-tab-fret {
+  fill: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+.guitar-tab-note[data-selected="true"] .guitar-tab-fret-bg {
+  fill: var(--highlight-selected);
+  stroke: var(--highlight-selected-ink);
+  stroke-width: 2;
+}
+.guitar-tab-note[data-selected="true"] .guitar-tab-fret {
+  fill: var(--highlight-selected-ink);
+}
+.guitar-tab-note[data-current="true"] .guitar-tab-fret-bg {
+  fill: var(--highlight-current);
+  stroke: var(--highlight-current-ink);
+  stroke-width: 2.4;
+}
+.guitar-tab-note[data-current="true"] .guitar-tab-fret {
+  fill: var(--highlight-current-ink);
+}
+.guitar-tab-note:focus-visible .guitar-tab-fret-bg {
+  stroke: var(--focus);
+  stroke-width: 3;
+}
+.guitar-tab-bend {
+  fill: none;
+  stroke: var(--expression-bend-ink);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+.guitar-tab-vibrato {
+  fill: none;
+  stroke: var(--expression-vibrato-ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.guitar-tab-expression-label {
+  fill: var(--expression-label);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-2xs);
+  font-weight: 750;
+}
+
+/* Expression di fretboard tetap projection dari pitchBend/vibrato canonical. */
+.neck-expression {
+  pointer-events: none;
+}
+.neck-bend-arc {
+  fill: none;
+  stroke: var(--expression-bend-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.neck-bend-target {
+  fill: var(--surface-float);
+  stroke: var(--expression-bend-ink);
+  stroke-width: 1.8;
+}
+.neck-vibrato-wave {
+  fill: none;
+  stroke: var(--expression-vibrato-ink);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.neck-expression-label {
+  fill: var(--expression-label);
+  font-family: system-ui, sans-serif;
+  font-size: var(--text-2xs);
+  font-weight: 750;
+}
+
+@media (max-width: 46rem) {
+  .guitar-pane-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .guitar-local-toolbar {
+    justify-content: space-between;
+  }
+  .guitar-heading-copy > p {
+    display: none;
+  }
+  .guitar-playhead {
+    font-size: var(--text-xs);
+  }
+}
