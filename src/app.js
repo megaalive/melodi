@@ -2005,9 +2005,6 @@ document.addEventListener("change", (event) => {
   } else if (target.dataset.action === "set-zoom") {
     run(() => commands.setZoom(Number(target.value)));
   } else if (target.dataset.action === "set-view-mode") {
-    if (target.value === "drums" && commands.getState().editor.tool !== "select") {
-      run(() => commands.setTool("select"));
-    }
     run(() => commands.setViewMode(target.value));
   } else if (target.dataset.action === "set-follow-mode") {
     run(() => commands.setFollowMode(target.checked));
