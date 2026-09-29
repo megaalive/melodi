@@ -157,9 +157,6 @@
               <div class="pane-title-row">
                 <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
                 <p id="piano-roll-collapse-summary" class="collapsed-panel-summary" hidden></p>
-                <button id="piano-roll-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="pianoRoll" aria-controls="piano-roll-content" aria-expanded="true">
-                  <svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
-                </button>
                 <details class="pane-help">
                   <summary data-aria-copy="pianoRollHelpButton">?</summary>
                   <div class="pane-help-popover">
@@ -195,6 +192,9 @@
                 <button id="paste-notes" type="button" class="secondary" data-action="paste-notes" data-copy="pasteButton" disabled></button>
                 <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-copy="clearSelectionButton"></button>
               </div>
+              <button id="piano-roll-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="pianoRoll" aria-controls="piano-roll-content" aria-expanded="true">
+                <svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
+              </button>
             </div>
             <div id="piano-roll-content" class="panel-disclosure-content">
               <div class="roll-surface">
