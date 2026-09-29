@@ -112,6 +112,66 @@ function eventKey(cycle, noteId) {
   return JSON.stringify([cycle, noteId]);
 }
 
+export function planPercussionEvents(song, {
+  audioNow,
+  anchorAudioTime,
+  anchorTick,
+  tempo,
+  lookAheadSeconds,
+  loop,
+  scheduledKeys = new Set()
+}) {
+  const secondsPerTick = 60 / (PPQ * tempo);
+  const rawNow = anchorTick + Math.max(0, audioNow - anchorAudioTime) / secondsPerTick;
+  const rawEnd = anchorTick + Math.max(0, audioNow + lookAheadSeconds - anchorAudioTime) / secondsPerTick;
+  const candidates = [];
+
+  function add(track, hit, cycle, absoluteStart) {
+    const key = JSON.stringify(["percussion", cycle, track.id, hit.id]);
+    if (scheduledKeys.has(key) || absoluteStart < rawNow - 1e-9 || absoluteStart > rawEnd) return;
+    const startTime = Math.max(audioNow, anchorAudioTime + (absoluteStart - anchorTick) * secondsPerTick);
+    candidates.push({ key, track, hit, cycle, startTime });
+  }
+
+  const tracks = (song.tracks ?? []).filter((track) => track.kind === "percussion");
+  if (!loop.enabled) {
+    const rangeStart = loop?.startTick ?? 0;
+    const rangeEnd = loop?.endTick ?? Number.POSITIVE_INFINITY;
+    for (const track of tracks) {
+      for (const hit of track.events) {
+        if (hit.startTick < rangeStart || hit.startTick >= rangeEnd) continue;
+        add(track, hit, 0, hit.startTick);
+      }
+    }
+  } else {
+    const length = loop.endTick - loop.startTick;
+    const currentCycle = Math.max(0, Math.floor((rawNow - loop.startTick) / length));
+
+    if (anchorTick < loop.startTick && rawNow < loop.startTick) {
+      for (const track of tracks) {
+        for (const hit of track.events) {
+          if (hit.startTick < anchorTick || hit.startTick >= loop.startTick) continue;
+          add(track, hit, 0, hit.startTick);
+        }
+      }
+    }
+
+    for (const track of tracks) {
+      for (const hit of track.events) {
+        if (hit.startTick < loop.startTick || hit.startTick >= loop.endTick) continue;
+        const lastCycle = Math.max(currentCycle, Math.floor((rawEnd - loop.startTick) / length) + 1);
+        for (let cycle = currentCycle; cycle <= lastCycle; cycle += 1) {
+          add(track, hit, cycle, hit.startTick + cycle * length);
+        }
+      }
+    }
+  }
+
+  return candidates.sort((left, right) => left.startTime - right.startTime
+    || left.hit.startTick - right.hit.startTick
+    || compareText(left.hit.id, right.hit.id));
+}
+
 export function planNoteEvents(song, {
   audioNow,
   anchorAudioTime,
