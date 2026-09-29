@@ -917,6 +917,8 @@ function renderEditorControls() {
   const state = commands.getState();
   const song = commands.getSong();
   byId("snap-select").value = state.editor.snap;
+  const drumsSnap = byId("drums-snap-select");
+  if (drumsSnap && document.activeElement !== drumsSnap) drumsSnap.value = state.editor.snap;
   byId("editor-meter").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   for (const button of document.querySelectorAll('[data-action="set-tool"]')) {
     const active = button.dataset.tool === state.editor.tool;
@@ -1514,10 +1516,12 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
       expressionView?.render(commands.getSong(), state, rollView.getGeometry());
       scoreView?.updateSelection(state.selectedNoteIds ?? []);
       guitarTabView?.updateSelection(state.selectedNoteIds ?? []);
-      if (uiPreferences.guitarLayout === "fretboard") renderGuitar(normalizeRuntimeState(state));
-      else renderGuitarStatus(normalizeRuntimeState(state));
-      renderScoreControls(commands.getSong(), normalizeRuntimeState(state));
-      renderExpressionControls(normalizeRuntimeState(state));
+      const normalized = normalizeRuntimeState(state);
+      if (uiPreferences.guitarLayout === "fretboard") renderGuitar(normalized);
+      else renderGuitarStatus(normalized);
+      renderScoreControls(commands.getSong(), normalized);
+      renderExpressionControls(normalized);
+      renderDrums(commands.getSong(), normalized);
     }
   },
   onPlaybackChange: renderPlayback,
