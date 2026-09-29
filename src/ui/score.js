@@ -5,6 +5,17 @@ import { normalizePlaybackState, normalizeRuntimeState, normalizeViewState } fro
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+export function normalizeScoreLayout(value) {
+  return value === "page" ? "page" : "flow";
+}
+
+export function scoreStaffWidth(layout, measureCount, viewportWidth = 760) {
+  const viewport = Math.max(320, Number(viewportWidth) || 760);
+  if (normalizeScoreLayout(layout) === "page") return Math.max(520, viewport - 20);
+  const measures = Math.max(1, Number(measureCount) || 1);
+  return Math.max(viewport - 20, Math.min(12000, 180 + measures * 170));
+}
+
 function svgElement(name, attributes, text = null) {
   const element = document.createElementNS(SVG_NS, name);
   for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, String(value));
@@ -130,7 +141,7 @@ function markNoteElement(element, note, selected, tabStop, translate) {
   }) + (suffix ? `, ${suffix}` : ""));
   element.setAttribute(
     "aria-keyshortcuts",
-    "ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowUp Shift+ArrowDown Alt+ArrowLeft Alt+ArrowRight Delete Backspace Control+D Meta+D Enter Space Shift+F10"
+    "ArrowLeft ArrowRight ArrowUp ArrowDown Shift+ArrowUp Shift+ArrowDown Alt+ArrowLeft Alt+ArrowRight Delete Backspace Enter Space Shift+F10"
   );
 }
 
@@ -231,6 +242,9 @@ function renderLyricOverlay(svg, song, noteElementsById, syllableElementsById, t
 export function createScoreView(host, status, fallback, scrollContainer, translate, {
   onSelectNote = () => {},
   onSelectNotes = () => {},
+  onTransposeNotes = () => {},
+  onNudgeNotes = () => {},
+  onDeleteNotes = () => {},
   onContextMenu = () => {}
 } = {}) {
   let projection = null;
@@ -239,6 +253,26 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
   let noteNavigation = [];
   let activeNoteId = null;
   let activeSyllableIds = new Set();
+  let layout = "flow";
+  let layoutChanged = false;
+  const layoutScroll = new Map();
+
+  function setLayout(nextLayout) {
+    const next = normalizeScoreLayout(nextLayout);
+    if (next === layout) return layout;
+    if (scrollContainer) {
+      layoutScroll.set(layout, { left: scrollContainer.scrollLeft, top: scrollContainer.scrollTop });
+    }
+    layout = next;
+    layoutChanged = true;
+    return layout;
+  }
+
+  function interactionNoteIds(noteId) {
+    const selected = noteNavigation.filter((id) =>
+      (noteElementsById.get(id) ?? []).some((element) => element.dataset.selected === "true"));
+    return selected.includes(noteId) ? selected : [noteId];
+  }
 
   function findScoreNote(target) {
     const element = target instanceof Element ? target.closest('[data-entity="score-note"]') : null;
@@ -295,9 +329,31 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
       });
       return;
     }
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    const noteId = element.dataset.noteId;
+    const selectedIds = interactionNoteIds(noteId);
+
+    if (!event.ctrlKey && !event.metaKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.preventDefault();
+      const direction = event.key === "ArrowUp" ? 1 : -1;
+      onTransposeNotes(selectedIds, direction * (event.shiftKey ? 12 : 1));
+      return;
+    }
+
+    if (event.altKey && !event.ctrlKey && !event.metaKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+      event.preventDefault();
+      onNudgeNotes(selectedIds, event.key === "ArrowRight" ? 1 : -1);
+      return;
+    }
+
+    if (!event.altKey && !event.ctrlKey && !event.metaKey && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault();
+      onDeleteNotes(selectedIds);
+      return;
+    }
+
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    const currentIndex = noteNavigation.indexOf(element.dataset.noteId);
+    const currentIndex = noteNavigation.indexOf(noteId);
     const nextId = noteNavigation[currentIndex + (event.key === "ArrowRight" ? 1 : -1)];
     const next = noteElementsById.get(nextId)?.[0];
     if (!nextId || !next) return;
@@ -377,19 +433,27 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     activeSyllableIds = new Set();
     host.replaceChildren();
 
-    const staffWidth = Math.max(520, (scrollContainer?.clientWidth ?? 760) - 20);
-    ABCJS.renderAbc(host, projected.abc, {
+    if (scrollContainer && !layoutChanged) {
+      layoutScroll.set(layout, { left: scrollContainer.scrollLeft, top: scrollContainer.scrollTop });
+    }
+    const staffWidth = scoreStaffWidth(layout, projection.measures.length, scrollContainer?.clientWidth ?? 760);
+    const renderOptions = {
       add_classes: true,
-      responsive: "resize",
       staffwidth: staffWidth,
-      wrap: {
+      selectTypes: false
+    };
+    if (layout === "page") {
+      renderOptions.responsive = "resize";
+      renderOptions.wrap = {
         preferredMeasuresPerLine: 4,
         minSpacing: 1.35,
         maxSpacing: 2.4,
         lastLineLimit: 1
-      },
-      selectTypes: false
-    });
+      };
+    }
+    host.dataset.layout = layout;
+    if (scrollContainer) scrollContainer.dataset.layout = layout;
+    ABCJS.renderAbc(host, projected.abc, renderOptions);
 
     const svg = host.querySelector("svg");
     if (!svg) {
@@ -397,7 +461,15 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
       return;
     }
     svg.setAttribute("role", "group");
+    svg.dataset.layout = layout;
     svg.setAttribute("aria-label", translate("scoreImageLabel", { count: projection.measures.length }));
+
+    if (scrollContainer) {
+      const saved = layoutScroll.get(layout) ?? { left: 0, top: 0 };
+      scrollContainer.scrollLeft = saved.left;
+      scrollContainer.scrollTop = saved.top;
+      layoutChanged = false;
+    }
 
     const selected = new Set(state.selectedNoteIds ?? []);
     const noteById = new Map(song.notes.map((note) => [note.id, note]));
@@ -448,5 +520,12 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     updatePlayback(state.playback ?? {}, { ...(state.view ?? {}), follow: false });
   }
 
-  return Object.freeze({ render, updatePlayback, updateSelection, getProjection: () => projection });
+  return Object.freeze({
+    render,
+    updatePlayback,
+    updateSelection,
+    setLayout,
+    getLayout: () => layout,
+    getProjection: () => projection
+  });
 }
