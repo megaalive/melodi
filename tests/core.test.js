@@ -334,7 +334,7 @@ test("raw lyric text is separate from zero-note and melisma mappings", () => {
 });
 
 test("serialization round trip preserves the independently specified project", () => {
-  const expected = rawFixture();
+  const expected = createSong(rawFixture());
   const serialized = serializeProject(expected);
   assert.deepEqual(deserializeProject(serialized), expected);
 });
@@ -364,7 +364,7 @@ test("deserialize returns detached data from the supplied object", () => {
 
 test("deserialize rejects malformed data, unsupported versions, and dangling mappings", () => {
   expectCode(() => deserializeProject("{"), "malformed-project");
-  expectCode(() => deserializeProject({ schemaVersion: 2, song: fixture() }), "unsupported-version");
+  expectCode(() => deserializeProject({ schemaVersion: 99, song: fixture() }), "unsupported-version");
   const malformed = { schemaVersion: 1, song: fixture() };
   malformed.song.notes = null;
   expectCode(() => deserializeProject(malformed), "invalid-project");
