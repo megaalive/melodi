@@ -1,10 +1,9 @@
 import { midiToPitch } from "../core/model.js";
 
 /*
- * Guitar view bukan timeline kedua. Pertanyaan yang dijawabnya hanya satu:
- * nada ini bisa dimainkan di gitar pada posisi mana, dan posisi mana yang paling
- * enak dimainkan. Tidak ada transport, tidak ada sumbu waktu, jadi tidak ada
- * yang harus disinkronkan dengan Piano Roll.
+ * Projection Fretboard menjawab posisi fisik satu note pada neck. Timeline dan
+ * selection frase ada di guitar-tab.js; keduanya tetap berasal dari canonical
+ * NoteEvent yang sama dan tidak menyimpan salinan musik sendiri.
  */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
