@@ -497,6 +497,7 @@ test("multi-note delete commits once and prunes phrase, lyric, and selected IDs 
   let changes = 0;
   const commands = createCommands(fixture(), { onChange: () => { changes += 1; } });
   commands.selectNotes(["note-1", "note-2", "note-4"]);
+  changes = 0;
   const deleted = commands.deleteNotes(["note-1", "note-2"]);
   assert.deepEqual(deleted, ["note-1", "note-2"]);
   assert.equal(changes, 1);
