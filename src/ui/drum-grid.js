@@ -72,6 +72,14 @@ export function projectDrumGrid(song, {
   };
 }
 
+export function nextDrumCellHit(hits, selectedHitId = null) {
+  if (!Array.isArray(hits) || hits.length === 0) return null;
+  const currentIndex = hits.findIndex((hit) => hit.hitId === selectedHitId);
+  return currentIndex >= 0 && hits.length > 1
+    ? hits[(currentIndex + 1) % hits.length]
+    : hits[0];
+}
+
 function cellKey(pieceId, tick) {
   return `${pieceId}@${tick}`;
 }
@@ -116,10 +124,7 @@ export function createDrumGridView(root, {
   function selectCellHit(button) {
     const hits = hitsForCell(button);
     if (!hits.length) return false;
-    const currentIndex = hits.findIndex((hit) => hit.hitId === selectedHitId);
-    const next = currentIndex >= 0 && hits.length > 1
-      ? hits[(currentIndex + 1) % hits.length]
-      : hits[0];
+    const next = nextDrumCellHit(hits, selectedHitId);
     selectHit(next.trackId, next.hitId);
     return true;
   }
