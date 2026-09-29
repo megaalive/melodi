@@ -1,23 +1,24 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.13";
-import { createCommands } from "./core/commands.js?v=20260929.13";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.14";
+import { createCommands } from "./core/commands.js?v=20260929.14";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.13";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.13";
-import { createAudioPlayer } from "./audio/player.js?v=20260929.13";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.14";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.14";
+import { createAudioPlayer } from "./audio/player.js?v=20260929.14";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.13";
-import { createScoreView } from "./ui/score.js?v=20260929.13";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.13";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.13";
-import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.13";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.13";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.14";
+import { createScoreView } from "./ui/score.js?v=20260929.14";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260929.14";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.14";
+import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.14";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260929.14";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.14";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260929.13";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.13";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.13";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.13";
+import { createDraftPersistence } from "./storage/draft.js?v=20260929.14";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.14";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.14";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.14";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -40,6 +41,15 @@ const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
 const themeSelect = byId("theme");
 const translate = (key, values) => message(language, key, values);
+
+function canonicalSongEndTick(song) {
+  let endTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
+  for (const track of song.tracks) {
+    if (track.kind !== "percussion") continue;
+    for (const hit of track.events) endTick = Math.max(endTick, hit.startTick + (hit.durationTicks ?? 1));
+  }
+  return Math.max(1, endTick);
+}
 
 // Berbeda dari bahasa (yang in-memory), pilihan tema disimpan: ini preferensi
 // perangkat, dan reset tiap reload terasa seperti bug. Default tetap "system".
@@ -1194,12 +1204,7 @@ function renderPlayback() {
   if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
   if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
   byId("loop-enabled").checked = playback.loop.enabled;
-  let songEndTick = song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0);
-  for (const track of song.tracks) {
-    if (track.kind !== "percussion") continue;
-    for (const hit of track.events) songEndTick = Math.max(songEndTick, hit.startTick + (hit.durationTicks ?? 1));
-  }
-  songEndTick = Math.max(1, songEndTick);
+  const songEndTick = canonicalSongEndTick(song);
   const customPlaybackRange = playback.loop.startTick !== 0 || playback.loop.endTick !== songEndTick;
   byId("reset-playback-range").hidden = !customPlaybackRange;
   byId("reset-playback-range").dataset.startTick = String(playback.loop.startTick);
@@ -1208,14 +1213,15 @@ function renderPlayback() {
   const textEntryActive = active instanceof HTMLTextAreaElement
     || (active instanceof HTMLInputElement && !["checkbox", "radio", "button", "submit", "range"].includes(active.type));
   const follow = state.view.follow && playback.status === "playing" && !textEntryActive && !pointerInteractionActive;
-  rollView?.updatePlayback(playback, { follow });
+  const followMode = playbackFollowMode(follow, customPlaybackRange);
+  rollView?.updatePlayback(playback, { followMode, songEndTick });
   expressionView?.updatePlayback(playback);
   scoreView?.updatePlayback(playback, { ...state.view, follow });
   guitarTabView?.updatePlayback(playback, {
     follow: follow && state.view.mode === "guitar" && uiPreferences.guitarLayout === "tab"
   });
   drumGridView?.updatePlayback(playback, {
-    follow: follow && state.view.mode === "drums"
+    followMode: state.view.mode === "drums" ? followMode : "none"
   });
   if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
@@ -1250,6 +1256,7 @@ function render() {
   const rawLyricsDraft = byId("raw-lyrics").value;
   const song = commands.getSong();
   const state = normalizeRuntimeState(commands.getState());
+  const songEndTick = canonicalSongEndTick(song);
   const viewMarkup = getR3ViewMarkup();
 
   document.documentElement.lang = language;
@@ -1291,7 +1298,7 @@ function render() {
   renderEditorControls();
   renderGeneration(state);
   renderPanelDisclosures(song, state);
-  rollView.render(song, state);
+  rollView.render(song, state, null, songEndTick);
   expressionView?.render(song, state, rollView.getGeometry());
   renderExpressionControls(state);
   byId("piano-roll-empty").hidden = song.notes.length > 0;
@@ -1515,7 +1522,8 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
     renderEditorControls();
     if (rollView) {
       const state = commands.getState();
-      rollView.render(commands.getSong(), state);
+      const song = commands.getSong();
+      rollView.render(song, state, null, canonicalSongEndTick(song));
       expressionView?.render(commands.getSong(), state, rollView.getGeometry());
       scoreView?.updateSelection(state.selectedNoteIds ?? []);
       guitarTabView?.updateSelection(state.selectedNoteIds ?? []);

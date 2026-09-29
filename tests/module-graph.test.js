@@ -92,6 +92,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
   assert.ok(app.includes("./ui/drum-grid.js?v=" + build));
+  assert.ok(app.includes("./ui/roll-follow.js?v=" + build));
   assert.ok(app.includes("./ui/percussion-expression.js?v=" + build));
   assert.ok(app.includes("./storage/draft.js?v=" + build));
   assert.ok(app.includes("./io/share.js?v=" + build));

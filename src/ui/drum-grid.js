@@ -1,6 +1,7 @@
-import { PPQ } from "../core/model.js?v=20260929.13";
-import { SNAP_TICKS } from "../core/editor.js?v=20260929.13";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.13";
+import { PPQ } from "../core/model.js?v=20260929.14";
+import { SNAP_TICKS } from "../core/editor.js?v=20260929.14";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.14";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260929.14";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -268,7 +269,7 @@ export function createDrumGridView(root, {
     return projection;
   }
 
-  function updatePlayback(playback = {}, { follow = false } = {}) {
+  function updatePlayback(playback = {}, { followMode = "none" } = {}) {
     if (!currentProjection || !currentProjection.columns.length) return;
     const tick = Number.isFinite(playback.currentTick) ? playback.currentTick : 0;
     const index = clamp(Math.floor(tick / currentProjection.snapTicks), 0, currentProjection.columns.length - 1);
@@ -278,8 +279,28 @@ export function createDrumGridView(root, {
       for (const element of root.querySelectorAll(`[data-tick="${nextStep}"]`)) element.dataset.currentStep = "true";
       currentStep = nextStep;
     }
-    if (follow && playback.status === "playing") {
-      root.querySelector(`.drum-grid-step[data-tick="${nextStep}"]`)?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+    if (followMode !== "none" && playback.status === "playing") {
+      const scrollContainer = root.parentElement;
+      const step = root.querySelector(`.drum-grid-step[data-tick="${nextStep}"]`);
+      const corner = root.querySelector(".drum-grid-corner");
+      if (scrollContainer?.clientWidth > 0 && step?.getBoundingClientRect && root.getBoundingClientRect) {
+        const stepBounds = step.getBoundingClientRect();
+        const gridBounds = root.getBoundingClientRect();
+        const playheadX = stepBounds.left - gridBounds.left;
+        const gutterWidth = corner?.getBoundingClientRect?.().width ?? corner?.offsetWidth ?? 0;
+        const contentWidth = scrollContainer.scrollWidth ?? root.scrollWidth ?? 0;
+        const geometry = {
+          playheadX,
+          playheadWidth: stepBounds.width,
+          viewportWidth: scrollContainer.clientWidth,
+          gutterWidth,
+          contentWidth,
+          scrollLeft: scrollContainer.scrollLeft
+        };
+        scrollContainer.scrollLeft = followMode === "nearest"
+          ? nearestScrollLeft(geometry)
+          : centeredScrollLeft({ ...geometry, playheadX: playheadX + stepBounds.width / 2 });
+      }
     }
   }
 

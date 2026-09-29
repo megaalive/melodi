@@ -1,7 +1,7 @@
-import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js?v=20260929.13";
+import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js?v=20260929.14";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260929.13";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260929.13";
+import { createAgentSnapshot } from "./snapshot.js?v=20260929.14";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260929.14";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";

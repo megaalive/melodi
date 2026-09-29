@@ -368,3 +368,58 @@ test("pitch label gutter stays frozen during horizontal scroll", () => {
   assert.equal(svg.byClass("roll-pitch-label-gutter").length, 1);
 });
 
+test("full-song playback centers Piano Roll inside the timeline after the frozen labels", () => {
+  const { svg, scroll, view, state } = setup();
+  const longSong = song([note("n1", 60, 12000, 480)]);
+  state.playback.loop = { enabled: false, startTick: 0, endTick: 12480 };
+  state.playback.status = "playing";
+  view.render(longSong, state, null, 12480);
+
+  const geometry = view.getGeometry();
+  const midpoint = geometry.labelWidth + (scroll.clientWidth - geometry.labelWidth) / 2;
+  state.playback.currentTick = 2400;
+  view.updatePlayback(state.playback, { followMode: "center", songEndTick: 12480 });
+  assert.equal(scroll.scrollLeft, 0, "awal lagu tidak ditarik ke tengah");
+
+  state.playback.currentTick = 6000;
+  view.updatePlayback(state.playback, { followMode: "center", songEndTick: 12480 });
+  const x = tickToX(state.playback.currentTick, geometry);
+  assert.equal(scroll.scrollLeft, x - midpoint);
+  assert.equal(x - scroll.scrollLeft, midpoint);
+  assert.equal(svg.querySelector('[data-entity="pitch-label-layer"]').getAttribute("transform"), `translate(${scroll.scrollLeft} 0)`);
+});
+
+test("full-song Piano Roll stops at the maximum and custom range keeps bounded follow", () => {
+  const { scroll, view, state } = setup();
+  const longSong = song([note("n1", 60, 24000, 480)]);
+  state.playback.loop = { enabled: false, startTick: 0, endTick: 24480 };
+  state.playback.status = "playing";
+  view.render(longSong, state, null, 24480);
+  const geometry = view.getGeometry();
+
+  state.playback.currentTick = 24480;
+  view.updatePlayback(state.playback, { followMode: "center", songEndTick: 24480 });
+  assert.equal(scroll.scrollLeft, Math.max(0, geometry.width - scroll.clientWidth));
+
+  const { scroll: customScroll, view: customView, state: customState } = setup();
+  customState.playback.loop = { enabled: true, startTick: 480, endTick: 24480 };
+  customState.playback.status = "playing";
+  customView.render(longSong, customState, null, 24480);
+  customState.playback.currentTick = 6000;
+  customView.updatePlayback(customState.playback, { followMode: "nearest", songEndTick: 24480 });
+  const customX = tickToX(customState.playback.currentTick, customView.getGeometry());
+  assert.equal(customScroll.scrollLeft, customX - customScroll.clientWidth * 0.35);
+});
+
+test("follow off leaves the Piano Roll scroll position alone and uses canonical song end", () => {
+  const { scroll, view, state } = setup();
+  const longSong = song([note("melody", 60, 1200, 480)]);
+  state.playback.loop = { enabled: false, startTick: 0, endTick: 12000 };
+  state.playback.status = "playing";
+  view.render(longSong, state, null, 12000);
+  state.playback.currentTick = 5000;
+  view.updatePlayback(state.playback, { followMode: "none", songEndTick: 12000 });
+  assert.equal(scroll.scrollLeft, 0);
+  assert.ok(view.getGeometry().endTick >= 12000, "Piano Roll includes percussion-only song tail");
+});
+

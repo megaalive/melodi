@@ -1,6 +1,7 @@
 import { midiToPitch, PPQ } from "../core/model.js";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
+import { centeredScrollLeft } from "./roll-follow.js?v=20260929.14";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -316,11 +317,13 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     commands.selectNotes(next);
   }
 
-  function render(song, state = commands.getState(), focusTickOverride = null) {
+  function render(song, state = commands.getState(), focusTickOverride = null, songEndTickOverride = null) {
     state = normalizeRuntimeState(state);
     const savedLeft = scrollContainer?.scrollLeft ?? 0;
     const savedTop = scrollContainer?.scrollTop ?? 0;
-    timelineEndTick = Math.max(1, song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0));
+    timelineEndTick = Math.max(1, Number.isFinite(songEndTickOverride)
+      ? songEndTickOverride
+      : song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0));
     const endTick = Math.max(timelineEndTick, state.playback.currentTick);
     const selectedNote = [...state.selectedNoteIds].reverse().map((id) => song.notes.find((note) => note.id === id)).find(Boolean);
     const activeCandidate = state.generation?.candidates?.find((candidate) => candidate.id === state.generation.activeCandidateId);
@@ -655,21 +658,34 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     lastFocusTick = focusTick;
   }
 
-  function updatePlayback(playback, { follow = true } = {}) {
-    const rangeSignature = `${playback.loop?.startTick ?? 0}:${playback.loop?.endTick ?? timelineEndTick}`;
+  function updatePlayback(playback, {
+    followMode = "center",
+    songEndTick = timelineEndTick
+  } = {}) {
+    const rangeSignature = `${playback.loop?.startTick ?? 0}:${playback.loop?.endTick ?? songEndTick}`;
     if (rangeSignature !== lastPlaybackRange) {
-      render(commands.getSong(), commands.getState());
+      render(commands.getSong(), commands.getState(), null, songEndTick);
       return;
     }
     const playbackTickChanged = playback.currentTick !== lastPlaybackTick;
     lastPlaybackTick = playback.currentTick;
     if (playback.currentTick < geometry.startTick || playback.currentTick >= geometry.endTick) {
-      if (follow && playback.status === "playing" && (playbackTickChanged || pendingPlaybackFollow)) {
+      if (followMode !== "none" && playback.status === "playing" && (playbackTickChanged || pendingPlaybackFollow)) {
         if (activeDrag || finishingDrag) {
           pendingPlaybackFollow = true;
         } else {
           pendingPlaybackFollow = false;
-          render(commands.getSong(), commands.getState(), playback.currentTick);
+          render(commands.getSong(), commands.getState(), playback.currentTick, songEndTick);
+          if (followMode === "center" && scrollContainer?.clientWidth > 0) {
+            const x = tickToX(playback.currentTick, geometry);
+            scrollContainer.scrollLeft = centeredScrollLeft({
+              playheadX: x,
+              viewportWidth: scrollContainer.clientWidth,
+              gutterWidth: geometry.labelWidth,
+              contentWidth: geometry.width
+            });
+            syncFrozenPitchLabels();
+          }
         }
       } else {
         pendingPlaybackFollow = false;
@@ -683,12 +699,23 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         playhead.setAttribute("x2", String(x));
         playhead.setAttribute("data-tick", String(playback.currentTick));
       }
-      if (follow && playback.status === "playing" && scrollContainer?.clientWidth > 0 && !activeDrag && !finishingDrag) {
-        const left = scrollContainer.scrollLeft;
-        const right = left + scrollContainer.clientWidth;
-        if (x < left + geometry.labelWidth || x > right - 24) {
-          const maximum = Math.max(0, geometry.width - scrollContainer.clientWidth);
-          scrollContainer.scrollLeft = Math.max(0, Math.min(maximum, x - scrollContainer.clientWidth * 0.35));
+      if (followMode !== "none" && playback.status === "playing" && scrollContainer?.clientWidth > 0 && !activeDrag && !finishingDrag) {
+        if (followMode === "center") {
+          scrollContainer.scrollLeft = centeredScrollLeft({
+            playheadX: x,
+            viewportWidth: scrollContainer.clientWidth,
+            gutterWidth: geometry.labelWidth,
+            contentWidth: geometry.width
+          });
+          syncFrozenPitchLabels();
+        } else {
+          const left = scrollContainer.scrollLeft;
+          const right = left + scrollContainer.clientWidth;
+          if (x < left + geometry.labelWidth || x > right - 24) {
+            const maximum = Math.max(0, geometry.width - scrollContainer.clientWidth);
+            scrollContainer.scrollLeft = Math.max(0, Math.min(maximum, x - scrollContainer.clientWidth * 0.35));
+            syncFrozenPitchLabels();
+          }
         }
       }
     }
