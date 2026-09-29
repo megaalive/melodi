@@ -7,7 +7,8 @@ import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
 import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.6";
 import { createScoreView } from "./ui/score.js?v=20260929.6";
-import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260929.7";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.7";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
@@ -22,6 +23,7 @@ let rollView;
 let expressionView;
 let scoreView;
 let guitarView;
+let guitarTabView;
 let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
@@ -1197,7 +1199,10 @@ function renderPlayback() {
   rollView?.updatePlayback(playback, { follow });
   expressionView?.updatePlayback(playback);
   scoreView?.updatePlayback(playback, { ...state.view, follow });
-  if (guitarView?.updatePlayback(state)) renderGuitar(state);
+  guitarTabView?.updatePlayback(playback, {
+    follow: follow && state.view.mode === "guitar" && uiPreferences.guitarLayout === "tab"
+  });
+  if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
   for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
     item.dataset.current = String(activeSyllableIds.has(item.dataset.entityId));
@@ -1495,6 +1500,9 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
       rollView.render(commands.getSong(), state);
       expressionView?.render(commands.getSong(), state, rollView.getGeometry());
       scoreView?.updateSelection(state.selectedNoteIds ?? []);
+      guitarTabView?.updateSelection(state.selectedNoteIds ?? []);
+      if (uiPreferences.guitarLayout === "fretboard") renderGuitar(normalizeRuntimeState(state));
+      else renderGuitarStatus(normalizeRuntimeState(state));
       renderScoreControls(commands.getSong(), normalizeRuntimeState(state));
       renderExpressionControls(normalizeRuntimeState(state));
     }
@@ -1594,6 +1602,15 @@ scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fal
 });
 
 guitarView = createGuitarView(byId("guitar"));
+guitarTabView = createGuitarTabView(byId("guitar-tab"), byId("guitar-tab-scroll"), {
+  onSelectNote(noteId, additive) {
+    const selected = commands.getSelectedNoteIds();
+    const next = additive
+      ? selected.includes(noteId) ? selected.filter((id) => id !== noteId) : [...selected, noteId]
+      : [noteId];
+    run(() => commands.selectNotes(next));
+  }
+});
 bendEditor = createBendCurveEditor({
   root: byId("bend-editor-details"),
   rangeSelect: byId("bend-range"),
@@ -1610,27 +1627,32 @@ const guitarStatus = byId("guitar-status");
 const guitarLegend = byId("guitar-legend");
 const guitarPlayhead = byId("guitar-playhead");
 
-function renderGuitar(state) {
-  const { note, positions, primaryPosition, sounding, playheadTick } = guitarView.render(state);
-  const pitch = note ? midiToPitch(note.pitch) : null;
-  const labels = positions.map((position) => translate("guitarPosition", position));
-  const primaryLabel = primaryPosition ? translate("guitarPosition", primaryPosition) : null;
-  // Neck gitar tidak punya sumbu waktu, jadi playhead-nya berupa posisi bar dan
-  // ketukan, bukan garis yang bergerak di sepanjang fret.
-  // Snapshot tidak mengekspos song.timing, hanya timeSignature dan tempo di
-  // level atas. PPQ adalah konstanta model, jadi diimpor dari sana.
+function renderGuitarStatus(state, fretboardResult = null) {
+  const layout = uiPreferences.guitarLayout === "fretboard" ? "fretboard" : "tab";
   const { numerator, denominator } = state.song.timeSignature;
   const beatTicks = PPQ * 4 / denominator;
   const barTicks = beatTicks * numerator;
+  const playheadTick = state.playback.currentTick;
   const position = translate("guitarPlayheadPosition", {
     bar: Math.floor(playheadTick / barTicks) + 1,
     beat: Math.floor((playheadTick % barTicks) / beatTicks) + 1
   });
+
+  if (layout === "tab") {
+    guitarStatus.textContent = translate("guitarTabReady", { count: state.song.notes.length });
+    guitarLegend.textContent = translate("guitarTuning");
+    guitarPlayhead.textContent = state.playback.status === "playing" ? position : "";
+    return;
+  }
+
+  const result = fretboardResult ?? guitarView.render(state);
+  const { note, positions, primaryPosition, sounding } = result;
+  const pitch = note ? midiToPitch(note.pitch) : null;
+  const primaryLabel = primaryPosition ? translate("guitarPosition", primaryPosition) : null;
   if (!note) {
-    // Bantuan soal apa yang harus dilakukan sudah ada di judul panel, jadi di sini
-    // cukup dibiarkan kosong agar tidak mengulang kalimat yang sama.
     guitarStatus.textContent = "";
     guitarLegend.textContent = translate("guitarTuning");
+    guitarPlayhead.textContent = "";
     return;
   }
   guitarStatus.textContent = positions.length === 0
@@ -1640,16 +1662,39 @@ function renderGuitar(state) {
         primary: primaryLabel,
         count: Math.max(0, positions.length - 1),
         alternatives: positions
-          .filter((position) => !primaryPosition
-            || position.string !== primaryPosition.string
-            || position.fret !== primaryPosition.fret)
-          .map((position) => translate("guitarPosition", position))
+          .filter((candidate) => !primaryPosition
+            || candidate.string !== primaryPosition.string
+            || candidate.fret !== primaryPosition.fret)
+          .map((candidate) => translate("guitarPosition", candidate))
           .join(", ")
       });
   guitarLegend.textContent = translate("guitarTuning");
   guitarPlayhead.textContent = sounding && primaryLabel
     ? translate("guitarSoundingAt", { position, fingering: primaryLabel })
     : "";
+}
+
+function renderGuitar(state) {
+  const layout = uiPreferences.guitarLayout === "fretboard" ? "fretboard" : "tab";
+  const section = byId("guitar-section");
+  if (section) section.dataset.guitarLayout = layout;
+  for (const button of document.querySelectorAll('[data-action="set-guitar-layout"]')) {
+    button.setAttribute("aria-pressed", String(button.dataset.guitarLayout === layout));
+  }
+
+  const tabScroll = byId("guitar-tab-scroll");
+  const fretboardScroll = byId("guitar-scroll");
+  if (tabScroll) tabScroll.hidden = layout !== "tab";
+  if (fretboardScroll) fretboardScroll.hidden = layout !== "fretboard";
+
+  if (layout === "tab") {
+    guitarTabView?.render(state.song, state);
+    renderGuitarStatus(state);
+    return;
+  }
+
+  const result = guitarView.render(state);
+  renderGuitarStatus(state, result);
 }
 
 const publicCommands = Object.freeze({
@@ -1864,6 +1909,13 @@ document.addEventListener("click", (event) => {
   const state = commands.getState();
   if (target.dataset.action === "toggle-panel") {
     togglePanelDisclosure(target.dataset.panelCollapse);
+  } else if (target.dataset.action === "set-guitar-layout") {
+    const layout = target.dataset.guitarLayout === "fretboard" ? "fretboard" : "tab";
+    if (uiPreferences.guitarLayout !== layout) {
+      uiPreferences = { ...uiPreferences, guitarLayout: layout };
+      writeUiPreferences(safeStorage(), uiPreferences);
+      render();
+    }
   } else if (target.dataset.action === "set-score-layout") {
     const layout = target.dataset.scoreLayout === "page" ? "page" : "flow";
     if (uiPreferences.scoreLayout !== layout) {
