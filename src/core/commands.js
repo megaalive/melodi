@@ -576,6 +576,9 @@ export function createCommands(initialSong, {
     setViewMode(mode) {
       if (!["score", "piano-roll", "combined", "lyrics", "guitar", "drums"].includes(mode)) fail("invalid-view-mode");
       viewMode = mode;
+      // Masuk ke Drum Grid harus aman dari tool Gambar yang mungkin aktif di
+      // Piano Roll. Satu klik pertama tidak boleh diam-diam membuat hit.
+      if (mode === "drums") tool = "select";
       notifyChange("view");
       return viewMode;
     },
