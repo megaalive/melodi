@@ -1723,7 +1723,7 @@ function renderDrums(song, state) {
   if (state.view.mode !== "drums" || !drumGridView) return;
   const projection = drumGridView.render(song, state);
   const hitCount = projection.track?.events.length ?? 0;
-  byId("drums-snap-label").textContent = translate("drumsSnapLabel", { snap: projection.snap });
+  byId("drums-snap-select").value = projection.snap;
   byId("drums-status").textContent = translate(
     hitCount ? "drumsStatusReady" : "drumsStatusEmpty",
     hitCount ? { count: hitCount, snap: projection.snap } : { snap: projection.snap }
