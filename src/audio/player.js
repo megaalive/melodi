@@ -1,5 +1,6 @@
-import { MelodiError, PPQ } from "../core/model.js";
-import { planNoteEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js";
+import { MelodiError, PPQ } from "../core/model.js?v=20260929.12";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260929.12";
+import { percussionVoiceSpec } from "./percussion.js?v=20260929.12";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
@@ -45,6 +46,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
   let loop = { enabled: false, startTick: 0, endTick: 1920 };
   let scheduled = new Map();
   const voices = new Map();
+  const chokeVoices = new Map();
   let nextVoiceId = 0;
   let previewTimer = null;
   let previewGeneration = 0;
@@ -129,22 +131,26 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
         try { modulator.oscillator.disconnect(); } catch {}
         try { modulator.gain.disconnect(); } catch {}
       }
+      const oscillators = voice.oscillators ?? (voice.oscillator ? [voice.oscillator] : []);
       try {
         const parameter = voice.gain.gain;
         parameter.cancelScheduledValues(now);
         if (voice.startTime > now) {
           parameter.setValueAtTime(0, now);
-          voice.oscillator.stop(now);
+          for (const oscillator of oscillators) oscillator.stop(now);
         } else {
           if (typeof parameter.cancelAndHoldAtTime === "function") parameter.cancelAndHoldAtTime(now);
-          else parameter.setValueAtTime(Math.min(0.18, Math.max(0, parameter.value)), now);
+          else parameter.setValueAtTime(Math.min(0.42, Math.max(0, parameter.value)), now);
           parameter.linearRampToValueAtTime(0, now + 0.01);
-          voice.oscillator.stop(now + 0.012);
+          for (const oscillator of oscillators) oscillator.stop(now + 0.012);
         }
       } catch {
-        try { voice.oscillator.stop(); } catch {}
+        for (const oscillator of oscillators) {
+          try { oscillator.stop(); } catch {}
+        }
       }
     }
+    chokeVoices.clear();
     scheduled.clear();
   }
 
@@ -251,7 +257,16 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     }
 
     const id = ++nextVoiceId;
-    const voice = { oscillator, gain: envelope, panner, modulators, startTime: event.startTime, stopped: false };
+    const voice = {
+      oscillator,
+      oscillators: [oscillator],
+      gain: envelope,
+      panner,
+      modulators,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      stopped: false
+    };
     voices.set(id, voice);
     oscillator.addEventListener("ended", () => {
       try { oscillator.disconnect(); } catch {}
@@ -267,13 +282,119 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     oscillator.stop(event.endTime);
   }
 
+  function chokePercussionGroup(group, atTime) {
+    if (!group) return;
+    for (const id of chokeVoices.get(group) ?? []) {
+      const voice = voices.get(id);
+      if (!voice || voice.stopped || voice.endTime <= atTime || (voice.chokeStopTime ?? Infinity) <= atTime) continue;
+      const stopAt = atTime + 0.012;
+      voice.chokeStopTime = stopAt;
+      try {
+        const parameter = voice.gain.gain;
+        if (typeof parameter.cancelAndHoldAtTime === "function") parameter.cancelAndHoldAtTime(atTime);
+        else {
+          parameter.cancelScheduledValues(atTime);
+          parameter.setValueAtTime(Math.max(0, parameter.value), atTime);
+        }
+        parameter.linearRampToValueAtTime(0, atTime + 0.009);
+      } catch {}
+      for (const oscillator of voice.oscillators ?? []) {
+        try { oscillator.stop(stopAt); } catch {}
+      }
+    }
+  }
+
+  function schedulePercussionVoice(event) {
+    const spec = percussionVoiceSpec(event.track.kitId, event.hit);
+    if (!spec.oscillators.length) return;
+
+    chokePercussionGroup(spec.chokeGroup, event.startTime);
+
+    const envelope = context.createGain();
+    const panner = typeof context.createStereoPanner === "function" ? context.createStereoPanner() : null;
+    const startTime = event.startTime;
+    const endTime = startTime + spec.duration;
+    const peak = 0.42 * spec.amplitude;
+    envelope.gain.setValueAtTime(0, startTime);
+    envelope.gain.linearRampToValueAtTime(peak, startTime + Math.min(0.004, spec.duration * 0.08));
+    envelope.gain.linearRampToValueAtTime(0, endTime);
+
+    if (panner) {
+      if (typeof panner.pan?.setValueAtTime === "function") panner.pan.setValueAtTime(spec.pan, startTime);
+      else if (panner.pan) panner.pan.value = spec.pan;
+      envelope.connect(panner);
+      panner.connect(masterGain);
+    } else {
+      envelope.connect(masterGain);
+    }
+
+    const oscillators = [];
+    const sourceGains = [];
+    for (const component of spec.oscillators) {
+      const oscillator = context.createOscillator();
+      const sourceGain = context.createGain();
+      oscillator.type = component.type;
+      oscillator.frequency.setValueAtTime(component.frequency, startTime);
+      if (component.endFrequency) {
+        oscillator.frequency.linearRampToValueAtTime(component.endFrequency, endTime);
+      }
+      sourceGain.gain.setValueAtTime(component.gain, startTime);
+      oscillator.connect(sourceGain);
+      sourceGain.connect(envelope);
+      oscillator.start(startTime);
+      oscillator.stop(endTime);
+      oscillators.push(oscillator);
+      sourceGains.push(sourceGain);
+    }
+
+    const id = ++nextVoiceId;
+    const voice = {
+      oscillators,
+      gain: envelope,
+      panner,
+      sourceGains,
+      modulators: [],
+      startTime,
+      endTime,
+      chokeGroup: spec.chokeGroup,
+      stopped: false
+    };
+    voices.set(id, voice);
+    if (spec.chokeGroup) {
+      const ids = chokeVoices.get(spec.chokeGroup) ?? new Set();
+      ids.add(id);
+      chokeVoices.set(spec.chokeGroup, ids);
+    }
+
+    let remaining = oscillators.length;
+    for (const oscillator of oscillators) {
+      oscillator.addEventListener("ended", () => {
+        remaining -= 1;
+        try { oscillator.disconnect(); } catch {}
+        if (remaining > 0) return;
+        try { envelope.disconnect(); } catch {}
+        try { panner?.disconnect(); } catch {}
+        for (const sourceGain of sourceGains) {
+          try { sourceGain.disconnect(); } catch {}
+        }
+        voices.delete(id);
+        if (spec.chokeGroup) {
+          const ids = chokeVoices.get(spec.chokeGroup);
+          ids?.delete(id);
+          if (ids?.size === 0) chokeVoices.delete(spec.chokeGroup);
+        }
+      }, { once: true });
+    }
+  }
+
   function currentCycle(tick) {
     if (!loop.enabled) return 0;
     return Math.max(0, Math.floor((tick - loop.startTick) / (loop.endTick - loop.startTick)));
   }
 
   function scheduleAhead(audioNow = context.currentTime) {
-    const events = planNoteEvents(getSong(), {
+    const song = getSong();
+    const options = {
       audioNow,
       anchorAudioTime: anchor.audioTime,
       anchorTick: anchor.tick,
@@ -281,10 +402,21 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
       lookAheadSeconds: LOOK_AHEAD_SECONDS,
       loop,
       scheduledKeys: scheduled
-    });
-    for (const event of events) {
+    };
+    const noteEvents = planNoteEvents(song, options);
+    const percussionEvents = planPercussionEvents(song, options);
+
+    for (const event of noteEvents) {
       try {
         scheduleVoice(event);
+        scheduled.set(event.key, event.cycle);
+      } catch {
+        fail("audio-scheduling-failed");
+      }
+    }
+    for (const event of percussionEvents) {
+      try {
+        schedulePercussionVoice(event);
         scheduled.set(event.key, event.cycle);
       } catch {
         fail("audio-scheduling-failed");

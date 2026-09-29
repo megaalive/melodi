@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import { createSong, MelodiError, PPQ } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { createAudioPlayer, pitchBendAt } from "../src/audio/player.js";
+import { percussionVoiceSpec } from "../src/audio/percussion.js";
 import {
   findCurrentNoteId,
   findCurrentSectionId,
   planNoteEvents,
+  planPercussionEvents,
   projectPlaybackState,
   secondsToTickOffset,
   ticksToSeconds,
@@ -282,6 +284,128 @@ test("loop scheduler retriggers a note crossing loop start when playback seeks i
   }).find((event) => event.note.id === song.notes[0].id);
   assert.equal(nextCycle?.cycle, 1);
   assert.equal(nextCycle?.startTime, ticksToSeconds(600, 120));
+});
+
+test("percussion scheduler plans HitEvent without converting drums into pitched notes", () => {
+  const song = fixture();
+  song.tracks.push({
+    id: "drums",
+    kind: "percussion",
+    role: "rhythm",
+    kitId: "gm-standard",
+    events: [
+      { id: "kick-1", pieceId: "kick", startTick: 0, velocity: 110, articulation: "accent" },
+      { id: "hat-1", pieceId: "closed-hi-hat", startTick: 240, velocity: 76, articulation: "normal" }
+    ]
+  });
+  const options = {
+    audioNow: 0,
+    anchorAudioTime: 0,
+    anchorTick: 0,
+    tempo: 120,
+    lookAheadSeconds: 0.3,
+    loop: { enabled: false, startTick: 0, endTick: 1920 }
+  };
+  const events = planPercussionEvents(song, options);
+  assert.deepEqual(events.map((event) => event.hit.id), ["kick-1", "hat-1"]);
+  assert.equal(events[0].startTime, 0);
+  assert.equal(events[1].startTime, 0.25);
+  assert.deepEqual(planPercussionEvents(song, {
+    ...options,
+    scheduledKeys: new Set(events.map((event) => event.key))
+  }), []);
+});
+
+test("percussion scheduler repeats hits inside an enabled loop and ignores hits outside it", () => {
+  const song = fixture();
+  song.tracks.push({
+    id: "drums-loop",
+    kind: "percussion",
+    role: "rhythm",
+    kitId: "gm-standard",
+    events: [
+      { id: "kick-loop", pieceId: "kick", startTick: 480, velocity: 100, articulation: "normal" },
+      { id: "outside-loop", pieceId: "snare", startTick: 1600, velocity: 100, articulation: "normal" }
+    ]
+  });
+  const loop = { enabled: true, startTick: 480, endTick: 1440 };
+  const events = planPercussionEvents(song, {
+    audioNow: ticksToSeconds(1400, 120),
+    anchorAudioTime: 0,
+    anchorTick: 0,
+    tempo: 120,
+    lookAheadSeconds: 0.2,
+    loop
+  });
+  assert.ok(events.some((event) => event.hit.id === "kick-loop" && event.cycle === 1));
+  assert.equal(events.some((event) => event.hit.id === "outside-loop"), false);
+});
+
+test("percussion voice specs honor velocity, articulation, pan, tuning, and choke", () => {
+  const open = percussionVoiceSpec("gm-standard", {
+    pieceId: "open-hi-hat",
+    velocity: 100,
+    articulation: "ghost",
+    pan: -0.4,
+    tuning: 12,
+    durationTicks: 480
+  });
+  const closed = percussionVoiceSpec("gm-standard", {
+    pieceId: "closed-hi-hat",
+    velocity: 127,
+    articulation: "accent"
+  });
+  assert.equal(open.chokeGroup, "hi-hat");
+  assert.equal(closed.chokeGroup, "hi-hat");
+  assert.equal(open.pan, -0.4);
+  assert.ok(open.amplitude < closed.amplitude);
+  assert.ok(open.oscillators[0].frequency > 9000, "tuning +12 menaikkan frekuensi satu oktaf");
+});
+
+test("Web Audio engine schedules canonical percussion together with melody", async () => {
+  const song = fixture();
+  song.tracks.push({
+    id: "drums-audio",
+    kind: "percussion",
+    role: "rhythm",
+    kitId: "gm-standard",
+    events: [
+      { id: "kick-audio", pieceId: "kick", startTick: 0, velocity: 127, articulation: "accent" }
+    ]
+  });
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, audioContextFactory: () => context });
+  await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+
+  assert.equal(context.oscillators.length, 3, "1 oscillator melodi + 2 oscillator kick");
+  assert.equal(context.oscillators[1].startTime, 0);
+  assert.ok(context.oscillators[1].stopTime > 0);
+  assert.ok(context.gains.length >= 5, "master + melody + percussion envelope/source gains");
+  player.stop();
+});
+
+test("closed hi-hat chokes an open hi-hat already scheduled in the same group", async () => {
+  const song = fixture();
+  song.notes = [];
+  song.phrases[0].noteIds = [];
+  song.tracks.push({
+    id: "drums-choke",
+    kind: "percussion",
+    role: "rhythm",
+    kitId: "gm-standard",
+    events: [
+      { id: "open-hat", pieceId: "open-hi-hat", startTick: 0, velocity: 100, articulation: "normal", durationTicks: 960 },
+      { id: "closed-hat", pieceId: "closed-hi-hat", startTick: 60, velocity: 100, articulation: "normal" }
+    ]
+  });
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, audioContextFactory: () => context });
+  await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+
+  assert.equal(context.oscillators.length, 8, "4 open-hat + 4 closed-hat oscillator");
+  const chokeTime = ticksToSeconds(60, 120) + 0.012;
+  assert.ok(context.oscillators.slice(0, 4).every((oscillator) => Math.abs(oscillator.stopTime - chokeTime) < 1e-9));
+  player.stop();
 });
 
 test("Web Audio engine uses audio timestamps, de-duplicates wakes, and cancels old voices", async () => {
