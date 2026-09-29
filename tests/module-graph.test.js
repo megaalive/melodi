@@ -238,6 +238,33 @@ test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-ben
   assert.match(css, /score-note\[data-selected="true"\]/);
 });
 
+test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
+
+  const start = html.indexOf('<section id="guitar-section"');
+  const end = html.indexOf("</section>", start);
+  const section = html.slice(start, end);
+  assert.match(section, /data-guitar-layout="tab"/);
+  assert.match(section, /id="guitar-layout-tab"[^>]*data-action="set-guitar-layout"/);
+  assert.match(section, /id="guitar-layout-fretboard"[^>]*data-action="set-guitar-layout"/);
+  assert.match(section, /id="guitar-tab-scroll"/);
+  assert.match(section, /id="guitar-scroll"[^>]*hidden/);
+
+  assert.match(preferences, /guitarLayout:\s*"tab"/);
+  assert.match(app, /createGuitarTabView/);
+  assert.match(app, /guitarTabView\?\.updateSelection/);
+  assert.match(app, /guitarTabView\?\.updatePlayback/);
+  assert.match(app, /data-action === "set-guitar-layout"/);
+
+  assert.match(css, /\.guitar-tab-note\[data-selected="true"\]/);
+  assert.match(css, /\.guitar-tab-note\[data-current="true"\]/);
+  assert.match(css, /\.neck-bend-arc/);
+  assert.match(css, /\.neck-vibrato-wave/);
+});
+
 test("UI tidak memakai dialog blocking bawaan browser", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   const html = readFileSync(resolve("index.html"), "utf8");
