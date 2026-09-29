@@ -30,20 +30,31 @@ export function createDrumPadsView(root, positionElement, {
 
   root.replaceChildren();
   root.setAttribute("role", "group");
-  root.setAttribute("aria-label", translate("drumsPadsLabel"));
 
   for (const piece of kit.pieces) {
     const button = makeElement("button", "drum-pad");
     button.type = "button";
     button.dataset.entity = "drum-pad";
     button.dataset.pieceId = piece.id;
-    button.setAttribute("aria-label", translate("drumsPadLabel", { piece: piece.name, velocity: DEFAULT_PAD_VELOCITY }));
+    button.dataset.pieceName = piece.name;
     const name = makeElement("span", "drum-pad-name", piece.name);
     const meta = makeElement("span", "drum-pad-meta", `V${DEFAULT_PAD_VELOCITY}`);
     meta.setAttribute("aria-hidden", "true");
     button.append(name, meta);
     root.append(button);
   }
+
+  function refreshLabels() {
+    root.setAttribute("aria-label", translate("drumsPadsLabel"));
+    for (const button of root.querySelectorAll('[data-entity="drum-pad"]')) {
+      button.setAttribute("aria-label", translate("drumsPadLabel", {
+        piece: button.dataset.pieceName,
+        velocity: DEFAULT_PAD_VELOCITY
+      }));
+    }
+  }
+
+  refreshLabels();
 
   root.addEventListener("click", (event) => {
     const button = event.target instanceof Element
@@ -65,5 +76,5 @@ export function createDrumPadsView(root, positionElement, {
     }
   }
 
-  return Object.freeze({ updatePlayback });
+  return Object.freeze({ updatePlayback, refreshLabels });
 }
