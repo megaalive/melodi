@@ -550,7 +550,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
       lyrics: fixture().lyrics,
       sections: fixture().sections,
       phrases: fixture().phrases,
-      chords: fixture().chords
+      chords: fixture().chords,
+      tracks: fixture().tracks
     },
     playback: {
       status: "stopped",
@@ -581,7 +582,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote", "setLyrics",
+      "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea", "loadSong",
