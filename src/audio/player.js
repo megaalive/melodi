@@ -1,4 +1,4 @@
-import { MelodiError, PPQ } from "../core/model.js";
+import { MelodiError, PPQ } from "../core/model.js?v=20260929.12";
 import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260929.12";
 import { percussionVoiceSpec } from "./percussion.js?v=20260929.12";
 
