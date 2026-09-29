@@ -103,6 +103,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   const share = readFileSync(resolve("src/io/share.js"), "utf8");
   const draft = readFileSync(resolve("src/storage/draft.js"), "utf8");
   const drumGrid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
+  const drumPads = readFileSync(resolve("src/ui/drum-pads.js"), "utf8");
   assert.ok(commands.includes("./model.js?v=" + build));
   assert.ok(commands.includes("./snapshot.js?v=" + build));
   assert.ok(snapshot.includes("./model.js?v=" + build));
@@ -112,6 +113,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(drumGrid.includes("../core/model.js?v=" + build));
   assert.ok(drumGrid.includes("../core/editor.js?v=" + build));
   assert.ok(drumGrid.includes("../instruments/percussion.js?v=" + build));
+  assert.ok(drumPads.includes("../instruments/percussion.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
