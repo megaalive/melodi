@@ -282,6 +282,32 @@ test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron
   assert.match(css, /\.neck-vibrato-wave/);
 });
 
+test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const runtime = readFileSync(resolve("src/core/runtime-state.js"), "utf8");
+
+  assert.match(html, /<option value="drums" data-copy="viewDrumsOption"/);
+  const start = html.indexOf('<section id="drums-section"');
+  const end = html.indexOf("</section>", start);
+  const section = html.slice(start, end);
+  assert.match(section, /data-view-region="drums"/);
+  assert.match(section, /id="drum-grid"/);
+  assert.match(section, /data-entity="drum-grid"/);
+
+  assert.match(app, /createDrumGridView/);
+  assert.match(app, /commands\.addPercussionHit/);
+  assert.match(app, /commands\.deletePercussionHit/);
+  assert.match(app, /drumGridView\?\.updatePlayback/);
+  assert.match(runtime, /drums:\s*\["drums"\]/);
+  assert.doesNotMatch(runtime, /expression:\s*\[[^\]]*"drums"/);
+
+  assert.match(css, /body\[data-view-mode="drums"\] \.workspace-sidebar/);
+  assert.match(css, /\.drum-cell\[data-current-step="true"\]/);
+  assert.match(css, /\.drum-hit-marker/);
+});
+
 test("UI tidak memakai dialog blocking bawaan browser", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   const html = readFileSync(resolve("index.html"), "utf8");
