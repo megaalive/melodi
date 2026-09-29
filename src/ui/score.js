@@ -333,7 +333,7 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     const noteId = element.dataset.noteId;
     const selectedIds = interactionNoteIds(noteId);
 
-    if (!event.ctrlKey && !event.metaKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+    if (!event.altKey && !event.ctrlKey && !event.metaKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
       event.preventDefault();
       const direction = event.key === "ArrowUp" ? 1 : -1;
       onTransposeNotes(selectedIds, direction * (event.shiftKey ? 12 : 1));
@@ -348,7 +348,17 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
 
     if (!event.altKey && !event.ctrlKey && !event.metaKey && (event.key === "Delete" || event.key === "Backspace")) {
       event.preventDefault();
+      const index = noteNavigation.indexOf(noteId);
+      const remaining = noteNavigation.filter((id) => !selectedIds.includes(id));
+      const nextFocusId = noteNavigation.slice(index + 1).find((id) => !selectedIds.includes(id))
+        ?? [...noteNavigation.slice(0, index)].reverse().find((id) => !selectedIds.includes(id))
+        ?? remaining[0]
+        ?? null;
       onDeleteNotes(selectedIds);
+      if (nextFocusId && noteElementsById.has(nextFocusId)) {
+        onSelectNotes([nextFocusId], false);
+        noteElementsById.get(nextFocusId)?.[0]?.focus();
+      }
       return;
     }
 
