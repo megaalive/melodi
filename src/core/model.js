@@ -215,23 +215,26 @@ export function createInitialSong(idFactory = createId) {
 
   // Baseline ini persis mengikuti project share yang dipilih user:
   // 81 BPM internal, A minor, 6/8, 21 note, panjang 8 birama.
+  const subtleVibrato = { rateHz: 5.8, depthSemitones: 0.05, delayPosition: 0.2 };
+  const finalVibrato = { rateHz: 5.8, depthSemitones: 0.2, delayPosition: 0.2 };
   const defaultMelody = [
     { pitch: 69, startTick: 0, durationTicks: 480 },
-    { pitch: 74, startTick: 480, durationTicks: 240 },
-    { pitch: 76, startTick: 720, durationTicks: 240 },
+    { pitch: 74, startTick: 480, durationTicks: 240, vibrato: subtleVibrato },
+    { pitch: 76, startTick: 720, durationTicks: 240, vibrato: subtleVibrato },
     {
       pitch: 76, startTick: 960, durationTicks: 720,
-      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }],
+      vibrato: subtleVibrato
     },
     {
       pitch: 76, startTick: 1680, durationTicks: 480,
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.3, semitones: 1 }, { position: 1, semitones: 1 }]
     },
     { pitch: 76, startTick: 2160, durationTicks: 240 },
-    { pitch: 74, startTick: 2400, durationTicks: 480 },
+    { pitch: 74, startTick: 2400, durationTicks: 480, vibrato: subtleVibrato },
 
     { pitch: 72, startTick: 2880, durationTicks: 480 },
-    { pitch: 74, startTick: 3360, durationTicks: 240 },
+    { pitch: 74, startTick: 3360, durationTicks: 240, vibrato: subtleVibrato },
     {
       pitch: 74, startTick: 3600, durationTicks: 720,
       pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
@@ -245,14 +248,15 @@ export function createInitialSong(idFactory = createId) {
         { position: 1, semitones: 0 }
       ]
     },
-    { pitch: 72, startTick: 5040, durationTicks: 720 },
+    { pitch: 72, startTick: 5040, durationTicks: 720, vibrato: subtleVibrato },
 
     { pitch: 69, startTick: 5760, durationTicks: 240 },
     { pitch: 71, startTick: 6000, durationTicks: 240 },
     { pitch: 72, startTick: 6240, durationTicks: 240 },
     {
       pitch: 72, startTick: 6480, durationTicks: 720,
-      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }]
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.28, semitones: 2 }, { position: 1, semitones: 2 }],
+      vibrato: subtleVibrato
     },
     {
       pitch: 72, startTick: 7200, durationTicks: 720,
@@ -261,15 +265,17 @@ export function createInitialSong(idFactory = createId) {
         { position: 0.22, semitones: 2 },
         { position: 0.42, semitones: 2 },
         { position: 1, semitones: 0 }
-      ]
+      ],
+      vibrato: subtleVibrato
     },
-    { pitch: 71, startTick: 7920, durationTicks: 720 },
+    { pitch: 71, startTick: 7920, durationTicks: 720, vibrato: subtleVibrato },
 
     { pitch: 69, startTick: 8640, durationTicks: 720 },
     { pitch: 67, startTick: 9360, durationTicks: 720 },
     {
       pitch: 67, startTick: 10080, durationTicks: 1440,
-      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.24, semitones: 2 }, { position: 1, semitones: 2 }]
+      pitchBend: [{ position: 0, semitones: 0 }, { position: 0.24, semitones: 2 }, { position: 1, semitones: 2 }],
+      vibrato: finalVibrato
     }
   ];
 
