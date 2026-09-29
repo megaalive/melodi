@@ -3945,3 +3945,96 @@ body[data-view-mode="drums"] .workspace-sidebar {
     min-height: 3.8rem;
   }
 }
+
+
+/* Hit Expression hanya untuk capability percussion; tidak memakai Bend/Vibrato pitched. */
+.drum-cell[data-selected="true"] {
+  z-index: 2;
+  outline: 2px solid var(--accent-strong);
+  outline-offset: -2px;
+  background: var(--highlight-selected);
+}
+.drum-cell[data-selected="true"] .drum-hit-marker {
+  background: var(--highlight-selected-ink);
+}
+
+.percussion-expression-panel {
+  margin: 0 0 0.65rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.5rem;
+  background: var(--surface-subtle);
+}
+.percussion-expression-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.55rem;
+}
+.percussion-expression-heading h3,
+.percussion-expression-heading p {
+  margin: 0;
+}
+.percussion-expression-heading h3 {
+  font-size: var(--text-sm);
+}
+.percussion-expression-heading p {
+  margin-top: 0.12rem;
+  font-size: var(--text-xs);
+}
+.percussion-capability-summary {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+.percussion-capability-summary > div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.percussion-capability-summary dt {
+  color: var(--text-muted);
+}
+.percussion-capability-summary dd {
+  margin: 0;
+  font-weight: 700;
+}
+.percussion-expression-fields {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(7rem, 1fr));
+  gap: 0.45rem;
+}
+.percussion-expression-fields label {
+  min-width: 0;
+}
+.percussion-expression-fields input,
+.percussion-expression-fields select {
+  width: 100%;
+}
+.percussion-expression-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+@media (max-width: 64rem) {
+  .percussion-expression-fields {
+    grid-template-columns: repeat(3, minmax(7rem, 1fr));
+  }
+}
+@media (max-width: 46rem) {
+  .percussion-expression-heading {
+    flex-direction: column;
+  }
+  .percussion-expression-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .percussion-expression-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .percussion-expression-actions button {
+    width: 100%;
+  }
+}

@@ -1,6 +1,6 @@
-import { PPQ } from "../core/model.js?v=20260929.10";
-import { SNAP_TICKS } from "../core/editor.js?v=20260929.10";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.10";
+import { PPQ } from "../core/model.js?v=20260929.11";
+import { SNAP_TICKS } from "../core/editor.js?v=20260929.11";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.11";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -72,6 +72,14 @@ export function projectDrumGrid(song, {
   };
 }
 
+export function nextDrumCellHit(hits, selectedHitId = null) {
+  if (!Array.isArray(hits) || hits.length === 0) return null;
+  const currentIndex = hits.findIndex((hit) => hit.hitId === selectedHitId);
+  return currentIndex >= 0 && hits.length > 1
+    ? hits[(currentIndex + 1) % hits.length]
+    : hits[0];
+}
+
 function cellKey(pieceId, tick) {
   return `${pieceId}@${tick}`;
 }
@@ -86,33 +94,90 @@ function makeElement(name, className, text = "") {
 export function createDrumGridView(root, {
   translate = (key) => key,
   onAddHit = () => {},
+  onSelectHit = () => {},
   onDeleteHit = () => {}
 } = {}) {
   let currentProjection = null;
   let currentStep = null;
+  let selectedTrackId = null;
+  let selectedHitId = null;
+
+  function updateSelectionDom() {
+    for (const cell of root.querySelectorAll('[data-entity="drum-cell"]')) {
+      const selected = Boolean(selectedHitId && cell.dataset.hitIds?.split(",").includes(selectedHitId));
+      cell.dataset.selected = String(selected);
+    }
+  }
+
+  function selectHit(trackId, hitId, notify = true) {
+    selectedTrackId = trackId ?? null;
+    selectedHitId = hitId ?? null;
+    updateSelectionDom();
+    if (notify) onSelectHit(selectedHitId ? { trackId: selectedTrackId, hitId: selectedHitId } : null);
+  }
+
+  function hitsForCell(button) {
+    if (!currentProjection) return [];
+    return currentProjection.cells.get(cellKey(button.dataset.pieceId, Number(button.dataset.tick))) ?? [];
+  }
+
+  function selectCellHit(button) {
+    const hits = hitsForCell(button);
+    if (!hits.length) return false;
+    const next = nextDrumCellHit(hits, selectedHitId);
+    selectHit(next.trackId, next.hitId);
+    return true;
+  }
 
   root.addEventListener("click", (event) => {
     const button = event.target instanceof Element
       ? event.target.closest('[data-entity="drum-cell"]')
       : null;
     if (!button || !root.contains(button)) return;
-    const existing = button.dataset.hitId;
-    if (existing) {
-      onDeleteHit(button.dataset.trackId, existing);
+    if (button.dataset.hit === "true") {
+      selectCellHit(button);
       return;
     }
-    onAddHit({
+    const created = onAddHit({
       pieceId: button.dataset.pieceId,
       startTick: Number(button.dataset.tick),
       velocity: DEFAULT_VELOCITY,
       articulation: "normal"
     });
+    if (created?.trackId && created?.hit?.id) selectHit(created.trackId, created.hit.id);
+  });
+
+  root.addEventListener("keydown", (event) => {
+    const button = event.target instanceof Element
+      ? event.target.closest('[data-entity="drum-cell"]')
+      : null;
+    if (!button || !root.contains(button)) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      selectHit(null, null);
+      return;
+    }
+    if (event.key !== "Delete" && event.key !== "Backspace") return;
+    const hits = hitsForCell(button);
+    const hit = hits.find((candidate) => candidate.hitId === selectedHitId) ?? hits[0] ?? null;
+    if (!hit) return;
+    event.preventDefault();
+    const deleted = onDeleteHit(hit.trackId, hit.hitId);
+    if (deleted !== undefined && hit.hitId === selectedHitId) selectHit(null, null);
   });
 
   function render(song, state = {}) {
     const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
     currentProjection = projection;
     currentStep = null;
+    if (selectedHitId) {
+      const stillExists = projection.track?.events.some((hit) => hit.id === selectedHitId) ?? false;
+      if (!stillExists) {
+        selectedTrackId = null;
+        selectedHitId = null;
+        onSelectHit(null);
+      }
+    }
     root.replaceChildren();
     root.style.setProperty("--drum-column-count", String(projection.columns.length));
 
@@ -151,6 +216,7 @@ export function createDrumGridView(root, {
         button.dataset.bar = String(tick % projection.barTicks === 0);
         button.dataset.beat = String(tick % projection.beatTicks === 0);
         button.dataset.hit = String(Boolean(hit));
+        button.dataset.selected = String(Boolean(hit && hits.some((candidate) => candidate.hitId === selectedHitId)));
         button.setAttribute("aria-pressed", String(Boolean(hit)));
         button.setAttribute("aria-label", hit
           ? translate(hits.length > 1 ? "drumsMultiHitCellLabel" : "drumsHitCellLabel", {
@@ -162,6 +228,7 @@ export function createDrumGridView(root, {
           : translate("drumsEmptyCellLabel", { piece: piece.name, tick }));
         if (hit) {
           button.dataset.hitId = hit.hitId;
+          button.dataset.hitIds = hits.map((candidate) => candidate.hitId).join(",");
           button.dataset.trackId = hit.trackId;
           button.dataset.velocity = String(hit.velocity);
           button.dataset.timingOffset = String(hit.timingOffset);
@@ -207,5 +274,15 @@ export function createDrumGridView(root, {
     return currentProjection;
   }
 
-  return Object.freeze({ render, updatePlayback, getProjection });
+  function getSelectedHit() {
+    return selectedHitId ? { trackId: selectedTrackId, hitId: selectedHitId } : null;
+  }
+
+  return Object.freeze({
+    render,
+    updatePlayback,
+    getProjection,
+    getSelectedHit,
+    selectHit: (trackId, hitId) => selectHit(trackId, hitId)
+  });
 }

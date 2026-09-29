@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialSong } from "../src/core/model.js";
-import { drumGridEndTick, projectDrumGrid } from "../src/ui/drum-grid.js";
+import { drumGridEndTick, nextDrumCellHit, projectDrumGrid } from "../src/ui/drum-grid.js";
 
 function songFixture() {
   let next = 0;
@@ -69,4 +69,18 @@ test("percussion dapat memperpanjang Drum Grid melewati melody", () => {
     ]
   });
   assert.equal(drumGridEndTick(song), 12960);
+});
+
+
+test("collision microtiming dapat di-cycle tanpa menyembunyikan hit", () => {
+  const hits = [
+    { hitId: "a", timingOffset: -5 },
+    { hitId: "b", timingOffset: 10 },
+    { hitId: "c", timingOffset: 14 }
+  ];
+  assert.equal(nextDrumCellHit(hits, null).hitId, "a");
+  assert.equal(nextDrumCellHit(hits, "a").hitId, "b");
+  assert.equal(nextDrumCellHit(hits, "b").hitId, "c");
+  assert.equal(nextDrumCellHit(hits, "c").hitId, "a");
+  assert.equal(nextDrumCellHit([], "a"), null);
 });
