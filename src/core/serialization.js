@@ -1,6 +1,7 @@
 import { createSong, MelodiError } from "./model.js";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2]);
 
 export function serializeProject(song) {
   const canonicalSong = createSong(song);
@@ -17,6 +18,6 @@ export function deserializeProject(input) {
   if (project === null || typeof project !== "object" || Array.isArray(project) || Object.keys(project).sort().join(",") !== "schemaVersion,song") {
     throw new MelodiError("malformed-project");
   }
-  if (project.schemaVersion !== SCHEMA_VERSION) throw new MelodiError("unsupported-version");
+  if (!SUPPORTED_SCHEMA_VERSIONS.has(project.schemaVersion)) throw new MelodiError("unsupported-version");
   return createSong(project.song);
 }
