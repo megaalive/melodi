@@ -80,6 +80,11 @@ export function nextDrumCellHit(hits, selectedHitId = null) {
     : hits[0];
 }
 
+export function drumCellIntent(tool, hasHit) {
+  if (hasHit) return "select";
+  return tool === "draw" ? "add" : "clear";
+}
+
 function cellKey(pieceId, tick) {
   return `${pieceId}@${tick}`;
 }
@@ -135,11 +140,12 @@ export function createDrumGridView(root, {
       ? event.target.closest('[data-entity="drum-cell"]')
       : null;
     if (!button || !root.contains(button)) return;
-    if (button.dataset.hit === "true") {
+    const intent = drumCellIntent(currentTool, button.dataset.hit === "true");
+    if (intent === "select") {
       selectCellHit(button);
       return;
     }
-    if (currentTool !== "draw") {
+    if (intent === "clear") {
       selectHit(null, null);
       return;
     }
