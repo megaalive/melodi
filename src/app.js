@@ -1736,6 +1736,7 @@ function renderGuitar(state) {
 
 function renderDrums(song, state) {
   if (state.view.mode !== "drums" || !drumGridView) return;
+  drumPadsView?.refreshLabels();
   const projection = drumGridView.render(song, state);
   const hitCount = projection.track?.events.length ?? 0;
   byId("drums-snap-select").value = projection.snap;
