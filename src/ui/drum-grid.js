@@ -49,8 +49,11 @@ export function projectDrumGrid(song, {
       pan: hit.pan ?? null,
       tuning: hit.tuning ?? null
     };
-    const previous = cells.get(key);
-    if (!previous || Math.abs(candidate.timingOffset) < Math.abs(previous.timingOffset)) cells.set(key, candidate);
+    const entries = cells.get(key) ?? [];
+    entries.push(candidate);
+    entries.sort((left, right) => Math.abs(left.timingOffset) - Math.abs(right.timingOffset)
+      || left.startTick - right.startTick || left.hitId.localeCompare(right.hitId));
+    cells.set(key, entries);
   }
 
   const { numerator = 4, denominator = 4 } = song?.timing?.timeSignature ?? {};
@@ -137,7 +140,8 @@ export function createDrumGridView(root, {
       root.append(label);
 
       for (const tick of projection.columns) {
-        const hit = projection.cells.get(cellKey(piece.id, tick)) ?? null;
+        const hits = projection.cells.get(cellKey(piece.id, tick)) ?? [];
+        const hit = hits[0] ?? null;
         const button = makeElement("button", "drum-cell");
         button.type = "button";
         button.dataset.entity = "drum-cell";
@@ -148,10 +152,11 @@ export function createDrumGridView(root, {
         button.dataset.hit = String(Boolean(hit));
         button.setAttribute("aria-pressed", String(Boolean(hit)));
         button.setAttribute("aria-label", hit
-          ? translate("drumsHitCellLabel", {
+          ? translate(hits.length > 1 ? "drumsMultiHitCellLabel" : "drumsHitCellLabel", {
               piece: piece.name,
               tick: hit.startTick,
-              velocity: hit.velocity
+              velocity: hit.velocity,
+              count: hits.length
             })
           : translate("drumsEmptyCellLabel", { piece: piece.name, tick }));
         if (hit) {
@@ -159,10 +164,16 @@ export function createDrumGridView(root, {
           button.dataset.trackId = hit.trackId;
           button.dataset.velocity = String(hit.velocity);
           button.dataset.timingOffset = String(hit.timingOffset);
+          button.dataset.hitCount = String(hits.length);
           button.style.setProperty("--hit-strength", String(clamp(hit.velocity / 127, 0.12, 1)));
           const marker = makeElement("span", "drum-hit-marker");
           marker.setAttribute("aria-hidden", "true");
           button.append(marker);
+          if (hits.length > 1) {
+            const count = makeElement("span", "drum-hit-count", String(hits.length));
+            count.setAttribute("aria-hidden", "true");
+            button.append(count);
+          }
           if (hit.timingOffset !== 0) {
             const offset = makeElement("span", "drum-hit-offset", hit.timingOffset > 0 ? "›" : "‹");
             offset.setAttribute("aria-hidden", "true");
