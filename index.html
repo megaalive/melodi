@@ -408,12 +408,12 @@
                 </dl>
               </div>
               <div class="percussion-expression-fields">
-                <label><span data-copy="percussionTimingLabel"></span><input id="percussion-start-tick" name="startTick" type="number" min="0" step="1" required></label>
-                <label><span data-copy="percussionVelocityLabel"></span><input id="percussion-velocity" name="velocity" type="number" min="1" max="127" step="1" required></label>
-                <label><span data-copy="percussionPanLabel"></span><input id="percussion-pan" name="pan" type="number" min="-100" max="100" step="1" required></label>
-                <label><span data-copy="percussionTuningLabel"></span><input id="percussion-tuning" name="tuning" type="number" min="-12" max="12" step="0.1" required></label>
+                <label><span data-copy="percussionTimingLabel"></span><input id="percussion-start-tick" data-focus-key="percussion-start-tick" name="startTick" type="number" min="0" step="1" required></label>
+                <label><span data-copy="percussionVelocityLabel"></span><input id="percussion-velocity" data-focus-key="percussion-velocity" name="velocity" type="number" min="1" max="127" step="1" required></label>
+                <label><span data-copy="percussionPanLabel"></span><input id="percussion-pan" data-focus-key="percussion-pan" name="pan" type="number" min="-100" max="100" step="1" required></label>
+                <label><span data-copy="percussionTuningLabel"></span><input id="percussion-tuning" data-focus-key="percussion-tuning" name="tuning" type="number" min="-12" max="12" step="0.1" required></label>
                 <label><span data-copy="percussionArticulationLabel"></span>
-                  <select id="percussion-articulation" name="articulation" required>
+                  <select id="percussion-articulation" data-focus-key="percussion-articulation" name="articulation" required>
                     <option value="normal" data-copy="percussionArticulationNormal"></option>
                     <option value="ghost" data-copy="percussionArticulationGhost"></option>
                     <option value="accent" data-copy="percussionArticulationAccent"></option>
