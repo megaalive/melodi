@@ -107,9 +107,39 @@ test("Piano Roll dan Expression punya disclosure independen yang dapat diakses",
   assert.match(preferences, /expressionCollapsed:\s*false/);
 });
 
-test("toolbar mengelompokkan file, transport, playback settings, dan view", () => {
+test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan detail editor", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+
+  for (const id of ["piano-roll-collapse", "expression-collapse"]) {
+    const start = html.indexOf(`id="${id}"`);
+    const button = html.slice(start, html.indexOf("</button>", start));
+    assert.match(button, /class="toolbar-icon disclosure-chevron"/);
+  }
+
+  for (const detailClass of ["transport-advanced", "bend-curve-editor", "expression-vibrato-details", "generation-options", "sidebar-tools"]) {
+    const start = html.indexOf(`class="${detailClass}"`);
+    const fragment = html.slice(start, html.indexOf("</summary>", start));
+    assert.match(fragment, /class="disclosure-summary"/);
+    assert.match(fragment, /class="toolbar-icon disclosure-chevron"/);
+  }
+
+  assert.doesNotMatch(html, /collapse-chevron/);
+  assert.match(css, /details:not\(\[open\]\) > \.disclosure-summary \.disclosure-chevron/);
+  assert.match(css, /panel-collapse-button\[aria-expanded="false"\] \.disclosure-chevron/);
+});
+
+test("toolbar mengelompokkan file, preferences, transport, playback settings, dan view", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
+
+  const headerStart = html.indexOf('<header class="page-header">');
+  const headerEnd = html.indexOf("</header>", headerStart);
+  const header = html.slice(headerStart, headerEnd);
+  assert.match(header, /class="header-actions"/);
+  assert.match(header, /class="project-actions"/);
+  assert.equal((header.match(/class="header-select-control"/g) ?? []).length, 2);
+  assert.ok(header.indexOf('class="project-actions"') < header.indexOf('class="header-controls"'));
 
   const fileGroupStart = html.indexOf('data-aria-copy="fileProjectGroupLabel"');
   const fileGroup = html.slice(fileGroupStart, html.indexOf("</div>", fileGroupStart));
