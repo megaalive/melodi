@@ -38,6 +38,7 @@ function fail(code) {
 export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete = () => {}, onInterrupted = () => {}, onError = () => {}, audioContextFactory = null }) {
   let context = null;
   let masterGain = null;
+  let noiseBuffer = null;
   let timer = null;
   let playing = false;
   let generation = 0;
@@ -56,6 +57,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     if (context?.state === "closed") {
       context = null;
       masterGain = null;
+      noiseBuffer = null;
     }
     if (context) return context;
 
@@ -113,6 +115,22 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     timer = null;
   }
 
+  function getNoiseBuffer() {
+    if (noiseBuffer) return noiseBuffer;
+    const sampleRate = context.sampleRate || 44100;
+    const buffer = context.createBuffer(1, sampleRate * 2, sampleRate);
+    const data = buffer.getChannelData(0);
+    let state = 0x6d2b79f5;
+    for (let index = 0; index < data.length; index += 1) {
+      state ^= state << 13;
+      state ^= state >>> 17;
+      state ^= state << 5;
+      data[index] = (state >>> 0) / 0x80000000 - 1;
+    }
+    noiseBuffer = buffer;
+    return noiseBuffer;
+  }
+
   function cancelVoices() {
     if (previewTimer !== null) clearTimeout(previewTimer);
     previewTimer = null;
@@ -131,7 +149,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
         try { modulator.oscillator.disconnect(); } catch {}
         try { modulator.gain.disconnect(); } catch {}
       }
-      const oscillators = voice.oscillators ?? (voice.oscillator ? [voice.oscillator] : []);
+      const oscillators = voice.sources ?? voice.oscillators ?? (voice.oscillator ? [voice.oscillator] : []);
       try {
         const parameter = voice.gain.gain;
         parameter.cancelScheduledValues(now);
@@ -298,7 +316,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
         }
         parameter.linearRampToValueAtTime(0, atTime + 0.009);
       } catch {}
-      for (const oscillator of voice.oscillators ?? []) {
+      for (const oscillator of voice.sources ?? voice.oscillators ?? []) {
         try { oscillator.stop(stopAt); } catch {}
       }
     }
@@ -328,30 +346,17 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
       envelope.connect(masterGain);
     }
 
+    const sources = [];
     const oscillators = [];
+    const filters = [];
     const sourceGains = [];
-    for (const component of spec.oscillators) {
-      const oscillator = context.createOscillator();
-      const sourceGain = context.createGain();
-      oscillator.type = component.type;
-      oscillator.frequency.setValueAtTime(component.frequency, startTime);
-      if (component.endFrequency) {
-        oscillator.frequency.linearRampToValueAtTime(component.endFrequency, endTime);
-      }
-      sourceGain.gain.setValueAtTime(component.gain, startTime);
-      oscillator.connect(sourceGain);
-      sourceGain.connect(envelope);
-      oscillator.start(startTime);
-      oscillator.stop(endTime);
-      oscillators.push(oscillator);
-      sourceGains.push(sourceGain);
-    }
-
     const id = ++nextVoiceId;
     const voice = {
+      sources,
       oscillators,
       gain: envelope,
       panner,
+      filters,
       sourceGains,
       modulators: [],
       startTime,
@@ -360,30 +365,92 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
       stopped: false
     };
     voices.set(id, voice);
-    if (spec.chokeGroup) {
-      const ids = chokeVoices.get(spec.chokeGroup) ?? new Set();
-      ids.add(id);
-      chokeVoices.set(spec.chokeGroup, ids);
-    }
+    const disconnectVoice = () => {
+      if (voice.cleaned) return;
+      voice.cleaned = true;
+      for (const source of sources) { try { source.disconnect(); } catch {} }
+      for (const filter of filters) { try { filter.disconnect(); } catch {} }
+      for (const sourceGain of sourceGains) { try { sourceGain.disconnect(); } catch {} }
+      try { envelope.disconnect(); } catch {}
+      try { panner?.disconnect(); } catch {}
+      voices.delete(id);
+      if (spec.chokeGroup) {
+        const ids = chokeVoices.get(spec.chokeGroup);
+        ids?.delete(id);
+        if (ids?.size === 0) chokeVoices.delete(spec.chokeGroup);
+      }
+    };
 
-    let remaining = oscillators.length;
-    for (const oscillator of oscillators) {
-      oscillator.addEventListener("ended", () => {
-        remaining -= 1;
-        try { oscillator.disconnect(); } catch {}
-        if (remaining > 0) return;
-        try { envelope.disconnect(); } catch {}
-        try { panner?.disconnect(); } catch {}
-        for (const sourceGain of sourceGains) {
-          try { sourceGain.disconnect(); } catch {}
-        }
-        voices.delete(id);
-        if (spec.chokeGroup) {
-          const ids = chokeVoices.get(spec.chokeGroup);
-          ids?.delete(id);
-          if (ids?.size === 0) chokeVoices.delete(spec.chokeGroup);
-        }
-      }, { once: true });
+    try {
+      for (const component of spec.oscillators) {
+        const oscillator = context.createOscillator();
+        const sourceGain = context.createGain();
+        sources.push(oscillator);
+        oscillators.push(oscillator);
+        sourceGains.push(sourceGain);
+        oscillator.type = component.type;
+        oscillator.frequency.setValueAtTime(component.frequency, startTime);
+        if (component.endFrequency) oscillator.frequency.linearRampToValueAtTime(component.endFrequency, endTime);
+        sourceGain.gain.setValueAtTime(component.gain, startTime);
+        oscillator.connect(sourceGain);
+        sourceGain.connect(envelope);
+      }
+
+      for (const component of spec.noise) {
+        const source = context.createBufferSource();
+        const filter = context.createBiquadFilter();
+        const sourceGain = context.createGain();
+        const noiseEnd = Math.min(endTime, startTime + component.duration);
+        const noiseAttackEnd = Math.min(noiseEnd, startTime + component.attack);
+        const noiseReleaseStart = Math.max(noiseAttackEnd, noiseEnd - component.release);
+        sources.push(source);
+        filters.push(filter);
+        sourceGains.push(sourceGain);
+        source.buffer = getNoiseBuffer();
+        filter.type = component.filterType;
+        filter.frequency.setValueAtTime(component.frequency, startTime);
+        filter.Q.setValueAtTime(component.q, startTime);
+        sourceGain.gain.setValueAtTime(0, startTime);
+        sourceGain.gain.linearRampToValueAtTime(component.gain, noiseAttackEnd);
+        sourceGain.gain.setValueAtTime(component.gain, noiseReleaseStart);
+        sourceGain.gain.linearRampToValueAtTime(0, noiseEnd);
+        source.connect(filter);
+        filter.connect(sourceGain);
+        sourceGain.connect(envelope);
+      }
+
+      if (sources.length === 0) {
+        disconnectVoice();
+        return;
+      }
+      if (spec.chokeGroup) {
+        const ids = chokeVoices.get(spec.chokeGroup) ?? new Set();
+        ids.add(id);
+        chokeVoices.set(spec.chokeGroup, ids);
+      }
+
+      let remaining = sources.length;
+      for (const source of sources) {
+        source.addEventListener("ended", () => {
+          remaining -= 1;
+          if (remaining <= 0) disconnectVoice();
+        }, { once: true });
+      }
+      for (const oscillator of oscillators) {
+        oscillator.start(startTime);
+        oscillator.stop(endTime);
+      }
+      for (let index = oscillators.length; index < sources.length; index += 1) {
+        const source = sources[index];
+        const component = spec.noise[index - oscillators.length];
+        const noiseEnd = Math.min(endTime, startTime + component.duration);
+        source.start(startTime);
+        source.stop(noiseEnd);
+      }
+    } catch (error) {
+      for (const source of sources) { try { source.stop(context.currentTime); } catch {} }
+      disconnectVoice();
+      throw error;
     }
   }
 

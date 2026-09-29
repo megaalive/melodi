@@ -90,6 +90,9 @@ class FakeAudioContext {
   oscillators = [];
   gains = [];
   panners = [];
+  filters = [];
+  bufferSources = [];
+  buffers = [];
   listeners = new Map();
   addEventListener(name, callback) { this.listeners.set(name, callback); }
   setState(state) {
@@ -97,7 +100,7 @@ class FakeAudioContext {
     this.listeners.get("statechange")?.();
   }
   createGain() {
-    const gain = { gain: new FakeAudioParam(), connect() {}, disconnect() {} };
+    const gain = { gain: new FakeAudioParam(), connect() {}, disconnect() { this.disconnected = true; } };
     this.gains.push(gain);
     return gain;
   }
@@ -119,6 +122,30 @@ class FakeAudioContext {
     };
     this.oscillators.push(oscillator);
     return oscillator;
+  }
+  createBuffer(channelCount, length, sampleRate) {
+    const channels = Array.from({ length: channelCount }, () => new Float32Array(length));
+    const buffer = { length, sampleRate, getChannelData: (channel) => channels[channel] };
+    this.buffers.push(buffer);
+    return buffer;
+  }
+  createBiquadFilter() {
+    const filter = { frequency: new FakeAudioParam(), Q: new FakeAudioParam(), connect() {}, disconnect() { this.disconnected = true; } };
+    this.filters.push(filter);
+    return filter;
+  }
+  createBufferSource() {
+    const source = {
+      listeners: {},
+      addEventListener(name, callback) { this.listeners[name] = callback; },
+      connect() {},
+      disconnect() { this.disconnected = true; },
+      start(time) { this.startTime = time; },
+      stop(time) { this.stopTime = time; },
+      emitEnded() { this.listeners.ended?.(); }
+    };
+    this.bufferSources.push(source);
+    return source;
   }
 }
 
@@ -405,7 +432,37 @@ test("closed hi-hat chokes an open hi-hat already scheduled in the same group", 
   assert.equal(context.oscillators.length, 8, "4 open-hat + 4 closed-hat oscillator");
   const chokeTime = ticksToSeconds(60, 120) + 0.012;
   assert.ok(context.oscillators.slice(0, 4).every((oscillator) => Math.abs(oscillator.stopTime - chokeTime) < 1e-9));
+  assert.ok(Math.abs(context.bufferSources[0].stopTime - chokeTime) < 1e-9, "open-hat noise is choked with its metallic components");
   player.stop();
+});
+
+test("percussion shares one deterministic noise buffer and disconnects noise voices on end", async () => {
+  const song = fixture();
+  song.tracks.push({
+    id: "noise-audio",
+    kind: "percussion",
+    role: "rhythm",
+    kitId: "gm-standard",
+    events: [
+      { id: "snare-noise", pieceId: "snare", startTick: 0, velocity: 100, articulation: "normal" },
+      { id: "ride-noise", pieceId: "ride", startTick: 60, velocity: 80, articulation: "normal" }
+    ]
+  });
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, audioContextFactory: () => context });
+  await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+
+  assert.equal(context.buffers.length, 1);
+  assert.ok(context.bufferSources.length >= 3);
+  assert.ok(context.bufferSources.every((source) => source.buffer === context.buffers[0]));
+  assert.equal(context.filters.length, context.bufferSources.length);
+  const noiseSources = [...context.bufferSources];
+  player.stop();
+  for (const source of noiseSources) source.emitEnded();
+  for (const oscillator of context.oscillators) oscillator.listeners.ended?.();
+  assert.ok(noiseSources.every((source) => source.disconnected));
+  assert.ok(context.filters.every((filter) => filter.disconnected));
+  assert.ok(context.gains.slice(1).every((gain) => gain.disconnected));
 });
 
 test("Web Audio engine uses audio timestamps, de-duplicates wakes, and cancels old voices", async () => {
