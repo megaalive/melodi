@@ -167,23 +167,27 @@ test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan det
   assert.match(css, /panel-collapse-button\[aria-expanded="false"\] \.disclosure-chevron/);
 });
 
-test("toolbar mengelompokkan file, preferences, transport, playback settings, dan view", () => {
+test("Project menu mengelompokkan alur project tanpa memenuhi header dengan tombol file", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
 
   const headerStart = html.indexOf('<header class="page-header">');
   const headerEnd = html.indexOf("</header>", headerStart);
   const header = html.slice(headerStart, headerEnd);
   assert.match(header, /class="header-actions"/);
-  assert.match(header, /class="project-actions"/);
+  assert.match(header, /id="project-menu" class="project-menu"/);
   assert.equal((header.match(/class="header-select-control"/g) ?? []).length, 2);
-  assert.ok(header.indexOf('class="project-actions"') < header.indexOf('class="header-controls"'));
-
-  const fileGroupStart = html.indexOf('data-aria-copy="fileProjectGroupLabel"');
-  const fileGroup = html.slice(fileGroupStart, html.indexOf("</div>", fileGroupStart));
-  for (const id of ["new-idea", "open-project-file", "save-project-file", "share-song"]) {
-    assert.equal((fileGroup.match(new RegExp(`id="${id}"`, "g")) ?? []).length, 1, `${id} harus tunggal di grup file`);
+  assert.ok(header.indexOf('class="project-menu"') < header.indexOf('class="header-controls"'));
+  assert.doesNotMatch(header, /class="project-actions"/);
+  const menuStart = header.indexOf('class="project-menu-popover"');
+  const menuEnd = header.indexOf("</div>", menuStart);
+  const projectMenu = header.slice(menuStart, menuEnd);
+  for (const action of ["new-song", "show-examples", "show-browser-library", "show-save-browser", "open-project-file", "save-project-file", "share-song"]) {
+    assert.match(projectMenu, new RegExp(`data-action="${action}"`));
   }
+  assert.match(header, /id="project-file-input" type="file"[^>]+hidden/);
+  assert.match(css, /#project-menu\[open\]\s*\{\s*z-index:\s*45;/);
 
   const transport = html.indexOf('class="transport-action-group" role="group" data-aria-copy="transportControlsGroupLabel"');
   const settings = html.indexOf('class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel"');
@@ -201,7 +205,7 @@ test("toolbar mengelompokkan file, preferences, transport, playback settings, da
   assert.match(app, /element\.setAttribute\("title", label\)/);
 
   const iconButtons = [...html.matchAll(/<button\b[^>]*class="[^"]*\bicon-button\b[^"]*"[^>]*>([\s\S]*?)<\/button>/g)];
-  assert.ok(iconButtons.length >= 4);
+  assert.equal(iconButtons.length, 1, "header keeps only the command-palette icon; project actions live in one menu");
   for (const [, button] of iconButtons) {
     assert.match(button, /<svg[^>]*aria-hidden="true"/);
   }
@@ -306,6 +310,7 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   const css = readFileSync(resolve("styles/app.css"), "utf8");
   const runtime = readFileSync(resolve("src/core/runtime-state.js"), "utf8");
+  const grid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
 
   assert.match(html, /<option value="drums" data-copy="viewDrumsOption"/);
   const start = html.indexOf('<section id="drums-section"');
@@ -320,6 +325,9 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.doesNotMatch(section, /drum-pads|Drum Pads/i);
 
   assert.match(app, /createDrumGridView/);
+  assert.match(app, /isDrumKeyboardTarget\(target\)/);
+  assert.match(grid, /target\.closest\("#drum-grid-scroll, #drums-selection-toolbar"\)/);
+  assert.match(grid, /target\.closest\("\.instrument-mix-button, input, select, textarea/);
   assert.match(app, /commands\.addPercussionHit/);
   assert.match(app, /commands\.deletePercussionHit/);
   assert.match(app, /drumGridView\?\.updatePlayback/);
@@ -349,13 +357,16 @@ test("Hit Expression percussion capability-aware dan tidak meminjam Bend/Vibrato
   for (const id of ["percussion-start-tick", "percussion-velocity", "percussion-pan", "percussion-tuning", "percussion-articulation"]) {
     assert.match(section, new RegExp(`id="${id}"`));
   }
-  assert.match(section, /data-action="delete-selected-percussion-hit"/);
+  assert.match(section, /data-action="delete-selected-percussion-hits"/);
+  assert.match(section, /id="drums-selection-toolbar"|class="drums-selection-toolbar"/);
+  assert.ok(section.indexOf('id="drum-grid-scroll"') < section.indexOf('id="percussion-expression-form"'));
 
   assert.match(app, /resolvePercussionExpression/);
   assert.match(app, /commands\.updatePercussionHit/);
   assert.match(app, /percussionExpressionPatch/);
-  assert.match(grid, /onSelectHit/);
-  assert.match(grid, /event\.key !== "Delete"/);
+  assert.match(grid, /onSelectHits/);
+  assert.match(grid, /drumKeyboardIntent/);
+  assert.match(grid, /drum-selection-rect/);
   assert.match(grid, /nextDrumCellHit/);
   assert.match(expression, /pan:\s*panPercent === 0 \? null/);
   assert.match(expression, /tuning:\s*tuning === 0 \? null/);
@@ -374,10 +385,12 @@ test("audio engine menjadwalkan percussion canonical tanpa sample dependency", (
   assert.match(player, /schedulePercussionVoice/);
   assert.match(player, /chokePercussionGroup/);
   assert.match(transport, /export function planPercussionEvents/);
-  assert.match(percussion, /case "kick"/);
-  assert.match(percussion, /case "snare"/);
-  assert.match(percussion, /case "closed-hi-hat"/);
-  assert.match(percussion, /case "crash"/);
+  assert.match(percussion, /const VOICE_SPECS/);
+  assert.match(percussion, /Object\.hasOwn\(VOICE_SPECS, pieceId\)/);
+  assert.match(percussion, /function unsupportedVoice/);
+  assert.match(percussion, /noise: voice\.noise\.map/);
+  assert.match(player, /getNoiseBuffer/);
+  assert.match(player, /createBiquadFilter/);
   assert.doesNotMatch(player + percussion, /fetch\(|AudioBufferSource|decodeAudioData|\.wav|\.mp3/i);
 });
 

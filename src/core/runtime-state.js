@@ -83,6 +83,8 @@ export function normalizeRuntimeState(state = {}) {
   return {
     ...state,
     selectedNoteIds: state.selectedNoteIds ?? [],
+    selectedPercussionHitIds: state.selectedPercussionHitIds ?? [],
+    mix: state.mix ?? { channels: {} },
     generation: normalizeGenerationState(state.generation),
     view: normalizeViewState(state.view),
     playback: normalizePlaybackState(state.playback),

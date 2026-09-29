@@ -1,6 +1,7 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20260929.15";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260929.15";
-import { percussionVoiceSpec } from "./percussion.js?v=20260929.15";
+import { MelodiError, PPQ } from "../core/model.js?v=20260930.18";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.18";
+import { percussionVoiceSpec } from "./percussion.js?v=20260930.18";
+import { isInstrumentAudible, percussionChannelId } from "./mix.js?v=20260930.18";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
@@ -35,7 +36,7 @@ function fail(code) {
   throw new MelodiError(code);
 }
 
-export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete = () => {}, onInterrupted = () => {}, onError = () => {}, audioContextFactory = null }) {
+export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), onPosition = () => {}, onComplete = () => {}, onInterrupted = () => {}, onError = () => {}, audioContextFactory = null }) {
   let context = null;
   let masterGain = null;
   let noiseBuffer = null;
@@ -472,8 +473,10 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     };
     const noteEvents = planNoteEvents(song, options);
     const percussionEvents = planPercussionEvents(song, options);
+    const mix = getMix();
 
     for (const event of noteEvents) {
+      if (!isInstrumentAudible(mix, "melody")) continue;
       try {
         scheduleVoice(event);
         scheduled.set(event.key, event.cycle);
@@ -482,6 +485,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
       }
     }
     for (const event of percussionEvents) {
+      if (!isInstrumentAudible(mix, percussionChannelId(event.track.id, event.hit.pieceId))) continue;
       try {
         schedulePercussionVoice(event);
         scheduled.set(event.key, event.cycle);
@@ -644,6 +648,7 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     updateTempo(nextTempo, tick, shouldPlay) { reanchor(tick, nextTempo, loop, shouldPlay); },
     updateLoop(nextLoop, tick, shouldPlay) { reanchor(tick, tempo, nextLoop, shouldPlay); },
     songChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
+    mixChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
     playPreview,
     cancelPreview() {
       if (playing) return false;

@@ -535,6 +535,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
   snapshot.song.notes[0].pitch = 10;
   snapshot.song.lyrics.syllables[0].noteIds.push("fake");
   snapshot.selectedNoteIds.push("fake");
+  snapshot.selectedPercussionHitIds.push("fake");
+  snapshot.mix.channels.melody.mute = true;
   snapshot.editor.snap = "1/4";
   snapshot.view.mode = "lyrics";
   snapshot.generation.candidateIds.push("fake");
@@ -569,6 +571,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
     },
     selection: null,
     selectedNoteIds: [],
+    selectedPercussionHitIds: [],
+    mix: { channels: { melody: { mute: false, solo: false } } },
     editor: { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 },
     view: { mode: "piano-roll", follow: true },
     generation: {
@@ -586,8 +590,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote",
-      "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "setLyrics",
+      "getSong", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "selectPercussionHits", "clearPercussionSelection", "deletePercussionHits", "duplicatePercussionHits", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newSong", "newIdea",

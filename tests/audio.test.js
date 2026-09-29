@@ -4,6 +4,7 @@ import { createSong, MelodiError, PPQ } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { createAudioPlayer, pitchBendAt } from "../src/audio/player.js";
 import { percussionVoiceSpec } from "../src/audio/percussion.js";
+import { createInstrumentMix, instrumentChannelIds, isInstrumentAudible, percussionChannelId } from "../src/audio/mix.js";
 import {
   findCurrentNoteId,
   findCurrentSectionId,
@@ -66,6 +67,10 @@ function fakePlayerFactory(ref) {
       },
       updateLoop(loop, tick, playing) {
         ref.calls.push(["loop", loop, tick, playing]);
+        ref.position = tick;
+      },
+      mixChanged(tick, loop) {
+        ref.calls.push(["mix", tick, loop]);
         ref.position = tick;
       },
       songChanged(tick, loop) { ref.calls.push(["song", tick, loop]); }
@@ -434,6 +439,76 @@ test("closed hi-hat chokes an open hi-hat already scheduled in the same group", 
   assert.ok(context.oscillators.slice(0, 4).every((oscillator) => Math.abs(oscillator.stopTime - chokeTime) < 1e-9));
   assert.ok(Math.abs(context.bufferSources[0].stopTime - chokeTime) < 1e-9, "open-hat noise is choked with its metallic components");
   player.stop();
+});
+
+test("mix changes during transport reschedule at the current tick without restarting the position", async () => {
+  const song = fixture();
+  song.notes = [song.notes[0]];
+  song.notes[0].durationTicks = 480;
+  song.phrases[0].noteIds = [song.notes[0].id];
+  song.tracks.push({ id: "drums-mix", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [
+    { id: "kick-next", pieceId: "kick", startTick: 240, velocity: 100, articulation: "normal" },
+    { id: "snare-next", pieceId: "snare", startTick: 240, velocity: 100, articulation: "normal" }
+  ] });
+  const context = new FakeAudioContext();
+  let mix = createInstrumentMix(song);
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+  const loop = { enabled: false, startTick: 0, endTick: 1920 };
+
+  try {
+    await player.play(0, { tempo: 120, loop });
+    assert.equal(context.oscillators.length, 1, "melody is initially scheduled");
+    context.currentTime = 0.14;
+    const positionBefore = player.getPosition();
+    mix = { channels: { ...mix.channels,
+      melody: { mute: false, solo: false },
+      [percussionChannelId("drums-mix", "kick")]: { mute: false, solo: true },
+      [percussionChannelId("drums-mix", "snare")]: { mute: false, solo: false }
+    } };
+    player.mixChanged(positionBefore, loop);
+    assert.equal(player.getPosition(), positionBefore);
+    assert.ok(context.oscillators[0].stopTime <= context.currentTime + 0.012, "the no-longer-audible melody voice is stopped promptly");
+    assert.equal(context.oscillators.length, 3, "only the selected kick is newly scheduled");
+    assert.ok(context.oscillators.slice(1).every((oscillator) => Math.abs(oscillator.startTime - 0.25) < 0.002));
+    const kickNoiseComponents = percussionVoiceSpec("gm-standard", { pieceId: "kick", velocity: 100, articulation: "normal" }).noise.length;
+    assert.equal(context.bufferSources.length, kickNoiseComponents, "solo filtering schedules only the kick's own noise components");
+  } finally {
+    player.stop();
+  }
+});
+
+test("mix commands reanchor the active transport at its current position", async () => {
+  const song = fixture();
+  song.tracks.push({ id: "drums-command-mix", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [] });
+  const ref = {};
+  const commands = createCommands(song, { audioPlayerFactory: fakePlayerFactory(ref) });
+  await commands.play();
+  ref.position = 720;
+  commands.setInstrumentMute("melody", true);
+  assert.deepEqual(ref.calls.find((call) => call[0] === "mix"), ["mix", 720, commands.getState().playback.loop]);
+  assert.equal(commands.getMixState().channels.melody.mute, true);
+  assert.equal(commands.getState().playback.currentTick, 720);
+  assert.equal(ref.calls.some((call) => call[0] === "song"), false, "mix edits use their explicit player contract");
+});
+
+test("muted channels are never scheduled and explicit candidate audition bypasses the mix", async () => {
+  const song = fixture();
+  song.tracks.push({ id: "drums-muted", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [
+    { id: "kick-muted", pieceId: "kick", startTick: 0, velocity: 100, articulation: "normal" }
+  ] });
+  const context = new FakeAudioContext();
+  const mix = createInstrumentMix(song);
+  mix.channels.melody.mute = true;
+  mix.channels[percussionChannelId("drums-muted", "kick")].mute = true;
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+  await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+  assert.equal(context.oscillators.length, 0);
+  assert.equal(context.bufferSources.length, 0);
+  player.stop();
+
+  await player.playPreview([{ id: "candidate", pitch: 72, startTick: 0, durationTicks: 240 }], { tempo: 120 });
+  assert.equal(context.oscillators.length, 1, "explicit preview bypasses transport mute/solo");
+  player.cancelPreview();
 });
 
 test("percussion shares one deterministic noise buffer and disconnects noise voices on end", async () => {

@@ -1,25 +1,25 @@
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.15";
-import { createCommands } from "./core/commands.js?v=20260929.15";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.18";
+import { createCommands } from "./core/commands.js?v=20260930.18";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.15";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.15";
-import { createAudioPlayer } from "./audio/player.js?v=20260929.15";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.18";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.18";
+import { createAudioPlayer } from "./audio/player.js?v=20260930.18";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.15";
-import { createScoreView } from "./ui/score.js?v=20260929.15";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.15";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.15";
-import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.15";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260929.15";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.15";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.18";
+import { createScoreView } from "./ui/score.js?v=20260930.18";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260930.18";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.18";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.18";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.18";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.18";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260929.15";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20260929.15";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.15";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.15";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.15";
+import { createDraftPersistence } from "./storage/draft.js?v=20260930.18";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.18";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.18";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.18";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260930.18";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1307,6 +1307,7 @@ function render() {
   scoreView.render(song, state);
   renderGuitar(state);
   renderDrums(song, state);
+  renderInstrumentMixControls(state.mix);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -1842,13 +1843,10 @@ drumGridView = createDrumGridView(byId("drum-grid"), {
   onAddHit(input) {
     return run(() => commands.addPercussionHit(input), "drumsHitAdded");
   },
-  onSelectHit(selection) {
+  onSelectHits(hitIds) {
     const form = byId("percussion-expression-form");
     if (form) form.dataset.pending = "false";
-    renderPercussionExpression(commands.getSong(), selection);
-  },
-  onDeleteHit(trackId, hitId) {
-    return run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
+    run(() => commands.selectPercussionHits(hitIds));
   },
   onSeek(tick) {
     run(() => commands.seek(tick));
@@ -1958,9 +1956,22 @@ function renderPercussionRangeValues() {
   if (pan && panValue) panValue.textContent = formatPercussionPan(pan.value);
 }
 
-function renderPercussionExpression(song, selection = drumGridView?.getSelectedHit?.() ?? null) {
+function renderPercussionExpression(song) {
   const form = byId("percussion-expression-form");
   if (!form) return;
+  const selectedIds = commands.getSelectedPercussionHitIds();
+  const multiSelection = byId("percussion-multi-selection");
+  if (multiSelection) {
+    multiSelection.hidden = selectedIds.length <= 1;
+    if (selectedIds.length > 1) {
+      byId("percussion-multi-selection-summary").textContent = translate("percussionMultiSelectionSummary", { count: selectedIds.length });
+    }
+  }
+  const selection = selectedIds.length === 1
+    ? song.tracks.flatMap((track) => track.kind === "percussion"
+      ? track.events.map((hit) => ({ trackId: track.id, hitId: hit.id }))
+      : []).find((item) => item.hitId === selectedIds[0])
+    : null;
   const expression = resolvePercussionExpression(song, selection);
   form.hidden = !expression;
   if (!expression) {
@@ -2005,6 +2016,14 @@ function renderDrums(song, state) {
   const projection = drumGridView.render(song, state, canonicalSongEndTick(song));
   renderPercussionExpression(song);
   const hitCount = projection.track?.events.length ?? 0;
+  const selectedCount = state.selectedPercussionHitIds.length;
+  byId("drums-selection-count").textContent = translate(
+    selectedCount ? "drumsHitSelectionCount" : "drumsNoSelection",
+    selectedCount ? { count: selectedCount } : {}
+  );
+  byId("drums-duplicate-selection").disabled = selectedCount === 0;
+  byId("drums-delete-selection").disabled = selectedCount === 0;
+  byId("drums-clear-selection").disabled = selectedCount === 0;
   byId("drums-snap-select").value = projection.snap;
   byId("drums-status").textContent = translate(
     hitCount ? "drumsStatusReady" : "drumsStatusEmpty",
@@ -2012,10 +2031,24 @@ function renderDrums(song, state) {
   );
 }
 
+function renderInstrumentMixControls(mix) {
+  for (const button of document.querySelectorAll("[data-channel-id][data-mix-flag]")) {
+    const channel = mix?.channels?.[button.dataset.channelId];
+    const active = channel?.[button.dataset.mixFlag] === true;
+    button.disabled = !channel;
+    button.dataset.active = String(active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
   getSelection: commands.getSelection,
   getSelectedNoteIds: commands.getSelectedNoteIds,
+  getSelectedPercussionHitIds: commands.getSelectedPercussionHitIds,
+  getMixState: commands.getMixState,
+  setInstrumentMute: commands.setInstrumentMute,
+  setInstrumentSolo: commands.setInstrumentSolo,
   addNote: (input) => commands.addNote(input, { actor: "user" }),
   updateNote: (noteId, patch) => commands.updateNote(noteId, patch, { actor: "user" }),
   updateNotes: (updates) => commands.updateNotes(updates, { actor: "user" }),
@@ -2023,6 +2056,10 @@ const publicCommands = Object.freeze({
   addPercussionHit: commands.addPercussionHit,
   updatePercussionHit: commands.updatePercussionHit,
   deletePercussionHit: commands.deletePercussionHit,
+  selectPercussionHits: commands.selectPercussionHits,
+  clearPercussionSelection: commands.clearPercussionSelection,
+  deletePercussionHits: commands.deletePercussionHits,
+  duplicatePercussionHits: commands.duplicatePercussionHits,
   setLyrics: commands.setLyrics,
   addLyricSyllable: commands.addLyricSyllable,
   updateLyricSyllable: commands.updateLyricSyllable,
@@ -2283,12 +2320,21 @@ document.addEventListener("click", (event) => {
   if (!target) return;
   if (target.closest("#project-menu")) closeProjectMenu();
   const state = commands.getState();
-  if (target.dataset.action === "delete-selected-percussion-hit") {
-    const selection = drumGridView?.getSelectedHit?.();
-    if (selection) {
-      run(() => commands.deletePercussionHit(selection.trackId, selection.hitId), "drumsHitDeleted");
-      drumGridView?.selectHit(null, null);
-    }
+  if (target.dataset.action === "delete-selected-percussion-hits") {
+    run(() => commands.deletePercussionHits(), "drumsHitsDeleted");
+  } else if (target.dataset.action === "duplicate-selected-percussion-hits") {
+    const duplicates = run(() => commands.duplicatePercussionHits());
+    if (duplicates?.length) announce("drumsHitsDuplicated", "success", { count: duplicates.length });
+  } else if (target.dataset.action === "clear-percussion-selection") {
+    run(() => commands.clearPercussionSelection());
+  } else if (target.dataset.action === "toggle-instrument-mute" || target.dataset.action === "toggle-instrument-solo") {
+    const channelId = target.dataset.channelId;
+    const flag = target.dataset.mixFlag;
+    const channel = commands.getMixState().channels[channelId];
+    if (!channel || (flag !== "mute" && flag !== "solo")) return;
+    run(() => flag === "mute"
+      ? commands.setInstrumentMute(channelId, !channel.mute)
+      : commands.setInstrumentSolo(channelId, !channel.solo));
   } else if (target.dataset.action === "toggle-panel") {
     togglePanelDisclosure(target.dataset.panelCollapse);
   } else if (target.dataset.action === "set-guitar-layout") {
@@ -2600,6 +2646,34 @@ document.addEventListener("keydown", (event) => {
         ? run(() => commands.redo(), "editRedone")
         : run(() => commands.undo(), "editUndone");
       if (applied) event.preventDefault();
+      return;
+    }
+  }
+
+  const drumsKeyboardTarget = target instanceof Element && isDrumKeyboardTarget(target);
+  const drumIntent = drumKeyboardIntent(event, {
+    withinDrumGrid: drumsKeyboardTarget && commands.getState().view.mode === "drums",
+    selectedHitCount: commands.getSelectedPercussionHitIds().length
+  });
+  if (drumIntent) {
+    event.preventDefault();
+    if (drumIntent === "select-all") {
+      const track = commands.getSong().tracks.find((item) => item.kind === "percussion");
+      if (track) run(() => commands.selectPercussionHits(track.events.map((hit) => hit.id)));
+      return;
+    }
+    if (drumIntent === "duplicate") {
+      event.preventDefault();
+      const duplicates = run(() => commands.duplicatePercussionHits());
+      if (duplicates?.length) announce("drumsHitsDuplicated", "success", { count: duplicates.length });
+      return;
+    }
+    if (drumIntent === "delete") {
+      run(() => commands.deletePercussionHits(), "drumsHitsDeleted");
+      return;
+    }
+    if (drumIntent === "clear") {
+      run(() => commands.clearPercussionSelection());
       return;
     }
   }

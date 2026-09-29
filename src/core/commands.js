@@ -1,11 +1,12 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260929.15";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.18";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260929.15";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260929.15";
+import { createAgentSnapshot } from "./snapshot.js?v=20260930.18";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.18";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260929.15";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260930.18";
+import { createInstrumentMix } from "../audio/mix.js?v=20260930.18";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -88,6 +89,8 @@ export function createCommands(initialSong, {
   let song = createSong(initialSong);
   let selection = null;
   let selectedNoteIds = [];
+  let selectedPercussionHitIds = [];
+  let mix = createInstrumentMix(song);
   let snap = DEFAULT_SNAP;
   let tool = DEFAULT_EDITOR_TOOL;
   let zoom = DEFAULT_ROLL_ZOOM;
@@ -319,9 +322,11 @@ export function createCommands(initialSong, {
     lastAcceptedNoteIds = [];
     try { audioPlayer?.cancelPreview?.(); } catch {}
     song = validated;
+    mix = createInstrumentMix(song, mix);
     syncAutomaticLoopRange();
     selection = null;
     selectedNoteIds = [];
+    selectedPercussionHitIds = [];
     let tick = playback.currentTick;
     if (playback.status === "playing" && audioPlayer) {
       try { tick = audioPlayer.getPosition(); } catch {}
@@ -337,6 +342,7 @@ export function createCommands(initialSong, {
     const validated = createSong(candidate);
     pushHistory();
     song = validated;
+    mix = createInstrumentMix(song, mix);
     syncAutomaticLoopRange();
     canonicalRevision += 1;
     if (generationSession?.auditionCandidateId) {
@@ -370,8 +376,24 @@ export function createCommands(initialSong, {
         notifyPlaybackChange();
         notifyPlaybackEvent("interrupted");
       },
-      onError: handlePlayerError
+      onError: handlePlayerError,
+      getMix: () => cloneData(mix)
     });
+  }
+
+  function setInstrumentFlag(channelId, flag, enabled) {
+    if (typeof channelId !== "string" || !Object.hasOwn(mix.channels, channelId)) fail("instrument-channel-not-found");
+    if (typeof enabled !== "boolean") fail("invalid-instrument-state");
+    if (mix.channels[channelId][flag] === enabled) return enabled;
+    mix = { channels: { ...mix.channels, [channelId]: { ...mix.channels[channelId], [flag]: enabled } } };
+    if (playback.status === "playing" && audioPlayer) {
+      let tick = playback.currentTick;
+      try { tick = audioPlayer.getPosition(); } catch {}
+      setPlaybackPosition(tick);
+      updatePlayerSafely(() => audioPlayer.mixChanged(tick, playback.loop));
+    }
+    notifyChange("mix");
+    return enabled;
   }
 
   function deleteNoteIds(noteIds, { actor = "user" } = {}) {
@@ -417,8 +439,10 @@ export function createCommands(initialSong, {
     playRequest += 1;
     updatePlayerSafely(() => audioPlayer?.stop());
     song = nextSong;
+    mix = createInstrumentMix(song);
     selection = null;
     selectedNoteIds = [];
+    selectedPercussionHitIds = [];
     copiedNotes = null;
     snap = DEFAULT_SNAP;
     tool = DEFAULT_EDITOR_TOOL;
@@ -466,6 +490,12 @@ export function createCommands(initialSong, {
     getSelectedNoteIds() {
       return cloneData(selectedNoteIds);
     },
+    getSelectedPercussionHitIds() {
+      return cloneData(selectedPercussionHitIds);
+    },
+    getMixState() {
+      return cloneData(mix);
+    },
     getState() {
       return createAgentSnapshot(song, selection, readPlayback(), {
         snap,
@@ -473,7 +503,13 @@ export function createCommands(initialSong, {
         zoom,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
-      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState());
+      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState(), selectedPercussionHitIds, mix);
+    },
+    setInstrumentMute(channelId, enabled) {
+      return setInstrumentFlag(channelId, "mute", enabled);
+    },
+    setInstrumentSolo(channelId, enabled) {
+      return setInstrumentFlag(channelId, "solo", enabled);
     },
     canUndo() {
       return undoStack.length > 0;
@@ -592,6 +628,7 @@ export function createCommands(initialSong, {
         try { audioPlayer?.cancelPreview?.(); } catch {}
         selection = null;
         selectedNoteIds = [...acceptedIds];
+        selectedPercussionHitIds = [];
         lastAcceptedNoteIds = [...acceptedIds];
         let tick = playback.currentTick;
         if (playback.status === "playing" && audioPlayer) {
@@ -821,9 +858,112 @@ export function createCommands(initialSong, {
       commit((candidate) => {
         const target = candidate.tracks.find((item) => item.id === trackId);
         target.events.splice(target.events.findIndex((hit) => hit.id === hitId), 1);
+      }, () => {
+        selectedPercussionHitIds = selectedPercussionHitIds.filter((id) => id !== hitId);
       });
       syncAutomaticLoopRange();
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return true;
+    },
+    selectPercussionHits(hitIds) {
+      if (!Array.isArray(hitIds)) fail("invalid-percussion-selection");
+      const seen = new Set();
+      const allHits = song.tracks.filter((track) => track.kind === "percussion")
+        .flatMap((track) => track.events.map((hit) => hit.id));
+      for (const hitId of hitIds) {
+        if (typeof hitId !== "string" || !allHits.includes(hitId)) fail("percussion-hit-not-found");
+        if (seen.has(hitId)) fail("duplicate-reference");
+        seen.add(hitId);
+      }
+      selection = null;
+      selectedNoteIds = [];
+      selectedPercussionHitIds = [...hitIds];
+      notifyChange("selection");
+      return cloneData(selectedPercussionHitIds);
+    },
+    clearPercussionSelection() {
+      selectedPercussionHitIds = [];
+      notifyChange("selection");
+      return [];
+    },
+    deletePercussionHits(hitIds = selectedPercussionHitIds) {
+      if (!Array.isArray(hitIds)) fail("invalid-percussion-selection");
+      if (hitIds.length === 0) return [];
+      const seen = new Set();
+      const hitToTrack = new Map();
+      for (const track of song.tracks) {
+        if (track.kind !== "percussion") continue;
+        for (const hit of track.events) hitToTrack.set(hit.id, track.id);
+      }
+      for (const hitId of hitIds) {
+        if (typeof hitId !== "string" || !hitToTrack.has(hitId)) fail("percussion-hit-not-found");
+        if (seen.has(hitId)) fail("duplicate-reference");
+        seen.add(hitId);
+      }
+      const deleted = new Set(hitIds);
+      commit((candidate) => {
+        for (const track of candidate.tracks) {
+          if (track.kind === "percussion") track.events = track.events.filter((hit) => !deleted.has(hit.id));
+        }
+      }, () => {
+        selectedPercussionHitIds = selectedPercussionHitIds.filter((id) => !deleted.has(id));
+      });
+      syncAutomaticLoopRange();
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
+      return [...hitIds];
+    },
+    duplicatePercussionHits(hitIds = selectedPercussionHitIds) {
+      if (!Array.isArray(hitIds)) fail("invalid-percussion-selection");
+      if (hitIds.length === 0) return [];
+      const seen = new Set();
+      const hitToTrack = new Map();
+      for (const track of song.tracks) {
+        if (track.kind !== "percussion") continue;
+        for (const hit of track.events) hitToTrack.set(hit.id, { trackId: track.id, hit });
+      }
+      const selected = [];
+      for (const hitId of hitIds) {
+        if (typeof hitId !== "string") fail("percussion-hit-not-found");
+        if (seen.has(hitId)) fail("duplicate-reference");
+        seen.add(hitId);
+        const entry = hitToTrack.get(hitId);
+        if (!entry) fail("percussion-hit-not-found");
+        selected.push(entry);
+      }
+      const minTick = Math.min(...selected.map(({ hit }) => hit.startTick));
+      const maxTick = Math.max(...selected.map(({ hit }) => hit.startTick));
+      const offset = maxTick - minTick + SNAP_TICKS[snap];
+      const clones = selected.map(({ trackId, hit }) => ({
+        trackId,
+        hit: {
+          id: idFactory(),
+          pieceId: hit.pieceId,
+          startTick: hit.startTick + offset,
+          velocity: hit.velocity,
+          articulation: hit.articulation,
+          ...(Object.hasOwn(hit, "durationTicks") ? { durationTicks: hit.durationTicks } : {}),
+          ...(Object.hasOwn(hit, "pan") ? { pan: hit.pan } : {}),
+          ...(Object.hasOwn(hit, "tuning") ? { tuning: hit.tuning } : {})
+        }
+      }));
+      const cloneIds = clones.map(({ hit }) => hit.id);
+      commit((candidate) => {
+        for (const { trackId, hit } of clones) {
+          const track = candidate.tracks.find((item) => item.id === trackId);
+          track.events.push(hit);
+          track.events.sort((left, right) => left.startTick - right.startTick || left.pieceId.localeCompare(right.pieceId));
+        }
+      }, () => {
+        selection = null;
+        selectedNoteIds = [];
+        selectedPercussionHitIds = cloneIds;
+      });
+      syncAutomaticLoopRange();
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
+      return cloneData(clones.map(({ hit }) => hit));
     },
     addNote(input, { actor = "user" } = {}) {
       validateActor(actor);
@@ -1003,12 +1143,14 @@ export function createCommands(initialSong, {
       }
       selection = null;
       selectedNoteIds = [...noteIds];
+      selectedPercussionHitIds = [];
       notifyChange("selection");
       return cloneData(selectedNoteIds);
     },
     clearSelection() {
       selection = null;
       selectedNoteIds = [];
+      selectedPercussionHitIds = [];
       notifyChange("selection");
       return [];
     },
@@ -1062,6 +1204,7 @@ export function createCommands(initialSong, {
       }, () => {
         selection = null;
         selectedNoteIds = pasted.map((note) => note.id);
+        selectedPercussionHitIds = [];
       });
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
@@ -1134,6 +1277,7 @@ export function createCommands(initialSong, {
         .map((note) => note.id);
       selection = { startTick, endTick, noteIds };
       selectedNoteIds = [...noteIds];
+      selectedPercussionHitIds = [];
       notifyChange("selection");
       return cloneData(selection);
     }

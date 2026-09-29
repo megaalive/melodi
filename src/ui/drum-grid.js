@@ -1,7 +1,7 @@
-import { PPQ } from "../core/model.js?v=20260929.15";
-import { SNAP_TICKS } from "../core/editor.js?v=20260929.15";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.15";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260929.15";
+import { PPQ } from "../core/model.js?v=20260930.18";
+import { SNAP_TICKS } from "../core/editor.js?v=20260930.18";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.18";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260930.18";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -86,6 +86,23 @@ export function drumCellIntent(tool, hasHit) {
   return tool === "draw" ? "add" : "clear";
 }
 
+export function drumKeyboardIntent(event, { withinDrumGrid = false, selectedHitCount = 0 } = {}) {
+  if (!withinDrumGrid) return null;
+  const key = String(event?.key ?? "").toLowerCase();
+  const command = Boolean(event?.ctrlKey || event?.metaKey) && !event?.altKey;
+  if (command && key === "a") return "select-all";
+  if (command && !event?.shiftKey && key === "d" && selectedHitCount > 0) return "duplicate";
+  if (!event?.ctrlKey && !event?.metaKey && !event?.altKey && (event?.key === "Delete" || event?.key === "Backspace") && selectedHitCount > 0) return "delete";
+  if (event?.key === "Escape" && selectedHitCount > 0) return "clear";
+  return null;
+}
+
+export function isDrumKeyboardTarget(target) {
+  if (typeof target?.closest !== "function") return false;
+  if (target.closest(".instrument-mix-button, input, select, textarea, [contenteditable='true']")) return false;
+  return Boolean(target.closest("#drum-grid-scroll, #drums-selection-toolbar"));
+}
+
 export function drumTimelineTickToX(tick, geometry) {
   if (!Number.isFinite(tick) || !Number.isFinite(geometry?.gutterWidth) || geometry.gutterWidth < 0
     || !Number.isFinite(geometry?.columnWidth) || geometry.columnWidth <= 0
@@ -133,8 +150,7 @@ function makeElement(name, className, text = "") {
 export function createDrumGridView(root, {
   translate = (key) => key,
   onAddHit = () => {},
-  onSelectHit = () => {},
-  onDeleteHit = () => {},
+  onSelectHits = () => {},
   onSeek = () => {},
   onSetPlaybackRange = () => {}
 } = {}) {
@@ -146,21 +162,25 @@ export function createDrumGridView(root, {
   let currentPlayback = {};
   let lastRangeSignature = null;
   let rulerDrag = null;
-  let selectedTrackId = null;
-  let selectedHitId = null;
+  let selectionDrag = null;
+  let selectedHitIds = [];
+  let primarySelectedHitId = null;
+  let suppressNextClick = false;
 
   function updateSelectionDom() {
+    const selected = new Set(selectedHitIds);
     for (const cell of root.querySelectorAll('[data-entity="drum-cell"]')) {
-      const selected = Boolean(selectedHitId && cell.dataset.hitIds?.split(",").includes(selectedHitId));
-      cell.dataset.selected = String(selected);
+      const isSelected = cell.dataset.hitIds?.split(",").some((id) => selected.has(id)) ?? false;
+      cell.dataset.selected = String(isSelected);
+      cell.setAttribute("aria-pressed", String(isSelected));
     }
   }
 
-  function selectHit(trackId, hitId, notify = true) {
-    selectedTrackId = trackId ?? null;
-    selectedHitId = hitId ?? null;
+  function selectHits(hitIds, notify = true) {
+    selectedHitIds = [...hitIds];
+    primarySelectedHitId = selectedHitIds.at(-1) ?? null;
     updateSelectionDom();
-    if (notify) onSelectHit(selectedHitId ? { trackId: selectedTrackId, hitId: selectedHitId } : null);
+    if (notify) onSelectHits([...selectedHitIds]);
   }
 
   function hitsForCell(button) {
@@ -168,11 +188,19 @@ export function createDrumGridView(root, {
     return currentProjection.cells.get(cellKey(button.dataset.pieceId, Number(button.dataset.tick))) ?? [];
   }
 
-  function selectCellHit(button) {
+  function selectCellHit(button, event) {
     const hits = hitsForCell(button);
     if (!hits.length) return false;
-    const next = nextDrumCellHit(hits, selectedHitId);
-    selectHit(next.trackId, next.hitId);
+    const next = nextDrumCellHit(hits, primarySelectedHitId);
+    const additive = event.ctrlKey || event.metaKey || event.shiftKey;
+    if (!additive) {
+      selectHits([next.hitId]);
+      return true;
+    }
+    const selected = new Set(selectedHitIds);
+    if (selected.has(next.hitId)) selected.delete(next.hitId);
+    else selected.add(next.hitId);
+    selectHits([...selected]);
     return true;
   }
 
@@ -181,13 +209,18 @@ export function createDrumGridView(root, {
       ? event.target.closest('[data-entity="drum-cell"]')
       : null;
     if (!button || !root.contains(button)) return;
+    if (suppressNextClick) {
+      suppressNextClick = false;
+      event.preventDefault();
+      return;
+    }
     const intent = drumCellIntent(currentTool, button.dataset.hit === "true");
     if (intent === "select") {
-      selectCellHit(button);
+      selectCellHit(button, event);
       return;
     }
     if (intent === "clear") {
-      selectHit(null, null);
+      selectHits([]);
       return;
     }
     const created = onAddHit({
@@ -196,16 +229,22 @@ export function createDrumGridView(root, {
       velocity: DEFAULT_VELOCITY,
       articulation: "normal"
     });
-    if (created?.trackId && created?.hit?.id) selectHit(created.trackId, created.hit.id);
+    if (created?.trackId && created?.hit?.id) selectHits([created.hit.id]);
   });
 
   root.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && selectionDrag) {
+      event.preventDefault();
+      cancelSelectionDrag();
+      return;
+    }
     const ruler = event.target instanceof Element
       ? event.target.closest('[data-entity="drum-ruler"]')
       : null;
     if (ruler && root.contains(ruler)) {
       if (event.key === "Escape" && rulerDrag) {
         event.preventDefault();
+        event.stopPropagation();
         finishRulerDrag(rulerDrag.pointerId, true);
         return;
       }
@@ -220,22 +259,6 @@ export function createDrumGridView(root, {
       onSeek(clamp(nextTick, 0, currentSongEndTick));
       return;
     }
-    const button = event.target instanceof Element
-      ? event.target.closest('[data-entity="drum-cell"]')
-      : null;
-    if (!button || !root.contains(button)) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      selectHit(null, null);
-      return;
-    }
-    if (event.key !== "Delete" && event.key !== "Backspace") return;
-    const hits = hitsForCell(button);
-    const hit = hits.find((candidate) => candidate.hitId === selectedHitId) ?? hits[0] ?? null;
-    if (!hit) return;
-    event.preventDefault();
-    const deleted = onDeleteHit(hit.trackId, hit.hitId);
-    if (deleted !== undefined && hit.hitId === selectedHitId) selectHit(null, null);
   });
 
   function measureTimelineGeometry() {
@@ -332,6 +355,75 @@ export function createDrumGridView(root, {
     onSeek(range.startTick);
   }
 
+  function updateSelectionRect(drag) {
+    const rectangle = root.querySelector(".drum-selection-rect");
+    if (!rectangle) return;
+    const bounds = root.getBoundingClientRect?.();
+    if (!bounds) return;
+    const left = Math.min(drag.startClientX, drag.currentClientX);
+    const top = Math.min(drag.startClientY, drag.currentClientY);
+    rectangle.hidden = !drag.moved;
+    rectangle.style.left = `${left - bounds.left}px`;
+    rectangle.style.top = `${top - bounds.top}px`;
+    rectangle.style.width = `${Math.abs(drag.currentClientX - drag.startClientX)}px`;
+    rectangle.style.height = `${Math.abs(drag.currentClientY - drag.startClientY)}px`;
+  }
+
+  function finishSelectionDrag(pointerId, cancelled = false, clientX = Number.NaN, clientY = Number.NaN) {
+    if (!selectionDrag || selectionDrag.pointerId !== pointerId) return;
+    const drag = selectionDrag;
+    selectionDrag = null;
+    if (Number.isFinite(clientX) && Number.isFinite(clientY)) {
+      drag.currentClientX = clientX;
+      drag.currentClientY = clientY;
+      drag.moved ||= Math.hypot(clientX - drag.startClientX, clientY - drag.startClientY) >= 3;
+    }
+    const rectangle = root.querySelector(".drum-selection-rect");
+    if (rectangle) rectangle.hidden = true;
+    try { drag.surface.releasePointerCapture?.(pointerId); } catch {}
+    if (cancelled || !drag.moved) return;
+
+    const left = Math.min(drag.startClientX, drag.currentClientX);
+    const right = Math.max(drag.startClientX, drag.currentClientX);
+    const top = Math.min(drag.startClientY, drag.currentClientY);
+    const bottom = Math.max(drag.startClientY, drag.currentClientY);
+    const intersectingIds = [];
+    for (const cell of root.querySelectorAll('[data-entity="drum-cell"][data-hit="true"]')) {
+      const bounds = cell.getBoundingClientRect?.();
+      if (!bounds || bounds.right < left || bounds.left > right || bounds.bottom < top || bounds.top > bottom) continue;
+      intersectingIds.push(...(cell.dataset.hitIds ?? "").split(",").filter(Boolean));
+    }
+    const hits = [...new Set(intersectingIds)];
+    const next = drag.additive ? [...new Set([...selectedHitIds, ...hits])] : hits;
+    selectHits(next);
+    suppressNextClick = true;
+    setTimeout(() => { suppressNextClick = false; }, 0);
+  }
+
+  function cancelSelectionDrag() {
+    if (!selectionDrag) return;
+    const { pointerId } = selectionDrag;
+    finishSelectionDrag(pointerId, true);
+  }
+
+  root.addEventListener("pointerdown", (event) => {
+    const cell = event.target instanceof Element
+      ? event.target.closest('[data-entity="drum-cell"][data-hit="false"]')
+      : null;
+    if (!cell || !root.contains(cell) || currentTool !== "select" || event.button !== 0) return;
+    selectionDrag = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      currentClientX: event.clientX,
+      currentClientY: event.clientY,
+      moved: false,
+      additive: Boolean(event.ctrlKey || event.metaKey || event.shiftKey),
+      surface: cell
+    };
+    try { cell.setPointerCapture?.(event.pointerId); } catch {}
+  });
+
   root.addEventListener("pointerdown", (event) => {
     const surface = event.target instanceof Element
       ? event.target.closest('[data-entity="drum-ruler"]')
@@ -351,6 +443,14 @@ export function createDrumGridView(root, {
   });
 
   root.addEventListener("pointermove", (event) => {
+    if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
+      selectionDrag.currentClientX = event.clientX;
+      selectionDrag.currentClientY = event.clientY;
+      selectionDrag.moved ||= Math.hypot(event.clientX - selectionDrag.startClientX,
+        event.clientY - selectionDrag.startClientY) >= 3;
+      updateSelectionRect(selectionDrag);
+      return;
+    }
     if (!rulerDrag || rulerDrag.pointerId !== event.pointerId) return;
     const distance = Math.abs(event.clientX - rulerDrag.startClientX);
     rulerDrag.currentTick = rulerTickFromClientX(event.clientX);
@@ -362,9 +462,18 @@ export function createDrumGridView(root, {
     }
   });
 
-  root.addEventListener("pointerup", (event) => finishRulerDrag(event.pointerId, false, event.clientX));
-  root.addEventListener("pointercancel", (event) => finishRulerDrag(event.pointerId, true));
-  root.addEventListener("lostpointercapture", (event) => finishRulerDrag(event.pointerId, true));
+  root.addEventListener("pointerup", (event) => {
+    finishRulerDrag(event.pointerId, false, event.clientX);
+    finishSelectionDrag(event.pointerId, false, event.clientX, event.clientY);
+  });
+  root.addEventListener("pointercancel", (event) => {
+    finishRulerDrag(event.pointerId, true);
+    finishSelectionDrag(event.pointerId, true);
+  });
+  root.addEventListener("lostpointercapture", (event) => {
+    finishRulerDrag(event.pointerId, true);
+    finishSelectionDrag(event.pointerId, true);
+  });
 
   function render(song, state = {}, songEndTick = drumGridEndTick(song)) {
     const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
@@ -373,17 +482,12 @@ export function createDrumGridView(root, {
     currentSnap = state.editor?.snap ?? "1/8";
     currentSongEndTick = Number.isFinite(songEndTick) ? Math.max(0, songEndTick) : projection.endTick;
     currentPlayback = state.playback ?? currentPlayback;
+    selectedHitIds = Array.isArray(state.selectedPercussionHitIds) ? [...state.selectedPercussionHitIds] : [];
+    primarySelectedHitId = selectedHitIds.at(-1) ?? null;
     lastRangeSignature = null;
     root.dataset.tool = currentTool;
     currentStep = null;
-    if (selectedHitId) {
-      const stillExists = projection.track?.events.some((hit) => hit.id === selectedHitId) ?? false;
-      if (!stillExists) {
-        selectedTrackId = null;
-        selectedHitId = null;
-        onSelectHit(null);
-      }
-    }
+    if (selectionDrag) cancelSelectionDrag();
     if (rulerDrag) finishRulerDrag(rulerDrag.pointerId, true);
     root.replaceChildren();
     root.style.position = "relative";
@@ -396,6 +500,7 @@ export function createDrumGridView(root, {
     const ruler = makeElement("button", "drum-grid-ruler-surface");
     ruler.type = "button";
     ruler.dataset.entity = "drum-ruler";
+    ruler.dataset.focusKey = "drum-ruler";
     ruler.setAttribute("role", "slider");
     ruler.setAttribute("tabindex", "0");
     ruler.setAttribute("aria-orientation", "horizontal");
@@ -430,8 +535,26 @@ export function createDrumGridView(root, {
     root.append(ruler);
 
     for (const piece of projection.kit.pieces) {
-      const label = makeElement("div", "drum-row-label", piece.name);
+      const label = makeElement("div", "drum-row-label");
       label.dataset.pieceId = piece.id;
+      const pieceName = makeElement("span", "drum-row-piece-name", piece.name);
+      label.append(pieceName);
+      const channelId = `percussion:${projection.track?.id ?? ""}:${piece.id}`;
+      const mix = state.mix?.channels?.[channelId] ?? { mute: false, solo: false };
+      for (const flag of ["mute", "solo"]) {
+        const button = makeElement("button", "instrument-mix-button drum-row-mix-button", translate(flag === "mute" ? "mixMuteShort" : "mixSoloShort"));
+        button.type = "button";
+        button.dataset.channelId = channelId;
+        button.dataset.mixFlag = flag;
+        button.dataset.action = flag === "mute" ? "toggle-instrument-mute" : "toggle-instrument-solo";
+        button.dataset.focusKey = `mix:${channelId}:${flag}`;
+        button.disabled = !projection.track;
+        button.dataset.active = String(mix[flag] === true);
+        button.setAttribute("aria-label", translate(flag === "mute" ? "mixMutePieceAria" : "mixSoloPieceAria", { piece: piece.name }));
+        button.setAttribute("title", button.getAttribute("aria-label"));
+        button.setAttribute("aria-pressed", String(mix[flag] === true));
+        label.append(button);
+      }
       root.append(label);
 
       for (const tick of projection.columns) {
@@ -442,11 +565,12 @@ export function createDrumGridView(root, {
         button.dataset.entity = "drum-cell";
         button.dataset.pieceId = piece.id;
         button.dataset.tick = String(tick);
+        button.dataset.focusKey = `drum-cell:${piece.id}:${tick}`;
         button.dataset.bar = String(tick % projection.barTicks === 0);
         button.dataset.beat = String(tick % projection.beatTicks === 0);
         button.dataset.hit = String(Boolean(hit));
-        button.dataset.selected = String(Boolean(hit && hits.some((candidate) => candidate.hitId === selectedHitId)));
-        button.setAttribute("aria-pressed", String(Boolean(hit)));
+        button.dataset.selected = String(Boolean(hit && hits.some((candidate) => selectedHitIds.includes(candidate.hitId))));
+        button.setAttribute("aria-pressed", button.dataset.selected);
         button.setAttribute("aria-label", hit
           ? translate(hits.length > 1 ? "drumsMultiHitCellLabel" : "drumsHitCellLabel", {
               piece: piece.name,
@@ -486,7 +610,10 @@ export function createDrumGridView(root, {
     bodyRange.hidden = true;
     const playheadLine = makeElement("div", "drum-playhead-line");
     playheadLine.setAttribute("aria-hidden", "true");
-    root.append(bodyRange, playheadLine);
+    const selectionRect = makeElement("div", "drum-selection-rect");
+    selectionRect.setAttribute("aria-hidden", "true");
+    selectionRect.hidden = true;
+    root.append(bodyRange, playheadLine, selectionRect);
     updatePlayback(currentPlayback, { songEndTick: currentSongEndTick });
 
     return projection;
@@ -542,14 +669,21 @@ export function createDrumGridView(root, {
   }
 
   function getSelectedHit() {
-    return selectedHitId ? { trackId: selectedTrackId, hitId: selectedHitId } : null;
+    if (selectedHitIds.length !== 1) return null;
+    const hitId = selectedHitIds[0];
+    return currentProjection?.track?.events.some((hit) => hit.id === hitId)
+      ? { trackId: currentProjection.track.id, hitId }
+      : null;
   }
+
+  function getSelectedHitIds() { return [...selectedHitIds]; }
 
   return Object.freeze({
     render,
     updatePlayback,
     getProjection,
     getSelectedHit,
-    selectHit: (trackId, hitId) => selectHit(trackId, hitId)
+    getSelectedHitIds,
+    selectHits: (hitIds) => selectHits(hitIds)
   });
 }

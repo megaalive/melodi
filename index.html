@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260929.15">
+    <meta name="melodi-build" content="20260930.18">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260929.15">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.15"></script>
-    <script type="module" src="./src/app.js?v=20260929.15"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260930.18">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.18"></script>
+    <script type="module" src="./src/app.js?v=20260930.18"></script>
   </head>
   <body>
     <header class="page-header">
@@ -199,6 +199,11 @@
               </button>
             </div>
             <div id="piano-roll-content" class="panel-disclosure-content">
+              <div class="instrument-mix-strip" role="group" data-aria-copy="mixMelodyGroupLabel">
+                <strong data-copy="melodyInstrumentLabel"></strong>
+                <button type="button" class="instrument-mix-button" data-focus-key="mix:melody:mute" data-action="toggle-instrument-mute" data-channel-id="melody" data-mix-flag="mute" data-copy="mixMuteShort" data-aria-copy="mixMuteMelodyAria" aria-pressed="false"></button>
+                <button type="button" class="instrument-mix-button" data-focus-key="mix:melody:solo" data-action="toggle-instrument-solo" data-channel-id="melody" data-mix-flag="solo" data-copy="mixSoloShort" data-aria-copy="mixSoloMelodyAria" aria-pressed="false"></button>
+              </div>
               <div class="roll-surface">
                 <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
                   <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
@@ -396,6 +401,19 @@
               </div>
             </div>
             <p id="drums-status" class="muted drums-status" role="status" aria-live="polite"></p>
+            <div id="drums-selection-toolbar" class="drums-selection-toolbar" role="group" data-aria-copy="drumsSelectionActionsLabel">
+              <span id="drums-selection-count" class="drums-selection-count" aria-live="polite"></span>
+              <button id="drums-duplicate-selection" type="button" class="secondary" data-action="duplicate-selected-percussion-hits" data-copy="drumsDuplicateSelection"></button>
+              <button id="drums-delete-selection" type="button" class="secondary" data-action="delete-selected-percussion-hits" data-copy="drumsDeleteSelection"></button>
+              <button id="drums-clear-selection" type="button" class="secondary" data-action="clear-percussion-selection" data-copy="drumsClearSelection"></button>
+            </div>
+            <div id="drum-grid-scroll" class="drum-grid-scroll" role="region" tabindex="0" data-aria-copy="drumsRegionLabel">
+              <div id="drum-grid" class="drum-grid" data-entity="drum-grid"></div>
+            </div>
+            <div id="percussion-multi-selection" class="percussion-expression-panel percussion-multi-selection" hidden>
+              <h3 data-copy="percussionExpressionHeading"></h3>
+              <p id="percussion-multi-selection-summary" class="muted"></p>
+            </div>
             <form id="percussion-expression-form" class="percussion-expression-panel" data-action="update-percussion-hit" hidden>
               <div class="percussion-expression-heading">
                 <div>
@@ -434,12 +452,8 @@
               </details>
               <div class="percussion-expression-actions">
                 <button type="submit" data-copy="percussionApplyButton"></button>
-                <button id="delete-percussion-hit" type="button" class="secondary" data-action="delete-selected-percussion-hit" data-copy="percussionDeleteButton"></button>
               </div>
             </form>
-            <div id="drum-grid-scroll" class="drum-grid-scroll" role="region" tabindex="0" data-aria-copy="drumsRegionLabel">
-              <div id="drum-grid" class="drum-grid" data-entity="drum-grid"></div>
-            </div>
           </section>
 
           <section id="lyrics-section" class="workspace-pane" data-view-region="lyrics" aria-labelledby="lyrics-heading">
