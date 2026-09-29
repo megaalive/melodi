@@ -266,6 +266,36 @@ function renderPanelDisclosures(song, state) {
   }
 }
 
+function renderScoreControls(song, state = normalizeRuntimeState(commands.getState())) {
+  const layout = uiPreferences.scoreLayout === "page" ? "page" : "flow";
+  const section = byId("score-section");
+  if (section) section.dataset.scoreLayout = layout;
+  scoreView?.setLayout(layout);
+
+  for (const button of document.querySelectorAll('[data-action="set-score-layout"]')) {
+    button.setAttribute("aria-pressed", String(button.dataset.scoreLayout === layout));
+  }
+
+  const meter = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
+  byId("score-context-key").textContent = song.key;
+  byId("score-context-meter").textContent = meter;
+
+  const selected = new Set(state.selectedNoteIds ?? []);
+  const notes = song.notes.filter((note) => selected.has(note.id));
+  const summary = byId("score-selection-summary");
+  if (notes.length === 0) {
+    summary.textContent = translate("scoreSelectionNone");
+  } else if (notes.length === 1) {
+    summary.textContent = translate("scoreSelectionOne", {
+      pitch: midiToPitch(notes[0].pitch),
+      tick: notes[0].startTick,
+      duration: notes[0].durationTicks
+    });
+  } else {
+    summary.textContent = translate("scoreSelectionMany", { count: notes.length });
+  }
+}
+
 function togglePanelDisclosure(name) {
   const panel = PANEL_DISCLOSURES[name];
   if (!panel) return;
@@ -595,7 +625,8 @@ function moveSelectedNotes(deltaTicks) {
 
 function deleteSelectedNotes() {
   const ids = [...commands.getSelectedNoteIds()];
-  for (const noteId of ids) commands.deleteNote(noteId, { actor: "user" });
+  if (!ids.length) return 0;
+  commands.deleteNotes(ids, { actor: "user" });
   return ids.length;
 }
 
@@ -1241,7 +1272,7 @@ function render() {
   expressionView?.render(song, state, rollView.getGeometry());
   renderExpressionControls(state);
   byId("piano-roll-empty").hidden = song.notes.length > 0;
-  byId("score-scroll").setAttribute("aria-label", translate("scoreRegionLabel"));
+  renderScoreControls(song, state);
   scoreView.render(song, state);
   renderGuitar(state);
 
@@ -1461,6 +1492,7 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
       rollView.render(commands.getSong(), state);
       expressionView?.render(commands.getSong(), state, rollView.getGeometry());
       scoreView?.updateSelection(state.selectedNoteIds ?? []);
+      renderScoreControls(commands.getSong(), normalizeRuntimeState(state));
       renderExpressionControls(normalizeRuntimeState(state));
     }
   },
@@ -1524,6 +1556,36 @@ scoreView = createScoreView(byId("score"), byId("score-status"), byId("score-fal
       ? [...new Set([...commands.getSelectedNoteIds(), ...noteIds])]
       : noteIds;
     run(() => next.length ? commands.selectNotes(next) : commands.clearSelection());
+  },
+  onTransposeNotes(noteIds, delta) {
+    if (!Number.isInteger(delta) || !noteIds.length) return;
+    const noteById = new Map(commands.getSong().notes.map((note) => [note.id, note]));
+    const updates = noteIds.map((noteId) => ({
+      noteId,
+      patch: { pitch: noteById.get(noteId).pitch + delta }
+    }));
+    const notes = run(() => commands.updateNotes(updates, { actor: "user" }));
+    if (notes?.length) announce("noteSaved");
+  },
+  onNudgeNotes(noteIds, direction) {
+    if (!noteIds.length || (direction !== -1 && direction !== 1)) return;
+    const state = commands.getState();
+    const step = SNAP_TICKS[state.editor.snap];
+    const noteById = new Map(commands.getSong().notes.map((note) => [note.id, note]));
+    const notes = noteIds.map((noteId) => noteById.get(noteId));
+    const minimumStart = Math.min(...notes.map((note) => note.startTick));
+    const delta = direction < 0 ? Math.max(-step, -minimumStart) : step;
+    if (!delta) return;
+    const updated = run(() => commands.updateNotes(notes.map((note) => ({
+      noteId: note.id,
+      patch: { startTick: note.startTick + delta }
+    })), { actor: "user" }));
+    if (updated?.length) announce("noteSaved");
+  },
+  onDeleteNotes(noteIds) {
+    if (!noteIds.length) return;
+    const deleted = run(() => commands.deleteNotes(noteIds, { actor: "user" }));
+    if (deleted?.length) announce("noteDeleted");
   },
   onContextMenu: showNoteContextMenu
 });
@@ -1799,6 +1861,13 @@ document.addEventListener("click", (event) => {
   const state = commands.getState();
   if (target.dataset.action === "toggle-panel") {
     togglePanelDisclosure(target.dataset.panelCollapse);
+  } else if (target.dataset.action === "set-score-layout") {
+    const layout = target.dataset.scoreLayout === "page" ? "page" : "flow";
+    if (uiPreferences.scoreLayout !== layout) {
+      uiPreferences = { ...uiPreferences, scoreLayout: layout };
+      writeUiPreferences(safeStorage(), uiPreferences);
+      render();
+    }
   } else if (target.dataset.action === "set-expression-mode") {
     expressionView?.setMode(target.dataset.expressionMode);
     if (rollView && expressionView) expressionView.render(commands.getSong(), commands.getState(), rollView.getGeometry());
