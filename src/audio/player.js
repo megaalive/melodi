@@ -286,9 +286,9 @@ export function createAudioPlayer({ getSong, onPosition = () => {}, onComplete =
     if (!group) return;
     for (const id of chokeVoices.get(group) ?? []) {
       const voice = voices.get(id);
-      if (!voice || voice.stopped || voice.endTime <= atTime) continue;
-      voice.stopped = true;
+      if (!voice || voice.stopped || voice.endTime <= atTime || (voice.chokeStopTime ?? Infinity) <= atTime) continue;
       const stopAt = atTime + 0.012;
+      voice.chokeStopTime = stopAt;
       try {
         const parameter = voice.gain.gain;
         if (typeof parameter.cancelAndHoldAtTime === "function") parameter.cancelAndHoldAtTime(atTime);
