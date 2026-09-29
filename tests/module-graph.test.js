@@ -97,6 +97,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./storage/draft.js?v=" + build));
   assert.ok(app.includes("./io/share.js?v=" + build));
   assert.ok(app.includes("./core/serialization.js?v=" + build));
+  assert.ok(app.includes("./audio/player.js?v=" + build));
 
   const commands = readFileSync(resolve("src/core/commands.js"), "utf8");
   const snapshot = readFileSync(resolve("src/core/snapshot.js"), "utf8");
@@ -106,6 +107,9 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   const drumGrid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
   const drumPads = readFileSync(resolve("src/ui/drum-pads.js"), "utf8");
   const percussionExpression = readFileSync(resolve("src/ui/percussion-expression.js"), "utf8");
+  const player = readFileSync(resolve("src/audio/player.js"), "utf8");
+  const transport = readFileSync(resolve("src/audio/transport.js"), "utf8");
+  const percussionAudio = readFileSync(resolve("src/audio/percussion.js"), "utf8");
   assert.ok(commands.includes("./model.js?v=" + build));
   assert.ok(commands.includes("./snapshot.js?v=" + build));
   assert.ok(snapshot.includes("./model.js?v=" + build));
@@ -117,6 +121,12 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(drumGrid.includes("../instruments/percussion.js?v=" + build));
   assert.ok(drumPads.includes("../instruments/percussion.js?v=" + build));
   assert.ok(percussionExpression.includes("../instruments/percussion.js?v=" + build));
+  assert.ok(commands.includes("../audio/transport.js?v=" + build));
+  assert.ok(player.includes("../core/model.js?v=" + build));
+  assert.ok(player.includes("./transport.js?v=" + build));
+  assert.ok(player.includes("./percussion.js?v=" + build));
+  assert.ok(transport.includes("../core/model.js?v=" + build));
+  assert.ok(percussionAudio.includes("../instruments/percussion.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
@@ -374,6 +384,22 @@ test("Drum Pads menulis HitEvent di playhead tanpa membuat model musik kedua", (
 
   assert.match(css, /\.drum-pads\s*\{/);
   assert.match(css, /\.drum-pad\s*\{/);
+});
+
+test("audio engine menjadwalkan percussion canonical tanpa sample dependency", () => {
+  const player = readFileSync(resolve("src/audio/player.js"), "utf8");
+  const transport = readFileSync(resolve("src/audio/transport.js"), "utf8");
+  const percussion = readFileSync(resolve("src/audio/percussion.js"), "utf8");
+
+  assert.match(player, /planPercussionEvents/);
+  assert.match(player, /schedulePercussionVoice/);
+  assert.match(player, /chokePercussionGroup/);
+  assert.match(transport, /export function planPercussionEvents/);
+  assert.match(percussion, /case "kick"/);
+  assert.match(percussion, /case "snare"/);
+  assert.match(percussion, /case "closed-hi-hat"/);
+  assert.match(percussion, /case "crash"/);
+  assert.doesNotMatch(player + percussion, /fetch\(|AudioBufferSource|decodeAudioData|\.wav|\.mp3/i);
 });
 
 test("UI tidak memakai dialog blocking bawaan browser", () => {
