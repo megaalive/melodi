@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260929.3">
+    <meta name="melodi-build" content="20260929.4">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260929.3">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.3"></script>
-    <script type="module" src="./src/app.js?v=20260929.3"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260929.4">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.4"></script>
+    <script type="module" src="./src/app.js?v=20260929.4"></script>
   </head>
   <body>
     <header class="page-header">
@@ -17,27 +17,44 @@
         <h1>Melodi</h1>
         <p data-copy="intro"></p>
       </div>
-      <div class="header-controls" role="group" data-aria-copy="appearanceLanguageGroupLabel">
-        <button type="button" class="command-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
-          <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"></rect><path d="M5 7h1M9.5 7h1M14 7h1M5 10h1M9.5 10h1M14 10h1M6 13.5h8"></path></svg>
-        </button>
-        <label class="language-control">
-          <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.2"></circle><path d="M2.9 10h14.2M10 2.8c2 2 3 4.4 3 7.2s-1 5.2-3 7.2c-2-2-3-4.4-3-7.2s1-5.2 3-7.2Z"></path></svg>
-          <span class="visually-hidden" data-copy="languageLabel"></span>
-          <select id="language" data-action="language-switch" data-focus-key="language" data-aria-copy="languageLabel">
-            <option value="id">Indonesia</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-        <label class="language-control">
-          <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M16.8 12.1A7 7 0 0 1 7.9 3.2 7.5 7.5 0 1 0 16.8 12.1Z"></path><path d="M13.7 2.5v3.2M12.1 4.1h3.2"></path></svg>
-          <span class="visually-hidden" data-copy="themeLabel"></span>
-          <select id="theme" data-action="theme-switch" data-entity="theme" data-focus-key="theme" data-aria-copy="themeLabel">
-            <option value="system" data-copy="themeSystem"></option>
-            <option value="light" data-copy="themeLight"></option>
-            <option value="dark" data-copy="themeDark"></option>
-          </select>
-        </label>
+      <div class="header-actions">
+        <div class="project-actions" role="group" data-aria-copy="fileProjectGroupLabel">
+          <button id="new-idea" type="button" class="secondary icon-button" data-action="new-idea" data-aria-copy="newIdeaButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 4v12M4 10h12"></path><path d="M5.5 2.8h6l3 3V17H5.5z"></path></svg>
+          </button>
+          <button id="open-project-file" type="button" class="secondary icon-button" data-action="open-project-file" data-aria-copy="openFileButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M2.5 5.2h6l1.7 1.9h7.3v8.7H2.5z"></path><path d="M2.8 7.1h14.4"></path></svg>
+          </button>
+          <button id="save-project-file" type="button" class="secondary icon-button" data-action="save-project-file" data-aria-copy="saveFileButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 2.8h11l3 3V17H3z"></path><path d="M6 3v5h8V3M6.2 17v-5.5h7.6V17"></path></svg>
+          </button>
+          <input id="project-file-input" type="file" accept=".melodi.json,application/json" hidden>
+          <button id="share-song" type="button" class="secondary icon-button" data-action="share-song" data-aria-copy="shareButton">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="5" cy="10" r="2"></circle><circle cx="15" cy="5" r="2"></circle><circle cx="15" cy="15" r="2"></circle><path d="m6.8 9 6.4-3M6.8 11l6.4 3"></path></svg>
+          </button>
+        </div>
+        <div class="header-controls" role="group" data-aria-copy="appearanceLanguageGroupLabel">
+          <button type="button" class="command-button secondary icon-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"></rect><path d="M5 7h1M9.5 7h1M14 7h1M5 10h1M9.5 10h1M14 10h1M6 13.5h8"></path></svg>
+          </button>
+          <label class="header-select-control">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="7.2"></circle><path d="M2.9 10h14.2M10 2.8c2 2 3 4.4 3 7.2s-1 5.2-3 7.2c-2-2-3-4.4-3-7.2s1-5.2 3-7.2Z"></path></svg>
+            <span class="visually-hidden" data-copy="languageLabel"></span>
+            <select id="language" data-action="language-switch" data-focus-key="language" data-aria-copy="languageLabel">
+              <option value="id">Indonesia</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label class="header-select-control">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M16.8 12.1A7 7 0 0 1 7.9 3.2 7.5 7.5 0 1 0 16.8 12.1Z"></path><path d="M13.7 2.5v3.2M12.1 4.1h3.2"></path></svg>
+            <span class="visually-hidden" data-copy="themeLabel"></span>
+            <select id="theme" data-action="theme-switch" data-entity="theme" data-focus-key="theme" data-aria-copy="themeLabel">
+              <option value="system" data-copy="themeSystem"></option>
+              <option value="light" data-copy="themeLight"></option>
+              <option value="dark" data-copy="themeDark"></option>
+            </select>
+          </label>
+        </div>
       </div>
     </header>
 
@@ -52,22 +69,9 @@
           <div><dt data-copy="keyLabel"></dt><dd id="key-value"></dd></div>
           <div><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
         </dl>
-        <div class="song-actions project-actions" role="group" data-aria-copy="fileProjectGroupLabel">
+        <div class="share-session-actions">
           <span id="shared-source" class="shared-source" data-copy="sharedSourceLabel" hidden></span>
           <button id="save-shared-draft" type="button" class="secondary" data-action="save-shared-draft" data-copy="saveSharedDraftButton" hidden></button>
-          <button id="new-idea" type="button" class="secondary icon-button" data-action="new-idea" data-aria-copy="newIdeaButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 4v12M4 10h12"></path><path d="M5.5 2.8h6l3 3V17H5.5z"></path></svg>
-          </button>
-          <button id="open-project-file" type="button" class="secondary icon-button" data-action="open-project-file" data-aria-copy="openFileButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M2.5 5.2h6l1.7 1.9h7.3v8.7H2.5z"></path><path d="M2.8 7.1h14.4"></path></svg>
-          </button>
-          <button id="save-project-file" type="button" class="secondary icon-button" data-action="save-project-file" data-aria-copy="saveFileButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 2.8h11l3 3V17H3z"></path><path d="M6 3v5h8V3M6.2 17v-5.5h7.6V17"></path></svg>
-          </button>
-          <input id="project-file-input" type="file" accept=".melodi.json,application/json" hidden>
-          <button id="share-song" type="button" class="secondary icon-button" data-action="share-song" data-aria-copy="shareButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="5" cy="10" r="2"></circle><circle cx="15" cy="5" r="2"></circle><circle cx="15" cy="15" r="2"></circle><path d="m6.8 9 6.4-3M6.8 11l6.4 3"></path></svg>
-          </button>
         </div>
       </section>
 
@@ -105,7 +109,7 @@
             <button id="reset-playback-range" type="button" class="secondary range-reset" data-action="reset-loop-range" data-copy="allTimelineButton" data-aria-copy="allTimelineAria" hidden></button>
 
             <details class="transport-advanced">
-              <summary data-copy="transportAdvanced" data-aria-copy="transportAdvanced"></summary>
+              <summary class="disclosure-summary" data-aria-copy="transportAdvanced"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="transportAdvanced"></span></summary>
               <div class="transport-advanced-grid">
                 <form class="transport-form" data-action="seek">
                   <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
@@ -154,7 +158,7 @@
                 <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
                 <p id="piano-roll-collapse-summary" class="collapsed-panel-summary" hidden></p>
                 <button id="piano-roll-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="pianoRoll" aria-controls="piano-roll-content" aria-expanded="true">
-                  <svg class="toolbar-icon collapse-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
+                  <svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
                 </button>
                 <details class="pane-help">
                   <summary data-aria-copy="pianoRollHelpButton">?</summary>
@@ -229,7 +233,7 @@
                   <p id="expression-collapse-summary" class="collapsed-panel-summary" hidden></p>
                 </div>
                 <button id="expression-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="expression" aria-controls="expression-content" aria-expanded="true">
-                  <svg class="toolbar-icon collapse-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
+                  <svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
                 </button>
               </div>
               <div id="expression-content" class="panel-disclosure-content">
@@ -259,7 +263,7 @@
                   <button type="button" data-action="set-selected-bend" data-bend="clear" data-copy="bendClearButton" data-focus-key="bend-clear" disabled></button>
                 </div>
                 <details id="bend-editor-details" class="bend-curve-editor">
-                  <summary data-copy="bendCurveSummary"></summary>
+                  <summary class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="bendCurveSummary"></span></summary>
                   <div class="bend-curve-body">
                     <div class="bend-curve-head">
                       <label>
@@ -294,7 +298,7 @@
                   <button type="button" data-action="set-selected-vibrato" data-vibrato="clear" data-copy="vibratoClearButton" data-focus-key="vibrato-clear" disabled></button>
                 </div>
                 <details id="expression-vibrato-details" class="expression-vibrato-details">
-                  <summary data-copy="expressionVibratoDetailsSummary"></summary>
+                  <summary class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="expressionVibratoDetailsSummary"></span></summary>
                   <div class="expression-vibrato-fields">
                     <label><span data-copy="noteVibratoDepthLabel"></span><input id="expression-vibrato-depth" type="number" min="0" max="2" step="0.05"></label>
                     <label><span data-copy="noteVibratoRateLabel"></span><input id="expression-vibrato-rate" type="number" min="0.5" max="12" step="0.1"></label>
@@ -305,7 +309,7 @@
               </div>
 
               <details id="expression-note-details" class="expression-note-details" hidden>
-                <summary><span id="expression-note-summary" data-copy="expressionNoteDetailsSummary"></span></summary>
+                <summary class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span id="expression-note-summary" data-copy="expressionNoteDetailsSummary"></span></summary>
                 <div class="expression-note-tools">
                   <div class="editor-toolbar-group" role="group" data-aria-copy="transposeGroupLabel">
                     <span class="editor-toolbar-label" data-copy="transposeGroupLabel"></span>
@@ -375,7 +379,7 @@
               <input id="generation-left-anchor" type="hidden" name="leftAnchorNoteId">
               <input id="generation-right-anchor" type="hidden" name="rightAnchorNoteId">
               <details class="generation-options">
-                <summary data-copy="generationAdvanced"></summary>
+                <summary class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="generationAdvanced"></span></summary>
                 <div class="generation-advanced-popover">
                   <div class="form-grid generation-fields">
                     <label><span data-copy="generationStartLabel"></span><input id="generation-start" name="startTick" type="number" min="0" step="1" value="480" required data-focus-key="generation-start"></label>
@@ -413,10 +417,10 @@
 
           <section class="inspector-card utility-card">
             <details class="sidebar-tools">
-              <summary data-copy="toolsHeading"></summary>
+              <summary class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="toolsHeading"></span></summary>
               <div class="sidebar-tools-body">
                 <details class="utility-details">
-                  <summary data-copy="addNoteHeading"></summary>
+                  <summary class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="addNoteHeading"></span></summary>
                   <form id="add-note-form" class="panel compact-panel" data-action="add-note">
                     <div class="form-grid">
                       <label><span data-copy="pitchLabel"></span><input name="pitch" type="text" value="C4" pattern="[A-Ga-g][#b]?-?[0-9]+" required data-focus-key="add-pitch"></label>
@@ -427,7 +431,7 @@
                   </form>
                 </details>
                 <details class="utility-details">
-                  <summary id="selection-heading" data-copy="selectionHeading"></summary>
+                  <summary id="selection-heading" class="disclosure-summary"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="selectionHeading"></span></summary>
                   <form id="selection-form" class="panel compact-panel" data-action="select-range">
                     <div class="form-grid">
                       <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="range-start"></label>
