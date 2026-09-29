@@ -300,11 +300,14 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.match(section, /data-view-region="drums"/);
   assert.match(section, /id="drum-grid"/);
   assert.match(section, /data-entity="drum-grid"/);
+  assert.match(section, /id="drums-snap-select"[^>]*data-action="set-snap"/);
 
   assert.match(app, /createDrumGridView/);
   assert.match(app, /commands\.addPercussionHit/);
   assert.match(app, /commands\.deletePercussionHit/);
   assert.match(app, /drumGridView\?\.updatePlayback/);
+  assert.match(app, /renderDrums\(commands\.getSong\(\), normalized\)/);
+  assert.match(app, /drumsSnap\.value = state\.editor\.snap/);
   assert.match(runtime, /drums:\s*\["drums"\]/);
   assert.doesNotMatch(runtime, /expression:\s*\[[^\]]*"drums"/);
 
