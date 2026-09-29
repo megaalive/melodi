@@ -98,7 +98,14 @@ export function createCommands(initialSong, {
   let generationSession = null;
   let generationAuditionToken = 0;
   let lastAcceptedNoteIds = [];
-  const songEndTick = () => song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
+  const songEndTick = () => {
+    let end = song.notes.reduce((value, note) => Math.max(value, note.startTick + note.durationTicks), 0);
+    for (const track of song.tracks) {
+      if (track.kind !== "percussion") continue;
+      for (const hit of track.events) end = Math.max(end, hit.startTick + (hit.durationTicks ?? 1));
+    }
+    return end;
+  };
 
   /*
    * Note manual harus masuk ke phrase terdekat secara waktu. Baseline sekarang
@@ -692,6 +699,77 @@ export function createCommands(initialSong, {
       setPlaybackPosition(position);
       notifyPlaybackChange();
       return enabled;
+    },
+    addPercussionHit(input) {
+      if (input === null || typeof input !== "object" || Array.isArray(input)) fail("invalid-percussion-hit");
+      const allowed = new Set(["trackId", "kitId", "pieceId", "startTick", "velocity", "articulation", "durationTicks", "pan", "tuning"]);
+      if (Object.keys(input).some((key) => !allowed.has(key))) fail("invalid-percussion-hit");
+
+      let track = typeof input.trackId === "string"
+        ? song.tracks.find((candidate) => candidate.id === input.trackId && candidate.kind === "percussion")
+        : null;
+      if (input.trackId && !track) fail("track-not-found");
+      if (!track) {
+        track = song.tracks.find((candidate) => candidate.kind === "percussion"
+          && (!input.kitId || candidate.kitId === input.kitId)) ?? null;
+      }
+
+      const trackId = track?.id ?? idFactory();
+      const kitId = track?.kitId ?? input.kitId ?? "gm-standard";
+      const hit = {
+        id: idFactory(),
+        pieceId: input.pieceId,
+        startTick: input.startTick,
+        velocity: input.velocity ?? 100,
+        articulation: input.articulation ?? "normal",
+        ...(Object.hasOwn(input, "durationTicks") ? { durationTicks: input.durationTicks } : {}),
+        ...(Object.hasOwn(input, "pan") ? { pan: input.pan } : {}),
+        ...(Object.hasOwn(input, "tuning") ? { tuning: input.tuning } : {})
+      };
+
+      commit((candidate) => {
+        let target = candidate.tracks.find((item) => item.id === trackId);
+        if (!target) {
+          target = { id: trackId, kind: "percussion", role: "rhythm", kitId, events: [] };
+          candidate.tracks.push(target);
+        }
+        target.events.push(hit);
+        target.events.sort((left, right) => left.startTick - right.startTick || left.pieceId.localeCompare(right.pieceId));
+      });
+      syncAutomaticLoopRange();
+      return { trackId, hit: cloneData(hit) };
+    },
+    updatePercussionHit(trackId, hitId, patch) {
+      if (patch === null || typeof patch !== "object" || Array.isArray(patch)) fail("invalid-percussion-hit");
+      const allowed = new Set(["pieceId", "startTick", "velocity", "articulation", "durationTicks", "pan", "tuning"]);
+      if (Object.keys(patch).some((key) => !allowed.has(key))) fail("invalid-percussion-hit");
+      const track = song.tracks.find((candidate) => candidate.id === trackId && candidate.kind === "percussion");
+      if (!track) fail("track-not-found");
+      if (!track.events.some((hit) => hit.id === hitId)) fail("percussion-hit-not-found");
+
+      commit((candidate) => {
+        const hit = candidate.tracks.find((item) => item.id === trackId).events.find((item) => item.id === hitId);
+        for (const [key, value] of Object.entries(patch)) {
+          if (["durationTicks", "pan", "tuning"].includes(key) && value === null) delete hit[key];
+          else hit[key] = value;
+        }
+        candidate.tracks.find((item) => item.id === trackId).events
+          .sort((left, right) => left.startTick - right.startTick || left.pieceId.localeCompare(right.pieceId));
+      });
+      syncAutomaticLoopRange();
+      return cloneData(song.tracks.find((item) => item.id === trackId).events.find((item) => item.id === hitId));
+    },
+    deletePercussionHit(trackId, hitId) {
+      const track = song.tracks.find((candidate) => candidate.id === trackId && candidate.kind === "percussion");
+      if (!track) fail("track-not-found");
+      const index = track.events.findIndex((hit) => hit.id === hitId);
+      if (index < 0) fail("percussion-hit-not-found");
+      commit((candidate) => {
+        const target = candidate.tracks.find((item) => item.id === trackId);
+        target.events.splice(target.events.findIndex((hit) => hit.id === hitId), 1);
+      });
+      syncAutomaticLoopRange();
+      return true;
     },
     addNote(input, { actor = "user" } = {}) {
       validateActor(actor);
