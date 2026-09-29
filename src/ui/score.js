@@ -16,6 +16,137 @@ export function scoreStaffWidth(layout, measureCount, viewportWidth = 760) {
   return Math.max(viewport - 20, Math.min(12000, 180 + measures * 170));
 }
 
+export function projectExpressionRuns(entries = []) {
+  const ordered = entries.map((entry, index) => ({ ...entry, order: index }))
+    .sort((left, right) => (left.systemOrder ?? 0) - (right.systemOrder ?? 0)
+      || (left.x ?? 0) - (right.x ?? 0)
+      || (left.startTick ?? 0) - (right.startTick ?? 0)
+      || (left.pitch ?? 0) - (right.pitch ?? 0)
+      || String(left.noteId ?? "").localeCompare(String(right.noteId ?? ""))
+      || left.order - right.order);
+  const runs = [];
+  let active = null;
+
+  function flush() {
+    if (!active) return;
+    runs.push({
+      id: `expression:${active.noteIds.join(",")}`,
+      kind: "expression",
+      text: active.summary,
+      noteIds: active.noteIds,
+      x: active.x,
+      preferredY: active.preferredY,
+      textOffsetY: -8,
+      selected: active.selected,
+      current: active.current,
+      systemId: active.systemId
+    });
+    active = null;
+  }
+
+  for (const entry of ordered) {
+    const summary = entry.summary ?? "";
+    if (!summary) {
+      flush();
+      continue;
+    }
+    if (!active || active.systemId !== entry.systemId || active.summary !== summary) {
+      flush();
+      active = {
+        systemId: entry.systemId,
+        summary,
+        noteIds: [],
+        x: Number.isFinite(entry.x) ? entry.x : 0,
+        preferredY: Number.isFinite(entry.preferredY) ? entry.preferredY : 0,
+        selected: false,
+        current: false
+      };
+    }
+    if (!active.noteIds.includes(entry.noteId)) active.noteIds.push(entry.noteId);
+    active.selected ||= Boolean(entry.selected);
+    active.current ||= Boolean(entry.current);
+  }
+  flush();
+  return runs;
+}
+
+function annotationBounds(annotation, x, y, padding) {
+  const top = y + (Number.isFinite(annotation.textOffsetY) ? annotation.textOffsetY : -8);
+  const height = Math.max(1, Number(annotation.height) || 10);
+  const width = Math.max(1, Number(annotation.width) || 1);
+  return {
+    left: x - width / 2 - padding,
+    right: x + width / 2 + padding,
+    top: top - padding,
+    bottom: top + height + padding
+  };
+}
+
+function boundsOverlap(left, right) {
+  return left.left < right.right && left.right > right.left
+    && left.top < right.bottom && left.bottom > right.top;
+}
+
+function clampAnnotationX(value, width, canvasWidth) {
+  const halfWidth = width / 2;
+  const minimum = halfWidth + 4;
+  const maximum = Math.max(minimum, canvasWidth - halfWidth - 4);
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
+export function layoutScoreAnnotations(annotations = [], {
+  obstacles = [],
+  canvasWidth = 12000,
+  maxLanes = 3,
+  laneGap = 12,
+  padding = 2
+} = {}) {
+  const width = Math.max(1, Number(canvasWidth) || 12000);
+  const sorted = annotations.map((annotation, index) => ({ ...annotation, order: index }))
+    .sort((left, right) => (left.preferredY ?? 0) - (right.preferredY ?? 0)
+      || (left.x ?? 0) - (right.x ?? 0)
+      || String(left.id ?? "").localeCompare(String(right.id ?? ""))
+      || left.order - right.order);
+  const occupied = obstacles.map((obstacle) => ({ ...obstacle }));
+  const placed = [];
+
+  for (const annotation of sorted) {
+    const labelWidth = Math.max(1, Number(annotation.width) || 1);
+    const isBend = annotation.kind === "bend";
+    let placement = null;
+    for (let lane = 0; lane < maxLanes && !placement; lane += 1) {
+      const y = annotation.preferredY + (isBend ? -1 : 1) * lane * laneGap;
+      const baseX = Number.isFinite(annotation.x) ? annotation.x : 0;
+      const laneBounds = annotationBounds(annotation, baseX, y, padding);
+      const nearby = occupied.filter((bounds) => laneBounds.top < bounds.bottom && laneBounds.bottom > bounds.top);
+      const positions = new Set([clampAnnotationX(baseX, labelWidth, width)]);
+      for (const bounds of nearby) {
+        positions.add(clampAnnotationX(bounds.left - labelWidth / 2 - padding, labelWidth, width));
+        positions.add(clampAnnotationX(bounds.right + labelWidth / 2 + padding, labelWidth, width));
+      }
+      const orderedPositions = [...positions].sort((left, right) => Math.abs(left - baseX) - Math.abs(right - baseX) || left - right);
+      for (const x of orderedPositions) {
+        const bounds = annotationBounds(annotation, x, y, padding);
+        if (occupied.some((other) => boundsOverlap(bounds, other))) continue;
+        placement = { ...annotation, x, y, lane, bounds };
+        occupied.push(bounds);
+        placed.push(placement);
+        break;
+      }
+    }
+    if (!placement) {
+      const x = clampAnnotationX(Number(annotation.x) || 0, labelWidth, width);
+      const y = annotation.preferredY + (isBend ? -1 : 1) * Math.max(0, maxLanes - 1) * laneGap;
+      const bounds = annotationBounds(annotation, x, y, padding);
+      placement = { ...annotation, x, y, lane: Math.max(0, maxLanes - 1), bounds, crowded: true };
+      occupied.push(bounds);
+      placed.push(placement);
+    }
+  }
+
+  return placed.sort((left, right) => left.order - right.order).map(({ order, ...placement }) => placement);
+}
+
 function svgElement(name, attributes, text = null) {
   const element = document.createElementNS(SVG_NS, name);
   for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, String(value));
@@ -146,7 +277,7 @@ function markNoteElement(element, note, selected, tabStop, translate) {
   );
 }
 
-function appendBendOverlay(svg, element, note, selected) {
+function projectBendOverlay(element, note, selected) {
   if (!Array.isArray(note.pitchBend) || note.pitchBend.length < 2) return;
   const box = element.getBBox();
   const width = 34;
@@ -156,44 +287,99 @@ function appendBendOverlay(svg, element, note, selected) {
   const baseline = Math.max(20, box.y - 9);
   const points = note.pitchBend.map((point) =>
     `${left + point.position * width},${baseline - point.semitones * scaleY}`).join(" ");
+  const label = scoreBendLabel(note);
+  return {
+    noteId: note.id,
+    selected,
+    points,
+    label,
+    annotation: label ? {
+      id: `bend:${note.id}`,
+      kind: "bend",
+      text: label,
+      noteIds: [note.id],
+      x: left + width / 2,
+      preferredY: baseline - maxAbs * scaleY - 4
+    } : null
+  };
+}
 
+function appendBendOverlay(svg, bend, placement) {
   const group = svgElement("g", {
     class: "score-expression-overlay score-bend-overlay",
     "data-entity": "score-bend",
-    "data-note-id": note.id,
-    "data-selected": String(selected),
+    "data-note-id": bend.noteId,
+    "data-selected": String(bend.selected),
     "data-current": "false",
     "pointer-events": "none",
     "aria-hidden": "true"
   });
-  group.append(
-    svgElement("polyline", { points, class: "score-bend-curve" }),
-    svgElement("text", {
-      x: left + width / 2,
-      y: baseline - maxAbs * scaleY - 4,
+  group.append(svgElement("polyline", { points: bend.points, class: "score-bend-curve" }));
+  if (bend.label && placement) {
+    group.append(svgElement("text", {
+      x: placement.x,
+      y: placement.y,
       "text-anchor": "middle",
       class: "score-bend-label"
-    }, scoreBendLabel(note))
-  );
+    }, bend.label));
+  }
   svg.append(group);
 }
 
-function appendMixOverlay(svg, element, note, selected) {
-  const summary = expressionSummary(note);
-  if (!summary) return;
-  const box = element.getBBox();
+function appendMixOverlay(svg, run, placement) {
   svg.append(svgElement("text", {
-    x: box.x + box.width / 2,
-    y: box.y + box.height + 20,
+    x: placement.x,
+    y: placement.y,
     "text-anchor": "middle",
     class: "score-expression-label",
     "data-entity": "score-expression",
-    "data-note-id": note.id,
-    "data-selected": String(selected),
-    "data-current": "false",
+    "data-note-id": run.noteIds[0],
+    "data-note-ids": run.noteIds.join(","),
+    "data-selected": String(run.selected),
+    "data-current": String(run.current),
     "pointer-events": "none",
     "aria-hidden": "true"
-  }, summary));
+  }, run.text));
+}
+
+function measureScoreAnnotations(svg, annotations) {
+  const layer = svgElement("g", { visibility: "hidden", "aria-hidden": "true" });
+  svg.append(layer);
+  const measured = annotations.map((annotation) => {
+    const className = annotation.kind === "bend" ? "score-bend-label" : "score-expression-label";
+    const text = svgElement("text", { x: 0, y: 0, class: className }, annotation.text);
+    layer.append(text);
+    const box = text.getBBox();
+    return {
+      ...annotation,
+      width: Math.max(1, box.width),
+      height: Math.max(1, box.height),
+      textOffsetY: box.y
+    };
+  });
+  layer.remove();
+  return measured;
+}
+
+function lyricCollisionBounds(svg) {
+  const elements = svg.querySelectorAll('[data-entity="score-syllable"], [data-entity="score-melisma"]');
+  return [...elements].map((element) => {
+    const box = element.getBBox();
+    const linePadding = element.dataset.entity === "score-melisma" ? 3 : 1;
+    return {
+      left: box.x - 2,
+      right: box.x + box.width + 2,
+      top: box.y - linePadding,
+      bottom: box.y + box.height + linePadding
+    };
+  });
+}
+
+function scoreCanvasWidth(svg) {
+  const viewBox = (svg.getAttribute("viewBox") ?? "").trim().split(/[ ,]+/).map(Number);
+  return viewBox.length === 4 && Number.isFinite(viewBox[2]) && viewBox[2] > 0
+    ? viewBox[2]
+    : Number(svg.getAttribute("width")) || 12000;
 }
 
 function renderLyricOverlay(svg, song, noteElementsById, syllableElementsById, translate) {
@@ -204,7 +390,7 @@ function renderLyricOverlay(svg, song, noteElementsById, syllableElementsById, t
     const last = linked.at(-1);
     const firstBox = first.getBBox();
     const lastBox = last.getBBox();
-    const y = firstBox.y + firstBox.height + 38;
+    const y = firstBox.y + firstBox.height + 46;
     const noteIds = syllable.noteIds.filter((noteId) => noteElementsById.has(noteId));
 
     const text = svgElement("text", {
@@ -254,6 +440,7 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
   let noteNavigation = [];
   let activeNoteId = null;
   let activeSyllableIds = new Set();
+  let selectedNoteIds = new Set();
   let layout = "flow";
   let layoutChanged = false;
   const layoutScroll = new Map();
@@ -380,12 +567,21 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     activeNoteId = noteId ?? null;
     for (const element of noteElementsById.get(activeNoteId) ?? []) element.dataset.current = "true";
     setExpressionOverlayState(activeNoteId, "current", true);
+    refreshExpressionOverlayStates();
   }
 
   function setExpressionOverlayState(noteId, state, value) {
     if (!noteId) return;
-    for (const element of host.querySelectorAll('[data-entity="score-bend"], [data-entity="score-expression"]')) {
+    for (const element of host.querySelectorAll('[data-entity="score-bend"]')) {
       if (element.dataset.noteId === noteId) element.dataset[state] = String(value);
+    }
+  }
+
+  function refreshExpressionOverlayStates() {
+    for (const element of host.querySelectorAll('[data-entity="score-expression"]')) {
+      const members = element.dataset.noteIds?.split(",") ?? [element.dataset.noteId];
+      element.dataset.selected = String(members.some((noteId) => selectedNoteIds.has(noteId)));
+      element.dataset.current = String(Boolean(activeNoteId && members.includes(activeNoteId)));
     }
   }
 
@@ -404,8 +600,9 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     activeSyllableIds = next;
   }
 
-  function updateSelection(selectedNoteIds = []) {
-    const selected = new Set(selectedNoteIds);
+  function updateSelection(selectedIds = []) {
+    const selected = new Set(selectedIds);
+    selectedNoteIds = selected;
     for (const [noteId, elements] of noteElementsById) {
       const active = selected.has(noteId);
       for (const element of elements) {
@@ -483,12 +680,18 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     }
 
     const selected = new Set(state.selectedNoteIds ?? []);
+    selectedNoteIds = selected;
     const noteById = new Map(song.notes.map((note) => [note.id, note]));
     noteNavigation = [...song.notes]
       .filter((note) => projected.noteClassById.has(note.id))
       .sort((left, right) => left.startTick - right.startTick || left.pitch - right.pitch || left.id.localeCompare(right.id))
       .map((note) => note.id);
     const focusNoteId = (state.selectedNoteIds ?? []).find((id) => noteNavigation.includes(id)) ?? noteNavigation[0] ?? null;
+    const staffWrappers = [...svg.querySelectorAll(".abcjs-staff-wrapper")];
+    const staffOrderByElement = new Map(staffWrappers.map((element, index) => [element, index]));
+    const staffBoundsByElement = new Map();
+    const expressionEntries = [];
+    const bendOverlays = [];
 
     for (const noteId of noteNavigation) {
       const className = projected.noteClassById.get(noteId);
@@ -504,11 +707,54 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
         noteId === focusNoteId && index === 0,
         translate
       ));
-      appendBendOverlay(svg, elements[0], note, selected.has(noteId));
-      appendMixOverlay(svg, elements[0], note, selected.has(noteId));
+      const element = elements[0];
+      const box = element.getBBox();
+      const staff = element.closest?.(".abcjs-staff-wrapper")
+        ?? element.closest?.(".abcjs-system")
+        ?? svg;
+      if (!staffBoundsByElement.has(staff)) {
+        let bounds;
+        try {
+          bounds = staff.getBBox();
+        } catch {
+          bounds = box;
+        }
+        staffBoundsByElement.set(staff, bounds);
+      }
+      const staffBounds = staffBoundsByElement.get(staff);
+      expressionEntries.push({
+        noteId,
+        summary: expressionSummary(note),
+        systemId: staff,
+        systemOrder: staffOrderByElement.get(staff) ?? staffOrderByElement.size,
+        startTick: note.startTick,
+        pitch: note.pitch,
+        x: box.x + box.width / 2,
+        preferredY: staffBounds.y + staffBounds.height + 20,
+        selected: selected.has(noteId),
+        current: false
+      });
+      const bend = projectBendOverlay(element, note, selected.has(noteId));
+      if (bend) bendOverlays.push(bend);
     }
 
     renderLyricOverlay(svg, song, noteElementsById, syllableElementsById, translate);
+    const expressionRuns = projectExpressionRuns(expressionEntries);
+    const annotations = [
+      ...expressionRuns,
+      ...bendOverlays.map((bend) => bend.annotation).filter(Boolean)
+    ];
+    const measured = measureScoreAnnotations(svg, annotations);
+    const placements = new Map(layoutScoreAnnotations(measured, {
+      obstacles: lyricCollisionBounds(svg),
+      canvasWidth: scoreCanvasWidth(svg),
+      maxLanes: 2
+    }).map((placement) => [placement.id, placement]));
+    for (const bend of bendOverlays) {
+      appendBendOverlay(svg, bend, placements.get(`bend:${bend.noteId}`));
+    }
+    for (const run of expressionRuns) appendMixOverlay(svg, run, placements.get(run.id));
+    refreshExpressionOverlayStates();
 
     const unsupportedWarning = projection.warnings.some((warning) => warning.code === "unsupported-rhythm");
     const voiceLimitWarning = projection.warnings.some((warning) => warning.code === "voice-limit");
