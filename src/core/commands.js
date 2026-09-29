@@ -574,7 +574,7 @@ export function createCommands(initialSong, {
       return commands.generateGap(request);
     },
     setViewMode(mode) {
-      if (!["score", "piano-roll", "combined", "lyrics", "guitar"].includes(mode)) fail("invalid-view-mode");
+      if (!["score", "piano-roll", "combined", "lyrics", "guitar", "drums"].includes(mode)) fail("invalid-view-mode");
       viewMode = mode;
       notifyChange("view");
       return viewMode;
