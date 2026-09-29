@@ -71,7 +71,7 @@ test("autosave debounces rapid canonical edits and skips identical serialized dr
 
   persistence.schedule(song);
   assert.equal(timers.pending.size, 0);
-  assert.equal(persistence.flush(), false);
+  assert.equal(persistence.flush(), true);
   assert.equal(storage.writes.length, 1);
 });
 

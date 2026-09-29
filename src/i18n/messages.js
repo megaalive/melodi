@@ -55,6 +55,8 @@ export const MESSAGES = {
     browserLibraryBlocked: "Library Browser diblokir oleh tab browser lain. Tutup tab lama lalu coba lagi.",
     browserLibraryQuota: "Penyimpanan Browser penuh. Hapus lagu tersimpan lalu coba lagi.",
     browserLibraryCorrupt: "Sebagian data library Browser rusak dan dilewati.",
+    browserCorruptSongTitle: "Entri lagu rusak",
+    browserCorruptSongDate: "Tidak dapat membaca tanggal pembaruan.",
     browserLibraryNotFound: "Lagu itu tidak ditemukan di Browser.",
     browserLibraryInvalidTitle: "Masukkan nama lagu.",
     browserLibraryInvalidSong: "Project ini tidak dapat disimpan ke Browser.",

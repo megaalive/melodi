@@ -2961,6 +2961,7 @@ button.danger-button:hover:not(:disabled) {
   z-index: 30;
   flex: 0 0 auto;
 }
+#project-menu[open] { z-index: 45; }
 .project-menu-trigger {
   display: inline-flex;
   align-items: center;

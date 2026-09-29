@@ -1,4 +1,4 @@
-import { deserializeProject, serializeProject } from "../core/serialization.js?v=20260929.15";
+import { deserializeProject, serializeProject } from "../core/serialization.js?v=20260930.18";
 
 export const BROWSER_LIBRARY_DATABASE = "melodi";
 export const BROWSER_LIBRARY_STORE = "songs";
@@ -173,13 +173,24 @@ export function createBrowserLibrary({ indexedDB = globalThis.indexedDB, now = (
         request.onerror = () => result.abort(request.error);
       });
       const songs = [];
+      const corruptSongs = [];
       let corruptCount = 0;
       for (const row of rows) {
-        try { songs.push(metadata(readStoredRecord(row))); } catch { corruptCount += 1; }
+        try { songs.push(metadata(readStoredRecord(row))); } catch {
+          corruptCount += 1;
+          if (typeof row?.id === "string" && row.id.trim() !== "") {
+            corruptSongs.push({
+              id: row.id,
+              title: typeof row.title === "string" && row.title.trim() !== "" ? row.title : null,
+              updatedAt: typeof row.updatedAt === "string" && Number.isFinite(Date.parse(row.updatedAt)) ? row.updatedAt : null,
+              corrupt: true
+            });
+          }
+        }
       }
       songs.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt) || left.id.localeCompare(right.id));
       if (corruptCount > 0) {
-        return { ok: false, status: "corrupt", error: "corrupt", songs, corruptCount };
+        return { ok: false, status: "corrupt", error: "corrupt", songs, corruptSongs, corruptCount };
       }
       return { ok: true, status: "ok", songs };
     } catch (error) {

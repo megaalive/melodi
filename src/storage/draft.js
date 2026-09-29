@@ -1,4 +1,4 @@
-import { deserializeProject, serializeProject } from "../core/serialization.js?v=20260929.15";
+import { deserializeProject, serializeProject } from "../core/serialization.js?v=20260930.18";
 
 export const DRAFT_STORAGE_KEY = "melodi.draft.v1";
 
@@ -72,7 +72,7 @@ export function createDraftPersistence({
     },
     flush() {
       if (timer !== null) clearTimer(timer);
-      if (timer === null && pendingSerialized === null) return false;
+      if (timer === null && pendingSerialized === null) return true;
       return savePending();
     },
     cancel() {

@@ -1,5 +1,5 @@
-import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260929.15";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.15";
+import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.18";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.18";
 
 const EXAMPLES = Object.freeze([
   Object.freeze({
@@ -8,7 +8,11 @@ const EXAMPLES = Object.freeze([
     descriptionKey: "exampleStarterDescription",
     kind: "melody",
     tags: Object.freeze(["melody", "6/8"]),
-    factory: (idFactory) => createInitialSong(idFactory)
+    factory: (idFactory) => {
+      const song = createInitialSong(idFactory);
+      song.title = "Melodi awal";
+      return song;
+    }
   }),
   Object.freeze({
     id: "jazz-drums-medium-swing",

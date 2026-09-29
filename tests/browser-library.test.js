@@ -238,6 +238,12 @@ test("corrupt records are reported without hiding valid entries and can be delet
   assert.equal(listed.ok, false);
   assert.equal(listed.status, "corrupt");
   assert.equal(listed.corruptCount, 1);
+  assert.deepEqual(listed.corruptSongs, [{
+    id: "corrupt-id",
+    title: "Broken entry",
+    updatedAt: new Date(1_000).toISOString(),
+    corrupt: true
+  }]);
   assert.deepEqual(listed.songs.map(({ id }) => id), [good.id]);
   assert.deepEqual(await browserLibrary.openBrowserSong("corrupt-id"), { ok: false, status: "corrupt", error: "corrupt" });
   assert.deepEqual(await browserLibrary.deleteBrowserSong("corrupt-id"), { ok: true, status: "deleted", deleted: true });

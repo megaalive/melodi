@@ -1476,7 +1476,7 @@ function browserFailureKey(result) {
 function renderBrowserLibrarySongs(result) {
   const list = byId("browser-library-list");
   list.replaceChildren();
-  for (const song of result.songs ?? []) {
+  for (const song of [...(result.songs ?? []), ...(result.corruptSongs ?? [])]) {
     const item = document.createElement("li");
     const copy = document.createElement("div");
     const title = document.createElement("h3");
@@ -1484,14 +1484,18 @@ function renderBrowserLibrarySongs(result) {
     const actions = document.createElement("div");
     const open = document.createElement("button");
     const remove = document.createElement("button");
-    title.textContent = song.title;
-    updated.textContent = translate("browserUpdatedLabel", { date: formatLibraryDate(song.updatedAt) });
+    const displayTitle = song.corrupt ? song.title ?? translate("browserCorruptSongTitle") : song.title;
+    title.textContent = displayTitle;
+    updated.textContent = song.updatedAt
+      ? translate("browserUpdatedLabel", { date: formatLibraryDate(song.updatedAt) })
+      : translate("browserCorruptSongDate");
     open.type = remove.type = "button";
     open.dataset.action = "open-browser-song";
     remove.dataset.action = "delete-browser-song";
     open.dataset.songId = remove.dataset.songId = song.id;
-    open.dataset.songTitle = remove.dataset.songTitle = song.title;
+    open.dataset.songTitle = remove.dataset.songTitle = displayTitle;
     open.textContent = translate("browserOpenButton");
+    open.disabled = Boolean(song.corrupt);
     remove.textContent = translate("browserDeleteButton");
     remove.className = "secondary";
     copy.append(title, updated);
@@ -1501,6 +1505,7 @@ function renderBrowserLibrarySongs(result) {
   }
   const status = byId("browser-library-status");
   if (result.status === "corrupt") status.textContent = translate("browserLibraryCorrupt");
+  else if (!result.ok) status.textContent = translate(browserFailureKey(result));
   else if (!(result.songs?.length)) status.textContent = translate("browserLibraryEmpty");
   else status.textContent = "";
 }
@@ -1661,8 +1666,14 @@ async function requestDeleteBrowserSong(id, title) {
     return result;
   }
   const listing = await commands.listBrowserSongs();
-  renderBrowserLibrarySongs(listing);
-  announce("browserLibraryDeleted");
+  if (listing.ok || listing.status === "corrupt") {
+    renderBrowserLibrarySongs(listing);
+    announce("browserLibraryDeleted");
+  } else {
+    const key = browserFailureKey(listing);
+    byId("browser-library-status").textContent = translate(key);
+    announce(key, "error");
+  }
   return result;
 }
 

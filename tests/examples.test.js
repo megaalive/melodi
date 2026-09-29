@@ -21,6 +21,7 @@ test("starter melody example preserves the existing 81 BPM Am 6/8 arrangement", 
   assert.deepEqual(song.timing.timeSignature, { numerator: 6, denominator: 8 });
   assert.equal(song.key, "Am");
   assert.equal(song.notes.length, 21);
+  assert.equal(song.title, "Melodi awal");
   assert.ok(song.notes.some((note) => note.pitchBend));
   assert.ok(song.notes.some((note) => note.vibrato));
   assert.equal(song.chords.length, 0);
