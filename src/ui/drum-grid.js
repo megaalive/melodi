@@ -112,6 +112,7 @@ export function createDrumGridView(root, {
   function render(song, state = {}) {
     const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
     currentProjection = projection;
+    currentStep = null;
     root.replaceChildren();
     root.style.setProperty("--drum-column-count", String(projection.columns.length));
 
