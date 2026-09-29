@@ -1189,7 +1189,12 @@ function renderPlayback() {
   if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
   if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
   byId("loop-enabled").checked = playback.loop.enabled;
-  const songEndTick = Math.max(1, song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0));
+  let songEndTick = song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0);
+  for (const track of song.tracks) {
+    if (track.kind !== "percussion") continue;
+    for (const hit of track.events) songEndTick = Math.max(songEndTick, hit.startTick + (hit.durationTicks ?? 1));
+  }
+  songEndTick = Math.max(1, songEndTick);
   const customPlaybackRange = playback.loop.startTick !== 0 || playback.loop.endTick !== songEndTick;
   byId("reset-playback-range").hidden = !customPlaybackRange;
   byId("reset-playback-range").dataset.startTick = String(playback.loop.startTick);
