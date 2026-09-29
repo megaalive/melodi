@@ -1,4 +1,4 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20260929.14";
+import { MelodiError, PPQ } from "../core/model.js?v=20260929.15";
 
 export const MIN_TEMPO = 20;
 export const MAX_TEMPO = 300;

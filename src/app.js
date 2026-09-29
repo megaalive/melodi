@@ -1,24 +1,24 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.14";
-import { createCommands } from "./core/commands.js?v=20260929.14";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.15";
+import { createCommands } from "./core/commands.js?v=20260929.15";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.14";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.14";
-import { createAudioPlayer } from "./audio/player.js?v=20260929.14";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.15";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.15";
+import { createAudioPlayer } from "./audio/player.js?v=20260929.15";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.14";
-import { createScoreView } from "./ui/score.js?v=20260929.14";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.14";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.14";
-import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.14";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260929.14";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.14";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.15";
+import { createScoreView } from "./ui/score.js?v=20260929.15";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260929.15";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.15";
+import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.15";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260929.15";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.15";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260929.14";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.14";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.14";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.14";
+import { createDraftPersistence } from "./storage/draft.js?v=20260929.15";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.15";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.15";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.15";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1221,7 +1221,8 @@ function renderPlayback() {
     follow: follow && state.view.mode === "guitar" && uiPreferences.guitarLayout === "tab"
   });
   drumGridView?.updatePlayback(playback, {
-    followMode: state.view.mode === "drums" ? followMode : "none"
+    followMode: state.view.mode === "drums" ? followMode : "none",
+    songEndTick
   });
   if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
@@ -1651,6 +1652,12 @@ drumGridView = createDrumGridView(byId("drum-grid"), {
   },
   onDeleteHit(trackId, hitId) {
     return run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
+  },
+  onSeek(tick) {
+    run(() => commands.seek(tick));
+  },
+  onSetPlaybackRange(startTick, endTick) {
+    run(() => commands.setLoop(startTick, endTick), "loopUpdated");
   }
 });
 bendEditor = createBendCurveEditor({
@@ -1798,7 +1805,7 @@ function renderPercussionExpression(song, selection = drumGridView?.getSelectedH
 
 function renderDrums(song, state) {
   if (state.view.mode !== "drums" || !drumGridView) return;
-  const projection = drumGridView.render(song, state);
+  const projection = drumGridView.render(song, state, canonicalSongEndTick(song));
   renderPercussionExpression(song);
   const hitCount = projection.track?.events.length ?? 0;
   byId("drums-snap-select").value = projection.snap;
@@ -2504,6 +2511,9 @@ document.addEventListener("pointerdown", (event) => {
 }, true);
 document.addEventListener("pointerup", () => { pointerInteractionActive = false; }, true);
 document.addEventListener("pointercancel", () => { pointerInteractionActive = false; }, true);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") pointerInteractionActive = false;
+}, true);
 document.addEventListener("scroll", () => closeNoteContextMenu(), true);
 
 window.addEventListener("pagehide", () => persistence.flush());
