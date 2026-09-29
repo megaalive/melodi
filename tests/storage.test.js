@@ -96,7 +96,7 @@ test("corrupt or unsupported drafts fail safely and storage errors do not escape
   const corrupt = draftStore(memoryStorage("{"), timers);
   assert.deepEqual(corrupt.load(), { song: null, status: "invalid" });
 
-  const unsupported = draftStore(memoryStorage(JSON.stringify({ schemaVersion: 2, song: fixture() })), timers);
+  const unsupported = draftStore(memoryStorage(JSON.stringify({ schemaVersion: 99, song: fixture() })), timers);
   assert.deepEqual(unsupported.load(), { song: null, status: "invalid" });
 
   const blockedStorage = {
