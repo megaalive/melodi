@@ -259,7 +259,7 @@ test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron
   assert.match(app, /createGuitarTabView/);
   assert.match(app, /guitarTabView\?\.updateSelection/);
   assert.match(app, /guitarTabView\?\.updatePlayback/);
-  assert.match(app, /data-action === "set-guitar-layout"/);
+  assert.match(app, /target\.dataset\.action === "set-guitar-layout"/);
 
   assert.match(css, /\.guitar-tab-note\[data-selected="true"\]/);
   assert.match(css, /\.guitar-tab-note\[data-current="true"\]/);
