@@ -378,6 +378,11 @@
                 <p data-copy="drumsHelp"></p>
               </div>
               <div class="drums-toolbar">
+                <div class="editor-toolbar-group editor-tool-group drums-tool-group" role="group" data-aria-copy="toolGroupLabel">
+                  <span class="editor-toolbar-label" data-copy="toolGroupLabel"></span>
+                  <button id="drums-tool-select" type="button" data-action="set-tool" data-tool="select" data-copy="toolSelectButton" data-aria-copy="toolSelectAria" aria-pressed="true"></button>
+                  <button id="drums-tool-draw" type="button" data-action="set-tool" data-tool="draw" data-copy="toolDrawButton" data-aria-copy="toolDrawAria" aria-pressed="false"></button>
+                </div>
                 <span id="drums-kit-label" class="muted" data-copy="drumsKitLabel"></span>
                 <label class="drums-snap-control">
                   <span data-copy="snapLabel"></span>
@@ -388,13 +393,6 @@
                   </select>
                 </label>
               </div>
-            </div>
-            <div class="drum-pads-panel" role="group" aria-labelledby="drum-pads-heading">
-              <div class="drum-pads-heading-row">
-                <h3 id="drum-pads-heading" data-copy="drumsPadsHeading"></h3>
-                <p id="drum-pads-position" class="muted" aria-live="off"></p>
-              </div>
-              <div id="drum-pads" class="drum-pads" data-entity="drum-pads"></div>
             </div>
             <p id="drums-status" class="muted drums-status" role="status" aria-live="polite"></p>
             <form id="percussion-expression-form" class="percussion-expression-panel" data-action="update-percussion-hit" hidden>
@@ -407,19 +405,32 @@
                   <div><dt data-copy="percussionChokeLabel"></dt><dd id="percussion-choke-value"></dd></div>
                 </dl>
               </div>
-              <div class="percussion-expression-fields">
-                <label><span data-copy="percussionTimingLabel"></span><input id="percussion-start-tick" data-focus-key="percussion-start-tick" name="startTick" type="number" min="0" step="1" required></label>
-                <label><span data-copy="percussionVelocityLabel"></span><input id="percussion-velocity" data-focus-key="percussion-velocity" name="velocity" type="number" min="1" max="127" step="1" required></label>
-                <label><span data-copy="percussionPanLabel"></span><input id="percussion-pan" data-focus-key="percussion-pan" name="pan" type="number" min="-100" max="100" step="1" required></label>
-                <label><span data-copy="percussionTuningLabel"></span><input id="percussion-tuning" data-focus-key="percussion-tuning" name="tuning" type="number" min="-12" max="12" step="0.1" required></label>
-                <label><span data-copy="percussionArticulationLabel"></span>
-                  <select id="percussion-articulation" data-focus-key="percussion-articulation" name="articulation" required>
-                    <option value="normal" data-copy="percussionArticulationNormal"></option>
-                    <option value="ghost" data-copy="percussionArticulationGhost"></option>
-                    <option value="accent" data-copy="percussionArticulationAccent"></option>
-                  </select>
+              <div class="percussion-expression-primary">
+                <label class="percussion-range-control">
+                  <span data-copy="percussionVelocityLabel"></span>
+                  <input id="percussion-velocity" data-focus-key="percussion-velocity" name="velocity" type="range" min="1" max="127" step="1" required>
+                  <output id="percussion-velocity-value" for="percussion-velocity"></output>
+                </label>
+                <label class="percussion-range-control">
+                  <span data-copy="percussionPanLabel"></span>
+                  <input id="percussion-pan" data-focus-key="percussion-pan" name="pan" type="range" min="-100" max="100" step="1" required>
+                  <output id="percussion-pan-value" for="percussion-pan"></output>
                 </label>
               </div>
+              <details class="percussion-expression-advanced">
+                <summary data-copy="percussionAdvancedHeading"></summary>
+                <div class="percussion-expression-fields">
+                  <label><span data-copy="percussionTimingLabel"></span><input id="percussion-start-tick" data-focus-key="percussion-start-tick" name="startTick" type="number" min="0" step="1" required></label>
+                  <label><span data-copy="percussionTuningLabel"></span><input id="percussion-tuning" data-focus-key="percussion-tuning" name="tuning" type="number" min="-12" max="12" step="0.1" required></label>
+                  <label><span data-copy="percussionArticulationLabel"></span>
+                    <select id="percussion-articulation" data-focus-key="percussion-articulation" name="articulation" required>
+                      <option value="normal" data-copy="percussionArticulationNormal"></option>
+                      <option value="ghost" data-copy="percussionArticulationGhost"></option>
+                      <option value="accent" data-copy="percussionArticulationAccent"></option>
+                    </select>
+                  </label>
+                </div>
+              </details>
               <div class="percussion-expression-actions">
                 <button type="submit" data-copy="percussionApplyButton"></button>
                 <button id="delete-percussion-hit" type="button" class="secondary" data-action="delete-selected-percussion-hit" data-copy="percussionDeleteButton"></button>
