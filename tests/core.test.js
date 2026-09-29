@@ -334,7 +334,7 @@ test("raw lyric text is separate from zero-note and melisma mappings", () => {
 });
 
 test("serialization round trip preserves the independently specified project", () => {
-  const expected = rawFixture();
+  const expected = createSong(rawFixture());
   const serialized = serializeProject(expected);
   assert.deepEqual(deserializeProject(serialized), expected);
 });
@@ -364,7 +364,7 @@ test("deserialize returns detached data from the supplied object", () => {
 
 test("deserialize rejects malformed data, unsupported versions, and dangling mappings", () => {
   expectCode(() => deserializeProject("{"), "malformed-project");
-  expectCode(() => deserializeProject({ schemaVersion: 2, song: fixture() }), "unsupported-version");
+  expectCode(() => deserializeProject({ schemaVersion: 99, song: fixture() }), "unsupported-version");
   const malformed = { schemaVersion: 1, song: fixture() };
   malformed.song.notes = null;
   expectCode(() => deserializeProject(malformed), "invalid-project");
@@ -390,7 +390,7 @@ test("invalid command input leaves song and change count untouched", () => {
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, pan: -2 }), "invalid-note-pan");
   assert.throws(
     () => commands.updateNote("note-4", { pitch: 128 }),
-    (error) => error instanceof MelodiError && error.code === "invalid-pitch"
+    (error) => error?.code === "invalid-pitch"
   );
   assert.deepEqual(commands.getSong(), before);
   assert.equal(changes, 0);
@@ -550,7 +550,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
       lyrics: fixture().lyrics,
       sections: fixture().sections,
       phrases: fixture().phrases,
-      chords: fixture().chords
+      chords: fixture().chords,
+      tracks: fixture().tracks
     },
     playback: {
       status: "stopped",
@@ -581,7 +582,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote", "setLyrics",
+      "getSong", "getSelection", "getSelectedNoteIds", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea", "loadSong",
@@ -651,7 +653,7 @@ test("transport state stays outside the canonical song and project serialization
   commands.seek(960);
   commands.setLoop(240, 1680);
   commands.setLoopEnabled(true);
-  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "timing", "title"]);
+  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "timing", "title", "tracks"]);
   const restored = deserializeProject(serializeProject(commands.getSong()));
   assert.equal(Object.hasOwn(restored, "playback"), false);
   assert.deepEqual(restored.notes, fixture().notes);

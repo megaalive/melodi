@@ -1,21 +1,21 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.7";
-import { createCommands } from "./core/commands.js?v=20260929.7";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.8";
+import { createCommands } from "./core/commands.js?v=20260929.8";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.7";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.7";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.8";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.8";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.7";
-import { createScoreView } from "./ui/score.js?v=20260929.7";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.7";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.7";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.8";
+import { createScoreView } from "./ui/score.js?v=20260929.8";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260929.8";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.8";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.7";
-import { createShareUrl, decodeShareLocation } from "./io/share.js";
-import { deserializeProject, serializeProject } from "./core/serialization.js";
+import { createDraftPersistence } from "./storage/draft.js?v=20260929.8";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.8";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.8";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.8";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1311,7 +1311,9 @@ function render() {
 
 function hasMeaningfulEdits(song) {
   const starter = createInitialSong((() => { let id = 0; return () => `starter-${++id}`; })());
-  if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0 || song.notes.length !== starter.notes.length) return true;
+  if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0
+    || song.notes.length !== starter.notes.length || song.tracks.length !== starter.tracks.length
+    || JSON.stringify(song.tracks) !== JSON.stringify(starter.tracks)) return true;
   return song.notes.some((note, index) => {
     const initial = starter.notes[index];
     if (!initial) return true;
@@ -1705,6 +1707,9 @@ const publicCommands = Object.freeze({
   updateNote: (noteId, patch) => commands.updateNote(noteId, patch, { actor: "user" }),
   updateNotes: (updates) => commands.updateNotes(updates, { actor: "user" }),
   deleteNote: (noteId) => commands.deleteNote(noteId, { actor: "user" }),
+  addPercussionHit: commands.addPercussionHit,
+  updatePercussionHit: commands.updatePercussionHit,
+  deletePercussionHit: commands.deletePercussionHit,
   setLyrics: commands.setLyrics,
   addLyricSyllable: commands.addLyricSyllable,
   updateLyricSyllable: commands.updateLyricSyllable,

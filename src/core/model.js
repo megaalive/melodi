@@ -119,8 +119,52 @@ function validateNote(note) {
   }
 }
 
+function validatePercussionHit(hit) {
+  const required = ["id", "pieceId", "startTick", "velocity", "articulation"];
+  const allowed = new Set([...required, "durationTicks", "pan", "tuning"]);
+  if (!isRecord(hit)
+    || required.some((key) => !Object.hasOwn(hit, key))
+    || Object.keys(hit).some((key) => !allowed.has(key))) fail("invalid-percussion-hit");
+  requireId(hit.id);
+  requireText(hit.pieceId);
+  requireTick(hit.startTick);
+  if (!Number.isInteger(hit.velocity) || hit.velocity < 1 || hit.velocity > 127) fail("invalid-percussion-velocity");
+  requireText(hit.articulation);
+  if (Object.hasOwn(hit, "durationTicks")) requireDuration(hit.durationTicks);
+  if (Object.hasOwn(hit, "pan")
+    && (typeof hit.pan !== "number" || !Number.isFinite(hit.pan) || hit.pan < -1 || hit.pan > 1)) {
+    fail("invalid-percussion-pan");
+  }
+  if (Object.hasOwn(hit, "tuning")
+    && (typeof hit.tuning !== "number" || !Number.isFinite(hit.tuning) || hit.tuning < -12 || hit.tuning > 12)) {
+    fail("invalid-percussion-tuning");
+  }
+}
+
+function validateInstrumentTrack(track, ids) {
+  if (!isRecord(track)) fail("invalid-track");
+  if (track.kind !== "percussion") fail("unsupported-track-kind");
+  requireKeys(track, ["id", "kind", "role", "kitId", "events"], "invalid-track");
+  requireId(track.id);
+  requireText(track.role);
+  requireText(track.kitId);
+  if (!Array.isArray(track.events)) fail("invalid-track");
+  ids.push(track.id);
+  for (const hit of track.events) {
+    validatePercussionHit(hit);
+    ids.push(hit.id);
+  }
+}
+
+function normalizeSongInput(data) {
+  if (!isRecord(data) || Object.hasOwn(data, "tracks")) return data;
+  // Project schema lama belum memiliki instrument tracks. Tambahkan array kosong
+  // hanya sebagai migrasi bentuk; field lama tetap divalidasi ketat di bawah.
+  return { ...data, tracks: [] };
+}
+
 function validateSong(song) {
-  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords"]);
+  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks"]);
   requireId(song.id);
   requireText(song.title);
 
@@ -143,7 +187,7 @@ function validateSong(song) {
     priorInterval = interval;
   }
 
-  for (const list of [song.sections, song.phrases, song.notes, song.chords]) {
+  for (const list of [song.sections, song.phrases, song.notes, song.chords, song.tracks]) {
     if (!Array.isArray(list)) fail("invalid-project");
   }
   if (!isRecord(song.lyrics)) fail("invalid-lyrics");
@@ -180,6 +224,8 @@ function validateSong(song) {
     requireUniqueReferences(syllable.noteIds);
     ids.push(syllable.id);
   }
+  for (const track of song.tracks) validateInstrumentTrack(track, ids);
+
   for (const chord of song.chords) {
     requireKeys(chord, ["id", "rootPitchClass", "quality", "startTick", "durationTicks"], "invalid-chord");
     requireId(chord.id);
@@ -206,8 +252,9 @@ function validateSong(song) {
 }
 
 export function createSong(data) {
-  validateSong(data);
-  return cloneData(data);
+  const normalized = normalizeSongInput(data);
+  validateSong(normalized);
+  return cloneData(normalized);
 }
 
 export function createInitialSong(idFactory = createId) {
@@ -311,7 +358,8 @@ export function createInitialSong(idFactory = createId) {
     phrases,
     notes,
     lyrics: { rawText: "", syllables: [] },
-    chords: []
+    chords: [],
+    tracks: []
   });
 }
 

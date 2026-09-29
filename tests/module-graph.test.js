@@ -91,6 +91,21 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./storage/ui-preferences.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
+  assert.ok(app.includes("./storage/draft.js?v=" + build));
+  assert.ok(app.includes("./io/share.js?v=" + build));
+  assert.ok(app.includes("./core/serialization.js?v=" + build));
+
+  const commands = readFileSync(resolve("src/core/commands.js"), "utf8");
+  const snapshot = readFileSync(resolve("src/core/snapshot.js"), "utf8");
+  const serialization = readFileSync(resolve("src/core/serialization.js"), "utf8");
+  const share = readFileSync(resolve("src/io/share.js"), "utf8");
+  const draft = readFileSync(resolve("src/storage/draft.js"), "utf8");
+  assert.ok(commands.includes("./model.js?v=" + build));
+  assert.ok(commands.includes("./snapshot.js?v=" + build));
+  assert.ok(snapshot.includes("./model.js?v=" + build));
+  assert.ok(serialization.includes("./model.js?v=" + build));
+  assert.ok(share.includes("../core/model.js?v=" + build));
+  assert.ok(draft.includes("../core/serialization.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {

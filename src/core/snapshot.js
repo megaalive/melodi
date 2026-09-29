@@ -1,4 +1,4 @@
-import { cloneData } from "./model.js";
+import { cloneData } from "./model.js?v=20260929.8";
 import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([
@@ -9,6 +9,9 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "updateNote",
   "updateNotes",
   "deleteNote",
+  "addPercussionHit",
+  "updatePercussionHit",
+  "deletePercussionHit",
   "setLyrics",
   "setAnchor",
   "setLocked",
@@ -86,7 +89,8 @@ export function createAgentSnapshot(song, selection, playback = {
       lyrics: cloneData(song.lyrics),
       sections: cloneData(song.sections),
       phrases: cloneData(song.phrases),
-      chords: cloneData(song.chords)
+      chords: cloneData(song.chords),
+      tracks: cloneData(song.tracks)
     },
     playback: {
       status: playback.status,

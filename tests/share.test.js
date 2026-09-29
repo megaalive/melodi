@@ -99,7 +99,7 @@ test("portable share round-trip preserves musical data while regenerating IDs", 
   assert.equal(restored.chords[0].quality, "m");
 });
 
-test("share v3 mempertahankan expression dan vibrato sementara v1/v2 tetap dapat dibaca", () => {
+test("share v4 mempertahankan expression dan vibrato sementara v1-v3 tetap dapat dibaca", () => {
   const song = fixture();
   song.notes[0].volume = 0.66;
   song.notes[0].pan = -0.35;
@@ -112,6 +112,14 @@ test("share v3 mempertahankan expression dan vibrato sementara v1/v2 tetap dapat
   assert.equal(restored.notes[0].volume, 0.66);
   assert.equal(restored.notes[0].pan, -0.35);
   assert.deepEqual(restored.notes[0].vibrato, song.notes[0].vibrato);
+
+  const v3 = structuredClone(portable);
+  v3.version = 3;
+  const v3Restored = fromPortableProject(v3, deterministicIds("v3"));
+  assert.equal(v3Restored.notes[0].volume, 0.66);
+  assert.equal(v3Restored.notes[0].pan, -0.35);
+  assert.deepEqual(v3Restored.notes[0].vibrato, song.notes[0].vibrato);
+  assert.deepEqual(v3Restored.tracks, []);
 
   const v2 = structuredClone(portable);
   v2.version = 2;
