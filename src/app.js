@@ -3,7 +3,7 @@ import { createCommands } from "./core/commands.js?v=20260929.12";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.12";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.12";
-import { createAudioPlayer } from "./audio/player.js";
+import { createAudioPlayer } from "./audio/player.js?v=20260929.12";
 import { createPianoRollView } from "./ui/piano-roll.js";
 import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.12";
 import { createScoreView } from "./ui/score.js?v=20260929.12";
