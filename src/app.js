@@ -9,6 +9,7 @@ import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.8";
 import { createScoreView } from "./ui/score.js?v=20260929.8";
 import { createGuitarView } from "./ui/guitar-view.js?v=20260929.8";
 import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.8";
+import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.8";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
@@ -24,6 +25,7 @@ let expressionView;
 let scoreView;
 let guitarView;
 let guitarTabView;
+let drumGridView;
 let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
@@ -1202,6 +1204,9 @@ function renderPlayback() {
   guitarTabView?.updatePlayback(playback, {
     follow: follow && state.view.mode === "guitar" && uiPreferences.guitarLayout === "tab"
   });
+  drumGridView?.updatePlayback(playback, {
+    follow: follow && state.view.mode === "drums"
+  });
   if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
   for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
@@ -1283,6 +1288,7 @@ function render() {
   renderScoreControls(song, state);
   scoreView.render(song, state);
   renderGuitar(state);
+  renderDrums(song, state);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -1613,6 +1619,15 @@ guitarTabView = createGuitarTabView(byId("guitar-tab"), byId("guitar-tab-scroll"
     run(() => commands.selectNotes(next));
   }
 });
+drumGridView = createDrumGridView(byId("drum-grid"), {
+  translate,
+  onAddHit(input) {
+    run(() => commands.addPercussionHit(input), "drumsHitAdded");
+  },
+  onDeleteHit(trackId, hitId) {
+    run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
+  }
+});
 bendEditor = createBendCurveEditor({
   root: byId("bend-editor-details"),
   rangeSelect: byId("bend-range"),
@@ -1697,6 +1712,17 @@ function renderGuitar(state) {
 
   const result = guitarView.render(state);
   renderGuitarStatus(state, result);
+}
+
+function renderDrums(song, state) {
+  if (state.view.mode !== "drums" || !drumGridView) return;
+  const projection = drumGridView.render(song, state);
+  const hitCount = projection.track?.events.length ?? 0;
+  byId("drums-snap-label").textContent = translate("drumsSnapLabel", { snap: projection.snap });
+  byId("drums-status").textContent = translate(
+    hitCount ? "drumsStatusReady" : "drumsStatusEmpty",
+    hitCount ? { count: hitCount, snap: projection.snap } : { snap: projection.snap }
+  );
 }
 
 const publicCommands = Object.freeze({
