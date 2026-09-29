@@ -92,6 +92,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
   assert.ok(app.includes("./ui/drum-grid.js?v=" + build));
+  assert.ok(app.includes("./ui/drum-pads.js?v=" + build));
   assert.ok(app.includes("./storage/draft.js?v=" + build));
   assert.ok(app.includes("./io/share.js?v=" + build));
   assert.ok(app.includes("./core/serialization.js?v=" + build));
@@ -102,6 +103,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   const share = readFileSync(resolve("src/io/share.js"), "utf8");
   const draft = readFileSync(resolve("src/storage/draft.js"), "utf8");
   const drumGrid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
+  const drumPads = readFileSync(resolve("src/ui/drum-pads.js"), "utf8");
   assert.ok(commands.includes("./model.js?v=" + build));
   assert.ok(commands.includes("./snapshot.js?v=" + build));
   assert.ok(snapshot.includes("./model.js?v=" + build));
@@ -111,6 +113,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(drumGrid.includes("../core/model.js?v=" + build));
   assert.ok(drumGrid.includes("../core/editor.js?v=" + build));
   assert.ok(drumGrid.includes("../instruments/percussion.js?v=" + build));
+  assert.ok(drumPads.includes("../instruments/percussion.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
@@ -314,6 +317,30 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.match(css, /body\[data-view-mode="drums"\] \.workspace-sidebar/);
   assert.match(css, /\.drum-cell\[data-current-step="true"\]/);
   assert.match(css, /\.drum-hit-marker/);
+});
+
+test("Drum Pads menulis HitEvent di playhead tanpa membuat model musik kedua", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const pads = readFileSync(resolve("src/ui/drum-pads.js"), "utf8");
+
+  const start = html.indexOf('<section id="drums-section"');
+  const end = html.indexOf("</section>", start);
+  const section = html.slice(start, end);
+  assert.match(section, /id="drum-pads"/);
+  assert.match(section, /id="drum-pads-position"/);
+  assert.match(section, /data-entity="drum-pads"/);
+
+  assert.match(app, /createDrumPadsView/);
+  assert.match(app, /commands\.getState\(\)\)\.playback/);
+  assert.match(app, /commands\.addPercussionHit\(drumPadInput/);
+  assert.match(app, /drumPadsView\?\.updatePlayback\(playback\)/);
+  assert.match(pads, /startTick:\s*tick/);
+  assert.doesNotMatch(pads, /SNAP_TICKS|Math\.round\([^\n]*tick/);
+
+  assert.match(css, /\.drum-pads\s*\{/);
+  assert.match(css, /\.drum-pad\s*\{/);
 });
 
 test("UI tidak memakai dialog blocking bawaan browser", () => {
