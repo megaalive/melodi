@@ -32,15 +32,14 @@ export function createDrumPadsView(root, positionElement, {
   root.setAttribute("role", "group");
   root.setAttribute("aria-label", translate("drumsPadsLabel"));
 
-  for (const [index, piece] of kit.pieces.entries()) {
+  for (const piece of kit.pieces) {
     const button = makeElement("button", "drum-pad");
     button.type = "button";
     button.dataset.entity = "drum-pad";
     button.dataset.pieceId = piece.id;
-    button.dataset.padIndex = String(index + 1);
-    button.setAttribute("aria-label", translate("drumsPadLabel", { piece: piece.name }));
+    button.setAttribute("aria-label", translate("drumsPadLabel", { piece: piece.name, velocity: DEFAULT_PAD_VELOCITY }));
     const name = makeElement("span", "drum-pad-name", piece.name);
-    const meta = makeElement("span", "drum-pad-meta", String(index + 1));
+    const meta = makeElement("span", "drum-pad-meta", `V${DEFAULT_PAD_VELOCITY}`);
     meta.setAttribute("aria-hidden", "true");
     button.append(name, meta);
     root.append(button);
