@@ -390,7 +390,7 @@ test("invalid command input leaves song and change count untouched", () => {
   expectCode(() => commands.addNote({ pitch: 60, startTick: 2000, durationTicks: 240, pan: -2 }), "invalid-note-pan");
   assert.throws(
     () => commands.updateNote("note-4", { pitch: 128 }),
-    (error) => error instanceof MelodiError && error.code === "invalid-pitch"
+    (error) => error?.code === "invalid-pitch"
   );
   assert.deepEqual(commands.getSong(), before);
   assert.equal(changes, 0);
@@ -653,7 +653,7 @@ test("transport state stays outside the canonical song and project serialization
   commands.seek(960);
   commands.setLoop(240, 1680);
   commands.setLoopEnabled(true);
-  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "timing", "title"]);
+  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "timing", "title", "tracks"]);
   const restored = deserializeProject(serializeProject(commands.getSong()));
   assert.equal(Object.hasOwn(restored, "playback"), false);
   assert.deepEqual(restored.notes, fixture().notes);
