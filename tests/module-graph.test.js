@@ -83,6 +83,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(html.includes("src/app.js?v=" + build));
 
   const app = readFileSync(resolve("src/app.js"), "utf8");
+  assert.ok(app.includes("./core/model.js?v=" + build));
   assert.ok(app.includes("./core/runtime-state.js?v=" + build));
   assert.ok(app.includes("./i18n/messages.js?v=" + build));
   assert.ok(app.includes("./ui/score.js?v=" + build));

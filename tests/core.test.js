@@ -97,6 +97,21 @@ test("initial song matches the selected share project baseline", () => {
   assert.deepEqual(song.notes[15].pitchBend.at(-1), { position: 1, semitones: 2 });
   assert.deepEqual(song.notes[16].pitchBend.at(-1), { position: 1, semitones: 0 });
   assert.deepEqual(song.notes[20].pitchBend.at(-1), { position: 1, semitones: 2 });
+  assert.deepEqual(
+    song.notes.map((note, index) => note.vibrato ? [index, note.vibrato.rateHz, note.vibrato.depthSemitones, note.vibrato.delayPosition] : null).filter(Boolean),
+    [
+      [1, 5.8, 0.05, 0.2],
+      [2, 5.8, 0.05, 0.2],
+      [3, 5.8, 0.05, 0.2],
+      [6, 5.8, 0.05, 0.2],
+      [8, 5.8, 0.05, 0.2],
+      [11, 5.8, 0.05, 0.2],
+      [15, 5.8, 0.05, 0.2],
+      [16, 5.8, 0.05, 0.2],
+      [17, 5.8, 0.05, 0.2],
+      [20, 5.8, 0.2, 0.2]
+    ]
+  );
   assert.equal(song.notes.at(-1).startTick + song.notes.at(-1).durationTicks, 11520);
 });
 
