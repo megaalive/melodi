@@ -1311,7 +1311,9 @@ function render() {
 
 function hasMeaningfulEdits(song) {
   const starter = createInitialSong((() => { let id = 0; return () => `starter-${++id}`; })());
-  if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0 || song.notes.length !== starter.notes.length) return true;
+  if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0
+    || song.notes.length !== starter.notes.length || song.tracks.length !== starter.tracks.length
+    || JSON.stringify(song.tracks) !== JSON.stringify(starter.tracks)) return true;
   return song.notes.some((note, index) => {
     const initial = starter.notes[index];
     if (!initial) return true;
