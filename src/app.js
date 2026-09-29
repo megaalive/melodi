@@ -1,18 +1,18 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.5";
-import { createCommands } from "./core/commands.js";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.6";
+import { createCommands } from "./core/commands.js?v=20260929.6";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.5";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.5";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.6";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.6";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.5";
-import { createScoreView } from "./ui/score.js?v=20260929.5";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.6";
+import { createScoreView } from "./ui/score.js?v=20260929.6";
 import { createGuitarView, findGuitarPositions } from "./ui/guitar-view.js";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
 import { createDraftPersistence } from "./storage/draft.js";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.5";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.6";
 import { createShareUrl, decodeShareLocation } from "./io/share.js";
 import { deserializeProject, serializeProject } from "./core/serialization.js";
 
