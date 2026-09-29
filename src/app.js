@@ -277,12 +277,15 @@ function renderScoreControls(song, state = normalizeRuntimeState(commands.getSta
   }
 
   const meter = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
-  byId("score-context-key").textContent = song.key;
-  byId("score-context-meter").textContent = meter;
+  const contextKey = byId("score-context-key");
+  const contextMeter = byId("score-context-meter");
+  if (contextKey) contextKey.textContent = song.key;
+  if (contextMeter) contextMeter.textContent = meter;
 
   const selected = new Set(state.selectedNoteIds ?? []);
   const notes = song.notes.filter((note) => selected.has(note.id));
   const summary = byId("score-selection-summary");
+  if (!summary) return;
   if (notes.length === 0) {
     summary.textContent = translate("scoreSelectionNone");
   } else if (notes.length === 1) {
