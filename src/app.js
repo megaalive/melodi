@@ -10,6 +10,7 @@ import { createScoreView } from "./ui/score.js?v=20260929.9";
 import { createGuitarView } from "./ui/guitar-view.js?v=20260929.9";
 import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.9";
 import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.9";
+import { createDrumPadsView } from "./ui/drum-pads.js?v=20260929.10";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
@@ -26,6 +27,7 @@ let scoreView;
 let guitarView;
 let guitarTabView;
 let drumGridView;
+let drumPadsView;
 let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
@@ -1214,6 +1216,7 @@ function renderPlayback() {
   drumGridView?.updatePlayback(playback, {
     follow: follow && state.view.mode === "drums"
   });
+  drumPadsView?.updatePlayback(playback);
   if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
   for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
@@ -1637,6 +1640,13 @@ drumGridView = createDrumGridView(byId("drum-grid"), {
     run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
   }
 });
+drumPadsView = createDrumPadsView(byId("drum-pads"), byId("drum-pads-position"), {
+  translate,
+  onTrigger(input) {
+    run(() => commands.addPercussionHit(input), "drumsHitAdded");
+  }
+});
+drumPadsView.updatePlayback(normalizeRuntimeState(commands.getState()).playback);
 bendEditor = createBendCurveEditor({
   root: byId("bend-editor-details"),
   rangeSelect: byId("bend-range"),
