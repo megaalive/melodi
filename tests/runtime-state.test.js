@@ -81,7 +81,10 @@ test("editor tool defaults safely to select and preserves known tools", () => {
 });
 
 
-test("Expression tetap tersedia di semua view yang mengedit note", () => {
+test("Expression tetap hanya tersedia di view pitched/fretted", () => {
   assert.deepEqual(VIEW_REGION_MODES.expression, ["score", "piano-roll", "combined", "guitar"]);
   assert.equal(VIEW_REGION_MODES.expression.includes("lyrics"), false);
+  assert.equal(VIEW_REGION_MODES.expression.includes("drums"), false);
+  assert.deepEqual(VIEW_REGION_MODES.drums, ["drums"]);
+  assert.equal(normalizeRuntimeState({ view: { mode: "drums", follow: true } }).view.mode, "drums");
 });
