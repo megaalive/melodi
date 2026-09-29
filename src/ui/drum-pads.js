@@ -50,7 +50,7 @@ export function createDrumPadsView(root, positionElement, {
       ? event.target.closest('[data-entity="drum-pad"]')
       : null;
     if (!button || !root.contains(button)) return;
-    onTrigger(drumPadInput(button.dataset.pieceId, playback));
+    onTrigger(button.dataset.pieceId, DEFAULT_PAD_VELOCITY);
   });
 
   function updatePlayback(nextPlayback = {}) {
