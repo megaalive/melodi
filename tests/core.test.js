@@ -627,15 +627,15 @@ test("view mode and Follow Mode are detached editor state, not song edits", () =
   const changes = [];
   const commands = createCommands(fixture(), { onChange: (change) => changes.push(change.kind) });
   const originalSong = commands.getSong();
-  for (const mode of ["score", "piano-roll", "combined", "lyrics", "guitar"]) assert.equal(commands.setViewMode(mode), mode);
+  for (const mode of ["score", "piano-roll", "combined", "lyrics", "guitar", "drums"]) assert.equal(commands.setViewMode(mode), mode);
   assert.equal(commands.setFollowMode(false), false);
   const state = commands.getState();
-  assert.deepEqual(state.view, { mode: "guitar", follow: false });
+  assert.deepEqual(state.view, { mode: "drums", follow: false });
   assert.deepEqual(commands.getSong(), originalSong);
-  assert.deepEqual(changes, ["view", "view", "view", "view", "view", "view"]);
+  assert.deepEqual(changes, ["view", "view", "view", "view", "view", "view", "view"]);
   expectCode(() => commands.setViewMode("editor"), "invalid-view-mode");
   expectCode(() => commands.setFollowMode("false"), "invalid-follow-mode");
-  assert.deepEqual(commands.getState().view, { mode: "guitar", follow: false });
+  assert.deepEqual(commands.getState().view, { mode: "drums", follow: false });
 });
 
 test("snapshot picks the first linked syllable in canonical lyric order", () => {
