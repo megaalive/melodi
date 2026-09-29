@@ -1,7 +1,7 @@
-import { PPQ } from "../core/model.js?v=20260930.18";
-import { SNAP_TICKS } from "../core/editor.js?v=20260930.18";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.18";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260930.18";
+import { PPQ } from "../core/model.js?v=20260930.19";
+import { SNAP_TICKS } from "../core/editor.js?v=20260930.19";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.19";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260930.19";
 
 const DEFAULT_VELOCITY = 100;
 

@@ -1,7 +1,7 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20260930.18";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.18";
-import { percussionVoiceSpec } from "./percussion.js?v=20260930.18";
-import { isInstrumentAudible, percussionChannelId } from "./mix.js?v=20260930.18";
+import { MelodiError, PPQ } from "../core/model.js?v=20260930.19";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.19";
+import { percussionVoiceSpec } from "./percussion.js?v=20260930.19";
+import { isInstrumentAudible, percussionChannelId } from "./mix.js?v=20260930.19";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;

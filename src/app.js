@@ -1,25 +1,26 @@
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.18";
-import { createCommands } from "./core/commands.js?v=20260930.18";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.19";
+import { createCommands } from "./core/commands.js?v=20260930.19";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.18";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.18";
-import { createAudioPlayer } from "./audio/player.js?v=20260930.18";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.19";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.19";
+import { createAudioPlayer } from "./audio/player.js?v=20260930.19";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.18";
-import { createScoreView } from "./ui/score.js?v=20260930.18";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260930.18";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.18";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.18";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.18";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.18";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.19";
+import { createScoreView } from "./ui/score.js?v=20260930.19";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260930.19";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.19";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.19";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.19";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.19";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260930.18";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.18";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.18";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.18";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260930.18";
+import { createDraftPersistence } from "./storage/draft.js?v=20260930.19";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.19";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.19";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.19";
+import { deserializeProject } from "./core/serialization.js?v=20260930.19";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.19";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1544,29 +1545,10 @@ async function shareCurrentSong() {
   return url;
 }
 
-function projectFileName(title) {
-  const base = String(title || "melodi")
-    .normalize("NFKD")
-    .replace(/[^a-zA-Z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64) || "melodi";
-  return `${base}.melodi.json`;
-}
-
 function saveProjectFile() {
-  const payload = serializeProject(commands.getSong());
-  const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = projectFileName(commands.getSong().title);
-  anchor.hidden = true;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  const filename = saveSerializedProjectFile(commands.getSong());
   announce("projectFileSaved");
-  return anchor.download;
+  return filename;
 }
 
 async function loadProjectFile(file) {

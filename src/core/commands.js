@@ -1,12 +1,12 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.18";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.19";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.18";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.18";
+import { createAgentSnapshot } from "./snapshot.js?v=20260930.19";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.19";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.18";
-import { createInstrumentMix } from "../audio/mix.js?v=20260930.18";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260930.19";
+import { createInstrumentMix } from "../audio/mix.js?v=20260930.19";
 
 function fail(code) {
   throw new MelodiError(code);

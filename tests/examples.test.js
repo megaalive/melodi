@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createBlankSong, createSong } from "../src/core/model.js";
+import { createCommands } from "../src/core/commands.js";
 import { createExample, listExamples } from "../src/examples/catalog.js";
 
 test("blank song validates with no hidden musical events", () => {
@@ -47,9 +48,20 @@ test("Jazz Drums example is drums-only, swung, fills two phrases, and ends in a 
   assert.ok(byPiece("snare").some((hit) => hit.articulation === "ghost"));
   assert.ok(byPiece("kick").every((hit) => hit.velocity <= 54), "kick stays feathered");
   assert.equal(byPiece("crash").at(-1).startTick, 7 * 1920 + 3 * 480);
+  assert.equal(byPiece("crash").at(-1).durationTicks, 480);
   const endTick = Math.max(...track.events.map((hit) => hit.startTick + (hit.durationTicks ?? 1)));
-  assert.ok(endTick <= 8 * 1920);
-  assert.ok(endTick > 7 * 1920);
+  assert.equal(endTick, 8 * 1920);
+});
+
+test("Jazz Drums automatic full-song playback range ends at exactly eight bars", () => {
+  const song = createExample("jazz-drums-medium-swing");
+  const commands = createCommands(song);
+
+  assert.deepEqual(commands.getState().playback.loop, {
+    enabled: true,
+    startTick: 0,
+    endTick: 8 * 1920
+  });
 });
 
 test("every example factory returns independent Song and entity IDs", () => {

@@ -1,5 +1,5 @@
-import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.18";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.18";
+import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.19";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.19";
 
 const EXAMPLES = Object.freeze([
   Object.freeze({
@@ -70,7 +70,7 @@ function createJazzDrumsSong(idFactory) {
     add("mid-tom", fillStart + 160, 64, "normal");
     add("high-tom", fillStart + 320, 72, "accent");
   }
-  add("crash", 7 * barTicks + beatTicks * 3, 112, "accent");
+  add("crash", 7 * barTicks + beatTicks * 3, 112, "accent", beatTicks);
 
   return createSong({
     id: idFactory(),
