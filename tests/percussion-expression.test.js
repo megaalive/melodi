@@ -72,3 +72,26 @@ test("patch UI mengubah pan persen ke canonical dan menghapus default opsional",
     tuning: null
   });
 });
+
+
+test("patch Hit Expression diterapkan atomik dan default pan/tuning kembali optional", () => {
+  const { commands, selection } = fixture();
+  const updated = commands.updatePercussionHit(selection.trackId, selection.hitId, percussionExpressionPatch({
+    startTick: "480",
+    velocity: "120",
+    pan: "0",
+    tuning: "0",
+    articulation: "accent"
+  }));
+  assert.equal(updated.startTick, 480);
+  assert.equal(updated.velocity, 120);
+  assert.equal(updated.articulation, "accent");
+  assert.equal(Object.hasOwn(updated, "pan"), false);
+  assert.equal(Object.hasOwn(updated, "tuning"), false);
+  assert.equal(commands.canUndo(), true);
+  commands.undo();
+  const restored = resolvePercussionExpression(commands.getSong(), selection);
+  assert.equal(restored.startTick, 245);
+  assert.equal(restored.pan, -0.25);
+  assert.equal(restored.tuning, 1.5);
+});
