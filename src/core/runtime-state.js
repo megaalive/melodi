@@ -1,6 +1,6 @@
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM } from "./editor.js";
 
-const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar"]);
+const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar", "drums"]);
 
 /** Region mana yang tampil pada mode tampilan apa. */
 export const VIEW_REGION_MODES = Object.freeze({
@@ -8,7 +8,8 @@ export const VIEW_REGION_MODES = Object.freeze({
   "piano-roll": ["piano-roll", "combined"],
   expression: ["score", "piano-roll", "combined", "guitar"],
   lyrics: ["lyrics"],
-  guitar: ["guitar"]
+  guitar: ["guitar"],
+  drums: ["drums"]
 });
 
 function normalizeGenerationState(generation) {
