@@ -1,6 +1,6 @@
-import { PPQ } from "../core/model.js";
-import { SNAP_TICKS } from "../core/editor.js";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js";
+import { PPQ } from "../core/model.js?v=20260929.9";
+import { SNAP_TICKS } from "../core/editor.js?v=20260929.9";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.9";
 
 const DEFAULT_VELOCITY = 100;
 
