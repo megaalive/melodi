@@ -108,6 +108,7 @@ function uniqueClosestNotes(elements) {
 }
 
 function markNoteElement(element, note, selected, tabStop, translate) {
+  element.classList.add("score-note");
   element.dataset.entity = "score-note";
   element.dataset.entityId = note.id;
   element.dataset.noteId = note.id;
