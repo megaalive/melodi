@@ -67,6 +67,7 @@ export function createGuitarTabView(svg, scrollContainer, {
   onSelectNote = () => {}
 } = {}) {
   let noteElementsById = new Map();
+  let noteNavigation = [];
   let activeNoteId = null;
 
   function eventX(tick, geometry) {
@@ -86,22 +87,37 @@ export function createGuitarTabView(svg, scrollContainer, {
     const element = findEvent(event.target);
     if (!element) return;
     onSelectNote(element.dataset.noteId, Boolean(event.shiftKey || event.ctrlKey || event.metaKey));
+    element.focus?.();
   });
 
   svg.addEventListener("keydown", (event) => {
     const element = findEvent(event.target);
-    if (!element || (event.key !== "Enter" && event.key !== " ")) return;
+    if (!element) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onSelectNote(element.dataset.noteId, Boolean(event.shiftKey || event.ctrlKey || event.metaKey));
+      return;
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const index = noteNavigation.indexOf(element.dataset.noteId);
+    const nextId = noteNavigation[index + (event.key === "ArrowRight" ? 1 : -1)];
+    const next = noteElementsById.get(nextId)?.[0];
+    if (!nextId || !next) return;
     event.preventDefault();
-    onSelectNote(element.dataset.noteId, Boolean(event.shiftKey || event.ctrlKey || event.metaKey));
+    onSelectNote(nextId, false);
+    next.focus?.();
   });
 
   function updateSelection(selectedNoteIds = []) {
     const selected = new Set(selectedNoteIds);
+    const tabStopId = selectedNoteIds.find((noteId) => noteElementsById.has(noteId)) ?? noteNavigation[0] ?? null;
     for (const [noteId, elements] of noteElementsById) {
       const value = String(selected.has(noteId));
       for (const element of elements) {
         element.dataset.selected = value;
         element.setAttribute("aria-pressed", value);
+        element.setAttribute("tabindex", noteId === tabStopId ? "0" : "-1");
       }
     }
   }
@@ -124,6 +140,7 @@ export function createGuitarTabView(svg, scrollContainer, {
     const selected = new Set(state.selectedNoteIds ?? []);
     activeNoteId = state.playback?.currentNoteId ?? null;
     noteElementsById = new Map();
+    noteNavigation = events.filter((event) => event.string && event.fret !== null).map((event) => event.noteId);
 
     svg.setAttribute("viewBox", `0 0 ${geometry.width} ${geometry.height}`);
     svg.setAttribute("width", geometry.width);
@@ -181,7 +198,7 @@ export function createGuitarTabView(svg, scrollContainer, {
         "data-selected": selectedNote,
         "data-current": current,
         role: "button",
-        tabindex: selectedNote ? 0 : -1,
+        tabindex: 0,
         "aria-pressed": selectedNote,
         "aria-label": `${midiToPitch(event.pitch)}, string ${event.string}, fret ${event.fret}`
       }, svg);
@@ -231,6 +248,7 @@ export function createGuitarTabView(svg, scrollContainer, {
       noteElementsById.set(event.noteId, list);
     }
 
+    updateSelection(state.selectedNoteIds ?? []);
     return { geometry, events };
   }
 
