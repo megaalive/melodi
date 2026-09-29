@@ -3,7 +3,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInitialSong } from "../src/core/model.js";
-import { createDrumGridView, drumCellIntent, drumGridEndTick, nextDrumCellHit, projectDrumGrid } from "../src/ui/drum-grid.js";
+import {
+  createDrumGridView,
+  drumCellIntent,
+  drumGridEndTick,
+  drumTimelineTickAtX,
+  drumTimelineTickToX,
+  nextDrumCellHit,
+  normalizeDrumPlaybackRange,
+  projectDrumGrid
+} from "../src/ui/drum-grid.js";
 
 function songFixture() {
   let next = 0;
@@ -95,6 +104,29 @@ test("mode Pilih tidak pernah menambah hit pada cell kosong", () => {
   assert.equal(drumCellIntent("draw", true), "select");
 });
 
+test("playhead Drum memakai pemetaan tick kontinu dari gutter dan lebar kolom aktual", () => {
+  const geometry = { gutterWidth: 128, columnWidth: 28, snapTicks: 240, songEndTick: 960 };
+  assert.equal(drumTimelineTickToX(0, geometry), 128);
+  assert.equal(drumTimelineTickToX(120, geometry), 142);
+  assert.equal(drumTimelineTickToX(240, geometry), 156);
+  assert.notEqual(drumTimelineTickToX(121, geometry), drumTimelineTickToX(120, geometry));
+});
+
+test("ruler mengonversi X ke tick dengan Snap editor aktif dan clamp ke batas lagu", () => {
+  const geometry = { gutterWidth: 128, columnWidth: 28, snapTicks: 240, songEndTick: 1000 };
+  assert.equal(drumTimelineTickAtX(128, geometry, "1/4"), 0);
+  assert.equal(drumTimelineTickAtX(184, geometry, "1/4"), 480);
+  assert.equal(drumTimelineTickAtX(168.25, geometry, "1/8"), 240);
+  assert.equal(drumTimelineTickAtX(168.25, geometry, "1/16"), 360);
+  assert.equal(drumTimelineTickAtX(10000, geometry, "1/8"), 1000);
+  assert.equal(drumTimelineTickAtX(32, geometry, "1/8"), 0, "gutter tidak dihitung sebagai waktu");
+});
+
+test("ruler menormalkan drag range dari kiri ke kanan maupun sebaliknya", () => {
+  assert.deepEqual(normalizeDrumPlaybackRange(480, 1920), { startTick: 480, endTick: 1920 });
+  assert.deepEqual(normalizeDrumPlaybackRange(1920, 480), { startTick: 480, endTick: 1920 });
+});
+
 class GridElement {
   constructor(tagName) {
     this.tagName = tagName.toUpperCase();
@@ -105,6 +137,9 @@ class GridElement {
     this.style = { setProperty() {} };
     this.parentElement = null;
     this.textContent = "";
+    this.listeners = new Map();
+    this.capturedPointers = new Set();
+    this.hidden = false;
   }
 
   append(...items) {
@@ -119,21 +154,46 @@ class GridElement {
     this.append(...items);
   }
 
-  addEventListener() {}
+  addEventListener(type, listener) {
+    const listeners = this.listeners.get(type) ?? [];
+    listeners.push(listener);
+    this.listeners.set(type, listeners);
+  }
   setAttribute(name, value) { this.attributes.set(name, String(value)); }
   getAttribute(name) { return this.attributes.get(name) ?? null; }
+  closest(selector) {
+    for (let element = this; element; element = element.parentElement) {
+      if (element.matches?.(selector)) return element;
+    }
+    return null;
+  }
+  matches(selector) {
+    const classNames = [...selector.matchAll(/\.([\w-]+)/g)].map((match) => match[1]);
+    if (classNames.some((className) => !this.className.split(/\s+/).includes(className))) return false;
+    for (const [, key, value] of selector.matchAll(/\[data-([\w-]+)="([^"]+)"\]/g)) {
+      const datasetKey = key.replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase());
+      if (this.dataset[datasetKey] !== value) return false;
+    }
+    return true;
+  }
+  dispatchEvent(event) {
+    if (!event.target) event.target = this;
+    event.preventDefault ??= function preventDefault() { this.defaultPrevented = true; };
+    for (let element = this; element; element = element.parentElement) {
+      event.currentTarget = element;
+      for (const listener of element.listeners?.get(event.type) ?? []) listener(event);
+      if (event.bubbles === false) break;
+    }
+    return !event.defaultPrevented;
+  }
+  setPointerCapture(pointerId) { this.capturedPointers.add(pointerId); }
+  releasePointerCapture(pointerId) { this.capturedPointers.delete(pointerId); }
+  hasPointerCapture(pointerId) { return this.capturedPointers.has(pointerId); }
   contains(item) { return item === this || this.walk().includes(item); }
   walk() { return this.children.flatMap((child) => [child, ...child.walk()]); }
 
   querySelectorAll(selector) {
-    const currentMatch = /^\[data-current-step="([^"]+)"\]$/.exec(selector);
-    const tickMatch = /\[data-tick="([^"]+)"\]/.exec(selector);
-    const stepOnly = selector.startsWith(".drum-grid-step");
-    return this.walk().filter((element) => {
-      if (currentMatch) return element.dataset.currentStep === currentMatch[1];
-      if (tickMatch && element.dataset.tick !== tickMatch[1]) return false;
-      return !stepOnly || element.className.split(/\s+/).includes("drum-grid-step");
-    });
+    return this.walk().filter((element) => element.matches(selector));
   }
 
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
@@ -143,6 +203,7 @@ class GridElement {
     const rootLeft = -(scroll?.scrollLeft ?? 0);
     if (this.dataset.entity === "drum-grid") return { left: rootLeft, top: 40, width: 1568, height: 500 };
     if (this.className === "drum-grid-corner") return { left: 0, top: 40, width: 128, height: 30 };
+    if (this.dataset.entity === "drum-ruler") return { left: rootLeft + 128, top: 40, width: 1440, height: 30 };
     if (this.className === "drum-grid-step") {
       const tick = Number(this.dataset.tick);
       return { left: rootLeft + 128 + (tick / 240) * 30, top: 40, width: 30, height: 30 };
@@ -151,14 +212,15 @@ class GridElement {
   }
 }
 
-function drumViewFixture() {
+function drumViewFixture(options = {}) {
   globalThis.document = { createElement: (tag) => new GridElement(tag) };
+  globalThis.Element = GridElement;
   const scroll = { clientWidth: 400, scrollWidth: 1568, scrollLeft: 0, scrollTop: 72 };
   const root = new GridElement("div");
   root.dataset.entity = "drum-grid";
   root.scrollWidth = 1568;
   root.parentElement = scroll;
-  const view = createDrumGridView(root);
+  const view = createDrumGridView(root, options);
   view.render(songFixture(), { editor: { snap: "1/8", tool: "select" } });
   return { root, scroll, view };
 }
@@ -167,15 +229,29 @@ test("Drum Grid memusatkan step di area setelah kolom label dan mempertahankan p
   const { root, scroll, view } = drumViewFixture();
   view.updatePlayback({ status: "playing", currentTick: 6000 }, { followMode: "center" });
 
-  assert.equal(scroll.scrollLeft, 629);
+  assert.equal(scroll.scrollLeft, 614);
   assert.equal(scroll.scrollTop, 72);
   assert.ok(root.querySelectorAll('[data-tick="6000"]').every((element) => element.dataset.currentStep === "true"));
+});
+
+test("playhead dan full-song center follow berubah pada tick berbeda di Snap cell yang sama", () => {
+  const { root, scroll, view } = drumViewFixture();
+  view.updatePlayback({ status: "playing", currentTick: 6000 }, { followMode: "center" });
+  const line = root.querySelector(".drum-playhead-line");
+  assert.equal(line.style.left, "878px");
+  const firstScrollLeft = scroll.scrollLeft;
+
+  view.updatePlayback({ status: "playing", currentTick: 6010 }, { followMode: "center" });
+  assert.equal(line.style.left, "879.25px");
+  assert.equal(scroll.scrollLeft, firstScrollLeft + 1.25);
+  assert.ok(root.querySelectorAll('[data-tick="6000"]').every((element) => element.dataset.currentStep === "true"));
+  assert.ok(root.querySelectorAll('[data-tick="6240"]').every((element) => element.dataset.currentStep !== "true"));
 });
 
 test("Drum Grid custom range memakai nearest horizontal follow dan Follow mati tidak menggulir", () => {
   const { scroll, view } = drumViewFixture();
   view.updatePlayback({ status: "playing", currentTick: 6000 }, { followMode: "nearest" });
-  assert.equal(scroll.scrollLeft, 508);
+  assert.equal(scroll.scrollLeft, 478);
   assert.equal(scroll.scrollTop, 72);
 
   scroll.scrollLeft = 73;
@@ -192,4 +268,99 @@ test("Drum Grid berhenti pada batas konten dan tidak meminta browser scrollIntoV
   const source = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
   assert.doesNotMatch(source, /scrollIntoView/);
   assert.ok(root.querySelectorAll('[data-tick="11280"]').some((element) => element.dataset.currentStep === "true"));
+});
+
+function pointer(type, clientX, pointerId = 1) {
+  return { type, clientX, pointerId, button: 0, bubbles: true };
+}
+
+function rulerPoint(root, tick) {
+  const scroll = root.parentElement;
+  const rootLeft = -(scroll?.scrollLeft ?? 0);
+  return rootLeft + 128 + tick / 240 * 30;
+}
+
+test("click ruler seeks dengan Snap aktif tanpa menambah percussion hit", () => {
+  const seeks = [];
+  let addedHits = 0;
+  const { root, view } = drumViewFixture({
+    onSeek: (tick) => seeks.push(tick),
+    onAddHit: () => { addedHits += 1; }
+  });
+  view.render(songFixture(), { editor: { snap: "1/8", tool: "draw" } }, 11520);
+  const ruler = root.querySelector('[data-entity="drum-ruler"]');
+  ruler.dispatchEvent(pointer("pointerdown", rulerPoint(root, 960)));
+  ruler.dispatchEvent(pointer("pointerup", rulerPoint(root, 960)));
+  ruler.dispatchEvent({ type: "click", bubbles: true });
+
+  assert.deepEqual(seeks, [960]);
+  assert.equal(addedHits, 0);
+  assert.equal(ruler.getAttribute("role"), "slider");
+  assert.equal(ruler.getAttribute("aria-valuemax"), "11520");
+});
+
+test("ruler drag commits normalized range then seeks its start; pointer cancel and Escape clear preview", () => {
+  const song = songFixture();
+  const actions = [];
+  const { root, view } = drumViewFixture({
+    onAddHit: () => actions.push("add"),
+    onSeek: (tick) => actions.push(["seek", tick]),
+    onSetPlaybackRange: (start, end) => actions.push(["range", start, end])
+  });
+  view.render(song, { editor: { snap: "1/8", tool: "draw" } }, 11520);
+  const ruler = root.querySelector('[data-entity="drum-ruler"]');
+
+  ruler.dispatchEvent(pointer("pointerdown", rulerPoint(root, 960)));
+  ruler.dispatchEvent(pointer("pointermove", rulerPoint(root, 2400)));
+  assert.equal(root.querySelector(".drum-playback-range").dataset.state, "preview");
+  ruler.dispatchEvent(pointer("pointerup", rulerPoint(root, 2400)));
+  assert.deepEqual(actions, [["range", 960, 2400], ["seek", 960]]);
+  assert.equal(root.querySelector(".drum-playback-range").hidden, true);
+  assert.equal(ruler.hasPointerCapture(1), false);
+
+  actions.length = 0;
+  ruler.dispatchEvent(pointer("pointerdown", rulerPoint(root, 2400)));
+  ruler.dispatchEvent(pointer("pointermove", rulerPoint(root, 960)));
+  assert.deepEqual(
+    [root.querySelector(".drum-playback-range").dataset.startTick, root.querySelector(".drum-playback-range").dataset.endTick],
+    ["960", "2400"]
+  );
+  ruler.dispatchEvent(pointer("pointercancel", rulerPoint(root, 960)));
+  assert.equal(actions.length, 0);
+  assert.equal(root.querySelector(".drum-playback-range").hidden, true);
+
+  ruler.dispatchEvent(pointer("pointerdown", rulerPoint(root, 2400)));
+  ruler.dispatchEvent(pointer("pointermove", rulerPoint(root, 960)));
+  ruler.dispatchEvent(pointer("pointerup", rulerPoint(root, 960)));
+  assert.deepEqual(actions, [["range", 960, 2400], ["seek", 960]]);
+  assert.equal(ruler.hasPointerCapture(1), false);
+
+  actions.length = 0;
+  ruler.dispatchEvent(pointer("pointerdown", rulerPoint(root, 960)));
+  ruler.dispatchEvent(pointer("pointermove", rulerPoint(root, 2400)));
+  ruler.dispatchEvent({ type: "keydown", key: "Escape", bubbles: true });
+  assert.equal(actions.length, 0);
+  assert.equal(root.querySelector(".drum-playback-range").hidden, true);
+  assert.equal(ruler.hasPointerCapture(1), false);
+});
+
+test("custom playback range ditampilkan dari playback.loop canonical", () => {
+  const { root, view } = drumViewFixture();
+  const range = root.querySelector(".drum-playback-range");
+  view.updatePlayback({ currentTick: 960, loop: { startTick: 480, endTick: 2400, enabled: false } });
+  assert.equal(range.hidden, false);
+  assert.equal(range.dataset.state, "committed");
+  assert.equal(range.dataset.startTick, "480");
+  assert.equal(range.dataset.endTick, "2400");
+
+  view.updatePlayback({ currentTick: 0, loop: { startTick: 0, endTick: 11520, enabled: true } });
+  assert.equal(range.hidden, true, "full-song range does not fill the ruler");
+});
+
+test("app menghubungkan ruler Drum ke command canonical dan batas song canonical", () => {
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  assert.match(app, /onSeek\(tick\)\s*\{\s*run\(\(\) => commands\.seek\(tick\)\)/);
+  assert.match(app, /onSetPlaybackRange\(startTick, endTick\)\s*\{\s*run\(\(\) => commands\.setLoop\(startTick, endTick\)/);
+  assert.match(app, /drumGridView\.render\(song, state, canonicalSongEndTick\(song\)\)/);
+  assert.match(app, /followMode: state\.view\.mode === "drums" \? followMode : "none",\s*songEndTick/);
 });

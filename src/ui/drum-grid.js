@@ -1,7 +1,7 @@
-import { PPQ } from "../core/model.js?v=20260929.14";
-import { SNAP_TICKS } from "../core/editor.js?v=20260929.14";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.14";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260929.14";
+import { PPQ } from "../core/model.js?v=20260929.15";
+import { SNAP_TICKS } from "../core/editor.js?v=20260929.15";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.15";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260929.15";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -86,6 +86,39 @@ export function drumCellIntent(tool, hasHit) {
   return tool === "draw" ? "add" : "clear";
 }
 
+export function drumTimelineTickToX(tick, geometry) {
+  if (!Number.isFinite(tick) || !Number.isFinite(geometry?.gutterWidth) || geometry.gutterWidth < 0
+    || !Number.isFinite(geometry?.columnWidth) || geometry.columnWidth <= 0
+    || !Number.isFinite(geometry?.snapTicks) || geometry.snapTicks <= 0) {
+    throw new RangeError("Invalid Drum timeline geometry.");
+  }
+  const songEndTick = Number.isFinite(geometry.songEndTick) ? Math.max(0, geometry.songEndTick) : Number.POSITIVE_INFINITY;
+  const boundedTick = clamp(tick, 0, songEndTick);
+  return geometry.gutterWidth + boundedTick / geometry.snapTicks * geometry.columnWidth;
+}
+
+export function drumTimelineTickAtX(x, geometry, snap = "1/8") {
+  const interval = SNAP_TICKS[snap];
+  if (!Number.isFinite(x) || !Number.isFinite(geometry?.gutterWidth) || geometry.gutterWidth < 0
+    || !Number.isFinite(geometry?.columnWidth) || geometry.columnWidth <= 0
+    || !Number.isFinite(geometry?.snapTicks) || geometry.snapTicks <= 0 || !interval) {
+    throw new RangeError("Invalid Drum ruler input.");
+  }
+  const timelineX = Math.max(geometry.gutterWidth, x);
+  const rawTick = (timelineX - geometry.gutterWidth) / geometry.columnWidth * geometry.snapTicks;
+  const snappedTick = Math.round(rawTick / interval) * interval;
+  const songEndTick = Number.isFinite(geometry.songEndTick) ? Math.max(0, geometry.songEndTick) : Number.POSITIVE_INFINITY;
+  return clamp(snappedTick, 0, songEndTick);
+}
+
+export function normalizeDrumPlaybackRange(firstTick, lastTick) {
+  if (!Number.isFinite(firstTick) || !Number.isFinite(lastTick)) throw new RangeError("Invalid Drum playback range.");
+  return {
+    startTick: Math.min(firstTick, lastTick),
+    endTick: Math.max(firstTick, lastTick)
+  };
+}
+
 function cellKey(pieceId, tick) {
   return `${pieceId}@${tick}`;
 }
@@ -101,11 +134,18 @@ export function createDrumGridView(root, {
   translate = (key) => key,
   onAddHit = () => {},
   onSelectHit = () => {},
-  onDeleteHit = () => {}
+  onDeleteHit = () => {},
+  onSeek = () => {},
+  onSetPlaybackRange = () => {}
 } = {}) {
   let currentProjection = null;
   let currentStep = null;
   let currentTool = "select";
+  let currentSnap = "1/8";
+  let currentSongEndTick = 0;
+  let currentPlayback = {};
+  let lastRangeSignature = null;
+  let rulerDrag = null;
   let selectedTrackId = null;
   let selectedHitId = null;
 
@@ -160,6 +200,26 @@ export function createDrumGridView(root, {
   });
 
   root.addEventListener("keydown", (event) => {
+    const ruler = event.target instanceof Element
+      ? event.target.closest('[data-entity="drum-ruler"]')
+      : null;
+    if (ruler && root.contains(ruler)) {
+      if (event.key === "Escape" && rulerDrag) {
+        event.preventDefault();
+        finishRulerDrag(rulerDrag.pointerId, true);
+        return;
+      }
+      const interval = SNAP_TICKS[currentSnap] ?? SNAP_TICKS["1/8"];
+      let nextTick = Number.isFinite(currentPlayback.currentTick) ? currentPlayback.currentTick : 0;
+      if (event.key === "ArrowLeft" || event.key === "ArrowDown") nextTick -= interval;
+      else if (event.key === "ArrowRight" || event.key === "ArrowUp") nextTick += interval;
+      else if (event.key === "Home") nextTick = 0;
+      else if (event.key === "End") nextTick = currentSongEndTick;
+      else return;
+      event.preventDefault();
+      onSeek(clamp(nextTick, 0, currentSongEndTick));
+      return;
+    }
     const button = event.target instanceof Element
       ? event.target.closest('[data-entity="drum-cell"]')
       : null;
@@ -178,10 +238,142 @@ export function createDrumGridView(root, {
     if (deleted !== undefined && hit.hitId === selectedHitId) selectHit(null, null);
   });
 
-  function render(song, state = {}) {
+  function measureTimelineGeometry() {
+    const steps = [...root.querySelectorAll(".drum-grid-step")];
+    const firstBounds = steps[0]?.getBoundingClientRect?.();
+    const secondBounds = steps[1]?.getBoundingClientRect?.();
+    const corner = root.querySelector(".drum-grid-corner");
+    const gutterWidth = corner?.getBoundingClientRect?.().width ?? corner?.offsetWidth ?? 0;
+    const columnWidth = secondBounds && firstBounds
+      ? secondBounds.left - firstBounds.left
+      : firstBounds?.width ?? 0;
+    return {
+      gutterWidth,
+      columnWidth,
+      snapTicks: currentProjection?.snapTicks ?? 0,
+      songEndTick: currentSongEndTick
+    };
+  }
+
+  function setOverlayBounds(element, left, width) {
+    element.style.left = `${left}px`;
+    element.style.width = `${Math.max(0, width)}px`;
+  }
+
+  function setRangeVisual(range, state, geometry = measureTimelineGeometry()) {
+    const bodyOverlay = root.querySelector(".drum-playback-range");
+    const rulerOverlay = root.querySelector(".drum-ruler-range");
+    if (!range || range.endTick <= range.startTick || !bodyOverlay || !rulerOverlay) {
+      if (bodyOverlay) bodyOverlay.hidden = true;
+      if (rulerOverlay) rulerOverlay.hidden = true;
+      return;
+    }
+    const left = drumTimelineTickToX(range.startTick, geometry);
+    const right = drumTimelineTickToX(range.endTick, geometry);
+    const width = Math.max(1, right - left);
+    for (const overlay of [bodyOverlay, rulerOverlay]) {
+      overlay.hidden = false;
+      overlay.dataset.state = state;
+      overlay.dataset.startTick = String(range.startTick);
+      overlay.dataset.endTick = String(range.endTick);
+    }
+    setOverlayBounds(bodyOverlay, left, width);
+    setOverlayBounds(rulerOverlay, left - geometry.gutterWidth, width);
+  }
+
+  function updateCanonicalRange(playback = currentPlayback) {
+    const loop = playback?.loop;
+    const startTick = Number.isFinite(loop?.startTick) ? loop.startTick : 0;
+    const endTick = Number.isFinite(loop?.endTick) ? loop.endTick : currentSongEndTick;
+    const signature = `${startTick}:${endTick}:${currentSongEndTick}`;
+    if (signature === lastRangeSignature) return;
+    lastRangeSignature = signature;
+    const isCustom = startTick !== 0 || endTick !== currentSongEndTick;
+    setRangeVisual(isCustom ? { startTick, endTick } : null, "committed");
+  }
+
+  function syncPlayhead(tick) {
+    const geometry = measureTimelineGeometry();
+    if (geometry.columnWidth <= 0) return;
+    const x = drumTimelineTickToX(tick, geometry);
+    const line = root.querySelector(".drum-playhead-line");
+    const rulerLine = root.querySelector(".drum-ruler-playhead");
+    if (line) {
+      line.style.left = `${x}px`;
+      line.dataset.tick = String(clamp(tick, 0, currentSongEndTick));
+    }
+    if (rulerLine) rulerLine.style.left = `${x - geometry.gutterWidth}px`;
+  }
+
+  function rulerTickFromClientX(clientX) {
+    const geometry = measureTimelineGeometry();
+    const bounds = root.getBoundingClientRect?.();
+    if (!bounds || geometry.columnWidth <= 0) return 0;
+    return drumTimelineTickAtX(clientX - bounds.left, geometry, currentSnap);
+  }
+
+  function finishRulerDrag(pointerId, cancelled = false, clientX = Number.NaN) {
+    if (!rulerDrag || rulerDrag.pointerId !== pointerId) return;
+    const drag = rulerDrag;
+    rulerDrag = null;
+    if (Number.isFinite(clientX)) {
+      drag.currentTick = rulerTickFromClientX(clientX);
+      if (Math.abs(clientX - drag.startClientX) >= 3) drag.moved = true;
+    }
+    setRangeVisual(null, "preview");
+    try { drag.surface.releasePointerCapture?.(pointerId); } catch {}
+    if (cancelled) return;
+    if (!drag.moved || drag.startTick === drag.currentTick) {
+      onSeek(drag.startTick);
+      return;
+    }
+    const range = normalizeDrumPlaybackRange(drag.startTick, drag.currentTick);
+    onSetPlaybackRange(range.startTick, range.endTick);
+    onSeek(range.startTick);
+  }
+
+  root.addEventListener("pointerdown", (event) => {
+    const surface = event.target instanceof Element
+      ? event.target.closest('[data-entity="drum-ruler"]')
+      : null;
+    if (!surface || !root.contains(surface) || event.button !== 0) return;
+    event.preventDefault();
+    const tick = rulerTickFromClientX(event.clientX);
+    rulerDrag = {
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startTick: tick,
+      currentTick: tick,
+      moved: false,
+      surface
+    };
+    try { surface.setPointerCapture?.(event.pointerId); } catch {}
+  });
+
+  root.addEventListener("pointermove", (event) => {
+    if (!rulerDrag || rulerDrag.pointerId !== event.pointerId) return;
+    const distance = Math.abs(event.clientX - rulerDrag.startClientX);
+    rulerDrag.currentTick = rulerTickFromClientX(event.clientX);
+    if (distance >= 3) rulerDrag.moved = true;
+    if (rulerDrag.moved && rulerDrag.startTick !== rulerDrag.currentTick) {
+      setRangeVisual(normalizeDrumPlaybackRange(rulerDrag.startTick, rulerDrag.currentTick), "preview");
+    } else {
+      setRangeVisual(null, "preview");
+    }
+  });
+
+  root.addEventListener("pointerup", (event) => finishRulerDrag(event.pointerId, false, event.clientX));
+  root.addEventListener("pointercancel", (event) => finishRulerDrag(event.pointerId, true));
+  root.addEventListener("lostpointercapture", (event) => finishRulerDrag(event.pointerId, true));
+
+  function render(song, state = {}, songEndTick = drumGridEndTick(song)) {
     const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
     currentProjection = projection;
     currentTool = state.editor?.tool === "draw" ? "draw" : "select";
+    currentSnap = state.editor?.snap ?? "1/8";
+    currentSongEndTick = Number.isFinite(songEndTick) ? Math.max(0, songEndTick) : projection.endTick;
+    currentPlayback = state.playback ?? currentPlayback;
+    lastRangeSignature = null;
     root.dataset.tool = currentTool;
     currentStep = null;
     if (selectedHitId) {
@@ -192,12 +384,27 @@ export function createDrumGridView(root, {
         onSelectHit(null);
       }
     }
+    if (rulerDrag) finishRulerDrag(rulerDrag.pointerId, true);
     root.replaceChildren();
+    root.style.position = "relative";
     root.style.setProperty("--drum-column-count", String(projection.columns.length));
 
     const corner = makeElement("div", "drum-grid-corner", translate("drumsPieceHeading"));
     corner.dataset.entity = "drum-row-label";
     root.append(corner);
+
+    const ruler = makeElement("button", "drum-grid-ruler-surface");
+    ruler.type = "button";
+    ruler.dataset.entity = "drum-ruler";
+    ruler.setAttribute("role", "slider");
+    ruler.setAttribute("tabindex", "0");
+    ruler.setAttribute("aria-orientation", "horizontal");
+    ruler.setAttribute("aria-label", translate("drumsRulerLabel"));
+    ruler.setAttribute("aria-valuemin", "0");
+    ruler.setAttribute("aria-valuemax", String(currentSongEndTick));
+    ruler.setAttribute("aria-valuenow", String(currentPlayback.currentTick ?? 0));
+    ruler.setAttribute("aria-valuetext", translate("drumsRulerValue", { tick: currentPlayback.currentTick ?? 0 }));
+    ruler.title = translate("drumsRulerLabel");
 
     for (const tick of projection.columns) {
       const header = makeElement("div", "drum-grid-step");
@@ -211,8 +418,16 @@ export function createDrumGridView(root, {
         : isBeat
           ? "•"
           : "";
-      root.append(header);
+      ruler.append(header);
     }
+
+    const rulerRange = makeElement("span", "drum-ruler-range");
+    rulerRange.setAttribute("aria-hidden", "true");
+    rulerRange.hidden = true;
+    const rulerPlayhead = makeElement("span", "drum-ruler-playhead");
+    rulerPlayhead.setAttribute("aria-hidden", "true");
+    ruler.append(rulerRange, rulerPlayhead);
+    root.append(ruler);
 
     for (const piece of projection.kit.pieces) {
       const label = makeElement("div", "drum-row-label", piece.name);
@@ -266,12 +481,30 @@ export function createDrumGridView(root, {
       }
     }
 
+    const bodyRange = makeElement("div", "drum-playback-range");
+    bodyRange.setAttribute("aria-hidden", "true");
+    bodyRange.hidden = true;
+    const playheadLine = makeElement("div", "drum-playhead-line");
+    playheadLine.setAttribute("aria-hidden", "true");
+    root.append(bodyRange, playheadLine);
+    updatePlayback(currentPlayback, { songEndTick: currentSongEndTick });
+
     return projection;
   }
 
-  function updatePlayback(playback = {}, { followMode = "none" } = {}) {
+  function updatePlayback(playback = {}, { followMode = "none", songEndTick = currentSongEndTick } = {}) {
     if (!currentProjection || !currentProjection.columns.length) return;
-    const tick = Number.isFinite(playback.currentTick) ? playback.currentTick : 0;
+    currentPlayback = playback;
+    if (Number.isFinite(songEndTick)) currentSongEndTick = Math.max(0, songEndTick);
+    const tick = clamp(Number.isFinite(playback.currentTick) ? playback.currentTick : 0, 0, currentSongEndTick);
+    const ruler = root.querySelector('[data-entity="drum-ruler"]');
+    if (ruler) {
+      ruler.setAttribute("aria-valuemax", String(currentSongEndTick));
+      ruler.setAttribute("aria-valuenow", String(tick));
+      ruler.setAttribute("aria-valuetext", translate("drumsRulerValue", { tick }));
+    }
+    updateCanonicalRange(playback);
+    syncPlayhead(tick);
     const index = clamp(Math.floor(tick / currentProjection.snapTicks), 0, currentProjection.columns.length - 1);
     const nextStep = currentProjection.columns[index];
     if (nextStep !== currentStep) {
@@ -281,25 +514,25 @@ export function createDrumGridView(root, {
     }
     if (followMode !== "none" && playback.status === "playing") {
       const scrollContainer = root.parentElement;
-      const step = root.querySelector(`.drum-grid-step[data-tick="${nextStep}"]`);
-      const corner = root.querySelector(".drum-grid-corner");
-      if (scrollContainer?.clientWidth > 0 && step?.getBoundingClientRect && root.getBoundingClientRect) {
-        const stepBounds = step.getBoundingClientRect();
-        const gridBounds = root.getBoundingClientRect();
-        const playheadX = stepBounds.left - gridBounds.left;
-        const gutterWidth = corner?.getBoundingClientRect?.().width ?? corner?.offsetWidth ?? 0;
-        const contentWidth = scrollContainer.scrollWidth ?? root.scrollWidth ?? 0;
-        const geometry = {
+      const timelineGeometry = measureTimelineGeometry();
+      const playheadX = drumTimelineTickToX(tick, timelineGeometry);
+      if (scrollContainer?.clientWidth > 0 && timelineGeometry.columnWidth > 0 && root.getBoundingClientRect) {
+        // Projection boleh menyisakan padding sampai ujung birama, tetapi follow
+        // berhenti pada akhir canonical song supaya playhead masih bergerak ke
+        // kanan setelah viewport mencapai ujung musik sebenarnya.
+        const gridWidth = scrollContainer.scrollWidth ?? root.scrollWidth ?? 0;
+        const contentWidth = Math.min(gridWidth, drumTimelineTickToX(currentSongEndTick, timelineGeometry));
+        const scrollGeometry = {
           playheadX,
-          playheadWidth: stepBounds.width,
+          playheadWidth: 0,
           viewportWidth: scrollContainer.clientWidth,
-          gutterWidth,
+          gutterWidth: timelineGeometry.gutterWidth,
           contentWidth,
           scrollLeft: scrollContainer.scrollLeft
         };
         scrollContainer.scrollLeft = followMode === "nearest"
-          ? nearestScrollLeft(geometry)
-          : centeredScrollLeft({ ...geometry, playheadX: playheadX + stepBounds.width / 2 });
+          ? nearestScrollLeft(scrollGeometry)
+          : centeredScrollLeft(scrollGeometry);
       }
     }
   }

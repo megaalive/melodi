@@ -3686,9 +3686,12 @@ body[data-view-mode="drums"] .workspace-sidebar {
   scrollbar-gutter: stable;
 }
 .drum-grid {
+  position: relative;
+  --drum-row-height: 1.8rem;
+  --drum-step-width: 1.8rem;
   display: grid;
-  grid-template-columns: minmax(6.5rem, 8rem) repeat(var(--drum-column-count), 1.8rem);
-  grid-auto-rows: 1.8rem;
+  grid-template-columns: minmax(6.5rem, 8rem) repeat(var(--drum-column-count), var(--drum-step-width));
+  grid-auto-rows: var(--drum-row-height);
   width: max-content;
   min-width: 100%;
   padding: 0;
@@ -3715,9 +3718,8 @@ body[data-view-mode="drums"] .workspace-sidebar {
   background: var(--surface-float);
 }
 .drum-grid-step {
-  position: sticky;
-  z-index: 4;
-  top: 0;
+  position: relative;
+  z-index: auto;
   justify-content: center;
   background: var(--surface-float);
 }
@@ -3728,6 +3730,87 @@ body[data-view-mode="drums"] .workspace-sidebar {
 .drum-grid-step[data-bar="true"] {
   color: var(--accent-strong);
   box-shadow: inset 2px 0 0 var(--border-strong);
+}
+.drum-grid-ruler-surface {
+  position: sticky;
+  z-index: 7;
+  top: 0;
+  grid-area: 1 / 2 / 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(var(--drum-column-count), var(--drum-step-width));
+  grid-auto-rows: var(--drum-row-height);
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  height: var(--drum-row-height);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+  cursor: crosshair;
+  touch-action: none;
+}
+.drum-grid-ruler-surface:hover:not(:disabled) {
+  background: transparent;
+}
+.drum-grid-ruler-surface:focus-visible {
+  z-index: 8;
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.drum-ruler-range,
+.drum-ruler-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.drum-ruler-range {
+  z-index: 1;
+  box-sizing: border-box;
+  border-right: 2px solid var(--playhead);
+  border-left: 2px solid var(--playhead);
+  background: color-mix(in srgb, var(--playhead) 17%, transparent);
+}
+.drum-ruler-range[data-state="preview"] {
+  border-style: dashed;
+  border-color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent-strong) 12%, transparent);
+}
+.drum-ruler-playhead {
+  z-index: 2;
+  width: 1px;
+  background: var(--playhead);
+}
+.drum-playback-range,
+.drum-playhead-line {
+  position: absolute;
+  pointer-events: none;
+}
+.drum-playback-range {
+  z-index: 2;
+  top: var(--drum-row-height);
+  bottom: 0;
+  box-sizing: border-box;
+  border-right: 2px solid var(--playhead);
+  border-left: 2px solid var(--playhead);
+  background: color-mix(in srgb, var(--playhead) 13%, transparent);
+}
+.drum-playback-range[data-state="preview"] {
+  border-style: dashed;
+  border-color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent-strong) 10%, transparent);
+}
+.drum-playhead-line {
+  z-index: 3;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--playhead);
 }
 .drum-row-label {
   position: sticky;
@@ -3813,8 +3896,12 @@ body[data-view-mode="drums"] .workspace-sidebar {
 
 @media (pointer: coarse) {
   .drum-grid {
-    grid-template-columns: minmax(7rem, 8.5rem) repeat(var(--drum-column-count), 2.4rem);
-    grid-auto-rows: 2.4rem;
+    /* Shell memakai target touch 44px; samakan track grid agar tombol Drum dan
+       ruler tidak meluber ke baris atau kolom tetangga. */
+    --drum-row-height: 2.75rem;
+    --drum-step-width: 2.75rem;
+    grid-template-columns: minmax(7rem, 8.5rem) repeat(var(--drum-column-count), var(--drum-step-width));
+    grid-auto-rows: var(--drum-row-height);
   }
   .drum-cell {
     width: 2.4rem;
