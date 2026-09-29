@@ -143,6 +143,7 @@
               <option value="combined" data-copy="viewCombinedOption"></option>
               <option value="lyrics" data-copy="viewLyricsOption"></option>
               <option value="guitar" data-copy="viewGuitarOption"></option>
+              <option value="drums" data-copy="viewDrumsOption"></option>
             </select>
           </label>
         </div>
@@ -368,6 +369,23 @@
               <svg id="guitar" role="img"></svg>
             </div>
             <p id="guitar-legend" class="muted" data-entity="guitar-positions"></p>
+          </section>
+
+          <section id="drums-section" class="workspace-pane drums-pane" data-view-region="drums" aria-labelledby="drums-heading">
+            <div class="pane-heading compact-pane-heading drums-pane-heading">
+              <div>
+                <h2 id="drums-heading" data-copy="drumsHeading"></h2>
+                <p data-copy="drumsHelp"></p>
+              </div>
+              <div class="drums-toolbar">
+                <span id="drums-kit-label" class="muted" data-copy="drumsKitLabel"></span>
+                <span id="drums-snap-label" class="muted"></span>
+              </div>
+            </div>
+            <p id="drums-status" class="muted drums-status" role="status" aria-live="polite"></p>
+            <div id="drum-grid-scroll" class="drum-grid-scroll" role="region" tabindex="0" data-aria-copy="drumsRegionLabel">
+              <div id="drum-grid" class="drum-grid" data-entity="drum-grid"></div>
+            </div>
           </section>
 
           <section id="lyrics-section" class="workspace-pane" data-view-region="lyrics" aria-labelledby="lyrics-heading">
