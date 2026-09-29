@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createInitialSong } from "../src/core/model.js";
-import { drumGridEndTick, nextDrumCellHit, projectDrumGrid } from "../src/ui/drum-grid.js";
+import { drumCellIntent, drumGridEndTick, nextDrumCellHit, projectDrumGrid } from "../src/ui/drum-grid.js";
 
 function songFixture() {
   let next = 0;
@@ -83,4 +83,12 @@ test("collision microtiming dapat di-cycle tanpa menyembunyikan hit", () => {
   assert.equal(nextDrumCellHit(hits, "b").hitId, "c");
   assert.equal(nextDrumCellHit(hits, "c").hitId, "a");
   assert.equal(nextDrumCellHit([], "a"), null);
+});
+
+
+test("mode Pilih tidak pernah menambah hit pada cell kosong", () => {
+  assert.equal(drumCellIntent("select", false), "clear");
+  assert.equal(drumCellIntent("draw", false), "add");
+  assert.equal(drumCellIntent("select", true), "select");
+  assert.equal(drumCellIntent("draw", true), "select");
 });
