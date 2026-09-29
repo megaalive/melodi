@@ -86,6 +86,7 @@ export function createDrumGridView(root, {
   onDeleteHit = () => {}
 } = {}) {
   let currentProjection = null;
+  let currentStep = null;
 
   root.addEventListener("click", (event) => {
     const button = event.target instanceof Element
@@ -175,9 +176,24 @@ export function createDrumGridView(root, {
     return projection;
   }
 
+  function updatePlayback(playback = {}, { follow = false } = {}) {
+    if (!currentProjection || !currentProjection.columns.length) return;
+    const tick = Number.isFinite(playback.currentTick) ? playback.currentTick : 0;
+    const index = clamp(Math.floor(tick / currentProjection.snapTicks), 0, currentProjection.columns.length - 1);
+    const nextStep = currentProjection.columns[index];
+    if (nextStep !== currentStep) {
+      for (const element of root.querySelectorAll('[data-current-step="true"]')) element.dataset.currentStep = "false";
+      for (const element of root.querySelectorAll(`[data-tick="${nextStep}"]`)) element.dataset.currentStep = "true";
+      currentStep = nextStep;
+    }
+    if (follow && playback.status === "playing") {
+      root.querySelector(`.drum-grid-step[data-tick="${nextStep}"]`)?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+    }
+  }
+
   function getProjection() {
     return currentProjection;
   }
 
-  return Object.freeze({ render, getProjection });
+  return Object.freeze({ render, updatePlayback, getProjection });
 }
