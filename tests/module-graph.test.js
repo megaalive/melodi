@@ -92,7 +92,6 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
   assert.ok(app.includes("./ui/drum-grid.js?v=" + build));
-  assert.ok(app.includes("./ui/drum-pads.js?v=" + build));
   assert.ok(app.includes("./ui/percussion-expression.js?v=" + build));
   assert.ok(app.includes("./storage/draft.js?v=" + build));
   assert.ok(app.includes("./io/share.js?v=" + build));
@@ -105,7 +104,6 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   const share = readFileSync(resolve("src/io/share.js"), "utf8");
   const draft = readFileSync(resolve("src/storage/draft.js"), "utf8");
   const drumGrid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
-  const drumPads = readFileSync(resolve("src/ui/drum-pads.js"), "utf8");
   const percussionExpression = readFileSync(resolve("src/ui/percussion-expression.js"), "utf8");
   const player = readFileSync(resolve("src/audio/player.js"), "utf8");
   const transport = readFileSync(resolve("src/audio/transport.js"), "utf8");
@@ -119,7 +117,6 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(drumGrid.includes("../core/model.js?v=" + build));
   assert.ok(drumGrid.includes("../core/editor.js?v=" + build));
   assert.ok(drumGrid.includes("../instruments/percussion.js?v=" + build));
-  assert.ok(drumPads.includes("../instruments/percussion.js?v=" + build));
   assert.ok(percussionExpression.includes("../instruments/percussion.js?v=" + build));
   assert.ok(commands.includes("../audio/transport.js?v=" + build));
   assert.ok(player.includes("../core/model.js?v=" + build));
@@ -317,6 +314,9 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.match(section, /id="drum-grid"/);
   assert.match(section, /data-entity="drum-grid"/);
   assert.match(section, /id="drums-snap-select"[^>]*data-action="set-snap"/);
+  assert.match(section, /id="drums-tool-select"[^>]*data-action="set-tool"[^>]*data-tool="select"/);
+  assert.match(section, /id="drums-tool-draw"[^>]*data-action="set-tool"[^>]*data-tool="draw"/);
+  assert.doesNotMatch(section, /drum-pads|Drum Pads/i);
 
   assert.match(app, /createDrumGridView/);
   assert.match(app, /commands\.addPercussionHit/);
@@ -324,6 +324,7 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.match(app, /drumGridView\?\.updatePlayback/);
   assert.match(app, /renderDrums\(commands\.getSong\(\), normalized\)/);
   assert.match(app, /drumsSnap\.value = state\.editor\.snap/);
+  assert.match(app, /target\.value === "drums"[\s\S]*commands\.setTool\("select"\)/);
   assert.match(runtime, /drums:\s*\["drums"\]/);
   assert.doesNotMatch(runtime, /expression:\s*\[[^\]]*"drums"/);
 
@@ -360,30 +361,6 @@ test("Hit Expression percussion capability-aware dan tidak meminjam Bend/Vibrato
 
   assert.match(css, /\.percussion-expression-panel/);
   assert.match(css, /\.drum-cell\[data-selected="true"\]/);
-});
-
-test("Drum Pads menulis HitEvent di playhead tanpa membuat model musik kedua", () => {
-  const html = readFileSync(resolve("index.html"), "utf8");
-  const app = readFileSync(resolve("src/app.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
-  const pads = readFileSync(resolve("src/ui/drum-pads.js"), "utf8");
-
-  const start = html.indexOf('<section id="drums-section"');
-  const end = html.indexOf("</section>", start);
-  const section = html.slice(start, end);
-  assert.match(section, /id="drum-pads"/);
-  assert.match(section, /id="drum-pads-position"/);
-  assert.match(section, /data-entity="drum-pads"/);
-
-  assert.match(app, /createDrumPadsView/);
-  assert.match(app, /commands\.getState\(\)\)\.playback/);
-  assert.match(app, /commands\.addPercussionHit\(drumPadInput/);
-  assert.match(app, /drumPadsView\?\.updatePlayback\(playback\)/);
-  assert.match(pads, /startTick:\s*tick/);
-  assert.doesNotMatch(pads, /SNAP_TICKS|Math\.round\([^\n]*tick/);
-
-  assert.match(css, /\.drum-pads\s*\{/);
-  assert.match(css, /\.drum-pad\s*\{/);
 });
 
 test("audio engine menjadwalkan percussion canonical tanpa sample dependency", () => {
