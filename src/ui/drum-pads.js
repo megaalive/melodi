@@ -1,4 +1,4 @@
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.11";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.12";
 
 export const DEFAULT_PAD_VELOCITY = 100;
 
