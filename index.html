@@ -379,7 +379,14 @@
               </div>
               <div class="drums-toolbar">
                 <span id="drums-kit-label" class="muted" data-copy="drumsKitLabel"></span>
-                <span id="drums-snap-label" class="muted"></span>
+                <label class="drums-snap-control">
+                  <span data-copy="snapLabel"></span>
+                  <select id="drums-snap-select" data-action="set-snap" data-aria-copy="snapLabel">
+                    <option value="1/4">1/4</option>
+                    <option value="1/8">1/8</option>
+                    <option value="1/16">1/16</option>
+                  </select>
+                </label>
               </div>
             </div>
             <p id="drums-status" class="muted drums-status" role="status" aria-live="polite"></p>
