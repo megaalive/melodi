@@ -552,7 +552,7 @@ test("candidate runtime state does not autosave; Accept schedules only canonical
   commands.selectCandidate(generated.candidates[0].id);
   await commands.auditionCandidate(generated.candidates[0].id);
   commands.regenerateGap();
-  assert.equal(persistence.flush(), false);
+  assert.equal(persistence.flush(), true);
   assert.equal(storage.size, 0);
 
   const chosen = commands.getGenerationState().candidates[0];

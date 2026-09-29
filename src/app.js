@@ -1,24 +1,26 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.15";
-import { createCommands } from "./core/commands.js?v=20260929.15";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.19";
+import { createCommands } from "./core/commands.js?v=20260930.19";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.15";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.15";
-import { createAudioPlayer } from "./audio/player.js?v=20260929.15";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.19";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.19";
+import { createAudioPlayer } from "./audio/player.js?v=20260930.19";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.15";
-import { createScoreView } from "./ui/score.js?v=20260929.15";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.15";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.15";
-import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.15";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260929.15";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.15";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.19";
+import { createScoreView } from "./ui/score.js?v=20260930.19";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260930.19";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.19";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.19";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.19";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.19";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260929.15";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.15";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.15";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.15";
+import { createDraftPersistence } from "./storage/draft.js?v=20260930.19";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.19";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.19";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.19";
+import { deserializeProject } from "./core/serialization.js?v=20260930.19";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.19";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1275,7 +1277,6 @@ function render() {
   byId("time-signature-value").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   byId("song-title").textContent = song.title;
   byId("shared-source").hidden = !shareSession;
-  byId("save-shared-draft").hidden = !shareSession;
   document.body.dataset.viewMode = state.view.mode;
   if (viewMarkup.modeControl) viewMarkup.modeControl.value = state.view.mode;
   if (viewMarkup.followControl) viewMarkup.followControl.checked = state.view.follow;
@@ -1307,6 +1308,7 @@ function render() {
   scoreView.render(song, state);
   renderGuitar(state);
   renderDrums(song, state);
+  renderInstrumentMixControls(state.mix);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -1334,33 +1336,30 @@ function render() {
 }
 
 function hasMeaningfulEdits(song) {
-  const starter = createInitialSong((() => { let id = 0; return () => `starter-${++id}`; })());
-  if (song.title !== starter.title || song.lyrics.rawText !== "" || song.lyrics.syllables.length !== 0
-    || song.notes.length !== starter.notes.length || song.tracks.length !== starter.tracks.length
-    || JSON.stringify(song.tracks) !== JSON.stringify(starter.tracks)) return true;
-  return song.notes.some((note, index) => {
-    const initial = starter.notes[index];
-    if (!initial) return true;
-    for (const key of ["pitch", "startTick", "durationTicks", "source", "anchor", "locked", "volume", "pan"]) {
-      if ((note[key] ?? null) !== (initial[key] ?? null)) return true;
-    }
-    return JSON.stringify(note.pitchBend ?? null) !== JSON.stringify(initial.pitchBend ?? null)
-      || JSON.stringify(note.vibrato ?? null) !== JSON.stringify(initial.vibrato ?? null);
-  });
+  let id = 0;
+  const blank = createBlankSong(() => `blank-${++id}`, song.title);
+  const current = { ...song };
+  const empty = { ...blank };
+  delete current.id;
+  delete empty.id;
+  return JSON.stringify(current) !== JSON.stringify(empty);
 }
 
-function shouldConfirmNewIdea() {
+function shouldConfirmReplacement() {
   return hasMeaningfulEdits(commands.getSong())
     || [...document.forms].some((form) => form.dataset.pending === "true");
 }
 
 let confirmPromise = null;
 
-function confirmInApp() {
+function confirmInApp(titleKey = "confirmNewSongTitle", messageKey = "confirmNewSongMessage", buttonKey = "confirmNewSongButton", values = {}) {
   const dialog = byId("confirm-dialog");
   if (!dialog) return Promise.resolve(false);
   if (confirmPromise) return confirmPromise;
 
+  byId("confirm-dialog-title").textContent = translate(titleKey, values);
+  byId("confirm-dialog-message").textContent = translate(messageKey, values);
+  byId("confirm-dialog-confirm").textContent = translate(buttonKey, values);
   const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   dialog.returnValue = "cancel";
   confirmPromise = new Promise((resolve) => {
@@ -1406,6 +1405,128 @@ function openShareDialog(url) {
   return true;
 }
 
+function closeProjectMenu() {
+  byId("project-menu").open = false;
+}
+
+function openProjectDialog(id) {
+  const dialog = byId(id);
+  closeProjectMenu();
+  if (dialog && !dialog.open) dialog.showModal();
+  return dialog;
+}
+
+function openExamplesDialog() {
+  const dialog = openProjectDialog("examples-dialog");
+  if (!dialog) return false;
+  const list = byId("examples-list");
+  list.replaceChildren();
+  for (const example of commands.listExamples()) {
+    const item = document.createElement("li");
+    const copy = document.createElement("div");
+    const title = document.createElement("h3");
+    const description = document.createElement("p");
+    const button = document.createElement("button");
+    title.textContent = translate(example.titleKey);
+    description.textContent = translate(example.descriptionKey);
+    button.type = "button";
+    button.dataset.action = "load-example";
+    button.dataset.exampleId = example.id;
+    button.textContent = translate("exampleOpenButton");
+    copy.append(title, description);
+    item.append(copy, button);
+    list.append(item);
+  }
+  byId("examples-status").textContent = "";
+  return true;
+}
+
+function showSaveBrowserDialog() {
+  const dialog = openProjectDialog("save-browser-dialog");
+  if (!dialog) return false;
+  byId("browser-song-title").value = commands.getSong().title;
+  byId("save-browser-status").textContent = "";
+  byId("browser-song-title").focus();
+  byId("browser-song-title").select();
+  return true;
+}
+
+function formatLibraryDate(value) {
+  try {
+    return new Intl.DateTimeFormat(language === "id" ? "id-ID" : "en-US", {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function browserFailureKey(result) {
+  const status = result?.status ?? "error";
+  return ({
+    unavailable: "browserLibraryUnavailable",
+    blocked: "browserLibraryBlocked",
+    quota: "browserLibraryQuota",
+    corrupt: "browserLibraryCorrupt",
+    "not-found": "browserLibraryNotFound",
+    "invalid-title": "browserLibraryInvalidTitle",
+    "invalid-song": "browserLibraryInvalidSong"
+  })[status] ?? "browserLibraryError";
+}
+
+function renderBrowserLibrarySongs(result) {
+  const list = byId("browser-library-list");
+  list.replaceChildren();
+  for (const song of [...(result.songs ?? []), ...(result.corruptSongs ?? [])]) {
+    const item = document.createElement("li");
+    const copy = document.createElement("div");
+    const title = document.createElement("h3");
+    const updated = document.createElement("p");
+    const actions = document.createElement("div");
+    const open = document.createElement("button");
+    const remove = document.createElement("button");
+    const displayTitle = song.corrupt ? song.title ?? translate("browserCorruptSongTitle") : song.title;
+    title.textContent = displayTitle;
+    updated.textContent = song.updatedAt
+      ? translate("browserUpdatedLabel", { date: formatLibraryDate(song.updatedAt) })
+      : translate("browserCorruptSongDate");
+    open.type = remove.type = "button";
+    open.dataset.action = "open-browser-song";
+    remove.dataset.action = "delete-browser-song";
+    open.dataset.songId = remove.dataset.songId = song.id;
+    open.dataset.songTitle = remove.dataset.songTitle = displayTitle;
+    open.textContent = translate("browserOpenButton");
+    open.disabled = Boolean(song.corrupt);
+    remove.textContent = translate("browserDeleteButton");
+    remove.className = "secondary";
+    copy.append(title, updated);
+    actions.append(open, remove);
+    item.append(copy, actions);
+    list.append(item);
+  }
+  const status = byId("browser-library-status");
+  if (result.status === "corrupt") status.textContent = translate("browserLibraryCorrupt");
+  else if (!result.ok) status.textContent = translate(browserFailureKey(result));
+  else if (!(result.songs?.length)) status.textContent = translate("browserLibraryEmpty");
+  else status.textContent = "";
+}
+
+async function openBrowserLibraryDialog() {
+  const dialog = openProjectDialog("browser-library-dialog");
+  if (!dialog) return false;
+  const status = byId("browser-library-status");
+  status.textContent = translate("loadingLabel");
+  byId("browser-library-list").replaceChildren();
+  const result = await commands.listBrowserSongs();
+  if (result.ok || result.status === "corrupt") renderBrowserLibrarySongs(result);
+  else {
+    status.textContent = translate(browserFailureKey(result));
+    announce(browserFailureKey(result), "error");
+  }
+  return result;
+}
+
 async function copyText(value) {
   const clipboard = globalThis.navigator?.clipboard;
   if (!clipboard?.writeText) return false;
@@ -1424,43 +1545,10 @@ async function shareCurrentSong() {
   return url;
 }
 
-function saveSharedAsDraft() {
-  if (!shareSession) return false;
-  const scheduled = persistence.schedule(commands.getSong());
-  const saved = scheduled && persistence.flush();
-  if (!saved) {
-    announce("draftSaveFailed", "error");
-    return false;
-  }
-  leaveShareSession();
-  render();
-  announce("shareSavedAsDraft");
-  return true;
-}
-
-function projectFileName(title) {
-  const base = String(title || "melodi")
-    .normalize("NFKD")
-    .replace(/[^a-zA-Z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64) || "melodi";
-  return `${base}.melodi.json`;
-}
-
 function saveProjectFile() {
-  const payload = serializeProject(commands.getSong());
-  const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = projectFileName(commands.getSong().title);
-  anchor.hidden = true;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  const filename = saveSerializedProjectFile(commands.getSong());
   announce("projectFileSaved");
-  return anchor.download;
+  return filename;
 }
 
 async function loadProjectFile(file) {
@@ -1475,11 +1563,101 @@ async function loadProjectFile(file) {
   return true;
 }
 
-async function requestNewIdea() {
-  if (!(await confirmInApp())) return false;
+async function requestNewSong() {
+  closeProjectMenu();
+  if (shouldConfirmReplacement() && !(await confirmInApp())) return false;
   clearPendingForms();
   leaveShareSession();
-  return run(() => commands.newIdea(), "newIdeaStarted");
+  return run(() => commands.newSong(translate("newSongDefaultTitle")), "newSongStarted");
+}
+
+async function requestLoadExample(id) {
+  const example = commands.listExamples().find((item) => item.id === id);
+  if (!example) {
+    announce("examplesLoadFailed", "error");
+    return false;
+  }
+  byId("examples-dialog").close();
+  const title = translate(example.titleKey);
+  if (shouldConfirmReplacement() && !(await confirmInApp("confirmExampleTitle", "confirmExampleMessage", "confirmExampleButton", { title }))) return false;
+  clearPendingForms();
+  leaveShareSession();
+  const loaded = run(() => commands.loadExample(id));
+  if (loaded) announce("exampleOpened", "success", { title });
+  return loaded;
+}
+
+async function saveBrowserSongFromDialog(title) {
+  const form = byId("save-browser-form");
+  form.dataset.submitting = "true";
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  const wasShared = shareSession;
+  try {
+    const result = await commands.saveBrowserSong(title);
+    if (!result.ok) {
+      const key = browserFailureKey(result);
+      byId("save-browser-status").textContent = translate(key);
+      announce(key, "error");
+      return result;
+    }
+    form.dataset.pending = "false";
+    byId("save-browser-dialog").close();
+    let recoverySaved = true;
+    if (wasShared) {
+      leaveShareSession();
+      render();
+      const scheduled = persistence.schedule(commands.getSong());
+      recoverySaved = scheduled && persistence.flush();
+    }
+    announce(recoverySaved ? "browserLibrarySaved" : "draftSaveFailed", recoverySaved ? "success" : "error");
+    return result;
+  } finally {
+    form.dataset.submitting = "false";
+    button.disabled = false;
+  }
+}
+
+async function requestOpenBrowserSong(id, title) {
+  byId("browser-library-dialog").close();
+  if (!(await confirmInApp("confirmOpenBrowserTitle", "confirmOpenBrowserMessage", "confirmOpenBrowserButton", { title }))) return false;
+  const result = await commands.openBrowserSong(id);
+  if (!result.ok) {
+    const key = browserFailureKey(result);
+    announce(key, "error");
+    await openBrowserLibraryDialog();
+    return result;
+  }
+  clearPendingForms();
+  leaveShareSession();
+  render();
+  const scheduled = persistence.schedule(commands.getSong());
+  const savedDraft = scheduled && persistence.flush();
+  if (!savedDraft) announce("draftSaveFailed", "error");
+  byId("browser-library-dialog").close();
+  announce("browserLibraryOpened");
+  return result;
+}
+
+async function requestDeleteBrowserSong(id, title) {
+  if (!(await confirmInApp("confirmDeleteBrowserTitle", "confirmDeleteBrowserMessage", "confirmDeleteBrowserButton", { title }))) return false;
+  const result = await commands.deleteBrowserSong(id);
+  if (!result.ok) {
+    const key = browserFailureKey(result);
+    byId("browser-library-status").textContent = translate(key);
+    announce(key, "error");
+    return result;
+  }
+  const listing = await commands.listBrowserSongs();
+  if (listing.ok || listing.status === "corrupt") {
+    renderBrowserLibrarySongs(listing);
+    announce("browserLibraryDeleted");
+  } else {
+    const key = browserFailureKey(listing);
+    byId("browser-library-status").textContent = translate(key);
+    announce(key, "error");
+  }
+  return result;
 }
 
 function clearPendingForms() {
@@ -1514,7 +1692,8 @@ try {
   shareLoadStatus = error?.code ?? "invalid";
 }
 
-commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
+const browserLibrary = createBrowserLibrary();
+commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
   onChange(change) {
     render();
     if (change?.kind === "song" && !shareSession) persistence.schedule(commands.getSong());
@@ -1543,7 +1722,8 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
     else if (event === "error") reportError(error);
   },
   onNotificationError: reportNotificationError,
-  audioPlayerFactory: (callbacks) => createAudioPlayer(callbacks)
+  audioPlayerFactory: (callbacks) => createAudioPlayer(callbacks),
+  browserLibrary
 });
 
 rollView = createPianoRollView(byId("piano-roll"), commands, {
@@ -1645,13 +1825,10 @@ drumGridView = createDrumGridView(byId("drum-grid"), {
   onAddHit(input) {
     return run(() => commands.addPercussionHit(input), "drumsHitAdded");
   },
-  onSelectHit(selection) {
+  onSelectHits(hitIds) {
     const form = byId("percussion-expression-form");
     if (form) form.dataset.pending = "false";
-    renderPercussionExpression(commands.getSong(), selection);
-  },
-  onDeleteHit(trackId, hitId) {
-    return run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
+    run(() => commands.selectPercussionHits(hitIds));
   },
   onSeek(tick) {
     run(() => commands.seek(tick));
@@ -1761,9 +1938,22 @@ function renderPercussionRangeValues() {
   if (pan && panValue) panValue.textContent = formatPercussionPan(pan.value);
 }
 
-function renderPercussionExpression(song, selection = drumGridView?.getSelectedHit?.() ?? null) {
+function renderPercussionExpression(song) {
   const form = byId("percussion-expression-form");
   if (!form) return;
+  const selectedIds = commands.getSelectedPercussionHitIds();
+  const multiSelection = byId("percussion-multi-selection");
+  if (multiSelection) {
+    multiSelection.hidden = selectedIds.length <= 1;
+    if (selectedIds.length > 1) {
+      byId("percussion-multi-selection-summary").textContent = translate("percussionMultiSelectionSummary", { count: selectedIds.length });
+    }
+  }
+  const selection = selectedIds.length === 1
+    ? song.tracks.flatMap((track) => track.kind === "percussion"
+      ? track.events.map((hit) => ({ trackId: track.id, hitId: hit.id }))
+      : []).find((item) => item.hitId === selectedIds[0])
+    : null;
   const expression = resolvePercussionExpression(song, selection);
   form.hidden = !expression;
   if (!expression) {
@@ -1808,6 +1998,14 @@ function renderDrums(song, state) {
   const projection = drumGridView.render(song, state, canonicalSongEndTick(song));
   renderPercussionExpression(song);
   const hitCount = projection.track?.events.length ?? 0;
+  const selectedCount = state.selectedPercussionHitIds.length;
+  byId("drums-selection-count").textContent = translate(
+    selectedCount ? "drumsHitSelectionCount" : "drumsNoSelection",
+    selectedCount ? { count: selectedCount } : {}
+  );
+  byId("drums-duplicate-selection").disabled = selectedCount === 0;
+  byId("drums-delete-selection").disabled = selectedCount === 0;
+  byId("drums-clear-selection").disabled = selectedCount === 0;
   byId("drums-snap-select").value = projection.snap;
   byId("drums-status").textContent = translate(
     hitCount ? "drumsStatusReady" : "drumsStatusEmpty",
@@ -1815,10 +2013,24 @@ function renderDrums(song, state) {
   );
 }
 
+function renderInstrumentMixControls(mix) {
+  for (const button of document.querySelectorAll("[data-channel-id][data-mix-flag]")) {
+    const channel = mix?.channels?.[button.dataset.channelId];
+    const active = channel?.[button.dataset.mixFlag] === true;
+    button.disabled = !channel;
+    button.dataset.active = String(active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
   getSelection: commands.getSelection,
   getSelectedNoteIds: commands.getSelectedNoteIds,
+  getSelectedPercussionHitIds: commands.getSelectedPercussionHitIds,
+  getMixState: commands.getMixState,
+  setInstrumentMute: commands.setInstrumentMute,
+  setInstrumentSolo: commands.setInstrumentSolo,
   addNote: (input) => commands.addNote(input, { actor: "user" }),
   updateNote: (noteId, patch) => commands.updateNote(noteId, patch, { actor: "user" }),
   updateNotes: (updates) => commands.updateNotes(updates, { actor: "user" }),
@@ -1826,6 +2038,10 @@ const publicCommands = Object.freeze({
   addPercussionHit: commands.addPercussionHit,
   updatePercussionHit: commands.updatePercussionHit,
   deletePercussionHit: commands.deletePercussionHit,
+  selectPercussionHits: commands.selectPercussionHits,
+  clearPercussionSelection: commands.clearPercussionSelection,
+  deletePercussionHits: commands.deletePercussionHits,
+  duplicatePercussionHits: commands.duplicatePercussionHits,
   setLyrics: commands.setLyrics,
   addLyricSyllable: commands.addLyricSyllable,
   updateLyricSyllable: commands.updateLyricSyllable,
@@ -1850,11 +2066,46 @@ const publicCommands = Object.freeze({
   redo: commands.redo,
   canUndo: commands.canUndo,
   canRedo: commands.canRedo,
-  newIdea: () => {
+  newSong: (title = translate("newSongDefaultTitle")) => {
     clearPendingForms();
     leaveShareSession();
-    return commands.newIdea();
+    return commands.newSong(title);
   },
+  newIdea: (title) => {
+    clearPendingForms();
+    leaveShareSession();
+    return commands.newIdea(title);
+  },
+  listExamples: commands.listExamples,
+  loadExample: (id) => {
+    clearPendingForms();
+    leaveShareSession();
+    return commands.loadExample(id);
+  },
+  setSongTitle: commands.setSongTitle,
+  listBrowserSongs: commands.listBrowserSongs,
+  saveBrowserSong: async (title) => {
+    const result = await commands.saveBrowserSong(title);
+    if (result.ok && shareSession) {
+      leaveShareSession();
+      render();
+      const scheduled = persistence.schedule(commands.getSong());
+      result.recoveryDraftSaved = scheduled && persistence.flush();
+    }
+    return result;
+  },
+  openBrowserSong: async (id) => {
+    const result = await commands.openBrowserSong(id);
+    if (result.ok) {
+      clearPendingForms();
+      leaveShareSession();
+      render();
+      const scheduled = persistence.schedule(commands.getSong());
+      result.recoveryDraftSaved = scheduled && persistence.flush();
+    }
+    return result;
+  },
+  deleteBrowserSong: commands.deleteBrowserSong,
   loadSong: (song) => {
     clearPendingForms();
     leaveShareSession();
@@ -1968,6 +2219,15 @@ document.addEventListener("submit", (event) => {
       ...(lyricCount === "" ? {} : { lyricSyllableCount: Number(lyricCount) })
     }));
     if (result) announce("generationReady", "success", { count: result.candidates.length });
+  } else if (action === "save-browser-song") {
+    const title = String(data.get("title") ?? "").trim();
+    if (!title) {
+      byId("save-browser-status").textContent = translate("browserLibraryInvalidTitle");
+      form.dataset.submitting = "false";
+      return;
+    }
+    void saveBrowserSongFromDialog(title);
+    return;
   }
   if (result !== undefined) form.dataset.pending = "false";
   form.dataset.submitting = "false";
@@ -2040,13 +2300,23 @@ document.addEventListener("change", (event) => {
 document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
+  if (target.closest("#project-menu")) closeProjectMenu();
   const state = commands.getState();
-  if (target.dataset.action === "delete-selected-percussion-hit") {
-    const selection = drumGridView?.getSelectedHit?.();
-    if (selection) {
-      run(() => commands.deletePercussionHit(selection.trackId, selection.hitId), "drumsHitDeleted");
-      drumGridView?.selectHit(null, null);
-    }
+  if (target.dataset.action === "delete-selected-percussion-hits") {
+    run(() => commands.deletePercussionHits(), "drumsHitsDeleted");
+  } else if (target.dataset.action === "duplicate-selected-percussion-hits") {
+    const duplicates = run(() => commands.duplicatePercussionHits());
+    if (duplicates?.length) announce("drumsHitsDuplicated", "success", { count: duplicates.length });
+  } else if (target.dataset.action === "clear-percussion-selection") {
+    run(() => commands.clearPercussionSelection());
+  } else if (target.dataset.action === "toggle-instrument-mute" || target.dataset.action === "toggle-instrument-solo") {
+    const channelId = target.dataset.channelId;
+    const flag = target.dataset.mixFlag;
+    const channel = commands.getMixState().channels[channelId];
+    if (!channel || (flag !== "mute" && flag !== "solo")) return;
+    run(() => flag === "mute"
+      ? commands.setInstrumentMute(channelId, !channel.mute)
+      : commands.setInstrumentSolo(channelId, !channel.solo));
   } else if (target.dataset.action === "toggle-panel") {
     togglePanelDisclosure(target.dataset.panelCollapse);
   } else if (target.dataset.action === "set-guitar-layout") {
@@ -2189,8 +2459,6 @@ document.addEventListener("click", (event) => {
     byId("project-file-input")?.click();
   } else if (target.dataset.action === "share-song") {
     runAsync(() => shareCurrentSong());
-  } else if (target.dataset.action === "save-shared-draft") {
-    saveSharedAsDraft();
   } else if (target.dataset.action === "copy-share-link") {
     const value = byId("share-link").value;
     runAsync(async () => {
@@ -2205,8 +2473,22 @@ document.addEventListener("click", (event) => {
     });
   } else if (target.dataset.action === "close-share-dialog") {
     byId("share-dialog")?.close();
-  } else if (target.dataset.action === "new-idea") {
-    void requestNewIdea();
+  } else if (target.dataset.action === "new-song" || target.dataset.action === "new-idea") {
+    void requestNewSong();
+  } else if (target.dataset.action === "show-examples") {
+    openExamplesDialog();
+  } else if (target.dataset.action === "show-save-browser") {
+    showSaveBrowserDialog();
+  } else if (target.dataset.action === "show-browser-library") {
+    void openBrowserLibraryDialog();
+  } else if (target.dataset.action === "close-project-dialog") {
+    byId(target.dataset.dialog)?.close();
+  } else if (target.dataset.action === "load-example") {
+    void requestLoadExample(target.dataset.exampleId);
+  } else if (target.dataset.action === "open-browser-song") {
+    void requestOpenBrowserSong(target.dataset.songId, target.dataset.songTitle);
+  } else if (target.dataset.action === "delete-browser-song") {
+    void requestDeleteBrowserSong(target.dataset.songId, target.dataset.songTitle);
   } else if (target.dataset.action === "use-selection") {
     const selection = commands.getSelection();
     if (!selection || selection.endTick <= selection.startTick) return;
@@ -2346,6 +2628,34 @@ document.addEventListener("keydown", (event) => {
         ? run(() => commands.redo(), "editRedone")
         : run(() => commands.undo(), "editUndone");
       if (applied) event.preventDefault();
+      return;
+    }
+  }
+
+  const drumsKeyboardTarget = target instanceof Element && isDrumKeyboardTarget(target);
+  const drumIntent = drumKeyboardIntent(event, {
+    withinDrumGrid: drumsKeyboardTarget && commands.getState().view.mode === "drums",
+    selectedHitCount: commands.getSelectedPercussionHitIds().length
+  });
+  if (drumIntent) {
+    event.preventDefault();
+    if (drumIntent === "select-all") {
+      const track = commands.getSong().tracks.find((item) => item.kind === "percussion");
+      if (track) run(() => commands.selectPercussionHits(track.events.map((hit) => hit.id)));
+      return;
+    }
+    if (drumIntent === "duplicate") {
+      event.preventDefault();
+      const duplicates = run(() => commands.duplicatePercussionHits());
+      if (duplicates?.length) announce("drumsHitsDuplicated", "success", { count: duplicates.length });
+      return;
+    }
+    if (drumIntent === "delete") {
+      run(() => commands.deletePercussionHits(), "drumsHitsDeleted");
+      return;
+    }
+    if (drumIntent === "clear") {
+      run(() => commands.clearPercussionSelection());
       return;
     }
   }

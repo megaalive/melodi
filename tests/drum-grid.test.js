@@ -6,6 +6,8 @@ import { createInitialSong } from "../src/core/model.js";
 import {
   createDrumGridView,
   drumCellIntent,
+  drumKeyboardIntent,
+  isDrumKeyboardTarget,
   drumGridEndTick,
   drumTimelineTickAtX,
   drumTimelineTickToX,
@@ -179,10 +181,11 @@ class GridElement {
   dispatchEvent(event) {
     if (!event.target) event.target = this;
     event.preventDefault ??= function preventDefault() { this.defaultPrevented = true; };
+    event.stopPropagation ??= function stopPropagation() { this.propagationStopped = true; };
     for (let element = this; element; element = element.parentElement) {
       event.currentTarget = element;
       for (const listener of element.listeners?.get(event.type) ?? []) listener(event);
-      if (event.bubbles === false) break;
+      if (event.bubbles === false || event.propagationStopped) break;
     }
     return !event.defaultPrevented;
   }
@@ -201,14 +204,22 @@ class GridElement {
   getBoundingClientRect() {
     const scroll = this.parentElement;
     const rootLeft = -(scroll?.scrollLeft ?? 0);
-    if (this.dataset.entity === "drum-grid") return { left: rootLeft, top: 40, width: 1568, height: 500 };
-    if (this.className === "drum-grid-corner") return { left: 0, top: 40, width: 128, height: 30 };
-    if (this.dataset.entity === "drum-ruler") return { left: rootLeft + 128, top: 40, width: 1440, height: 30 };
+    if (this.dataset.entity === "drum-grid") return { left: rootLeft, top: 40, right: rootLeft + 1568, bottom: 540, width: 1568, height: 500 };
+    if (this.className === "drum-grid-corner") return { left: 0, top: 40, right: 128, bottom: 70, width: 128, height: 30 };
+    if (this.dataset.entity === "drum-ruler") return { left: rootLeft + 128, top: 40, right: rootLeft + 1568, bottom: 70, width: 1440, height: 30 };
     if (this.className === "drum-grid-step") {
       const tick = Number(this.dataset.tick);
-      return { left: rootLeft + 128 + (tick / 240) * 30, top: 40, width: 30, height: 30 };
+      const left = rootLeft + 128 + (tick / 240) * 30;
+      return { left, top: 40, right: left + 30, bottom: 70, width: 30, height: 30 };
     }
-    return { left: rootLeft, top: 40, width: 30, height: 30 };
+    if (this.dataset.entity === "drum-cell") {
+      const labels = this.parentElement?.children.filter((item) => item.className === "drum-row-label") ?? [];
+      const row = labels.findIndex((item) => item.dataset.pieceId === this.dataset.pieceId);
+      const left = rootLeft + 128 + (Number(this.dataset.tick) / 240) * 30;
+      const top = 70 + Math.max(0, row) * 30;
+      return { left, top, right: left + 30, bottom: top + 30, width: 30, height: 30 };
+    }
+    return { left: rootLeft, top: 40, right: rootLeft + 30, bottom: 70, width: 30, height: 30 };
   }
 }
 
@@ -271,7 +282,7 @@ test("Drum Grid berhenti pada batas konten dan tidak meminta browser scrollIntoV
 });
 
 function pointer(type, clientX, pointerId = 1) {
-  return { type, clientX, pointerId, button: 0, bubbles: true };
+  return { type, clientX, clientY: 60, pointerId, button: 0, bubbles: true };
 }
 
 function rulerPoint(root, tick) {
@@ -338,8 +349,10 @@ test("ruler drag commits normalized range then seeks its start; pointer cancel a
   actions.length = 0;
   ruler.dispatchEvent(pointer("pointerdown", rulerPoint(root, 960)));
   ruler.dispatchEvent(pointer("pointermove", rulerPoint(root, 2400)));
-  ruler.dispatchEvent({ type: "keydown", key: "Escape", bubbles: true });
+  const escapeEvent = { type: "keydown", key: "Escape", bubbles: true };
+  ruler.dispatchEvent(escapeEvent);
   assert.equal(actions.length, 0);
+  assert.equal(escapeEvent.propagationStopped, true);
   assert.equal(root.querySelector(".drum-playback-range").hidden, true);
   assert.equal(ruler.hasPointerCapture(1), false);
 });
@@ -363,4 +376,143 @@ test("app menghubungkan ruler Drum ke command canonical dan batas song canonical
   assert.match(app, /onSetPlaybackRange\(startTick, endTick\)\s*\{\s*run\(\(\) => commands\.setLoop\(startTick, endTick\)/);
   assert.match(app, /drumGridView\.render\(song, state, canonicalSongEndTick\(song\)\)/);
   assert.match(app, /followMode: state\.view\.mode === "drums" \? followMode : "none",\s*songEndTick/);
+});
+
+function songWithHits(hits) {
+  const song = songFixture();
+  song.tracks.push({ id: "drums-main", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: hits });
+  return song;
+}
+
+function drumCell(root, pieceId, tick) {
+  return root.querySelectorAll('[data-entity="drum-cell"]')
+    .find((cell) => cell.dataset.pieceId === pieceId && Number(cell.dataset.tick) === tick);
+}
+
+function click(element, modifiers = {}) {
+  element.dispatchEvent({ type: "click", bubbles: true, ctrlKey: false, metaKey: false, shiftKey: false, ...modifiers });
+}
+
+test("Drum hit click selects one; Ctrl/Shift add and toggle; collisions remain cycle-selectable", () => {
+  const selected = [];
+  const song = songWithHits([
+    { id: "kick-a", pieceId: "kick", startTick: 0, velocity: 100, articulation: "normal" },
+    { id: "kick-b", pieceId: "kick", startTick: 5, velocity: 80, articulation: "ghost" },
+    { id: "snare-a", pieceId: "snare", startTick: 480, velocity: 90, articulation: "normal" }
+  ]);
+  const { root, view } = drumViewFixture({ onSelectHits: (ids) => selected.push(ids) });
+  view.render(song, { editor: { snap: "1/8", tool: "select" }, selectedPercussionHitIds: [] }, 11520);
+  const kick = drumCell(root, "kick", 0);
+  click(kick);
+  assert.deepEqual(selected.at(-1), ["kick-a"]);
+  assert.equal(kick.dataset.selected, "true");
+  assert.equal(kick.getAttribute("aria-pressed"), "true");
+  click(kick, { shiftKey: true });
+  assert.deepEqual(selected.at(-1), ["kick-a", "kick-b"]);
+  click(drumCell(root, "snare", 480), { ctrlKey: true });
+  assert.deepEqual(new Set(selected.at(-1)), new Set(["kick-a", "kick-b", "snare-a"]));
+  click(kick, { metaKey: true });
+  assert.deepEqual(selected.at(-1), ["kick-b", "snare-a"]);
+});
+
+test("empty-body rectangle selects intersecting hits, supports additive selection, and cancel clears preview", () => {
+  const selected = [];
+  const song = songWithHits([
+    { id: "kick-a", pieceId: "kick", startTick: 240, velocity: 100, articulation: "normal" },
+    { id: "snare-a", pieceId: "snare", startTick: 480, velocity: 90, articulation: "normal" },
+    { id: "ride-a", pieceId: "ride", startTick: 4800, velocity: 85, articulation: "normal" }
+  ]);
+  const { root, view } = drumViewFixture({ onSelectHits: (ids) => selected.push(ids) });
+  view.render(song, { editor: { snap: "1/8", tool: "select" }, selectedPercussionHitIds: ["ride-a"] }, 11520);
+  const empty = drumCell(root, "crash", 0);
+  const start = empty.getBoundingClientRect();
+  empty.dispatchEvent({ ...pointer("pointerdown", start.left + 2), clientY: start.top + 2 });
+  root.dispatchEvent({ ...pointer("pointermove", 128 + 550), clientY: 70 + 8 * 30 + 22 });
+  assert.equal(root.querySelector(".drum-selection-rect").hidden, false);
+  root.dispatchEvent({ ...pointer("pointerup", 128 + 550), clientY: 70 + 8 * 30 + 22 });
+  assert.deepEqual(new Set(selected.at(-1)), new Set(["kick-a", "snare-a"]));
+  assert.equal(root.querySelector(".drum-selection-rect").hidden, true);
+
+  view.render(song, { editor: { snap: "1/8", tool: "select" }, selectedPercussionHitIds: ["ride-a"] }, 11520);
+  const additiveStart = drumCell(root, "crash", 0).getBoundingClientRect();
+  drumCell(root, "crash", 0).dispatchEvent({ ...pointer("pointerdown", additiveStart.left + 2), clientY: additiveStart.top + 2, ctrlKey: true });
+  root.dispatchEvent({ ...pointer("pointermove", 128 + 550), clientY: 70 + 8 * 30 + 22 });
+  root.dispatchEvent({ ...pointer("pointerup", 128 + 550), clientY: 70 + 8 * 30 + 22 });
+  assert.ok(selected.at(-1).includes("ride-a"));
+
+  const beforeCancel = selected.length;
+  const cancelStart = drumCell(root, "crash", 0).getBoundingClientRect();
+  drumCell(root, "crash", 0).dispatchEvent({ ...pointer("pointerdown", cancelStart.left + 2), clientY: cancelStart.top + 2 });
+  root.dispatchEvent({ ...pointer("pointermove", 128 + 550), clientY: 70 + 8 * 30 + 22 });
+  root.dispatchEvent(pointer("pointercancel", 128 + 550));
+  assert.equal(selected.length, beforeCancel);
+  assert.equal(root.querySelector(".drum-selection-rect").hidden, true);
+});
+
+test("Draw mode adds from an empty body cell and never starts a rubber-band", () => {
+  const added = [];
+  const song = songWithHits([]);
+  const { root, view } = drumViewFixture({ onAddHit: (hit) => { added.push(hit); return { trackId: "drums-main", hit: { ...hit, id: "new-hit" } }; } });
+  view.render(song, { editor: { snap: "1/8", tool: "draw" }, selectedPercussionHitIds: [] }, 11520);
+  const empty = drumCell(root, "kick", 240);
+  const bounds = empty.getBoundingClientRect();
+  empty.dispatchEvent({ ...pointer("pointerdown", bounds.left + 2), clientY: bounds.top + 2 });
+  root.dispatchEvent({ ...pointer("pointermove", bounds.left + 40), clientY: bounds.top + 40 });
+  root.dispatchEvent({ ...pointer("pointerup", bounds.left + 40), clientY: bounds.top + 40 });
+  click(empty);
+  assert.equal(added.length, 1);
+  assert.deepEqual(added[0], { pieceId: "kick", startTick: 240, velocity: 100, articulation: "normal" });
+  assert.equal(root.querySelector(".drum-selection-rect").hidden, true);
+  assert.deepEqual(view.getSelectedHitIds(), ["new-hit"]);
+});
+
+test("keyboard intents cover select all, duplicate, delete, and Escape only inside Drum Roll", () => {
+  assert.equal(drumKeyboardIntent({ key: "a", ctrlKey: true }, { withinDrumGrid: true }), "select-all");
+  assert.equal(drumKeyboardIntent({ key: "a", metaKey: true }, { withinDrumGrid: true }), "select-all");
+  assert.equal(drumKeyboardIntent({ key: "d", ctrlKey: true }, { withinDrumGrid: true, selectedHitCount: 2 }), "duplicate");
+  assert.equal(drumKeyboardIntent({ key: "Delete" }, { withinDrumGrid: true, selectedHitCount: 1 }), "delete");
+  assert.equal(drumKeyboardIntent({ key: "Backspace" }, { withinDrumGrid: true, selectedHitCount: 1 }), "delete");
+  assert.equal(drumKeyboardIntent({ key: "Escape" }, { withinDrumGrid: true, selectedHitCount: 1 }), "clear");
+  assert.equal(drumKeyboardIntent({ key: "d", ctrlKey: true }, { withinDrumGrid: true, selectedHitCount: 0 }), null);
+  assert.equal(drumKeyboardIntent({ key: "Delete" }, { withinDrumGrid: false, selectedHitCount: 1 }), null);
+  assert.equal(drumKeyboardIntent({ key: "d", ctrlKey: true, shiftKey: true }, { withinDrumGrid: true, selectedHitCount: 1 }), null);
+});
+
+test("Drum Roll shortcuts are scoped to its grid or selection actions, not mute/solo controls", () => {
+  const targetFor = (...matches) => ({
+    closest(selector) {
+      return matches.some((match) => selector.split(", ").includes(match)) ? {} : null;
+    }
+  });
+  assert.equal(isDrumKeyboardTarget(targetFor("#drum-grid-scroll")), true);
+  assert.equal(isDrumKeyboardTarget(targetFor("#drums-selection-toolbar")), true);
+  assert.equal(isDrumKeyboardTarget(targetFor("#drum-grid-scroll", ".instrument-mix-button")), false);
+  assert.equal(isDrumKeyboardTarget(targetFor("#drums-section")), false);
+});
+
+test("per-piece mix controls stay in sticky labels and expose accessible mute/solo state", () => {
+  const song = songWithHits([{ id: "kick", pieceId: "kick", startTick: 0, velocity: 100, articulation: "normal" }]);
+  const mix = { channels: {
+    melody: { mute: false, solo: false },
+    "percussion:drums-main:kick": { mute: true, solo: false }
+  } };
+  const { root, view } = drumViewFixture({ translate: (key, values = {}) => key === "mixMutePieceAria"
+    ? `Toggle ${values.piece} mute`
+    : key === "mixSoloPieceAria" ? `Toggle ${values.piece} solo` : key });
+  view.render(song, { editor: { snap: "1/8", tool: "select" }, mix }, 11520);
+  const kickLabel = root.querySelectorAll(".drum-row-label").find((label) => label.dataset.pieceId === "kick");
+  const controls = kickLabel.children.filter((item) => item.dataset.mixFlag);
+  assert.equal(controls.length, 2);
+  assert.deepEqual(controls.map((button) => button.dataset.mixFlag), ["mute", "solo"]);
+  assert.deepEqual(controls.map((button) => button.getAttribute("aria-pressed")), ["true", "false"]);
+  assert.deepEqual(controls.map((button) => button.getAttribute("aria-label")), ["Toggle Kick mute", "Toggle Kick solo"]);
+});
+
+test("Drum Roll markup places the roll before Hit Expression and renders separate multi-selection summary", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  assert.ok(html.indexOf('id="drum-grid-scroll"') < html.indexOf('id="percussion-multi-selection"'));
+  assert.ok(html.indexOf('id="percussion-multi-selection"') < html.indexOf('id="percussion-expression-form"'));
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  assert.match(app, /selectedIds\.length > 1/);
+  assert.match(app, /percussion-multi-selection-summary/);
 });

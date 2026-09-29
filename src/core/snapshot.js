@@ -1,10 +1,14 @@
-import { cloneData } from "./model.js?v=20260929.15";
+import { cloneData } from "./model.js?v=20260930.19";
 import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([
   "getSong",
   "getSelection",
   "getSelectedNoteIds",
+  "getSelectedPercussionHitIds",
+  "getMixState",
+  "setInstrumentMute",
+  "setInstrumentSolo",
   "addNote",
   "updateNote",
   "updateNotes",
@@ -12,6 +16,10 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "addPercussionHit",
   "updatePercussionHit",
   "deletePercussionHit",
+  "selectPercussionHits",
+  "clearPercussionSelection",
+  "deletePercussionHits",
+  "duplicatePercussionHits",
   "setLyrics",
   "setAnchor",
   "setLocked",
@@ -30,8 +38,16 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "mergeLyricSyllables",
   "moveLyricSyllable",
   "assignSyllableNotes",
+  "newSong",
   "newIdea",
+  "listExamples",
+  "loadExample",
+  "setSongTitle",
   "loadSong",
+  "listBrowserSongs",
+  "saveBrowserSong",
+  "openBrowserSong",
+  "deleteBrowserSong",
   "generateGap",
   "getGenerationState",
   "selectCandidate",
@@ -73,7 +89,7 @@ export function createAgentSnapshot(song, selection, playback = {
   auditionCandidateId: null,
   candidates: [],
   acceptedNoteIds: []
-}, history = { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 }) {
+}, history = { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 }, selectedPercussionHitIds = [], mix = { channels: {} }) {
   const currentSyllableId = getActiveSyllableId(song.lyrics, playback.currentNoteId);
   const currentSyllableIds = currentSyllableId ? [currentSyllableId] : [];
   return {
@@ -104,6 +120,8 @@ export function createAgentSnapshot(song, selection, playback = {
     },
     selection: cloneData(selection),
     selectedNoteIds: cloneData(selectedNoteIds),
+    selectedPercussionHitIds: cloneData(selectedPercussionHitIds),
+    mix: cloneData(mix),
     editor: cloneData(editor),
     view: cloneData(view),
     generation: cloneData(generation),
