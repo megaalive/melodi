@@ -1,3 +1,5 @@
+export const PERCUSSION_ARTICULATIONS = Object.freeze(["normal", "ghost", "accent"]);
+
 export const PERCUSSION_CAPABILITIES = Object.freeze([
   "velocity",
   "timing",
