@@ -1,10 +1,11 @@
-import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js?v=20260929.15";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260929.15";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
 import { createAgentSnapshot } from "./snapshot.js?v=20260929.15";
 import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260929.15";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260929.15";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -81,7 +82,8 @@ export function createCommands(initialSong, {
   onPlaybackChange = () => {},
   onPlaybackEvent = () => {},
   onNotificationError = reportUnobservedNotificationError,
-  audioPlayerFactory = null
+  audioPlayerFactory = null,
+  browserLibrary = null
 } = {}) {
   let song = createSong(initialSong);
   let selection = null;
@@ -403,6 +405,55 @@ export function createCommands(initialSong, {
     const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
     updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
     return [...noteIds];
+  }
+
+  function replaceSong(input, { recordUndo = false, clearHistory = false } = {}) {
+    const nextSong = createSong(input);
+    if (recordUndo) pushHistory();
+    canonicalRevision += 1;
+    generationAuditionToken += 1;
+    generationSession = null;
+    lastAcceptedNoteIds = [];
+    playRequest += 1;
+    updatePlayerSafely(() => audioPlayer?.stop());
+    song = nextSong;
+    selection = null;
+    selectedNoteIds = [];
+    copiedNotes = null;
+    snap = DEFAULT_SNAP;
+    tool = DEFAULT_EDITOR_TOOL;
+    zoom = DEFAULT_ROLL_ZOOM;
+    viewMode = "piano-roll";
+    followMode = true;
+    loopRangeMode = "auto";
+    playback.status = "stopped";
+    activeNoteSuppressed = true;
+    playback.loop = { enabled: true, startTick: 0, endTick: Math.max(1, songEndTick()) };
+    setPlaybackPosition(0);
+    if (clearHistory) {
+      undoStack = [];
+      redoStack = [];
+    }
+    notifyPlaybackChange();
+    notifyChange("song");
+    notifyEditorChange();
+    return cloneData(song);
+  }
+
+  function startNewSong(title = "Untitled") {
+    return replaceSong(createBlankSong(idFactory, title), { recordUndo: true });
+  }
+
+  function loadSong(input) {
+    return replaceSong(input, { clearHistory: true });
+  }
+
+  function changeSongTitle(title) {
+    if (typeof title !== "string" || !title.trim()) fail("invalid-title");
+    const nextTitle = title.trim();
+    if (nextTitle === song.title) return song.title;
+    commit((candidate) => { candidate.title = nextTitle; });
+    return song.title;
   }
 
   const commands = {
@@ -1036,56 +1087,45 @@ export function createCommands(initialSong, {
       notifyEditorChange();
       return zoom;
     },
-    newIdea() {
-      const nextSong = createInitialSong(idFactory);
-      pushHistory();
-      canonicalRevision += 1;
-      generationAuditionToken += 1;
-      generationSession = null;
-      lastAcceptedNoteIds = [];
-      playRequest += 1;
-      updatePlayerSafely(() => audioPlayer?.stop());
-      song = nextSong;
-      selection = null;
-      selectedNoteIds = [];
-      copiedNotes = null;
-      snap = DEFAULT_SNAP;
-      tool = DEFAULT_EDITOR_TOOL;
-      loopRangeMode = "auto";
-      playback.status = "stopped";
-      activeNoteSuppressed = true;
-      playback.loop = { enabled: true, startTick: 0, endTick: Math.max(1, songEndTick()) };
-      setPlaybackPosition(0);
-      notifyPlaybackChange();
-      notifyChange("song");
-      notifyEditorChange();
-      return cloneData(song);
+    newSong(title = "Untitled") {
+      return startNewSong(title);
     },
+    newIdea() {
+      return startNewSong();
+    },
+    listExamples() {
+      return listExamples();
+    },
+    loadExample(id) {
+      return loadSong(createExample(id, idFactory));
+    },
+    setSongTitle: changeSongTitle,
     loadSong(input) {
-      const nextSong = createSong(input);
-      canonicalRevision += 1;
-      generationAuditionToken += 1;
-      generationSession = null;
-      lastAcceptedNoteIds = [];
-      playRequest += 1;
-      updatePlayerSafely(() => audioPlayer?.stop());
-      song = nextSong;
-      selection = null;
-      selectedNoteIds = [];
-      copiedNotes = null;
-      snap = DEFAULT_SNAP;
-      tool = DEFAULT_EDITOR_TOOL;
-      loopRangeMode = "auto";
-      playback.status = "stopped";
-      activeNoteSuppressed = true;
-      playback.loop = { enabled: true, startTick: 0, endTick: Math.max(1, songEndTick()) };
-      setPlaybackPosition(0);
-      undoStack = [];
-      redoStack = [];
-      notifyPlaybackChange();
-      notifyChange("song");
-      notifyEditorChange();
-      return cloneData(song);
+      return loadSong(input);
+    },
+    async listBrowserSongs() {
+      return browserLibrary?.listBrowserSongs?.()
+        ?? { ok: false, status: "unavailable", error: "unavailable", songs: [] };
+    },
+    async saveBrowserSong(titleInput = song.title) {
+      if (!browserLibrary?.saveBrowserSong) return { ok: false, status: "unavailable", error: "unavailable" };
+      const title = typeof titleInput === "string" ? titleInput : titleInput?.title;
+      if (typeof title !== "string" || !title.trim()) return { ok: false, status: "invalid-title", error: "invalid-title" };
+      const candidate = createSong({ ...cloneData(song), title: title.trim() });
+      const result = await browserLibrary.saveBrowserSong(candidate);
+      if (result?.ok && song.id === candidate.id) changeSongTitle(candidate.title);
+      return result;
+    },
+    async openBrowserSong(id) {
+      if (!browserLibrary?.openBrowserSong) return { ok: false, status: "unavailable", error: "unavailable" };
+      const result = await browserLibrary.openBrowserSong(id);
+      if (!result?.ok || !result.song) return result;
+      const loaded = loadSong(result.song);
+      return { ...result, song: loaded };
+    },
+    async deleteBrowserSong(id) {
+      if (!browserLibrary?.deleteBrowserSong) return { ok: false, status: "unavailable", error: "unavailable" };
+      return browserLibrary.deleteBrowserSong(id);
     },
     selectRange(startTick, endTick) {
       if (!Number.isSafeInteger(startTick) || startTick < 0 || !Number.isSafeInteger(endTick) || endTick < startTick) fail("invalid-range");

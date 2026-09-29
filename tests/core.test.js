@@ -119,6 +119,9 @@ test("loading a project resets editor/runtime state and keeps the imported canon
   const commands = createCommands(fixture());
   commands.setSnap("1/16");
   commands.setTool("draw");
+  commands.setZoom(1.4);
+  commands.setViewMode("drums");
+  commands.setFollowMode(false);
   commands.selectNotes(["note-1"]);
   commands.addNote({ pitch: 72, startTick: 1920, durationTicks: 240 });
   assert.equal(commands.canUndo(), true);
@@ -131,6 +134,7 @@ test("loading a project resets editor/runtime state and keeps the imported canon
   assert.deepEqual(commands.getSong(), imported);
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
+  assert.deepEqual(commands.getState().view, { mode: "piano-roll", follow: true });
   assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
   assert.equal(commands.getState().playback.currentTick, 0);
   assert.deepEqual(commands.getState().playback.loop, { enabled: true, startTick: 0, endTick: 11520 });
@@ -586,7 +590,9 @@ test("state snapshot is detached and reports the actual command surface", () => 
       "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
-      "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newIdea", "loadSong",
+      "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newSong", "newIdea",
+      "listExamples", "loadExample", "setSongTitle", "loadSong", "listBrowserSongs", "saveBrowserSong",
+      "openBrowserSong", "deleteBrowserSong",
       "generateGap", "getGenerationState", "selectCandidate", "auditionCandidate", "acceptCandidate",
       "lockAcceptedNotes", "clearGeneration", "regenerateGap",
       "play", "pause", "stop", "seek", "setTempo", "setLoop", "resetLoopRange", "setLoopEnabled", "setViewMode", "setFollowMode",
@@ -832,7 +838,7 @@ test("syllable split keeps the original ID on the left and merge is adjacent, or
   assert.deepEqual(deserializeProject(serializeProject(commands.getSong())).lyrics, commands.getSong().lyrics);
 });
 
-test("snap state and New Idea reset are editor runtime, not canonical song data", () => {
+test("New Song and backward-compatible New Idea create a blank project and reset editor state", () => {
   let next = 0;
   const commands = createCommands(fixture(), { idFactory: () => `new-idea-${++next}` });
   commands.setSnap("1/16");
@@ -842,16 +848,24 @@ test("snap state and New Idea reset are editor runtime, not canonical song data"
   commands.setLyrics("draft lyric");
   commands.setAnchor("note-2", true);
   expectCode(() => commands.setSnap("1/32"), "invalid-snap");
-  const fresh = commands.newIdea();
-  assert.equal(fresh.title, "Ide baru");
+  const fresh = commands.newSong();
+  assert.equal(fresh.title, "Untitled");
+  assert.equal(fresh.timing.tempo, 120);
+  assert.deepEqual(fresh.timing.timeSignature, { numerator: 4, denominator: 4 });
+  assert.equal(fresh.key, "C");
   assert.equal(fresh.lyrics.rawText, "");
-  assert.deepEqual(fresh.notes.map((note) => note.pitch), [69, 74, 76, 76, 76, 76, 74, 72, 74, 74, 74, 72, 69, 71, 72, 72, 72, 71, 69, 67, 67]);
-  assert.ok(fresh.notes.every((note) => !note.anchor && !note.locked));
+  assert.deepEqual(fresh.notes, []);
+  assert.deepEqual(fresh.chords, []);
+  assert.deepEqual(fresh.tracks, []);
   assert.deepEqual(commands.getSelectedNoteIds(), []);
   assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
   assert.equal(commands.getState().playback.status, "stopped");
   assert.equal(commands.getState().playback.currentTick, 0);
   assert.equal(Object.hasOwn(fresh, "playback"), false);
+
+  const legacy = commands.newIdea();
+  assert.equal(legacy.notes.length, 0);
+  assert.equal(legacy.title, "Untitled");
 });
 
 test("undo restores the previous canonical song and redo re-applies it", () => {
@@ -938,7 +952,7 @@ test("new Idea is undoable so a replaced draft is recoverable", () => {
   const commands = createCommands(fixture(), { idFactory: () => `idea-${++nextId}` });
   const before = commands.getSong();
   commands.newIdea();
-  assert.equal(commands.getSong().title, "Ide baru");
+  assert.equal(commands.getSong().title, "Untitled");
   assert.equal(commands.canUndo(), true);
   commands.undo();
   assert.deepEqual(commands.getSong(), before);

@@ -363,6 +363,22 @@ export function createInitialSong(idFactory = createId) {
   });
 }
 
+export function createBlankSong(idFactory = createId, title = "Untitled") {
+  return createSong({
+    id: idFactory(),
+    title: typeof title === "string" && title.trim() ? title.trim() : "Untitled",
+    timing: { ppq: PPQ, tempo: 120, timeSignature: { numerator: 4, denominator: 4 } },
+    key: "C",
+    scale: { name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] },
+    sections: [],
+    phrases: [],
+    notes: [],
+    lyrics: { rawText: "", syllables: [] },
+    chords: [],
+    tracks: []
+  });
+}
+
 export function pitchToMidi(value) {
   if (typeof value !== "string") fail("invalid-pitch");
   const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(value.trim());

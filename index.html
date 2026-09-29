@@ -18,21 +18,23 @@
         <p data-copy="intro"></p>
       </div>
       <div class="header-actions">
-        <div class="project-actions" role="group" data-aria-copy="fileProjectGroupLabel">
-          <button id="new-idea" type="button" class="secondary icon-button" data-action="new-idea" data-aria-copy="newIdeaButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M10 4v12M4 10h12"></path><path d="M5.5 2.8h6l3 3V17H5.5z"></path></svg>
-          </button>
-          <button id="open-project-file" type="button" class="secondary icon-button" data-action="open-project-file" data-aria-copy="openFileButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M2.5 5.2h6l1.7 1.9h7.3v8.7H2.5z"></path><path d="M2.8 7.1h14.4"></path></svg>
-          </button>
-          <button id="save-project-file" type="button" class="secondary icon-button" data-action="save-project-file" data-aria-copy="saveFileButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 2.8h11l3 3V17H3z"></path><path d="M6 3v5h8V3M6.2 17v-5.5h7.6V17"></path></svg>
-          </button>
-          <input id="project-file-input" type="file" accept=".melodi.json,application/json" hidden>
-          <button id="share-song" type="button" class="secondary icon-button" data-action="share-song" data-aria-copy="shareButton">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><circle cx="5" cy="10" r="2"></circle><circle cx="15" cy="5" r="2"></circle><circle cx="15" cy="15" r="2"></circle><path d="m6.8 9 6.4-3M6.8 11l6.4 3"></path></svg>
-          </button>
-        </div>
+        <details id="project-menu" class="project-menu" data-aria-copy="projectMenuLabel">
+          <summary class="secondary project-menu-trigger">
+            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 4.5h5l1.5 2H17v9H3z"></path><path d="M3.5 8h13"></path></svg>
+            <span data-copy="projectMenuLabel"></span>
+          </summary>
+          <div class="project-menu-popover" role="group" data-aria-copy="projectMenuLabel">
+            <button type="button" data-action="new-song" data-copy="newSongMenuItem"></button>
+            <button type="button" data-action="show-examples" data-copy="examplesMenuItem"></button>
+            <button type="button" data-action="show-browser-library" data-copy="openBrowserMenuItem"></button>
+            <button type="button" data-action="show-save-browser" data-copy="saveBrowserMenuItem"></button>
+            <hr>
+            <button id="open-project-file" type="button" data-action="open-project-file" data-copy="openFileButton"></button>
+            <button id="save-project-file" type="button" data-action="save-project-file" data-copy="saveFileButton"></button>
+            <button id="share-song" type="button" data-action="share-song" data-copy="shareButton"></button>
+          </div>
+        </details>
+        <input id="project-file-input" type="file" accept=".melodi.json,application/json" hidden>
         <div class="header-controls" role="group" data-aria-copy="appearanceLanguageGroupLabel">
           <button type="button" class="command-button secondary icon-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
             <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"></rect><path d="M5 7h1M9.5 7h1M14 7h1M5 10h1M9.5 10h1M14 10h1M6 13.5h8"></path></svg>
@@ -71,7 +73,6 @@
         </dl>
         <div class="share-session-actions">
           <span id="shared-source" class="shared-source" data-copy="sharedSourceLabel" hidden></span>
-          <button id="save-shared-draft" type="button" class="secondary" data-action="save-shared-draft" data-copy="saveSharedDraftButton" hidden></button>
         </div>
       </section>
 
@@ -603,6 +604,52 @@
           <div class="confirm-dialog-actions">
             <button id="share-dialog-close" type="button" class="secondary" data-action="close-share-dialog" data-copy="closeButton"></button>
             <button id="share-dialog-copy" type="button" data-action="copy-share-link" data-copy="copyShareLinkButton"></button>
+          </div>
+        </div>
+      </dialog>
+
+      <dialog id="examples-dialog" class="confirm-dialog project-dialog" aria-labelledby="examples-dialog-title">
+        <div class="confirm-dialog-card">
+          <div class="confirm-dialog-copy">
+            <h2 id="examples-dialog-title" data-copy="examplesDialogTitle"></h2>
+            <p data-copy="examplesDialogHelp"></p>
+          </div>
+          <ol id="examples-list" class="project-record-list" data-entity="example-list"></ol>
+          <p id="examples-status" class="muted project-dialog-status" aria-live="polite"></p>
+          <div class="confirm-dialog-actions">
+            <button type="button" class="secondary" data-action="close-project-dialog" data-dialog="examples-dialog" data-copy="closeButton"></button>
+          </div>
+        </div>
+      </dialog>
+
+      <dialog id="save-browser-dialog" class="confirm-dialog project-dialog" aria-labelledby="save-browser-dialog-title">
+        <form id="save-browser-form" class="confirm-dialog-card" data-action="save-browser-song">
+          <div class="confirm-dialog-copy">
+            <h2 id="save-browser-dialog-title" data-copy="saveBrowserDialogTitle"></h2>
+            <p data-copy="saveBrowserDialogHelp"></p>
+          </div>
+          <label class="project-title-field">
+            <span data-copy="songTitleLabel"></span>
+            <input id="browser-song-title" name="title" type="text" maxlength="120" required autocomplete="off" data-focus-key="browser-song-title">
+          </label>
+          <p id="save-browser-status" class="muted project-dialog-status" aria-live="polite"></p>
+          <div class="confirm-dialog-actions">
+            <button type="button" class="secondary" data-action="close-project-dialog" data-dialog="save-browser-dialog" data-copy="cancelButton"></button>
+            <button type="submit" data-copy="saveBrowserButton"></button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="browser-library-dialog" class="confirm-dialog project-dialog" aria-labelledby="browser-library-dialog-title">
+        <div class="confirm-dialog-card">
+          <div class="confirm-dialog-copy">
+            <h2 id="browser-library-dialog-title" data-copy="browserLibraryDialogTitle"></h2>
+            <p data-copy="browserLibraryDialogHelp"></p>
+          </div>
+          <ol id="browser-library-list" class="project-record-list" data-entity="browser-song-list"></ol>
+          <p id="browser-library-status" class="muted project-dialog-status" aria-live="polite"></p>
+          <div class="confirm-dialog-actions">
+            <button type="button" class="secondary" data-action="close-project-dialog" data-dialog="browser-library-dialog" data-copy="closeButton"></button>
           </div>
         </div>
       </dialog>
