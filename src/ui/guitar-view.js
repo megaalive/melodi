@@ -1,10 +1,9 @@
 import { midiToPitch } from "../core/model.js";
 
 /*
- * Guitar view bukan timeline kedua. Pertanyaan yang dijawabnya hanya satu:
- * nada ini bisa dimainkan di gitar pada posisi mana, dan posisi mana yang paling
- * enak dimainkan. Tidak ada transport, tidak ada sumbu waktu, jadi tidak ada
- * yang harus disinkronkan dengan Piano Roll.
+ * Projection Fretboard menjawab posisi fisik satu note pada neck. Timeline dan
+ * selection frase ada di guitar-tab.js; keduanya tetap berasal dari canonical
+ * NoteEvent yang sama dan tidak menyimpan salinan musik sendiri.
  */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -49,6 +48,24 @@ export function fretCenterX(fret, { labelWidth = LABEL_WIDTH, fretWidth = FRET_W
  * Semua posisi yang bisa memainkan satu MIDI pitch pada satu tuning.
  * String dinomori seperti pemain gitar: 6 adalah senar terendah.
  */
+export function guitarBendLabel(note) {
+  if (!Array.isArray(note?.pitchBend) || note.pitchBend.length < 2) return "";
+  const semitones = note.pitchBend.map((point) => point.semitones);
+  const max = Math.max(...semitones);
+  const min = Math.min(...semitones);
+  const release = Math.abs(semitones.at(-1) ?? 0) < 0.001;
+  if (max > 0) {
+    const amount = max === 1 ? "½" : Number((max / 2).toFixed(2));
+    return `${amount}↑${release ? "↓" : ""}`;
+  }
+  if (min < 0) {
+    const absolute = Math.abs(min);
+    const amount = absolute === 1 ? "½" : Number((absolute / 2).toFixed(2));
+    return `${amount}↓${release ? "↑" : ""}`;
+  }
+  return "";
+}
+
 export function findGuitarPositions(midiPitch, { tuning = STANDARD_TUNING, maxFret = MAX_FRET } = {}) {
   if (!Number.isInteger(midiPitch) || midiPitch < 0 || midiPitch > 127) return [];
   const positions = [];
@@ -214,6 +231,50 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
     }
   }
 
+  function drawFocusedExpression(note, primaryPosition) {
+    if (!note || !primaryPosition) return;
+    const index = tuning.length - primaryPosition.string;
+    const x = centerX(primaryPosition.fret);
+    const y = stringY(index);
+    const bend = guitarBendLabel(note);
+
+    if (bend) {
+      const group = svgElement("g", {
+        class: "neck-expression neck-bend-expression",
+        "data-entity": "guitar-bend",
+        "data-note-id": note.id
+      }, svg);
+      svgElement("path", {
+        d: `M ${x + 5} ${y - 5} Q ${x + 15} ${y - 18} ${x + 25} ${y - 19}`,
+        class: "neck-bend-arc"
+      }, group);
+      svgElement("circle", {
+        cx: x + 25, cy: y - 19, r: 3.3,
+        class: "neck-bend-target"
+      }, group);
+      svgElement("text", {
+        x: x + 29, y: y - 16,
+        class: "neck-expression-label"
+      }, group, bend);
+    }
+
+    if (note.vibrato) {
+      const group = svgElement("g", {
+        class: "neck-expression neck-vibrato-expression",
+        "data-entity": "guitar-vibrato",
+        "data-note-id": note.id
+      }, svg);
+      svgElement("path", {
+        d: `M ${x - 18} ${y + 14} q 4 -5 8 0 t 8 0 t 8 0`,
+        class: "neck-vibrato-wave"
+      }, group);
+      svgElement("text", {
+        x: x + 13, y: y + 18,
+        class: "neck-expression-label"
+      }, group, `±${Number(note.vibrato.depthSemitones.toFixed(2))}`);
+    }
+  }
+
   function drawPositions(positions, primaryPosition, noteId, isCurrent) {
     for (const position of positions) {
       const index = tuning.length - position.string;
@@ -271,7 +332,10 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
       svg.replaceChildren();
 
       drawNeck(hitFrets, currentFrets);
-      if (positions.length > 0) drawPositions(positions, primaryPosition, note.id, sounding);
+      if (positions.length > 0) {
+        drawPositions(positions, primaryPosition, note.id, sounding);
+        drawFocusedExpression(note, primaryPosition);
+      }
       lastSoundingKey = `${note?.id ?? ""}:${sounding}`;
       return { note, positions, primaryPosition, sounding, playheadTick: state.playback.currentTick };
     },

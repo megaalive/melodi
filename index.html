@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260929.6">
+    <meta name="melodi-build" content="20260929.7">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260929.6">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.6"></script>
-    <script type="module" src="./src/app.js?v=20260929.6"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260929.7">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.7"></script>
+    <script type="module" src="./src/app.js?v=20260929.7"></script>
   </head>
   <body>
     <header class="page-header">
@@ -346,16 +346,25 @@
               </div>
             </section>
 
-          <section id="guitar-section" class="workspace-pane" data-view-region="guitar" aria-labelledby="guitar-heading">
-            <div class="pane-heading">
-              <div>
+          <section id="guitar-section" class="workspace-pane guitar-pane" data-view-region="guitar" data-guitar-layout="tab" aria-labelledby="guitar-heading">
+            <div class="pane-heading compact-pane-heading guitar-pane-heading">
+              <div class="guitar-heading-copy">
                 <h2 id="guitar-heading" data-copy="guitarHeading"></h2>
                 <p data-copy="guitarHelp"></p>
               </div>
-              <p id="guitar-playhead" class="guitar-playhead" role="status" aria-live="off" data-entity="guitar-playhead"></p>
-              <p id="guitar-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="guitar-status"></p>
+              <div class="guitar-local-toolbar">
+                <div class="guitar-layout-group" role="group" data-aria-copy="guitarLayoutGroupLabel">
+                  <button id="guitar-layout-tab" type="button" data-action="set-guitar-layout" data-guitar-layout="tab" data-copy="guitarTabButton" data-aria-copy="guitarTabAria" aria-pressed="true"></button>
+                  <button id="guitar-layout-fretboard" type="button" data-action="set-guitar-layout" data-guitar-layout="fretboard" data-copy="guitarFretboardButton" data-aria-copy="guitarFretboardAria" aria-pressed="false"></button>
+                </div>
+                <p id="guitar-playhead" class="guitar-playhead" role="status" aria-live="off" data-entity="guitar-playhead"></p>
+              </div>
             </div>
-            <div id="guitar-scroll" class="guitar-scroll" role="region" tabindex="0" data-aria-copy="guitarRegionLabel">
+            <p id="guitar-status" class="muted guitar-status" role="status" aria-live="polite" aria-atomic="true" data-entity="guitar-status"></p>
+            <div id="guitar-tab-scroll" class="guitar-tab-scroll" role="region" tabindex="0" data-aria-copy="guitarTabRegionLabel">
+              <svg id="guitar-tab" role="img"></svg>
+            </div>
+            <div id="guitar-scroll" class="guitar-scroll" role="region" tabindex="0" data-aria-copy="guitarRegionLabel" hidden>
               <svg id="guitar" role="img"></svg>
             </div>
             <p id="guitar-legend" class="muted" data-entity="guitar-positions"></p>

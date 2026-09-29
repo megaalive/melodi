@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chooseGuitarFingering, findGuitarPositions, fretCenterX, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
+import { chooseGuitarFingering, findGuitarPositions, fretCenterX, guitarBendLabel, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
 import { createInitialSong } from "../src/core/model.js";
 
 test("standard tuning spans E2 to E4 across six strings", () => {
@@ -121,3 +121,18 @@ test("fingering route follows one playable path instead of highlighting every du
   }
 });
 
+
+
+test("label bend gitar mengikuti interval dan release canonical", () => {
+  assert.equal(guitarBendLabel({}), "");
+  assert.equal(guitarBendLabel({ pitchBend: [
+    { position: 0, semitones: 0 },
+    { position: 0.3, semitones: 1 },
+    { position: 1, semitones: 1 }
+  ] }), "½↑");
+  assert.equal(guitarBendLabel({ pitchBend: [
+    { position: 0, semitones: 0 },
+    { position: 0.3, semitones: 2 },
+    { position: 1, semitones: 0 }
+  ] }), "1↑↓");
+});

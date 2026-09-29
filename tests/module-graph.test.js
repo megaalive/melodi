@@ -89,6 +89,8 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./i18n/messages.js?v=" + build));
   assert.ok(app.includes("./ui/score.js?v=" + build));
   assert.ok(app.includes("./storage/ui-preferences.js?v=" + build));
+  assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
+  assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
@@ -236,6 +238,33 @@ test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-ben
   assert.match(css, /score-scroll\[data-layout="flow"\]/);
   assert.match(css, /score-pane\[data-score-layout="page"\] \.score-sticky-context/);
   assert.match(css, /score-note\[data-selected="true"\]/);
+});
+
+test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
+
+  const start = html.indexOf('<section id="guitar-section"');
+  const end = html.indexOf("</section>", start);
+  const section = html.slice(start, end);
+  assert.match(section, /data-guitar-layout="tab"/);
+  assert.match(section, /id="guitar-layout-tab"[^>]*data-action="set-guitar-layout"/);
+  assert.match(section, /id="guitar-layout-fretboard"[^>]*data-action="set-guitar-layout"/);
+  assert.match(section, /id="guitar-tab-scroll"/);
+  assert.match(section, /id="guitar-scroll"[^>]*hidden/);
+
+  assert.match(preferences, /guitarLayout:\s*"tab"/);
+  assert.match(app, /createGuitarTabView/);
+  assert.match(app, /guitarTabView\?\.updateSelection/);
+  assert.match(app, /guitarTabView\?\.updatePlayback/);
+  assert.match(app, /target\.dataset\.action === "set-guitar-layout"/);
+
+  assert.match(css, /\.guitar-tab-note\[data-selected="true"\]/);
+  assert.match(css, /\.guitar-tab-note\[data-current="true"\]/);
+  assert.match(css, /\.neck-bend-arc/);
+  assert.match(css, /\.neck-vibrato-wave/);
 });
 
 test("UI tidak memakai dialog blocking bawaan browser", () => {
