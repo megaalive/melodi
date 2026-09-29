@@ -1,6 +1,6 @@
-import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js?v=20260929.8";
+import { cloneData, createId, createInitialSong, createSong, MelodiError } from "./model.js?v=20260929.9";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260929.8";
+import { createAgentSnapshot } from "./snapshot.js?v=20260929.9";
 import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
@@ -574,7 +574,7 @@ export function createCommands(initialSong, {
       return commands.generateGap(request);
     },
     setViewMode(mode) {
-      if (!["score", "piano-roll", "combined", "lyrics", "guitar"].includes(mode)) fail("invalid-view-mode");
+      if (!["score", "piano-roll", "combined", "lyrics", "guitar", "drums"].includes(mode)) fail("invalid-view-mode");
       viewMode = mode;
       notifyChange("view");
       return viewMode;

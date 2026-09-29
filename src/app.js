@@ -1,21 +1,22 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.8";
-import { createCommands } from "./core/commands.js?v=20260929.8";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.9";
+import { createCommands } from "./core/commands.js?v=20260929.9";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.8";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.8";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.9";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.9";
 import { createAudioPlayer } from "./audio/player.js";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.8";
-import { createScoreView } from "./ui/score.js?v=20260929.8";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.8";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.8";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.9";
+import { createScoreView } from "./ui/score.js?v=20260929.9";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260929.9";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.9";
+import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.9";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260929.8";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.8";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.8";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.8";
+import { createDraftPersistence } from "./storage/draft.js?v=20260929.9";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.9";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.9";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.9";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -24,6 +25,7 @@ let expressionView;
 let scoreView;
 let guitarView;
 let guitarTabView;
+let drumGridView;
 let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
@@ -915,6 +917,8 @@ function renderEditorControls() {
   const state = commands.getState();
   const song = commands.getSong();
   byId("snap-select").value = state.editor.snap;
+  const drumsSnap = byId("drums-snap-select");
+  if (drumsSnap && document.activeElement !== drumsSnap) drumsSnap.value = state.editor.snap;
   byId("editor-meter").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   for (const button of document.querySelectorAll('[data-action="set-tool"]')) {
     const active = button.dataset.tool === state.editor.tool;
@@ -1187,7 +1191,12 @@ function renderPlayback() {
   if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
   if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
   byId("loop-enabled").checked = playback.loop.enabled;
-  const songEndTick = Math.max(1, song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0));
+  let songEndTick = song.notes.reduce((end, item) => Math.max(end, item.startTick + item.durationTicks), 0);
+  for (const track of song.tracks) {
+    if (track.kind !== "percussion") continue;
+    for (const hit of track.events) songEndTick = Math.max(songEndTick, hit.startTick + (hit.durationTicks ?? 1));
+  }
+  songEndTick = Math.max(1, songEndTick);
   const customPlaybackRange = playback.loop.startTick !== 0 || playback.loop.endTick !== songEndTick;
   byId("reset-playback-range").hidden = !customPlaybackRange;
   byId("reset-playback-range").dataset.startTick = String(playback.loop.startTick);
@@ -1201,6 +1210,9 @@ function renderPlayback() {
   scoreView?.updatePlayback(playback, { ...state.view, follow });
   guitarTabView?.updatePlayback(playback, {
     follow: follow && state.view.mode === "guitar" && uiPreferences.guitarLayout === "tab"
+  });
+  drumGridView?.updatePlayback(playback, {
+    follow: follow && state.view.mode === "drums"
   });
   if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
@@ -1283,6 +1295,7 @@ function render() {
   renderScoreControls(song, state);
   scoreView.render(song, state);
   renderGuitar(state);
+  renderDrums(song, state);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -1503,10 +1516,12 @@ commands = createCommands(sharedSong ?? draft.song ?? createInitialSong(), {
       expressionView?.render(commands.getSong(), state, rollView.getGeometry());
       scoreView?.updateSelection(state.selectedNoteIds ?? []);
       guitarTabView?.updateSelection(state.selectedNoteIds ?? []);
-      if (uiPreferences.guitarLayout === "fretboard") renderGuitar(normalizeRuntimeState(state));
-      else renderGuitarStatus(normalizeRuntimeState(state));
-      renderScoreControls(commands.getSong(), normalizeRuntimeState(state));
-      renderExpressionControls(normalizeRuntimeState(state));
+      const normalized = normalizeRuntimeState(state);
+      if (uiPreferences.guitarLayout === "fretboard") renderGuitar(normalized);
+      else renderGuitarStatus(normalized);
+      renderScoreControls(commands.getSong(), normalized);
+      renderExpressionControls(normalized);
+      renderDrums(commands.getSong(), normalized);
     }
   },
   onPlaybackChange: renderPlayback,
@@ -1613,6 +1628,15 @@ guitarTabView = createGuitarTabView(byId("guitar-tab"), byId("guitar-tab-scroll"
     run(() => commands.selectNotes(next));
   }
 });
+drumGridView = createDrumGridView(byId("drum-grid"), {
+  translate,
+  onAddHit(input) {
+    run(() => commands.addPercussionHit(input), "drumsHitAdded");
+  },
+  onDeleteHit(trackId, hitId) {
+    run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
+  }
+});
 bendEditor = createBendCurveEditor({
   root: byId("bend-editor-details"),
   rangeSelect: byId("bend-range"),
@@ -1697,6 +1721,17 @@ function renderGuitar(state) {
 
   const result = guitarView.render(state);
   renderGuitarStatus(state, result);
+}
+
+function renderDrums(song, state) {
+  if (state.view.mode !== "drums" || !drumGridView) return;
+  const projection = drumGridView.render(song, state);
+  const hitCount = projection.track?.events.length ?? 0;
+  byId("drums-snap-select").value = projection.snap;
+  byId("drums-status").textContent = translate(
+    hitCount ? "drumsStatusReady" : "drumsStatusEmpty",
+    hitCount ? { count: hitCount, snap: projection.snap } : { snap: projection.snap }
+  );
 }
 
 const publicCommands = Object.freeze({

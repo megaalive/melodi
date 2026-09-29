@@ -3647,3 +3647,212 @@ details[open] > .disclosure-summary .disclosure-chevron {
     font-size: var(--text-xs);
   }
 }
+
+
+/* Drum Grid: waktu horizontal, piece identity vertikal. MIDI note bukan sumbu Y. */
+body[data-view-mode="drums"] .workspace-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+body[data-view-mode="drums"] .workspace-sidebar {
+  display: none;
+}
+.drums-pane-heading {
+  align-items: center;
+}
+.drums-pane-heading > div:first-child {
+  min-width: 0;
+}
+.drums-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.8rem;
+  font-size: var(--text-xs);
+}
+.drums-status {
+  min-height: 1.1rem;
+  margin: 0 0 0.45rem;
+  font-size: var(--text-xs);
+}
+.drum-grid-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.drum-grid {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 8rem) repeat(var(--drum-column-count), 1.8rem);
+  grid-auto-rows: 1.8rem;
+  width: max-content;
+  min-width: 100%;
+  padding: 0;
+}
+.drum-grid-corner,
+.drum-grid-step,
+.drum-row-label {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+}
+.drum-grid-corner {
+  position: sticky;
+  z-index: 6;
+  top: 0;
+  left: 0;
+  padding: 0 0.5rem;
+  background: var(--surface-float);
+}
+.drum-grid-step {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  justify-content: center;
+  background: var(--surface-float);
+}
+.drum-grid-step[data-beat="true"] {
+  color: var(--text);
+  background: var(--surface-subtle);
+}
+.drum-grid-step[data-bar="true"] {
+  color: var(--accent-strong);
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+.drum-row-label {
+  position: sticky;
+  z-index: 5;
+  left: 0;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+  background: var(--surface-float);
+  color: var(--text);
+}
+.drum-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  min-width: 1.8rem;
+  height: 1.8rem;
+  min-height: 1.8rem;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface);
+  color: var(--accent-strong);
+  box-shadow: none;
+}
+.drum-cell[data-beat="true"] {
+  background: color-mix(in srgb, var(--surface-subtle) 65%, var(--surface));
+}
+.drum-cell[data-bar="true"] {
+  box-shadow: inset 2px 0 0 var(--border-strong);
+}
+.drum-cell:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.drum-hit-marker {
+  display: block;
+  width: calc(0.35rem + var(--hit-strength, 0.75) * 0.7rem);
+  height: calc(0.35rem + var(--hit-strength, 0.75) * 0.7rem);
+  border-radius: 50%;
+  background: var(--accent-strong);
+  opacity: calc(0.55 + var(--hit-strength, 0.75) * 0.45);
+  transform: scale(calc(0.78 + var(--hit-strength, 0.75) * 0.22));
+}
+.drum-cell[data-hit="true"] {
+  background: var(--accent-soft);
+}
+.drum-cell[data-hit="true"]:hover:not(:disabled) {
+  background: var(--danger-soft, var(--surface-subtle));
+}
+.drum-hit-offset {
+  position: absolute;
+  right: 0.08rem;
+  bottom: -0.05rem;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  line-height: 1;
+}
+.drum-grid-step[data-current-step="true"],
+.drum-cell[data-current-step="true"] {
+  background: var(--highlight-current);
+}
+.drum-cell[data-current-step="true"] {
+  box-shadow: inset 2px 0 0 var(--highlight-current-ink);
+}
+.drum-cell:focus-visible {
+  z-index: 2;
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+@media (pointer: coarse) {
+  .drum-grid {
+    grid-template-columns: minmax(7rem, 8.5rem) repeat(var(--drum-column-count), 2.4rem);
+    grid-auto-rows: 2.4rem;
+  }
+  .drum-cell {
+    width: 2.4rem;
+    min-width: 2.4rem;
+    height: 2.4rem;
+    min-height: 2.4rem;
+  }
+}
+
+@media (max-width: 46rem) {
+  .drums-pane-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .drums-toolbar {
+    justify-content: flex-start;
+  }
+  .drums-pane-heading p {
+    display: none;
+  }
+}
+
+.drum-hit-count {
+  position: absolute;
+  top: 0.05rem;
+  right: 0.08rem;
+  min-width: 0.72rem;
+  padding: 0 0.12rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 0.78rem;
+  text-align: center;
+}
+
+.drums-snap-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.drums-snap-control select {
+  width: auto;
+  min-width: 4.8rem;
+  min-height: 1.95rem;
+  padding-block: 0.25rem;
+}

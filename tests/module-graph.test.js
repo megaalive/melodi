@@ -91,6 +91,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./storage/ui-preferences.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
   assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
+  assert.ok(app.includes("./ui/drum-grid.js?v=" + build));
   assert.ok(app.includes("./storage/draft.js?v=" + build));
   assert.ok(app.includes("./io/share.js?v=" + build));
   assert.ok(app.includes("./core/serialization.js?v=" + build));
@@ -100,12 +101,16 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   const serialization = readFileSync(resolve("src/core/serialization.js"), "utf8");
   const share = readFileSync(resolve("src/io/share.js"), "utf8");
   const draft = readFileSync(resolve("src/storage/draft.js"), "utf8");
+  const drumGrid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
   assert.ok(commands.includes("./model.js?v=" + build));
   assert.ok(commands.includes("./snapshot.js?v=" + build));
   assert.ok(snapshot.includes("./model.js?v=" + build));
   assert.ok(serialization.includes("./model.js?v=" + build));
   assert.ok(share.includes("../core/model.js?v=" + build));
   assert.ok(draft.includes("../core/serialization.js?v=" + build));
+  assert.ok(drumGrid.includes("../core/model.js?v=" + build));
+  assert.ok(drumGrid.includes("../core/editor.js?v=" + build));
+  assert.ok(drumGrid.includes("../instruments/percussion.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
@@ -280,6 +285,35 @@ test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron
   assert.match(css, /\.guitar-tab-note\[data-current="true"\]/);
   assert.match(css, /\.neck-bend-arc/);
   assert.match(css, /\.neck-vibrato-wave/);
+});
+
+test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const runtime = readFileSync(resolve("src/core/runtime-state.js"), "utf8");
+
+  assert.match(html, /<option value="drums" data-copy="viewDrumsOption"/);
+  const start = html.indexOf('<section id="drums-section"');
+  const end = html.indexOf("</section>", start);
+  const section = html.slice(start, end);
+  assert.match(section, /data-view-region="drums"/);
+  assert.match(section, /id="drum-grid"/);
+  assert.match(section, /data-entity="drum-grid"/);
+  assert.match(section, /id="drums-snap-select"[^>]*data-action="set-snap"/);
+
+  assert.match(app, /createDrumGridView/);
+  assert.match(app, /commands\.addPercussionHit/);
+  assert.match(app, /commands\.deletePercussionHit/);
+  assert.match(app, /drumGridView\?\.updatePlayback/);
+  assert.match(app, /renderDrums\(commands\.getSong\(\), normalized\)/);
+  assert.match(app, /drumsSnap\.value = state\.editor\.snap/);
+  assert.match(runtime, /drums:\s*\["drums"\]/);
+  assert.doesNotMatch(runtime, /expression:\s*\[[^\]]*"drums"/);
+
+  assert.match(css, /body\[data-view-mode="drums"\] \.workspace-sidebar/);
+  assert.match(css, /\.drum-cell\[data-current-step="true"\]/);
+  assert.match(css, /\.drum-hit-marker/);
 });
 
 test("UI tidak memakai dialog blocking bawaan browser", () => {

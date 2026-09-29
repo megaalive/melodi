@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260929.8">
+    <meta name="melodi-build" content="20260929.9">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260929.8">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.8"></script>
-    <script type="module" src="./src/app.js?v=20260929.8"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260929.9">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.9"></script>
+    <script type="module" src="./src/app.js?v=20260929.9"></script>
   </head>
   <body>
     <header class="page-header">
@@ -143,6 +143,7 @@
               <option value="combined" data-copy="viewCombinedOption"></option>
               <option value="lyrics" data-copy="viewLyricsOption"></option>
               <option value="guitar" data-copy="viewGuitarOption"></option>
+              <option value="drums" data-copy="viewDrumsOption"></option>
             </select>
           </label>
         </div>
@@ -368,6 +369,30 @@
               <svg id="guitar" role="img"></svg>
             </div>
             <p id="guitar-legend" class="muted" data-entity="guitar-positions"></p>
+          </section>
+
+          <section id="drums-section" class="workspace-pane drums-pane" data-view-region="drums" aria-labelledby="drums-heading">
+            <div class="pane-heading compact-pane-heading drums-pane-heading">
+              <div>
+                <h2 id="drums-heading" data-copy="drumsHeading"></h2>
+                <p data-copy="drumsHelp"></p>
+              </div>
+              <div class="drums-toolbar">
+                <span id="drums-kit-label" class="muted" data-copy="drumsKitLabel"></span>
+                <label class="drums-snap-control">
+                  <span data-copy="snapLabel"></span>
+                  <select id="drums-snap-select" data-action="set-snap" data-aria-copy="snapLabel">
+                    <option value="1/4">1/4</option>
+                    <option value="1/8">1/8</option>
+                    <option value="1/16">1/16</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <p id="drums-status" class="muted drums-status" role="status" aria-live="polite"></p>
+            <div id="drum-grid-scroll" class="drum-grid-scroll" role="region" tabindex="0" data-aria-copy="drumsRegionLabel">
+              <div id="drum-grid" class="drum-grid" data-entity="drum-grid"></div>
+            </div>
           </section>
 
           <section id="lyrics-section" class="workspace-pane" data-view-region="lyrics" aria-labelledby="lyrics-heading">
