@@ -10,7 +10,7 @@ import { createScoreView } from "./ui/score.js?v=20260929.9";
 import { createGuitarView } from "./ui/guitar-view.js?v=20260929.9";
 import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.9";
 import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.9";
-import { createDrumPadsView } from "./ui/drum-pads.js?v=20260929.10";
+import { createDrumPadsView, drumPadInput } from "./ui/drum-pads.js?v=20260929.10";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
@@ -1642,8 +1642,9 @@ drumGridView = createDrumGridView(byId("drum-grid"), {
 });
 drumPadsView = createDrumPadsView(byId("drum-pads"), byId("drum-pads-position"), {
   translate,
-  onTrigger(input) {
-    run(() => commands.addPercussionHit(input), "drumsHitAdded");
+  onTrigger(pieceId, velocity) {
+    const playback = normalizeRuntimeState(commands.getState()).playback;
+    run(() => commands.addPercussionHit(drumPadInput(pieceId, playback, velocity)), "drumsHitAdded");
   }
 });
 drumPadsView.updatePlayback(normalizeRuntimeState(commands.getState()).playback);
