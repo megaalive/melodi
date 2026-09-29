@@ -324,7 +324,8 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.match(app, /drumGridView\?\.updatePlayback/);
   assert.match(app, /renderDrums\(commands\.getSong\(\), normalized\)/);
   assert.match(app, /drumsSnap\.value = state\.editor\.snap/);
-  assert.match(app, /target\.value === "drums"[\s\S]*commands\.setTool\("select"\)/);
+  const commandsSource = readFileSync(resolve("src/core/commands.js"), "utf8");
+  assert.match(commandsSource, /mode === "drums"\) tool = "select"/);
   assert.match(runtime, /drums:\s*\["drums"\]/);
   assert.doesNotMatch(runtime, /expression:\s*\[[^\]]*"drums"/);
 
