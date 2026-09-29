@@ -11,6 +11,7 @@ import { createGuitarView } from "./ui/guitar-view.js?v=20260929.10";
 import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.10";
 import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.10";
 import { createDrumPadsView, drumPadInput } from "./ui/drum-pads.js?v=20260929.10";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.11";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
@@ -1634,10 +1635,15 @@ guitarTabView = createGuitarTabView(byId("guitar-tab"), byId("guitar-tab-scroll"
 drumGridView = createDrumGridView(byId("drum-grid"), {
   translate,
   onAddHit(input) {
-    run(() => commands.addPercussionHit(input), "drumsHitAdded");
+    return run(() => commands.addPercussionHit(input), "drumsHitAdded");
+  },
+  onSelectHit(selection) {
+    const form = byId("percussion-expression-form");
+    if (form) form.dataset.pending = "false";
+    renderPercussionExpression(commands.getSong(), selection);
   },
   onDeleteHit(trackId, hitId) {
-    run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
+    return run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
   }
 });
 drumPadsView = createDrumPadsView(byId("drum-pads"), byId("drum-pads-position"), {
@@ -1734,10 +1740,52 @@ function renderGuitar(state) {
   renderGuitarStatus(state, result);
 }
 
+function renderPercussionExpression(song, selection = drumGridView?.getSelectedHit?.() ?? null) {
+  const form = byId("percussion-expression-form");
+  if (!form) return;
+  const expression = resolvePercussionExpression(song, selection);
+  form.hidden = !expression;
+  if (!expression) {
+    form.dataset.trackId = "";
+    form.dataset.hitId = "";
+    return;
+  }
+
+  form.dataset.trackId = expression.trackId;
+  form.dataset.hitId = expression.hitId;
+  byId("percussion-expression-summary").textContent = translate("percussionExpressionSummary", {
+    piece: expression.pieceName,
+    tick: expression.startTick,
+    velocity: expression.velocity
+  });
+  byId("percussion-choke-value").textContent = expression.chokeGroup
+    ? translate("percussionChokeGroup", { group: expression.chokeGroup })
+    : translate("percussionChokeNone");
+  byId("percussion-start-tick").value = String(expression.startTick);
+  byId("percussion-velocity").value = String(expression.velocity);
+  byId("percussion-pan").value = String(Math.round(expression.pan * 100));
+  byId("percussion-tuning").value = String(expression.tuning);
+
+  const articulation = byId("percussion-articulation");
+  let option = [...articulation.options].find((candidate) => candidate.value === expression.articulation);
+  if (!option) {
+    option = document.createElement("option");
+    option.value = expression.articulation;
+    option.textContent = expression.articulation;
+    option.dataset.transientArticulation = "true";
+    articulation.append(option);
+  }
+  for (const candidate of [...articulation.options]) {
+    if (candidate.dataset.transientArticulation === "true" && candidate !== option) candidate.remove();
+  }
+  articulation.value = expression.articulation;
+}
+
 function renderDrums(song, state) {
   if (state.view.mode !== "drums" || !drumGridView) return;
   drumPadsView?.refreshLabels();
   const projection = drumGridView.render(song, state);
+  renderPercussionExpression(song);
   const hitCount = projection.track?.events.length ?? 0;
   byId("drums-snap-select").value = projection.snap;
   byId("drums-status").textContent = translate(
@@ -1851,6 +1899,16 @@ document.addEventListener("submit", (event) => {
       startTick: Number(data.get(`start-${form.dataset.noteId}`)),
       durationTicks: Number(data.get(`duration-${form.dataset.noteId}`))
     }), "noteSaved");
+  } else if (action === "update-percussion-hit") {
+    const trackId = form.dataset.trackId;
+    const hitId = form.dataset.hitId;
+    result = run(() => commands.updatePercussionHit(trackId, hitId, percussionExpressionPatch({
+      startTick: data.get("startTick"),
+      velocity: data.get("velocity"),
+      pan: data.get("pan"),
+      tuning: data.get("tuning"),
+      articulation: data.get("articulation")
+    })), "percussionHitUpdated");
   } else if (action === "set-lyrics") {
     result = run(() => commands.setLyrics(data.get("rawText")), "lyricsSaved");
   } else if (action === "select-range") {
@@ -1959,7 +2017,13 @@ document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
   const state = commands.getState();
-  if (target.dataset.action === "toggle-panel") {
+  if (target.dataset.action === "delete-selected-percussion-hit") {
+    const selection = drumGridView?.getSelectedHit?.();
+    if (selection) {
+      run(() => commands.deletePercussionHit(selection.trackId, selection.hitId), "drumsHitDeleted");
+      drumGridView?.selectHit(null, null);
+    }
+  } else if (target.dataset.action === "toggle-panel") {
     togglePanelDisclosure(target.dataset.panelCollapse);
   } else if (target.dataset.action === "set-guitar-layout") {
     const layout = target.dataset.guitarLayout === "fretboard" ? "fretboard" : "tab";
