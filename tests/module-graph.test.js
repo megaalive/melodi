@@ -84,6 +84,7 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
 
   const app = readFileSync(resolve("src/app.js"), "utf8");
   assert.ok(app.includes("./core/model.js?v=" + build));
+  assert.ok(app.includes("./core/commands.js?v=" + build));
   assert.ok(app.includes("./core/runtime-state.js?v=" + build));
   assert.ok(app.includes("./i18n/messages.js?v=" + build));
   assert.ok(app.includes("./ui/score.js?v=" + build));
@@ -202,6 +203,39 @@ test("editor note dikonsolidasikan ke Expression tanpa popup kanan atas", () => 
 
   assert.doesNotMatch(app, /note-expression-details|note-expression-fields/);
   assert.match(app, /grid\.className = "form-grid expression-note-fields"/);
+});
+
+test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-benar ditangani", () => {
+  const html = readFileSync(resolve("index.html"), "utf8");
+  const app = readFileSync(resolve("src/app.js"), "utf8");
+  const score = readFileSync(resolve("src/ui/score.js"), "utf8");
+  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
+
+  const sectionStart = html.indexOf('<section id="score-section"');
+  const sectionEnd = html.indexOf("</section>", sectionStart);
+  const section = html.slice(sectionStart, sectionEnd);
+  assert.match(section, /data-score-layout="flow"/);
+  assert.match(section, /data-action="set-score-layout" data-score-layout="flow"/);
+  assert.match(section, /data-action="set-score-layout" data-score-layout="page"/);
+  assert.match(section, /id="score-sticky-context"/);
+
+  assert.match(preferences, /scoreLayout:\s*"flow"/);
+  assert.match(app, /scoreView\?\.setLayout\(layout\)/);
+  assert.match(app, /commands\.updateNotes\(updates/);
+  assert.match(app, /commands\.deleteNotes\(noteIds/);
+
+  assert.match(score, /onTransposeNotes\(selectedIds/);
+  assert.match(score, /onNudgeNotes\(selectedIds/);
+  assert.match(score, /onDeleteNotes\(selectedIds/);
+  assert.match(score, /event\.key === "ArrowUp"/);
+  assert.match(score, /event\.altKey[\s\S]*event\.key === "ArrowLeft"/);
+  assert.match(score, /event\.key === "Delete"/);
+  assert.doesNotMatch(score, /Control\+D|Meta\+D/);
+
+  assert.match(css, /score-scroll\[data-layout="flow"\]/);
+  assert.match(css, /score-pane\[data-score-layout="page"\] \.score-sticky-context/);
+  assert.match(css, /score-note\[data-selected="true"\]/);
 });
 
 test("UI tidak memakai dialog blocking bawaan browser", () => {

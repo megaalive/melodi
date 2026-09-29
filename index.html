@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260929.5">
+    <meta name="melodi-build" content="20260929.6">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260929.5">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.5"></script>
-    <script type="module" src="./src/app.js?v=20260929.5"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260929.6">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260929.6"></script>
+    <script type="module" src="./src/app.js?v=20260929.6"></script>
   </head>
   <body>
     <header class="page-header">
@@ -211,16 +211,30 @@
             </div>
           </section>
 
-          <section id="score-section" class="workspace-pane" data-view-region="score" aria-labelledby="score-heading">
-            <div class="pane-heading">
-              <div>
-                <h2 id="score-heading" data-copy="scoreHeading"></h2>
-                <p data-copy="scoreHelp"></p>
+          <section id="score-section" class="workspace-pane score-pane" data-view-region="score" data-score-layout="flow" aria-labelledby="score-heading">
+            <div class="pane-heading compact-pane-heading score-pane-heading">
+              <div class="score-heading-copy">
+                <div class="pane-title-row">
+                  <h2 id="score-heading" data-copy="scoreHeading"></h2>
+                  <p id="score-selection-summary" class="collapsed-panel-summary"></p>
+                </div>
+                <p class="score-help" data-copy="scoreHelp"></p>
               </div>
-              <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
+              <div class="score-local-toolbar">
+                <div class="score-layout-group" role="group" data-aria-copy="scoreLayoutGroupLabel">
+                  <button id="score-layout-flow" type="button" data-action="set-score-layout" data-score-layout="flow" data-copy="scoreFlowButton" data-aria-copy="scoreFlowAria" aria-pressed="true"></button>
+                  <button id="score-layout-page" type="button" data-action="set-score-layout" data-score-layout="page" data-copy="scorePageButton" data-aria-copy="scorePageAria" aria-pressed="false"></button>
+                </div>
+                <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
+              </div>
             </div>
-            <div id="score-scroll" class="score-scroll" role="region" tabindex="0" aria-label="Score">
-              <div id="score" data-renderer="abcjs"></div>
+            <div id="score-scroll" class="score-scroll" role="region" tabindex="0" data-aria-copy="scoreRegionLabel">
+              <div id="score-sticky-context" class="score-sticky-context" aria-hidden="true">
+                <span class="score-context-clef">𝄞</span>
+                <span id="score-context-key"></span>
+                <span id="score-context-meter"></span>
+              </div>
+              <div id="score" data-renderer="abcjs" data-layout="flow"></div>
             </div>
             <div id="score-fallback" class="score-fallback" hidden></div>
           </section>

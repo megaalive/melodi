@@ -493,6 +493,23 @@ test("deleting a note prunes its phrase and lyric references atomically", () => 
   assert.deepEqual(song.lyrics.syllables[0].noteIds, []);
 });
 
+test("multi-note delete commits once and prunes phrase, lyric, and selected IDs atomically", () => {
+  let changes = 0;
+  const commands = createCommands(fixture(), { onChange: () => { changes += 1; } });
+  commands.selectNotes(["note-1", "note-2", "note-4"]);
+  changes = 0;
+  const deleted = commands.deleteNotes(["note-1", "note-2"]);
+  assert.deepEqual(deleted, ["note-1", "note-2"]);
+  assert.equal(changes, 1);
+  assert.deepEqual(commands.getSong().notes.map((note) => note.id), ["note-3", "note-4"]);
+  assert.deepEqual(commands.getSong().phrases[0].noteIds, ["note-3", "note-4"]);
+  assert.deepEqual(commands.getSong().lyrics.syllables[1].noteIds, []);
+  assert.deepEqual(commands.getSelectedNoteIds(), ["note-4"]);
+  assert.equal(commands.canUndo(), true);
+  commands.undo();
+  assert.deepEqual(commands.getSong().notes.map((note) => note.id), ["note-1", "note-2", "note-3", "note-4"]);
+});
+
 test("selection uses a half-open range and can be read through commands", () => {
   const commands = createCommands(fixture());
   assert.deepEqual(commands.selectRange(480, 960), { startTick: 480, endTick: 960, noteIds: ["note-2"] });

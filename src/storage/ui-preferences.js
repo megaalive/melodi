@@ -2,7 +2,8 @@ const STORAGE_KEY = "melodi.ui-preferences";
 
 export const DEFAULT_UI_PREFERENCES = Object.freeze({
   pianoRollCollapsed: false,
-  expressionCollapsed: false
+  expressionCollapsed: false,
+  scoreLayout: "flow"
 });
 
 export function normalizeUiPreferences(value) {
@@ -12,7 +13,8 @@ export function normalizeUiPreferences(value) {
       : DEFAULT_UI_PREFERENCES.pianoRollCollapsed,
     expressionCollapsed: typeof value?.expressionCollapsed === "boolean"
       ? value.expressionCollapsed
-      : DEFAULT_UI_PREFERENCES.expressionCollapsed
+      : DEFAULT_UI_PREFERENCES.expressionCollapsed,
+    scoreLayout: value?.scoreLayout === "page" ? "page" : DEFAULT_UI_PREFERENCES.scoreLayout
   };
 }
 

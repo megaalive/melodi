@@ -365,6 +365,39 @@ export function createCommands(initialSong, {
     });
   }
 
+  function deleteNoteIds(noteIds, { actor = "user" } = {}) {
+    validateActor(actor);
+    if (!Array.isArray(noteIds) || noteIds.length === 0) fail("invalid-note-selection");
+    const seen = new Set();
+    const deleted = new Set();
+    for (const noteId of noteIds) {
+      if (typeof noteId !== "string" || seen.has(noteId)) fail(seen.has(noteId) ? "duplicate-reference" : "note-not-found");
+      seen.add(noteId);
+      const note = song.notes.find((item) => item.id === noteId);
+      if (!note) fail("note-not-found");
+      if (actor === "generator" && (note.anchor || note.locked)) fail("protected-note");
+      deleted.add(noteId);
+    }
+
+    commit((candidate) => {
+      candidate.notes = candidate.notes.filter((item) => !deleted.has(item.id));
+      candidate.phrases = candidate.phrases.map((phrase) => ({
+        ...phrase,
+        noteIds: phrase.noteIds.filter((id) => !deleted.has(id))
+      }));
+      candidate.lyrics.syllables = candidate.lyrics.syllables.map((syllable) => ({
+        ...syllable,
+        noteIds: syllable.noteIds.filter((id) => !deleted.has(id))
+      }));
+    }, () => {
+      if (selection) selection = { ...selection, noteIds: selection.noteIds.filter((id) => !deleted.has(id)) };
+      selectedNoteIds = selectedNoteIds.filter((id) => !deleted.has(id));
+    });
+    const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+    updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
+    return [...noteIds];
+  }
+
   const commands = {
     getSong() {
       return cloneData(song);
@@ -724,27 +757,11 @@ export function createCommands(initialSong, {
       updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(song.notes.find((item) => item.id === noteId));
     },
-    deleteNote(noteId, { actor = "user" } = {}) {
-      validateActor(actor);
-      const note = song.notes.find((item) => item.id === noteId);
-      if (!note) fail("note-not-found");
-      if (actor === "generator" && (note.anchor || note.locked)) fail("protected-note");
-      commit((candidate) => {
-        candidate.notes = candidate.notes.filter((item) => item.id !== noteId);
-        candidate.phrases = candidate.phrases.map((phrase) => ({
-          ...phrase,
-          noteIds: phrase.noteIds.filter((id) => id !== noteId)
-        }));
-        candidate.lyrics.syllables = candidate.lyrics.syllables.map((syllable) => ({
-          ...syllable,
-          noteIds: syllable.noteIds.filter((id) => id !== noteId)
-        }));
-      }, () => {
-        if (selection) selection = { ...selection, noteIds: selection.noteIds.filter((id) => id !== noteId) };
-        selectedNoteIds = selectedNoteIds.filter((id) => id !== noteId);
-      });
-      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
-      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
+    deleteNotes(noteIds, options = {}) {
+      return cloneData(deleteNoteIds(noteIds, options));
+    },
+    deleteNote(noteId, options = {}) {
+      deleteNoteIds([noteId], options);
       return true;
     },
     setLyrics(rawText) {

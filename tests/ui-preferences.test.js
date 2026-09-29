@@ -18,20 +18,23 @@ function memoryStorage(initial = {}) {
 
 test("panel disclosure preferences default expanded and normalize fields independently", () => {
   assert.deepEqual(normalizeUiPreferences(), DEFAULT_UI_PREFERENCES);
-  assert.deepEqual(normalizeUiPreferences({ pianoRollCollapsed: true, expressionCollapsed: "yes" }), {
+  assert.deepEqual(normalizeUiPreferences({ pianoRollCollapsed: true, expressionCollapsed: "yes", scoreLayout: "page" }), {
     pianoRollCollapsed: true,
-    expressionCollapsed: false
+    expressionCollapsed: false,
+    scoreLayout: "page"
   });
+  assert.equal(normalizeUiPreferences({ scoreLayout: "unknown" }).scoreLayout, "flow");
 });
 
 test("panel disclosure preferences persist independently without storing song data", () => {
   const storage = memoryStorage();
-  assert.equal(writeUiPreferences(storage, { pianoRollCollapsed: true, expressionCollapsed: false }), true);
-  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false });
+  assert.equal(writeUiPreferences(storage, { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page" }), true);
+  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page" });
   assert.equal(storage.values.size, 1);
   assert.deepEqual(JSON.parse(storage.values.get("melodi.ui-preferences")), {
     pianoRollCollapsed: true,
-    expressionCollapsed: false
+    expressionCollapsed: false,
+    scoreLayout: "page"
   });
 });
 
