@@ -89,6 +89,8 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./i18n/messages.js?v=" + build));
   assert.ok(app.includes("./ui/score.js?v=" + build));
   assert.ok(app.includes("./storage/ui-preferences.js?v=" + build));
+  assert.ok(app.includes("./ui/guitar-view.js?v=" + build));
+  assert.ok(app.includes("./ui/guitar-tab.js?v=" + build));
 });
 
 test("Piano Roll dan Expression punya disclosure independen yang dapat diakses", () => {
