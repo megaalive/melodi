@@ -1,24 +1,23 @@
-import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.12";
-import { createCommands } from "./core/commands.js?v=20260929.12";
+import { PPQ, createInitialSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260929.13";
+import { createCommands } from "./core/commands.js?v=20260929.13";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.12";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.12";
-import { createAudioPlayer } from "./audio/player.js?v=20260929.12";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260929.13";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260929.13";
+import { createAudioPlayer } from "./audio/player.js?v=20260929.13";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.12";
-import { createScoreView } from "./ui/score.js?v=20260929.12";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260929.12";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.12";
-import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.12";
-import { createDrumPadsView, drumPadInput } from "./ui/drum-pads.js?v=20260929.12";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.12";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260929.13";
+import { createScoreView } from "./ui/score.js?v=20260929.13";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260929.13";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260929.13";
+import { createDrumGridView } from "./ui/drum-grid.js?v=20260929.13";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260929.13";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260929.12";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.12";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.12";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.12";
+import { createDraftPersistence } from "./storage/draft.js?v=20260929.13";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260929.13";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260929.13";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20260929.13";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -28,7 +27,6 @@ let scoreView;
 let guitarView;
 let guitarTabView;
 let drumGridView;
-let drumPadsView;
 let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
@@ -929,6 +927,8 @@ function renderEditorControls() {
     button.dataset.active = String(active);
   }
   byId("piano-roll-scroll").dataset.tool = state.editor.tool;
+  const drumGrid = byId("drum-grid");
+  if (drumGrid) drumGrid.dataset.tool = state.editor.tool;
   byId("paste-notes").disabled = !state.editor.canPaste;
   byId("copy-selection").disabled = state.selectedNoteIds.length === 0;
   byId("clear-selection").disabled = state.selectedNoteIds.length === 0 && !state.selection;
@@ -1217,7 +1217,6 @@ function renderPlayback() {
   drumGridView?.updatePlayback(playback, {
     follow: follow && state.view.mode === "drums"
   });
-  drumPadsView?.updatePlayback(playback);
   if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
   const activeSyllableIds = new Set(playback.currentSyllableIds);
   for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
@@ -1646,14 +1645,6 @@ drumGridView = createDrumGridView(byId("drum-grid"), {
     return run(() => commands.deletePercussionHit(trackId, hitId), "drumsHitDeleted");
   }
 });
-drumPadsView = createDrumPadsView(byId("drum-pads"), byId("drum-pads-position"), {
-  translate,
-  onTrigger(pieceId, velocity) {
-    const playback = normalizeRuntimeState(commands.getState()).playback;
-    run(() => commands.addPercussionHit(drumPadInput(pieceId, playback, velocity)), "drumsHitAdded");
-  }
-});
-drumPadsView.updatePlayback(normalizeRuntimeState(commands.getState()).playback);
 bendEditor = createBendCurveEditor({
   root: byId("bend-editor-details"),
   rangeSelect: byId("bend-range"),
@@ -1740,6 +1731,21 @@ function renderGuitar(state) {
   renderGuitarStatus(state, result);
 }
 
+function formatPercussionPan(percent) {
+  const value = Math.round(Number(percent) || 0);
+  if (value === 0) return translate("percussionPanCenter");
+  return translate(value < 0 ? "percussionPanLeft" : "percussionPanRight", { value: Math.abs(value) });
+}
+
+function renderPercussionRangeValues() {
+  const velocity = byId("percussion-velocity");
+  const pan = byId("percussion-pan");
+  const velocityValue = byId("percussion-velocity-value");
+  const panValue = byId("percussion-pan-value");
+  if (velocity && velocityValue) velocityValue.textContent = String(velocity.value);
+  if (pan && panValue) panValue.textContent = formatPercussionPan(pan.value);
+}
+
 function renderPercussionExpression(song, selection = drumGridView?.getSelectedHit?.() ?? null) {
   const form = byId("percussion-expression-form");
   if (!form) return;
@@ -1765,6 +1771,7 @@ function renderPercussionExpression(song, selection = drumGridView?.getSelectedH
   byId("percussion-velocity").value = String(expression.velocity);
   byId("percussion-pan").value = String(Math.round(expression.pan * 100));
   byId("percussion-tuning").value = String(expression.tuning);
+  renderPercussionRangeValues();
 
   const articulation = byId("percussion-articulation");
   let option = [...articulation.options].find((candidate) => candidate.value === expression.articulation);
@@ -1783,7 +1790,6 @@ function renderPercussionExpression(song, selection = drumGridView?.getSelectedH
 
 function renderDrums(song, state) {
   if (state.view.mode !== "drums" || !drumGridView) return;
-  drumPadsView?.refreshLabels();
   const projection = drumGridView.render(song, state);
   renderPercussionExpression(song);
   const hitCount = projection.track?.events.length ?? 0;
@@ -1954,6 +1960,9 @@ document.addEventListener("submit", (event) => {
 
 document.addEventListener("input", (event) => {
   const target = event.target;
+  if (target instanceof HTMLInputElement && ["percussion-velocity", "percussion-pan"].includes(target.id)) {
+    renderPercussionRangeValues();
+  }
   if (target instanceof HTMLInputElement && ["checkbox", "radio"].includes(target.type)) return;
   if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) && target.form) {
     target.form.dataset.pending = "true";

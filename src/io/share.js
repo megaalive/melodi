@@ -1,4 +1,4 @@
-import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260929.12";
+import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260929.13";
 
 export const SHARE_FORMAT = "melodi-share";
 export const SHARE_VERSION = 4;

@@ -1,4 +1,4 @@
-import { percussionChokeGroup } from "../instruments/percussion.js?v=20260929.12";
+import { percussionChokeGroup } from "../instruments/percussion.js?v=20260929.13";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));

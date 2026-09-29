@@ -1,6 +1,6 @@
-import { PPQ } from "../core/model.js?v=20260929.12";
-import { SNAP_TICKS } from "../core/editor.js?v=20260929.12";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.12";
+import { PPQ } from "../core/model.js?v=20260929.13";
+import { SNAP_TICKS } from "../core/editor.js?v=20260929.13";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260929.13";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -80,6 +80,11 @@ export function nextDrumCellHit(hits, selectedHitId = null) {
     : hits[0];
 }
 
+export function drumCellIntent(tool, hasHit) {
+  if (hasHit) return "select";
+  return tool === "draw" ? "add" : "clear";
+}
+
 function cellKey(pieceId, tick) {
   return `${pieceId}@${tick}`;
 }
@@ -99,6 +104,7 @@ export function createDrumGridView(root, {
 } = {}) {
   let currentProjection = null;
   let currentStep = null;
+  let currentTool = "select";
   let selectedTrackId = null;
   let selectedHitId = null;
 
@@ -134,8 +140,13 @@ export function createDrumGridView(root, {
       ? event.target.closest('[data-entity="drum-cell"]')
       : null;
     if (!button || !root.contains(button)) return;
-    if (button.dataset.hit === "true") {
+    const intent = drumCellIntent(currentTool, button.dataset.hit === "true");
+    if (intent === "select") {
       selectCellHit(button);
+      return;
+    }
+    if (intent === "clear") {
+      selectHit(null, null);
       return;
     }
     const created = onAddHit({
@@ -169,6 +180,8 @@ export function createDrumGridView(root, {
   function render(song, state = {}) {
     const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
     currentProjection = projection;
+    currentTool = state.editor?.tool === "draw" ? "draw" : "select";
+    root.dataset.tool = currentTool;
     currentStep = null;
     if (selectedHitId) {
       const stillExists = projection.track?.events.some((hit) => hit.id === selectedHitId) ?? false;
@@ -225,7 +238,7 @@ export function createDrumGridView(root, {
               velocity: hit.velocity,
               count: hits.length
             })
-          : translate("drumsEmptyCellLabel", { piece: piece.name, tick }));
+          : translate(currentTool === "draw" ? "drumsEmptyCellDrawLabel" : "drumsEmptyCellSelectLabel", { piece: piece.name, tick }));
         if (hit) {
           button.dataset.hitId = hit.hitId;
           button.dataset.hitIds = hits.map((candidate) => candidate.hitId).join(",");
