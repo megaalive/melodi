@@ -86,7 +86,8 @@ export function createAgentSnapshot(song, selection, playback = {
       lyrics: cloneData(song.lyrics),
       sections: cloneData(song.sections),
       phrases: cloneData(song.phrases),
-      chords: cloneData(song.chords)
+      chords: cloneData(song.chords),
+      tracks: cloneData(song.tracks)
     },
     playback: {
       status: playback.status,
