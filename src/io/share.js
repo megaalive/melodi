@@ -1,8 +1,8 @@
 import { PPQ, createId, createSong, MelodiError } from "../core/model.js";
 
 export const SHARE_FORMAT = "melodi-share";
-export const SHARE_VERSION = 3;
-const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3]);
+export const SHARE_VERSION = 4;
+const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4]);
 export const SHARE_HASH_KEY = "m";
 export const MAX_SHARE_COMPRESSED_BYTES = 64 * 1024;
 export const MAX_SHARE_DECODED_BYTES = 512 * 1024;
@@ -103,6 +103,24 @@ function encodeNote(note) {
   return tuple;
 }
 
+function encodePercussionHit(hit) {
+  const tuple = [hit.pieceId, hit.startTick, hit.velocity, hit.articulation];
+  if (Object.hasOwn(hit, "durationTicks") || Object.hasOwn(hit, "pan") || Object.hasOwn(hit, "tuning")) {
+    tuple.push(hit.durationTicks ?? null, hit.pan ?? null, hit.tuning ?? null);
+  }
+  return tuple;
+}
+
+function decodePercussionHit(tuple, idFactory) {
+  if (!Array.isArray(tuple) || tuple.length < 4 || tuple.length > 7) fail("malformed-share");
+  const [pieceId, startTick, velocity, articulation, durationTicks, pan, tuning] = tuple;
+  const hit = { id: idFactory(), pieceId, startTick, velocity, articulation };
+  if (durationTicks !== undefined && durationTicks !== null) hit.durationTicks = durationTicks;
+  if (pan !== undefined && pan !== null) hit.pan = pan;
+  if (tuning !== undefined && tuning !== null) hit.tuning = tuning;
+  return hit;
+}
+
 function decodeNote(tuple, idFactory, version = SHARE_VERSION) {
   const maximumLength = version >= 3 ? 7 : version >= 2 ? 6 : 5;
   if (!Array.isArray(tuple) || tuple.length < 4 || tuple.length > maximumLength) fail("malformed-share");
@@ -181,7 +199,16 @@ export function toPortableProject(song) {
             chord.startTick,
             chord.durationTicks
           ])
-        }
+        },
+        ...canonical.tracks
+          .filter((track) => track.kind === "percussion")
+          .map((track, index) => ({
+            id: `percussion-${index + 1}`,
+            kind: "percussion",
+            role: track.role,
+            kit: track.kitId,
+            events: track.events.map(encodePercussionHit)
+          }))
       ]
     }
   };
@@ -201,9 +228,8 @@ export function fromPortableProject(envelope, idFactory = createId) {
   if (ppq !== PPQ) fail("unsupported-share");
   const [key, scaleName, intervals] = project.tonality;
 
-  // Format share sengaja track-oriented sejak v1. Decoder sekarang mengambil
-  // track lead + harmony yang sudah dipahami dan mengabaikan track masa depan
-  // (guitar, bass, drums, automation, dst.) sampai canonical model mendukungnya.
+  // Format share sudah track-oriented sejak v1. V4 mulai membawa percussion
+  // tracks; kind masa depan tetap diabaikan sampai canonical model memahaminya.
   const melodyTrack = project.tracks.find((track) => isRecord(track)
     && track.kind === "notes" && track.role === "lead");
   if (!melodyTrack || !Array.isArray(melodyTrack.events)) fail("malformed-share");
@@ -252,6 +278,23 @@ export function fromPortableProject(envelope, idFactory = createId) {
     };
   });
 
+  const tracks = envelope.version >= 4
+    ? project.tracks
+        .filter((track) => isRecord(track) && track.kind === "percussion")
+        .map((track) => {
+          if (typeof track.role !== "string" || typeof track.kit !== "string" || !Array.isArray(track.events)) {
+            fail("malformed-share");
+          }
+          return {
+            id: idFactory(),
+            kind: "percussion",
+            role: track.role,
+            kitId: track.kit,
+            events: track.events.map((event) => decodePercussionHit(event, idFactory))
+          };
+        })
+    : [];
+
   return createSong({
     id: idFactory(),
     title: project.title,
@@ -262,7 +305,8 @@ export function fromPortableProject(envelope, idFactory = createId) {
     phrases,
     notes,
     lyrics: { rawText: lyricData[0], syllables },
-    chords
+    chords,
+    tracks
   });
 }
 
