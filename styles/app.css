@@ -4259,6 +4259,24 @@ body[data-view-mode="drums"] .workspace-sidebar {
 
 /* Inspector harmoni menggunakan kontrol eksplisit dan tetap ringkas di mobile. */
 .harmony-card { min-width: 0; }
+.harmony-timeline-tools { min-width: 0; padding: .5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
+.harmony-timeline-tools form { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.harmony-timeline-tools #harmony-location { font-weight: 650; margin-right: auto; }
+.harmony-timeline-tools label { display: flex; gap: .4rem; align-items: center; }
+.harmony-timeline-tools button, .harmony-timeline-tools select { min-height: 44px; }
+.harmony-timeline-tools #harmony-candidates { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; margin: .4rem 0; list-style: none; }
+.harmony-timeline-tools #harmony-candidates li { flex: 1 1 150px; min-width: 0; max-width: 250px; border: 1px solid var(--border); padding: .4rem; border-radius: .4rem; }
+.harmony-timeline-tools #harmony-candidates p { font-size: .75rem; margin: .25rem 0; }
+.harmony-timeline-tools #harmony-status { font-size: .8rem; margin: .25rem 0; }
+#piano-roll [data-entity="chord"], #piano-roll [data-entity="harmony-bar"] { cursor: pointer; touch-action: pan-y; }
+#piano-roll [data-entity="chord"][data-current="true"] [data-chord-shape] { stroke: var(--highlight-current-ink); stroke-width: 3; }
+#piano-roll [data-entity="chord"]:focus-visible [data-chord-shape], #piano-roll [data-entity="harmony-bar"]:focus-visible rect { stroke: var(--focus); stroke-width: 3; }
+#piano-roll [data-entity="chord"][data-locked="true"] { cursor: default; }
+.harmony-list [data-selected="true"] { border-left: 3px solid var(--accent); }
+.harmony-list [data-current="true"] { background: var(--highlight-current); color: var(--highlight-current-ink); }
+#chord-context-menu { position: fixed; z-index: 100; min-width: 180px; max-width: calc(100vw - 16px); padding: .35rem; border: 1px solid var(--border-strong); border-radius: .5rem; background: var(--surface); box-shadow: 0 5px 20px #0003; }
+#chord-context-menu:not([hidden]) { display: grid; gap: .2rem; }
+#chord-context-menu button { min-height: 44px; text-align: left; }
 .sketch-controls { display: grid; gap: .5rem; margin: .6rem 0; min-width: 0; }
 .sketch-controls fieldset { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .5rem; min-width: 0; margin: 0; padding: .5rem; border: 1px solid var(--border); border-radius: .5rem; }
 .sketch-controls legend { padding: 0 .25rem; font-weight: 600; }

@@ -47,7 +47,7 @@ test("opening a Browser song loads canonical data and resets editor runtime", as
   assert.equal(result.ok, true);
   assert.equal(commands.getSong().title, "Saved melody");
   assert.deepEqual(commands.getSelectedNoteIds(), []);
-  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", chordSnap: "bar", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
   assert.deepEqual(commands.getState().view, { mode: "piano-roll", follow: true });
   assert.equal(commands.canUndo(), false);
 });

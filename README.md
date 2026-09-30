@@ -216,9 +216,9 @@ api.addChord({ rootPitchClass: 0, quality: "minor", startTick: 0, durationTicks:
 api.clearHarmonySuggestions();
 ```
 
-Inspector menyediakan form tick, tombol pilih/terima/bersihkan, dan form root,
-quality, start, duration tanpa koordinat screenshot atau drag. Seleksi note/range
-bisa digunakan sebagai konteks. Semua edit memakai command canonical undo/redo.
+Lane Chord di atas pitch Piano Roll menjadi editor utama: Pilih untuk memilih,
+Gambar untuk membuat blok. Snap chord menyediakan birama, setengah birama, dan beat.
+Geser blok terpilih untuk memindahkan, atau handle kanan untuk mengubah durasi; satu gesture satu Undo. Klik kanan/tekan lama membuka Ubah, Kunci, Duplikat, dan Hapus. Root/kualitas memakai form ringkas; range ditampilkan sebagai birama. Lane tetap terlihat saat kosong, dan daftar samping memuat semua chord secara kronologis. Seleksi note/range atau birama yang diklik menjadi konteks usulan. Default mengikuti meter (6/8: satu birama 1440 tick internal). Agent tetap memakai addChord/updateChord dan suggestHarmony dengan tick; selectChord, clearChordSelection, setHarmonyRange, dan setChordSnap tersedia sebagai state runtime, tidak diserialisasi. Semua edit memakai command canonical undo/redo.
 
 
 Skor deterministik memakai durasi overlap dikali bobot onset: awal birama 2,

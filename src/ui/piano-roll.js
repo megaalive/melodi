@@ -1,7 +1,9 @@
 import { midiToPitch, PPQ } from "../core/model.js";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20260930.27";
+import { centeredScrollLeft } from "./roll-follow.js?v=20260930.28";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20260930.28";
+import { harmonyChordSymbol } from "./harmony.js?v=20260930.28";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -9,7 +11,9 @@ export const MAX_ROLL_BARS = 64;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const PIANO_ROW_HEIGHT = 24;
-const PIANO_TOP = 34;
+export const PIANO_RULER_HEIGHT = 34;
+export const HARMONY_LANE_HEIGHT = 44;
+const PIANO_TOP = PIANO_RULER_HEIGHT + HARMONY_LANE_HEIGHT;
 const PIANO_LABEL_WIDTH = 56;
 const PIXELS_PER_QUARTER = 80;
 const DRAG_TARGET_SIZE = 24;
@@ -146,6 +150,24 @@ export function rulerSeekTick(x, geometry, snap = "1/8") {
   return Math.max(geometry.startTick, Math.min(geometry.endTick, tick));
 }
 
+export function chordSnapTicks(geometry, snap = "bar") {
+  return snap === "beat" ? geometry.beatTicks : snap === "half-bar" ? geometry.barTicks / 2 : geometry.barTicks;
+}
+
+export function chordGesturePatch(chord, deltaX, geometry, kind, snap = "bar") {
+  const unit = chordSnapTicks(geometry, snap);
+  const delta = Math.round(deltaX * geometry.ppq / geometry.pixelsPerQuarter / unit) * unit;
+  return kind === "resize" ? { durationTicks: Math.max(unit, chord.durationTicks + delta) }
+    : { startTick: Math.max(0, chord.startTick + delta) };
+}
+
+export function chordDrawRange(startX, endX, geometry, snap = "bar") {
+  const unit = chordSnapTicks(geometry, snap);
+  const first = Math.max(0, Math.floor(xToTick(startX, geometry) / unit) * unit);
+  const last = Math.max(0, Math.round(xToTick(endX, geometry) / unit) * unit);
+  return { startTick: Math.min(first, last), durationTicks: Math.max(unit, Math.abs(last - first)) };
+}
+
 export function midiToY(midi, geometry) {
   return geometry.top + (geometry.maxMidi - midi) * geometry.rowHeight;
 }
@@ -273,7 +295,7 @@ function isBlackKey(midi) {
   return [1, 3, 6, 8, 10].includes(midi % 12);
 }
 
-export function createPianoRollView(svg, commands, { onAddNote = () => {}, onContextMenu = () => {}, onError = () => {} } = {}) {
+export function createPianoRollView(svg, commands, { onAddNote = () => {}, onContextMenu = () => {}, onChordContextMenu = () => {}, getChordDrawDefaults = () => ({ rootPitchClass: 0, quality: "major" }), onError = () => {}, translate = () => "Chords" } = {}) {
   const scrollContainer = svg.parentElement;
   let geometry = createRollGeometry();
   let activeDrag = null;
@@ -283,11 +305,19 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let selectionDrag = null;
   let drawDrag = null;
   let rulerDrag = null;
+  let chordDrag = null;
+  let chordLongPress = null;
+  let chordPressPoint = null;
   let timelineEndTick = 1;
   let lastPlaybackTick = 0;
   let lastPlaybackRange = "0:1";
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
+
+  function focusChordEditor() {
+    const editor = svg.closest?.("#piano-roll-scroll") ?? scrollContainer;
+    editor?.focus?.({ preventScroll: true });
+  }
 
   function pointerPoint(event) {
     const bounds = svg.getBoundingClientRect();
@@ -323,11 +353,12 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     const savedTop = scrollContainer?.scrollTop ?? 0;
     timelineEndTick = Math.max(1, Number.isFinite(songEndTickOverride)
       ? songEndTickOverride
-      : song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0));
+      : canonicalSongEndTick(song));
     const endTick = Math.max(timelineEndTick, state.playback.currentTick);
     const selectedNote = [...state.selectedNoteIds].reverse().map((id) => song.notes.find((note) => note.id === id)).find(Boolean);
     const activeCandidate = state.generation?.candidates?.find((candidate) => candidate.id === state.generation.activeCandidateId);
-    const focusTick = focusTickOverride ?? (activeCandidate ? state.generation.gap?.startTick : null) ?? selectedNote?.startTick ?? state.playback.currentTick;
+    const selectedChord = (song.chords ?? []).find(chord => chord.id === state.selectedChordId);
+    const focusTick = focusTickOverride ?? (activeCandidate ? state.generation.gap?.startTick : null) ?? selectedNote?.startTick ?? selectedChord?.startTick ?? state.playback.currentTick;
     const { numerator, denominator } = song.timing.timeSignature;
     const candidatePitches = activeCandidate?.notes?.map((note) => note.pitch) ?? [];
     const musicalPitches = [...song.notes.map((note) => note.pitch), ...candidatePitches];
@@ -409,7 +440,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         x: rangeX,
         y: 0,
         width: Math.max(1, rangeRight - rangeX),
-        height: geometry.top,
+        height: PIANO_RULER_HEIGHT,
         class: "roll-timeline-selection",
         "data-entity": "timeline-selection",
         "data-start-tick": playbackRange.startTick,
@@ -424,7 +455,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       x: geometry.labelWidth,
       y: 0,
       width: geometry.width - geometry.labelWidth,
-      height: geometry.top,
+      height: PIANO_RULER_HEIGHT,
       class: "roll-ruler-hit",
       "data-action": "seek-ruler",
       "data-entity": "timeline-ruler",
@@ -432,6 +463,44 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       tabindex: "0",
       "aria-label": "Timeline ruler. Click to move the playhead; drag to select a playback range."
     }, svg);
+
+    const chordLane = svgElement("g", { "data-entity": "harmony-lane", "aria-label": translate("harmonyLaneLabel") }, svg);
+    for (let tick = geometry.startTick; tick < geometry.endTick; tick += geometry.barTicks) {
+      const x = tickToX(tick, geometry);
+      const bar = svgElement("g", {
+        "data-entity": "harmony-bar", "data-action": "select-harmony-bar", "data-start-tick": tick,
+        "data-focus-key": `harmony-bar-${tick}`,
+        "data-end-tick": tick + geometry.barTicks, role: "button", tabindex: "0",
+        "aria-label": `${translate("harmonyLaneLabel")} · ${tick / geometry.barTicks + 1}`
+      }, chordLane);
+      svgElement("rect", { x, y: PIANO_RULER_HEIGHT, width: geometry.barTicks * geometry.pixelsPerQuarter / geometry.ppq,
+        height: HARMONY_LANE_HEIGHT, class: "roll-row", stroke: "var(--border)", "stroke-width": 1 }, bar);
+    }
+    for (const chord of song.chords ?? []) {
+      const end = chord.startTick + chord.durationTicks;
+      if (end <= geometry.startTick || chord.startTick >= geometry.endTick) continue;
+      const x = tickToX(Math.max(chord.startTick, geometry.startTick), geometry);
+      const width = (Math.min(end, geometry.endTick) - Math.max(chord.startTick, geometry.startTick)) * geometry.pixelsPerQuarter / geometry.ppq;
+      const selectedChord = state.selectedChordId === chord.id;
+      const currentChord = state.playback.status === "playing" && state.playback.currentTick >= chord.startTick && state.playback.currentTick < end;
+      const symbol = harmonyChordSymbol(chord, song.key);
+      const group = svgElement("g", { "data-entity": "chord", "data-action": "select-chord", "data-entity-id": chord.id,
+        "data-start-tick": chord.startTick, "data-duration-ticks": chord.durationTicks, "data-locked": chord.locked,
+        "data-selected": selectedChord, role: "button", tabindex: "0", "aria-pressed": selectedChord,
+        "data-current": currentChord, "data-focus-key": `chord-${chord.id}`,
+        "aria-label": `${symbol} · ${Math.floor(chord.startTick / geometry.barTicks) + 1}–${Math.ceil(end / geometry.barTicks)}${chord.locked ? " 🔒" : ""}` }, chordLane);
+      svgElement("rect", { x, y: PIANO_RULER_HEIGHT + 2, width, height: HARMONY_LANE_HEIGHT - 4, rx: 4,
+        "data-chord-shape": "true", fill: selectedChord ? "var(--accent)" : "var(--surface)",
+        stroke: "var(--accent)", "stroke-width": selectedChord ? 3 : 1 }, group);
+      svgElement("title", {}, group, `${symbol}${chord.locked ? " 🔒" : ""}`);
+      // Short spans keep their full canonical width; label fits inside that span.
+      const label = svgElement("svg", { x: x + 4, y: PIANO_RULER_HEIGHT + 2, width: Math.max(0, width - 8), height: HARMONY_LANE_HEIGHT - 4,
+        overflow: "hidden", "pointer-events": "none", "aria-hidden": "true" }, group);
+      svgElement("text", { x: 0, y: 25, fill: selectedChord ? "white" : "var(--text)", "font-size": 13 }, label, `${symbol}${chord.locked ? " 🔒" : ""}`);
+      if (selectedChord && !chord.locked) svgElement("rect", { x: x + Math.max(0, width - 20), y: PIANO_RULER_HEIGHT + 2,
+        width: Math.min(20, width), height: HARMONY_LANE_HEIGHT - 4, rx: 3, fill: "var(--accent)", opacity: .6,
+        "data-action": "resize-chord", "aria-hidden": "true", style: "cursor: ew-resize" }, group);
+    }
 
     const selected = new Set(state.selectedNoteIds);
     for (const note of song.notes) {
@@ -617,11 +686,12 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     }, svg);
     svgElement("rect", {
       x: 0,
-      y: geometry.top,
+      y: PIANO_RULER_HEIGHT,
       width: geometry.labelWidth,
-      height: geometry.height - geometry.top,
+      height: geometry.height - PIANO_RULER_HEIGHT,
       class: "roll-pitch-label-gutter"
     }, pitchLayer);
+    svgElement("text", { x: 4, y: PIANO_RULER_HEIGHT + 27, class: "roll-bar-label", "font-size": 12 }, pitchLayer, translate("harmonyLaneLabel"));
     for (let midi = geometry.maxMidi; midi >= geometry.minMidi; midi -= 1) {
       const y = midiToY(midi, geometry);
       svgElement("text", {
@@ -671,7 +741,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
     lastPlaybackTick = playback.currentTick;
     if (playback.currentTick < geometry.startTick || playback.currentTick >= geometry.endTick) {
       if (followMode !== "none" && playback.status === "playing" && (playbackTickChanged || pendingPlaybackFollow)) {
-        if (activeDrag || finishingDrag) {
+        if (activeDrag || chordDrag || finishingDrag) {
           pendingPlaybackFollow = true;
         } else {
           pendingPlaybackFollow = false;
@@ -691,7 +761,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         pendingPlaybackFollow = false;
       }
     } else {
-      if (!activeDrag) pendingPlaybackFollow = false;
+      if (!activeDrag && !chordDrag) pendingPlaybackFollow = false;
       const x = tickToX(playback.currentTick, geometry);
       const playhead = svg.querySelector('[data-entity="playhead"]');
       if (playhead) {
@@ -699,7 +769,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         playhead.setAttribute("x2", String(x));
         playhead.setAttribute("data-tick", String(playback.currentTick));
       }
-      if (followMode !== "none" && playback.status === "playing" && scrollContainer?.clientWidth > 0 && !activeDrag && !finishingDrag) {
+      if (followMode !== "none" && playback.status === "playing" && scrollContainer?.clientWidth > 0 && !activeDrag && !chordDrag && !finishingDrag) {
         if (followMode === "center") {
           scrollContainer.scrollLeft = centeredScrollLeft({
             playheadX: x,
@@ -718,6 +788,14 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
           }
         }
       }
+    }
+    for (const group of svg.querySelectorAll('[data-entity="chord"]')) {
+      const start = Number(group.dataset.startTick);
+      const end = start + Number(group.dataset.durationTicks);
+      const current = playback.status === "playing" && playback.currentTick >= start && playback.currentTick < end;
+      group.setAttribute("data-current", String(current));
+      const shape = group.querySelector('[data-chord-shape]');
+      shape?.setAttribute("stroke-width", current ? "4" : group.dataset.selected === "true" ? "3" : "1");
     }
     for (const group of svg.querySelectorAll('[data-entity="note"]')) {
       const current = group.dataset.entityId === playback.currentNoteId;
@@ -738,6 +816,35 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
 
   function beginDrag(event) {
     if (event.button !== 0) return;
+    const chordGroup = event.target.closest?.('[data-entity="chord"]');
+    const harmonyBar = event.target.closest?.('[data-entity="harmony-bar"]');
+    if (chordGroup || harmonyBar) {
+      event.preventDefault();
+      const point = pointerPoint(event);
+      const state = commands.getState();
+      if (chordGroup) {
+        const chord = commands.getSong().chords.find(item => item.id === chordGroup.dataset.entityId);
+        if (!chord) return;
+        const selectedBefore = state.selectedChordId === chord.id;
+        commands.selectChord(chord.id);
+        chordPressPoint = point;
+        if (event.pointerType === "touch") chordLongPress = setTimeout(() => {
+          chordLongPress = null; chordDrag = null; ignoreNextClick = true;
+          onChordContextMenu(chord, event);
+        }, 550);
+        if (!chord.locked && selectedBefore && state.editor.tool !== "draw") chordDrag = {
+          pointerId: event.pointerId, kind: event.target.closest?.('[data-action="resize-chord"]') ? "resize" : "move",
+          chord: { ...chord }, startX: point.x, currentX: point.x, snap: state.editor.chordSnap ?? "bar", moved: false
+        };
+      } else if (state.editor.tool === "draw") chordDrag = {
+        pointerId: event.pointerId, kind: "draw", startX: point.x, currentX: point.x, snap: state.editor.chordSnap ?? "bar", moved: false,
+        defaults: { ...getChordDrawDefaults() }
+      };
+      else commands.setHarmonyRange(Number(harmonyBar.dataset.startTick), Number(harmonyBar.dataset.endTick));
+      focusChordEditor();
+      try { svg.setPointerCapture?.(event.pointerId); } catch {}
+      return;
+    }
     const state = commands.getState();
     const ruler = event.target.closest?.('[data-action="seek-ruler"]');
     if (ruler && svg.contains(ruler)) {
@@ -827,6 +934,24 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function previewDrag(event) {
+    if (chordDrag && chordDrag.pointerId === event.pointerId) {
+      const point = pointerPoint(event);
+      chordDrag.currentX = point.x;
+      if (Math.abs(point.x - chordDrag.startX) < 4) return;
+      chordDrag.moved = true;
+      clearTimeout(chordLongPress); chordLongPress = null;
+      const range = chordDrag.kind === "draw" ? chordDrawRange(chordDrag.startX, point.x, geometry, chordDrag.snap)
+        : { ...chordDrag.chord, ...chordGesturePatch(chordDrag.chord, point.x - chordDrag.startX, geometry, chordDrag.kind, chordDrag.snap) };
+      if (!chordDrag.preview) chordDrag.preview = svgElement("rect", { y: PIANO_RULER_HEIGHT + 2, height: HARMONY_LANE_HEIGHT - 4,
+        fill: "var(--accent)", opacity: .5, "pointer-events": "none", "data-entity": "chord-preview" }, svg);
+      chordDrag.preview.setAttribute("x", String(tickToX(range.startTick, geometry)));
+      chordDrag.preview.setAttribute("width", String(range.durationTicks * geometry.pixelsPerQuarter / geometry.ppq));
+      return;
+    }
+    if (chordLongPress && chordPressPoint) {
+      const point = pointerPoint(event);
+      if (Math.hypot(point.x - chordPressPoint.x, point.y - chordPressPoint.y) > 8) { clearTimeout(chordLongPress); chordLongPress = null; }
+    }
     if (rulerDrag && rulerDrag.pointerId === event.pointerId) {
       try {
         const point = pointerPoint(event);
@@ -841,7 +966,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         if (!rulerDrag.element) {
           rulerDrag.element = svgElement("rect", {
             y: 0,
-            height: geometry.top,
+            height: PIANO_RULER_HEIGHT,
             class: "roll-timeline-selection roll-timeline-selection-preview",
             "pointer-events": "none",
             "aria-hidden": "true"
@@ -935,6 +1060,27 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   }
 
   function finishDrag(event, cancelled = false) {
+    clearTimeout(chordLongPress); chordLongPress = null;
+    chordPressPoint = null;
+    if (chordDrag && chordDrag.pointerId === event.pointerId) {
+      const gesture = chordDrag; chordDrag = null;
+      gesture.preview?.remove();
+      try { svg.releasePointerCapture?.(event.pointerId); } catch {}
+      ignoreNextClick = true;
+      if (!cancelled) try {
+        if (gesture.kind === "draw") {
+          const range = chordDrawRange(gesture.startX, gesture.moved ? gesture.currentX : gesture.startX, geometry, gesture.snap);
+          const chord = commands.addChord({ ...gesture.defaults, ...range });
+          commands.selectChord(chord.id);
+        } else if (gesture.moved) {
+          const patch = chordGesturePatch(gesture.chord, gesture.currentX - gesture.startX, geometry, gesture.kind, gesture.snap);
+          if (Object.entries(patch).some(([key,value]) => value !== gesture.chord[key])) commands.updateChord(gesture.chord.id, patch);
+        }
+      } catch (error) { onError(error); }
+      render(commands.getSong(), commands.getState());
+      focusChordEditor();
+      return;
+    }
     if (rulerDrag && rulerDrag.pointerId === event.pointerId) {
       const drag = rulerDrag;
       rulerDrag = null;
@@ -1054,6 +1200,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       ignoreNextClick = false;
       return;
     }
+    const chord = event.target.closest?.('[data-entity="chord"]');
+    const bar = event.target.closest?.('[data-entity="harmony-bar"]');
+    if (chord && svg.contains(chord)) { commands.selectChord(chord.dataset.entityId); focusChordEditor(); return; }
+    if (bar && svg.contains(bar)) { commands.setHarmonyRange(Number(bar.dataset.startTick), Number(bar.dataset.endTick)); focusChordEditor(); return; }
     const group = event.target.closest?.('[data-entity="note"]');
     if (pendingNoteClickId) {
       pendingNoteClickId = null;
@@ -1075,6 +1225,12 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
 
   svg.addEventListener("contextmenu", (event) => {
     event.preventDefault();
+    const chordGroup = event.target.closest?.('[data-entity="chord"]');
+    if (chordGroup) {
+      const chord = commands.getSong().chords.find(item => item.id === chordGroup.dataset.entityId);
+      if (chord) { commands.selectChord(chord.id); focusChordEditor(); onChordContextMenu(chord, event); }
+      return;
+    }
     const group = event.target.closest?.('[data-entity="note"]');
     if (group && svg.contains(group)) {
       const noteId = group.dataset.entityId;
@@ -1102,6 +1258,16 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   });
 
   svg.addEventListener("keydown", (event) => {
+    const chord = event.target.closest?.('[data-entity="chord"]');
+    const bar = event.target.closest?.('[data-entity="harmony-bar"]');
+    if ((chord || bar) && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (chord) commands.selectChord(chord.dataset.entityId);
+      else commands.setHarmonyRange(Number(bar.dataset.startTick), Number(bar.dataset.endTick));
+      focusChordEditor();
+      return;
+    }
     const ruler = event.target.closest?.('[data-action="seek-ruler"]');
     if (!ruler || !svg.contains(ruler)) return;
     const state = commands.getState();

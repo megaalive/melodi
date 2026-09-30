@@ -15,7 +15,7 @@ test('Harmony context prefers explicit range and otherwise uses selected melody 
   const song = { notes: [{ id: 'a', startTick: 120, durationTicks: 480 }, { id: 'b', startTick: 720, durationTicks: 240 }] };
   assert.deepEqual(harmonyContextRange(song, { selection: { startTick: 0, endTick: 1920 }, selectedNoteIds: ['a'] }), { startTick: 0, endTick: 1920 });
   assert.deepEqual(harmonyContextRange(song, { selection: null, selectedNoteIds: ['a','b'] }), { startTick: 120, endTick: 960 });
-  assert.equal(harmonyContextRange(song, { selection: null, selectedNoteIds: [] }), null);
+  assert.deepEqual(harmonyContextRange(song, { selection: null, selectedNoteIds: [] }), { startTick: 0, endTick: 1920 });
 });
 test('Harmony browser command surface exports complete inference and CRUD contract', () => {
   const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
@@ -41,6 +41,6 @@ test('Harmony inspector resets stale chord editing and disables locked musical c
   assert.match(app, /chordEditor\?\.dataset.chordId && !editedChord/);
   assert.match(app, /control.disabled = Boolean\(editedChord\?\.locked\)/);
   assert.match(app, /delete chordForm.dataset.chordId; chordForm.reset\(\)/);
-  assert.match(view, /session.range \?\? pendingRange \?\? context/);
+  assert.match(view, /syncHarmonyRangeForm\(song, state\)/);
   assert.match(view, /harmonyChordSymbol\(candidate, song.key\)/);
 });

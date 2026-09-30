@@ -1,4 +1,4 @@
-import { cloneData } from "./model.js?v=20260930.27";
+import { cloneData } from "./model.js?v=20260930.28";
 import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([
@@ -12,6 +12,9 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "updateChord",
   "deleteChord",
   "setChordLocked",
+  "selectChord",
+  "clearChordSelection",
+  "setHarmonyRange",
   "getSelection",
   "getSelectedNoteIds",
   "getSelectedPercussionHitIds",
@@ -41,6 +44,7 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "copySelection",
   "pasteNotes",
   "setSnap",
+  "setChordSnap",
   "setTool",
   "setZoom",
   "addLyricSyllable",
@@ -101,7 +105,7 @@ export function createAgentSnapshot(song, selection, playback = {
   auditionCandidateId: null,
   candidates: [],
   acceptedNoteIds: []
-}, history = { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 }, selectedPercussionHitIds = [], mix = { channels: {} }, harmony = { status: "idle", range: null, candidates: [], selectedCandidateId: null }) {
+}, history = { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 }, selectedPercussionHitIds = [], mix = { channels: {} }, harmony = { status: "idle", range: null, candidates: [], selectedCandidateId: null }, harmonyContext = { selectedChordId: null, harmonyRange: null }) {
   const currentSyllableId = getActiveSyllableId(song.lyrics, playback.currentNoteId);
   const currentSyllableIds = currentSyllableId ? [currentSyllableId] : [];
   return {
@@ -140,6 +144,8 @@ export function createAgentSnapshot(song, selection, playback = {
     view: cloneData(view),
     generation: cloneData(generation),
     harmony: cloneData(harmony),
+    selectedChordId: harmonyContext.selectedChordId,
+    harmonyRange: cloneData(harmonyContext.harmonyRange),
     anchorNoteIds: song.notes.filter((note) => note.anchor).map((note) => note.id),
     lockedNoteIds: song.notes.filter((note) => note.locked).map((note) => note.id),
     history: cloneData(history),

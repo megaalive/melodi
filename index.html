@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260930.27">
+    <meta name="melodi-build" content="20260930.28">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260930.27">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.27"></script>
-    <script type="module" src="./src/app.js?v=20260930.27"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260930.28">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.28"></script>
+    <script type="module" src="./src/app.js?v=20260930.28"></script>
   </head>
   <body>
     <header class="page-header">
@@ -199,6 +199,17 @@
               </button>
             </div>
             <div id="piano-roll-content" class="panel-disclosure-content">
+              <section id="harmony-timeline-tools" class="harmony-timeline-tools" aria-label="Chord tools">
+                <p id="harmony-location" class="harmony-location" aria-live="polite"></p>
+                <form id="harmony-range-form" data-action="suggest-harmony">
+                  <input name="startTick" type="hidden" value="0"><input name="endTick" type="hidden">
+                  <div class="harmony-actions">
+                    <label><span data-copy="harmonySnap"></span><select id="chord-snap" data-action="set-chord-snap" data-entity="chord-snap" data-focus-key="chord-snap" data-aria-copy="harmonySnap"><option value="bar" data-copy="harmonySnapBar"></option><option value="half-bar" data-copy="harmonySnapHalfBar"></option><option value="beat" data-copy="harmonySnapBeat"></option></select></label>
+                    <button type="submit" data-copy="harmonySuggest"></button><button type="button" data-action="add-chord" data-copy="harmonyAdd"></button><button id="harmony-clear" type="button" class="secondary" data-action="clear-harmony" data-copy="harmonyClear"></button>
+                  </div>
+                </form>
+                <p id="harmony-status" class="muted" aria-live="polite"></p><ol id="harmony-candidates" class="harmony-list harmony-candidate-strip" data-entity="harmony-candidate-list"></ol>
+              </section>
               <div class="instrument-mix-strip" role="group" data-aria-copy="mixMelodyGroupLabel">
                 <strong data-copy="melodyInstrumentLabel"></strong>
                 <button type="button" class="instrument-mix-button" data-focus-key="mix:melody:mute" data-action="toggle-instrument-mute" data-channel-id="melody" data-mix-flag="mute" data-copy="mixMuteShort" data-aria-copy="mixMuteMelodyAria" aria-pressed="false"></button>
@@ -489,17 +500,11 @@
                 <label><span data-copy="sketchStyle"></span><select id="bass-style" data-action="set-bass-style" data-entity="sketch-style" data-focus-key="bass-style" data-aria-copy="sketchBassStyle"><option value="root" data-copy="sketchRoot"></option><option value="root-fifth" data-copy="sketchRootFifth"></option></select></label>
               </fieldset>
             </div>
-            <form id="harmony-range-form" data-action="suggest-harmony"><div class="form-grid">
-              <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="harmony-start"></label>
-              <label><span data-copy="rangeEndLabel"></span><input name="endTick" type="number" min="1" step="1" value="1920" required data-focus-key="harmony-end"></label></div>
-              <div class="harmony-actions"><button type="button" data-action="harmony-use-selection" data-copy="harmonyUseSelection"></button><button type="submit" data-copy="harmonySuggest"></button><button id="harmony-clear" type="button" class="secondary" data-action="clear-harmony" data-copy="harmonyClear"></button></div></form>
-            <p id="harmony-status" class="muted" aria-live="polite"></p><ol id="harmony-candidates" class="harmony-list" data-entity="harmony-candidate-list"></ol>
-            <h3 data-copy="harmonyChords"></h3><ol id="harmony-chords" class="harmony-list" data-entity="chord-list"></ol>
+            <section id="harmony-selected-chord" data-entity="selected-chord-inspector" hidden></section><h3 data-copy="harmonyChords"></h3><ol id="harmony-chords" class="harmony-list" data-entity="chord-list"></ol>
             <details id="harmony-editor"><summary data-copy="harmonyEditHeading"></summary><form id="harmony-chord-form" data-action="save-chord"><div class="form-grid">
               <label><span data-copy="harmonyRoot"></span><select name="rootPitchClass" data-focus-key="chord-root"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">Eb</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">Ab</option><option value="9">A</option><option value="10">Bb</option><option value="11">B</option></select></label>
               <label><span data-copy="harmonyQuality"></span><select name="quality" data-focus-key="chord-quality"><option value="major" data-copy="harmonyMajor"></option><option value="minor" data-copy="harmonyMinor"></option><option value="diminished" data-copy="harmonyDiminished"></option></select></label>
-              <label><span data-copy="startTickLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="chord-start"></label>
-              <label><span data-copy="durationLabel"></span><input name="durationTicks" type="number" min="1" step="1" value="1920" required data-focus-key="chord-duration"></label></div>
+              </div><p id="harmony-edit-location"></p><input name="startTick" type="hidden" value="0"><input name="durationTicks" type="hidden">
               <div class="harmony-actions"><button type="submit" data-copy="harmonySave"></button><button type="button" class="secondary" data-action="new-chord" data-copy="harmonyNew"></button></div></form></details>
           </section>
 
@@ -723,5 +728,11 @@
 
       <p id="operation-status" class="status" role="status" aria-live="polite" aria-atomic="true" data-entity="operation-status"></p>
     </main>
-  </body>
+      <div id="chord-context-menu" class="context-menu" role="menu" hidden>
+      <button type="button" role="menuitem" data-action="edit-chord" data-copy="harmonyChange"></button>
+      <button type="button" role="menuitem" data-action="toggle-chord-lock" data-copy="harmonyLock"></button>
+      <button type="button" role="menuitem" data-action="duplicate-chord" data-copy="harmonyDuplicate"></button>
+      <button type="button" role="menuitem" data-action="delete-chord" data-copy="harmonyDelete"></button>
+    </div>
+</body>
 </html>
