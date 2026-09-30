@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260930.19">
+    <meta name="melodi-build" content="20260930.20">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260930.19">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.19"></script>
-    <script type="module" src="./src/app.js?v=20260930.19"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260930.20">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.20"></script>
+    <script type="module" src="./src/app.js?v=20260930.20"></script>
   </head>
   <body>
     <header class="page-header">
@@ -203,6 +203,7 @@
                 <strong data-copy="melodyInstrumentLabel"></strong>
                 <button type="button" class="instrument-mix-button" data-focus-key="mix:melody:mute" data-action="toggle-instrument-mute" data-channel-id="melody" data-mix-flag="mute" data-copy="mixMuteShort" data-aria-copy="mixMuteMelodyAria" aria-pressed="false"></button>
                 <button type="button" class="instrument-mix-button" data-focus-key="mix:melody:solo" data-action="toggle-instrument-solo" data-channel-id="melody" data-mix-flag="solo" data-copy="mixSoloShort" data-aria-copy="mixSoloMelodyAria" aria-pressed="false"></button>
+                <input type="range" class="instrument-volume" data-focus-key="mix:melody:volume" data-channel-id="melody" data-channel-volume data-volume-piece="Melody" min="0" max="100" step="1" value="100" aria-label="Volume Melody, 100%">
               </div>
               <div class="roll-surface">
                 <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">

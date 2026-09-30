@@ -1,4 +1,4 @@
-import { cloneData } from "./model.js?v=20260930.19";
+import { cloneData } from "./model.js?v=20260930.20";
 import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([
@@ -9,6 +9,7 @@ const AVAILABLE_ACTIONS = Object.freeze([
   "getMixState",
   "setInstrumentMute",
   "setInstrumentSolo",
+  "setInstrumentVolume",
   "addNote",
   "updateNote",
   "updateNotes",

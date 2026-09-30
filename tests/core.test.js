@@ -572,7 +572,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     selection: null,
     selectedNoteIds: [],
     selectedPercussionHitIds: [],
-    mix: { channels: { melody: { mute: false, solo: false } } },
+    mix: { channels: { melody: { mute: false, solo: false, volume: 1 } } },
     editor: { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 },
     view: { mode: "piano-roll", follow: true },
     generation: {
@@ -590,7 +590,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "getSong", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "addNote", "updateNote", "updateNotes", "deleteNote",
       "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "selectPercussionHits", "clearPercussionSelection", "deletePercussionHits", "duplicatePercussionHits", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",

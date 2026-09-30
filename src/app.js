@@ -1,26 +1,26 @@
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.19";
-import { createCommands } from "./core/commands.js?v=20260930.19";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.20";
+import { createCommands } from "./core/commands.js?v=20260930.20";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.19";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.19";
-import { createAudioPlayer } from "./audio/player.js?v=20260930.19";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.20";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.20";
+import { createAudioPlayer } from "./audio/player.js?v=20260930.20";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.19";
-import { createScoreView } from "./ui/score.js?v=20260930.19";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260930.19";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.19";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.19";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.19";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.19";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.20";
+import { createScoreView } from "./ui/score.js?v=20260930.20";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260930.20";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.20";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.20";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.20";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.20";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260930.19";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.19";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.19";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.19";
-import { deserializeProject } from "./core/serialization.js?v=20260930.19";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.19";
+import { createDraftPersistence } from "./storage/draft.js?v=20260930.20";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.20";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.20";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.20";
+import { deserializeProject } from "./core/serialization.js?v=20260930.20";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.20";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -2021,7 +2021,30 @@ function renderInstrumentMixControls(mix) {
     button.dataset.active = String(active);
     button.setAttribute("aria-pressed", String(active));
   }
+  for (const slider of document.querySelectorAll("[data-channel-volume]")) {
+    const channel = mix?.channels?.[slider.dataset.channelId];
+    slider.disabled = !channel;
+    slider.value = String(Math.round((channel?.volume ?? 1) * 100));
+    updateVolumeLabel(slider);
+  }
 }
+
+function updateVolumeLabel(slider) {
+  const piece = slider.dataset.channelId === "melody" ? translate("melodyInstrumentLabel") : slider.dataset.volumePiece;
+  const label = translate("mixVolumeAria", { piece, percent: slider.value });
+  slider.title = label;
+  slider.setAttribute("aria-label", label);
+  slider.setAttribute("aria-valuetext", `${slider.value}%`);
+}
+
+document.addEventListener("input", (event) => {
+  if (event.target instanceof Element && event.target.matches("[data-channel-volume]")) updateVolumeLabel(event.target);
+});
+document.addEventListener("change", (event) => {
+  if (event.target instanceof Element && event.target.matches("[data-channel-volume]")) {
+    run(() => commands.setInstrumentVolume(event.target.dataset.channelId, Number(event.target.value) / 100));
+  }
+});
 
 const publicCommands = Object.freeze({
   getSong: commands.getSong,
@@ -2031,6 +2054,7 @@ const publicCommands = Object.freeze({
   getMixState: commands.getMixState,
   setInstrumentMute: commands.setInstrumentMute,
   setInstrumentSolo: commands.setInstrumentSolo,
+  setInstrumentVolume: commands.setInstrumentVolume,
   addNote: (input) => commands.addNote(input, { actor: "user" }),
   updateNote: (noteId, patch) => commands.updateNote(noteId, patch, { actor: "user" }),
   updateNotes: (updates) => commands.updateNotes(updates, { actor: "user" }),

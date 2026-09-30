@@ -1,5 +1,5 @@
-import { MelodiError } from "../core/model.js?v=20260930.19";
-import { findPercussionKit, findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20260930.19";
+import { MelodiError } from "../core/model.js?v=20260930.20";
+import { findPercussionKit, findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20260930.20";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -93,6 +93,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   ride: Object.freeze({
+    outputGain: 0.7,
     duration: 0.78,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 2480, 0.24)),
@@ -169,6 +170,7 @@ export function percussionVoiceSpec(kitId, hit) {
     kitId: kit.id,
     pieceId: piece.id,
     amplitude,
+    outputGain: voice.outputGain ?? 1,
     pan,
     chokeGroup: percussionChokeGroup(kitId, pieceId),
     duration,

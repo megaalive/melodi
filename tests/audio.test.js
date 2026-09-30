@@ -899,3 +899,104 @@ test("Stop clears a manual playback range back to the full timeline", () => {
   assert.deepEqual(stopped.loop, { enabled: true, startTick: 0, endTick: 1920 });
 });
 
+
+test("transport channel volume scales canonical note envelopes without changing their expression", async () => {
+  const peaks = [];
+  for (const volume of [1, 0.5, 0]) {
+    const song = fixture();
+    song.notes[0].volume = 0.5;
+    const mix = createInstrumentMix(song);
+    mix.channels.melody.volume = volume;
+    const context = new FakeAudioContext();
+    const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+    try {
+      await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+      assert.equal(context.oscillators.length, volume === 0 ? 0 : 1);
+      peaks.push(volume === 0 ? 0 : context.gains[1].gain.events[1][1]);
+      assert.equal(song.notes[0].volume, 0.5);
+    } finally { player.stop(); }
+  }
+  assert.equal(peaks[0], 0.09, "100% preserves the existing note peak");
+  assert.equal(peaks[1], peaks[0] * 0.25);
+  assert.equal(peaks[2], 0);
+});
+
+test("Ride output scalar combines with channel volume and zero skips every source", async () => {
+  const peaks = [];
+  const hit = { id: "ride-volume", pieceId: "ride", startTick: 0, velocity: 100, articulation: "normal" };
+  for (const volume of [1, 0.5, 0]) {
+    const song = fixture();
+    song.notes = [];
+    song.phrases[0].noteIds = [];
+    song.tracks.push({ id: "ride-volume-track", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [hit] });
+    const mix = createInstrumentMix(song);
+    mix.channels[percussionChannelId("ride-volume-track", "ride")].volume = volume;
+    const context = new FakeAudioContext();
+    const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+    try {
+      await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+      assert.equal(context.oscillators.length, volume === 0 ? 0 : 4);
+      assert.equal(context.bufferSources.length, volume === 0 ? 0 : 1);
+      peaks.push(volume === 0 ? 0 : context.gains[1].gain.events[1][1]);
+    } finally { player.stop(); }
+  }
+  const expectedPeak = 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude * 0.7;
+  assert.equal(peaks[0], expectedPeak);
+  assert.equal(peaks[1], expectedPeak * 0.25);
+  assert.equal(peaks[2], 0);
+});
+
+test("channel volume change during playback reanchors at the clock position and applies the new envelope", async () => {
+  const song = fixture();
+  const context = new FakeAudioContext();
+  const mix = createInstrumentMix(song);
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+  const loop = { enabled: false, startTick: 0, endTick: 1920 };
+  try {
+    await player.play(0, { tempo: 120, loop });
+    context.currentTime = 0.25;
+    assert.equal(player.getPosition(), 240);
+    mix.channels.melody.volume = 0.5;
+    player.mixChanged(player.getPosition(), loop);
+    assert.equal(player.getPosition(), 240);
+    assert.equal(context.oscillators[1].startTime, 0.25);
+    assert.equal(context.gains[2].gain.events[1][1], 0.18 * 0.25);
+    assert.ok(context.oscillators[0].stopTime <= 0.262);
+    context.currentTime = 0.3;
+    assert.equal(player.getPosition(), 288);
+    mix.channels.melody.volume = 0;
+    player.mixChanged(player.getPosition(), loop);
+    assert.equal(player.getPosition(), 288);
+    assert.equal(context.oscillators.length, 2, "zero does not create replacement voices");
+  } finally { player.stop(); }
+});
+
+test("volume command passes active position through the existing mix contract", async () => {
+  const ref = {};
+  const commands = createCommands(fixture(), { audioPlayerFactory: fakePlayerFactory(ref) });
+  await commands.play();
+  ref.position = 720;
+  commands.setInstrumentVolume("melody", 0.5);
+  assert.deepEqual(ref.calls.find((call) => call[0] === "mix"), ["mix", 720, commands.getState().playback.loop]);
+  assert.equal(commands.getState().playback.currentTick, 720);
+  assert.equal(commands.getState().playback.status, "playing");
+  assert.equal(ref.calls.filter((call) => call[0] === "play").length, 1);
+  commands.stop();
+});
+
+test("100 percent preserves percussion peaks for pieces outside the explicit Ride balance", async () => {
+  for (const pieceId of ["kick", "snare", "closed-hi-hat", "crash"]) {
+    const song = fixture();
+    song.notes = [];
+    song.phrases[0].noteIds = [];
+    const hit = { id: `unity-${pieceId}`, pieceId, startTick: 0, velocity: 100, articulation: "normal" };
+    song.tracks.push({ id: "unity-track", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [hit] });
+    const mix = createInstrumentMix(song);
+    const context = new FakeAudioContext();
+    const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+    try {
+      await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+      assert.equal(context.gains[1].gain.events[1][1], 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude, pieceId);
+    } finally { player.stop(); }
+  }
+});
