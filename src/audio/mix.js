@@ -1,4 +1,4 @@
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.26";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.27";
 
 const DEFAULT_CHANNEL_STATE = Object.freeze({ mute: false, solo: false, volume: 1 });
 
@@ -47,7 +47,7 @@ export function volumeGain(volume = 1) {
 export function instrumentGain(mix, channelId) {
   if (!isInstrumentAudible(mix, channelId)) return 0;
   const volume = mix?.channels?.[channelId]?.volume ?? 1;
-  return channelId === "harmony" || channelId === "bass" ? Math.max(0, Math.min(1, volume)) : volumeGain(volume);
+  return volumeGain(volume);
 }
 
 export const DEFAULT_INSTRUMENT_CHANNEL_STATE = DEFAULT_CHANNEL_STATE;

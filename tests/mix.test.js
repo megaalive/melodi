@@ -127,18 +127,18 @@ test("volume commands validate channels and reset detached runtime levels on loa
   assert.ok(Object.values(commands.getMixState().channels).every((state) => state.volume === 1));
 });
 
-test("guide channels use persistent linear volume and retain monitoring across ordinary edits", () => {
+test("guide channels use shared square volume and retain monitoring across ordinary edits", () => {
   const song = songWithTrack();
   song.sketch.harmony.volume = 0.43;
   song.sketch.bass.volume = 0.78;
   const mix = createInstrumentMix(song);
-  assert.equal(instrumentGain(mix, "harmony"), 0.43);
-  assert.equal(instrumentGain(mix, "bass"), 0.78);
+  assert.equal(instrumentGain(mix, "harmony"), 0.43 ** 2);
+  assert.equal(instrumentGain(mix, "bass"), 0.78 ** 2);
   mix.channels.harmony.mute = true;
   const retained = createInstrumentMix(song, mix);
   assert.equal(instrumentGain(retained, "harmony"), 0);
   assert.equal(retained.channels.bass.volume, 0.78);
   retained.channels.melody.solo = true;
   assert.equal(instrumentGain(retained, "bass"), 0);
-  assert.equal(instrumentGain(createInstrumentMix(song), "harmony"), 0.43);
+  assert.equal(instrumentGain(createInstrumentMix(song), "harmony"), 0.43 ** 2);
 });

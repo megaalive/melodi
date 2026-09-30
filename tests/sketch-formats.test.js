@@ -4,6 +4,29 @@ import { createInitialSong, createSong, createDefaultSketch } from "../src/core/
 import { serializeProject, deserializeProject } from "../src/core/serialization.js";
 import { toPortableProject, fromPortableProject, encodeSharePayload, decodeSharePayload } from "../src/io/share.js";
 const ids = (prefix) => { let n = 0; return () => `${prefix}-${++n}`; };
+
+test("legacy unknown chord qualities survive model, old project and old Share roundtrips", () => {
+  const song = fixture(); song.chords[0].quality = "maj7";
+  assert.equal(createSong(song).chords[0].quality, "maj7");
+  for (const schemaVersion of [1, 2, 3, 4]) {
+    const restored = deserializeProject({ schemaVersion, song });
+    assert.equal(deserializeProject(serializeProject(restored)).chords[0].quality, "maj7");
+  }
+  for (const version of [1, 2, 3, 4, 5, 6]) {
+    const portable = toPortableProject(song); portable.version = version;
+    portable.project.tracks = portable.project.tracks.filter(track => track.role !== "bass");
+    const harmony = portable.project.tracks.find(track => track.role === "harmony");
+    delete harmony.style; delete harmony.volume;
+    if (version < 6) harmony.events[0].pop();
+    if (version < 3) portable.project.tracks[0].events = portable.project.tracks[0].events.map(row => row.slice(0, 4));
+    const restored = fromPortableProject(portable, ids(`legacy${version}`));
+    assert.equal(restored.chords[0].quality, "maj7");
+    const reread = fromPortableProject(toPortableProject(restored), ids("roundtrip"));
+    assert.equal(reread.chords[0].quality, "maj7");
+    assert.equal(reread.chords[0].startTick, 0);
+    assert.equal(reread.chords[0].durationTicks, 1440);
+  }
+});
 function fixture() {
   const song = createInitialSong(ids("sketch"));
   song.sketch = { harmony: { style: "arpeggio", volume: 0.43 }, bass: { style: "root-fifth", volume: 0.78 } };

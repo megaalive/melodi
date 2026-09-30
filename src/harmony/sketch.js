@@ -1,4 +1,4 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20260930.26";
+import { MelodiError, PPQ } from "../core/model.js?v=20260930.27";
 
 const INTERVALS = { major: [0, 4, 7], minor: [0, 3, 7], diminished: [0, 3, 6] };
 
@@ -62,6 +62,7 @@ export function planHarmonyEvents(song, options = {}) {
   let previous;
   const { unit, compound } = meter(song);
   for (const chord of chords(song)) {
+    if (!Object.hasOwn(INTERVALS, chord.quality)) continue;
     const pitches = chooseVoicing(song, chord, previous);
     previous = pitches;
     if (range.style === "block") pitches.forEach((pitch, index) => add(events, chord, "harmony", pitch, chord.startTick, chord.durationTicks, range, index));
@@ -78,6 +79,7 @@ export function planBassEvents(song, options = {}) {
   const events = [];
   const { unit, compound } = meter(song);
   for (const chord of chords(song)) {
+    if (!Object.hasOwn(INTERVALS, chord.quality)) continue;
     const root = 36 + chord.rootPitchClass;
     if (range.style === "root") add(events, chord, "bass", root, chord.startTick, chord.durationTicks, range, 0);
     else {

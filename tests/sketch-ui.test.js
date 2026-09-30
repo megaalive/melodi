@@ -6,6 +6,16 @@ import { message } from '../src/i18n/messages.js';
 
 const read = path => readFileSync(new URL(path, import.meta.url),'utf8');
 
+test('sketch mute states have distinct neutral/active styles and preserve separate keyboard focus',()=>{
+  const css=read('../styles/app.css'), html=read('../index.html');
+  assert.match(css,/\.sketch-controls button\[aria-pressed="false"\] \{[^}]*border-color: var\(--border-strong\)[^}]*background: var\(--surface\)[^}]*color: var\(--text\)/);
+  assert.match(css,/\.sketch-controls button\[aria-pressed="true"\] \{[^}]*border-color: var\(--accent\)[^}]*background: var\(--accent\)[^}]*color: var\(--on-accent\)/);
+  assert.match(css,/:focus-visible \{\s*outline: 3px solid var\(--focus\);\s*outline-offset: 2px/);
+  assert.match(css,/\.sketch-controls button:focus-visible \{ outline: 3px solid var\(--focus\); outline-offset: 2px;/);
+  assert.doesNotMatch(css,/\.sketch-controls[^}]*outline:\s*none/);
+  assert.equal((html.match(/data-mix-flag="mute" data-aria-copy="sketch\w+Mute" aria-pressed="false"/g)??[]).length,2);
+});
+
 test('compact sketch controls expose labelled semantic channels and persistent style options',()=>{
   const html=read('../index.html');
   for (const channel of ['harmony','bass']) {

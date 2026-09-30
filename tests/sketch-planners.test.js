@@ -1,5 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+
+test("legacy unsupported chords are skipped without suppressing supported neighbors", () => {
+  const source = song();
+  const supported = structuredClone(source);
+  for (const quality of ["maj7", "constructor", "toString", "__proto__"]) {
+    source.chords = [supported.chords[0], { ...supported.chords[0], id: "legacy", quality, startTick: 960, durationTicks: 960 }, supported.chords[1]];
+    for (const [planner, styles] of [[planHarmonyEvents, ["block", "arpeggio"]], [planBassEvents, ["root", "root-fifth"]]]) {
+      for (const style of styles) {
+        assert.deepEqual(planner(source, { style }), planner(supported, { style }));
+        assert.deepEqual(planner({ ...source, chords: [source.chords[1]] }, { style }), []);
+      }
+    }
+    assert.equal(source.chords[1].quality, quality);
+  }
+});
 import { planHarmonyEvents, planBassEvents } from "../src/harmony/sketch.js";
 
 function song(numerator = 4, denominator = 4) {

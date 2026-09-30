@@ -4264,7 +4264,9 @@ body[data-view-mode="drums"] .workspace-sidebar {
 .sketch-controls legend { padding: 0 .25rem; font-weight: 600; }
 .sketch-controls label { min-width: 0; display: grid; gap: .25rem; }
 .sketch-controls button { min-height: 44px; }
-.sketch-controls [aria-pressed="true"] { background: var(--accent); color: white; }
+.sketch-controls button[aria-pressed="false"] { border-color: var(--border-strong); background: var(--surface); color: var(--text); }
+.sketch-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.sketch-controls button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .sketch-controls fieldset label:last-child { grid-column: 1 / -1; }
 .harmony-card input, .harmony-card select { width: 100%; min-width: 0; }
 .harmony-card .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

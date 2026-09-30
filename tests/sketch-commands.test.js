@@ -3,6 +3,18 @@ import assert from "node:assert/strict";
 import { createInitialSong, createBlankSong } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 const ids = () => { let n = 0; return () => `sketch-command-${++n}`; };
+
+test("unsupported new chord qualities fail explicitly without history or canonical mutation", () => {
+  const c = fixture();
+  const chord = c.addChord({ rootPitchClass: 0, quality: "major", startTick: 0, durationTicks: 1440 });
+  const before = c.getSong(), history = c.getState().history;
+  for (const quality of ["maj7", "constructor", "toString", "__proto__"]) {
+    assert.throws(() => c.addChord({ rootPitchClass: 0, quality, startTick: 1440, durationTicks: 1440 }), { code: "unsupported-chord-quality" });
+    assert.throws(() => c.updateChord(chord.id, { quality }), { code: "unsupported-chord-quality" });
+    assert.deepEqual(c.getSong(), before);
+    assert.deepEqual(c.getState().history, history);
+  }
+});
 function fixture(options = {}) { const idFactory = ids(); return createCommands(createInitialSong(idFactory), { idFactory, ...options }); }
 test("sketch style choices and volumes are undoable with no-op and validation guards", () => {
   const c = fixture();

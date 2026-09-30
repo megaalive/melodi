@@ -1059,8 +1059,28 @@ function sketchAudioSong() {
   return song;
 }
 
-test("sketch voices use shared clock, bounded timbres and one linear persistent volume factor", async () => {
-  for (const level of [1, 0.43, 0]) {
+test("audio safely skips legacy unknown chord qualities and schedules the supported neighbor", async () => {
+  for (const harmonyStyle of ["block", "arpeggio"]) {
+    const song = sketchAudioSong();
+    song.sketch.harmony.style = harmonyStyle; song.sketch.bass.style = "root-fifth";
+    song.chords = [{ ...song.chords[0], quality: "maj7", durationTicks: 480 }, { ...song.chords[0], id: "supported", startTick: 480, durationTicks: 480 }];
+    const context = new FakeAudioContext();
+    const errors = [];
+    const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context, onError: error => errors.push(error) });
+    try {
+      await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 960 } });
+      assert.equal(context.oscillators.length, 0);
+      player.seek(480, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 960 }, playing: true });
+      assert.equal(context.oscillators.length, harmonyStyle === "block" ? 8 : 4);
+      assert.ok(context.oscillators.every(oscillator => Number.isFinite(oscillator.startTime) && Number.isFinite(oscillator.stopTime)));
+      assert.deepEqual(errors, []);
+      assert.equal(song.chords[0].quality, "maj7");
+    } finally { player.stop(); }
+  }
+});
+
+test("sketch voices use shared clock, bounded timbres and the user square gain exactly once", async () => {
+  for (const level of [1, 0.5, 0.43, 0]) {
     const song = sketchAudioSong();
     song.sketch.harmony.volume = level;
     song.sketch.bass.volume = level;
@@ -1073,7 +1093,8 @@ test("sketch voices use shared clock, bounded timbres and one linear persistent 
       assert.ok(context.oscillators.every(oscillator => oscillator.startTime === 0 && oscillator.stopTime === 2));
       assert.deepEqual(context.oscillators.map(oscillator => oscillator.type), ["sine", "triangle", "sine", "triangle", "sine", "triangle", "sine", "triangle"]);
       const peaks = context.gains.flatMap(gain => gain.gain.events.filter(event => event[0] === "ramp").slice(0, 1).map(event => event[1]));
-      assert.deepEqual(peaks, [0.16 * level, 0.075 * level, 0.075 * level, 0.075 * level]);
+      const userGain = level * level;
+      assert.deepEqual(peaks, [0.16 * userGain, 0.075 * userGain, 0.075 * userGain, 0.075 * userGain]);
       assert.ok(context.oscillators.every(oscillator => oscillator.frequency.events.every(event => Number.isFinite(event[1]) && event[1] > 0)));
     } finally { player.stop(); }
   }
