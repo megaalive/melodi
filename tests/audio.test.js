@@ -4,6 +4,7 @@ import { createSong, MelodiError, PPQ } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { createAudioPlayer, pitchBendAt } from "../src/audio/player.js";
 import { percussionVoiceSpec } from "../src/audio/percussion.js";
+import { planHarmonyEvents, planBassEvents } from "../src/harmony/sketch.js";
 import { createInstrumentMix, instrumentChannelIds, isInstrumentAudible, percussionChannelId } from "../src/audio/mix.js";
 import {
   findCurrentNoteId,
@@ -1048,4 +1049,160 @@ test("canonical volume undo and redo reanchor at the running clock without resta
   assert.equal(commands.getState().playback.status, "playing");
   assert.equal(ref.calls.filter(([name]) => name === "play").length, 1);
   commands.stop();
+});
+
+function sketchAudioSong() {
+  const song = fixture();
+  song.notes = [];
+  song.phrases[0].noteIds = [];
+  song.chords = [{ id: "guide-chord", rootPitchClass: 0, quality: "major", startTick: 0, durationTicks: 1920, locked: false }];
+  return song;
+}
+
+test("sketch voices use shared clock, bounded timbres and one linear persistent volume factor", async () => {
+  for (const level of [1, 0.43, 0]) {
+    const song = sketchAudioSong();
+    song.sketch.harmony.volume = level;
+    song.sketch.bass.volume = level;
+    const context = new FakeAudioContext();
+    const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context });
+    try {
+      await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+      assert.equal(context.oscillators.length, level === 0 ? 0 : 8);
+      if (level === 0) continue;
+      assert.ok(context.oscillators.every(oscillator => oscillator.startTime === 0 && oscillator.stopTime === 2));
+      assert.deepEqual(context.oscillators.map(oscillator => oscillator.type), ["sine", "triangle", "sine", "triangle", "sine", "triangle", "sine", "triangle"]);
+      const peaks = context.gains.flatMap(gain => gain.gain.events.filter(event => event[0] === "ramp").slice(0, 1).map(event => event[1]));
+      assert.deepEqual(peaks, [0.16 * level, 0.075 * level, 0.075 * level, 0.075 * level]);
+      assert.ok(context.oscillators.every(oscillator => oscillator.frequency.events.every(event => Number.isFinite(event[1]) && event[1] > 0)));
+    } finally { player.stop(); }
+  }
+});
+
+test("sketch rehydrates a mid-chord seek and clips to selected range without duplicate wakes", async () => {
+  const song = sketchAudioSong();
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context });
+  const loop = { enabled: false, startTick: 480, endTick: 1440 };
+  try {
+    await player.play(720, { tempo: 120, loop });
+    assert.equal(context.oscillators.length, 8);
+    assert.ok(context.oscillators.every(oscillator => oscillator.startTime === 0 && oscillator.stopTime === 0.75));
+    context.currentTime = 0.03;
+    await new Promise(resolve => setTimeout(resolve, 35));
+    assert.equal(context.oscillators.length, 8);
+    player.updateTempo(240, 960, true);
+    assert.ok(context.oscillators.slice(0, 8).every(oscillator => oscillator.stopTime <= 0.042));
+    assert.equal(context.oscillators.length, 16);
+    assert.ok(context.oscillators.slice(8).every(oscillator => oscillator.startTime === 0.03 && oscillator.stopTime === 0.28));
+    player.pause();
+    assert.ok(context.oscillators.slice(8).every(oscillator => oscillator.stopTime <= 0.042));
+  } finally { player.stop(); }
+});
+
+test("sketch loop uses unique cycle keys and ends voices at exact loop boundaries", () => {
+  const song = sketchAudioSong();
+  const derived = { notes: [...planHarmonyEvents(song), ...planBassEvents(song)] };
+  const options = { audioNow: 0, anchorAudioTime: 0, anchorTick: 480, tempo: 120, lookAheadSeconds: 1.2, loop: { enabled: true, startTick: 480, endTick: 960 } };
+  const events = planNoteEvents(derived, options);
+  assert.equal(events.length, 12);
+  assert.deepEqual([...new Set(events.map(event => event.cycle))], [0, 1, 2]);
+  assert.ok(events.every(event => event.endTime === (event.cycle + 1) * 0.5));
+  const scheduledKeys = new Set(events.map(event => event.key));
+  assert.deepEqual(planNoteEvents(derived, { ...options, scheduledKeys }), []);
+  assert.equal(scheduledKeys.size, events.length);
+});
+
+test("sketch mute and live mix changes cancel old guide voices and keep other channels audible", async () => {
+  const song = sketchAudioSong();
+  const context = new FakeAudioContext();
+  let mix = createInstrumentMix(song);
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+  try {
+    await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+    assert.equal(context.oscillators.length, 8);
+    context.currentTime = 0.25;
+    mix.channels.harmony.mute = true;
+    player.mixChanged(240);
+    assert.ok(context.oscillators.slice(0, 8).every(oscillator => oscillator.stopTime <= 0.262));
+    assert.equal(context.oscillators.length, 10);
+    assert.ok(context.oscillators.slice(8).every(oscillator => oscillator.startTime === 0.25 && oscillator.stopTime === 2));
+    mix.channels.bass.mute = true;
+    player.mixChanged(240);
+    assert.equal(context.oscillators.length, 10);
+  } finally { player.stop(); }
+});
+
+test("derived sketch scheduling cannot collide with a canonical melody ID", async () => {
+  const song = sketchAudioSong();
+  song.notes = [{ id: planBassEvents(song)[0].id, pitch: 72, startTick: 0, durationTicks: 1920 }];
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context });
+  try {
+    await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+    assert.equal(context.oscillators.length, 9);
+    context.currentTime = 0.03;
+    await new Promise(resolve => setTimeout(resolve, 35));
+    assert.equal(context.oscillators.length, 9);
+  } finally { player.stop(); }
+});
+
+test("chord and style edits reanchor guide voices without altering canonical melody", async () => {
+  const song = sketchAudioSong();
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context });
+  try {
+    await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+    context.currentTime = 0.25;
+    song.chords[0].rootPitchClass = 2;
+    song.sketch.harmony.style = "arpeggio";
+    song.sketch.bass.style = "root-fifth";
+    player.songChanged(240);
+    assert.ok(context.oscillators.slice(0, 8).every(oscillator => oscillator.stopTime <= 0.262));
+    assert.equal(context.oscillators.length, 12);
+    assert.ok(context.oscillators.slice(8).every(oscillator => oscillator.startTime === 0.25 && oscillator.stopTime === 0.5));
+    assert.deepEqual(song.notes, []);
+    assert.ok(context.oscillators.slice(8).some(oscillator => Math.abs(oscillator.frequency.events[0][1] - 440 * 2 ** ((38 - 69) / 12)) < 1e-9));
+  } finally { player.stop(); }
+});
+
+test("nonloop guide playback completes once at range end and stops scheduled voices", async () => {
+  const song = sketchAudioSong();
+  const context = new FakeAudioContext();
+  let complete = 0;
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context, onComplete: () => { complete += 1; } });
+  try {
+    await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+    assert.ok(context.oscillators.every(oscillator => oscillator.stopTime === 2));
+    context.currentTime = 2;
+    await new Promise(resolve => setTimeout(resolve, 35));
+    assert.equal(complete, 1);
+    assert.ok(context.oscillators.every(oscillator => oscillator.stopTime <= 2.012));
+    await new Promise(resolve => setTimeout(resolve, 35));
+    assert.equal(complete, 1);
+  } finally { player.stop(); }
+});
+
+test("one-tick guide chords keep finite ordered envelopes and never overrun chord boundaries", async () => {
+  const song = sketchAudioSong();
+  song.chords[0].durationTicks = 1;
+  const context = new FakeAudioContext();
+  const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context });
+  try {
+    await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1 } });
+    assert.equal(context.oscillators.length, 8);
+    assert.ok(context.oscillators.every(oscillator => oscillator.startTime === 0 && oscillator.stopTime === 1 / 960));
+    const envelopes = context.gains.filter(gain => gain.gain.events.some(event => event[0] === "ramp"));
+    assert.equal(envelopes.length, 4);
+    for (const envelope of envelopes) {
+      const events = envelope.gain.events;
+      assert.ok(events.every(event => Number.isFinite(event[1]) && Number.isFinite(event[2])));
+      assert.ok(events.every((event, index) => index === 0 || event[2] >= events[index - 1][2]));
+      assert.equal(events.at(-1)[1], 0);
+      assert.equal(events.at(-1)[2], 1 / 960);
+      assert.ok(events.every(event => event[1] >= 0 && event[1] <= 0.16));
+    }
+    for (const oscillator of context.oscillators) oscillator.listeners.ended();
+    assert.ok(envelopes.every(envelope => envelope.disconnected === true));
+  } finally { player.stop(); }
 });

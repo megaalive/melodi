@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260930.25">
+    <meta name="melodi-build" content="20260930.26">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260930.25">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.25"></script>
-    <script type="module" src="./src/app.js?v=20260930.25"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260930.26">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.26"></script>
+    <script type="module" src="./src/app.js?v=20260930.26"></script>
   </head>
   <body>
     <header class="page-header">
@@ -477,6 +477,18 @@
         <aside class="workspace-sidebar" aria-label="Editor tools">
           <section id="harmony-panel" class="inspector-card harmony-card" aria-labelledby="harmony-heading">
             <h2 id="harmony-heading" data-copy="harmonyHeading"></h2><p class="muted" data-copy="harmonyHelp"></p>
+            <div class="sketch-controls" data-entity="sketch-controls">
+              <fieldset data-entity="sketch-channel" data-channel-id="harmony"><legend data-copy="sketchHarmony"></legend>
+                <button type="button" data-action="toggle-instrument-mute" data-channel-id="harmony" data-mix-flag="mute" data-aria-copy="sketchHarmonyMute" aria-pressed="false" data-copy="sketchMute"></button>
+                <label><span data-copy="sketchVolume"></span><input type="range" min="0" max="100" step="1" value="100" data-action="set-instrument-volume" data-channel-volume data-channel-id="harmony" data-entity="sketch-volume" data-focus-key="harmony-volume" aria-valuetext="100%"></label>
+                <label><span data-copy="sketchStyle"></span><select id="harmony-style" data-action="set-harmony-style" data-entity="sketch-style" data-focus-key="harmony-style" data-aria-copy="sketchHarmonyStyle"><option value="block" data-copy="sketchBlock"></option><option value="arpeggio" data-copy="sketchArpeggio"></option></select></label>
+              </fieldset>
+              <fieldset data-entity="sketch-channel" data-channel-id="bass"><legend data-copy="sketchBass"></legend>
+                <button type="button" data-action="toggle-instrument-mute" data-channel-id="bass" data-mix-flag="mute" data-aria-copy="sketchBassMute" aria-pressed="false" data-copy="sketchMute"></button>
+                <label><span data-copy="sketchVolume"></span><input type="range" min="0" max="100" step="1" value="100" data-action="set-instrument-volume" data-channel-volume data-channel-id="bass" data-entity="sketch-volume" data-focus-key="bass-volume" aria-valuetext="100%"></label>
+                <label><span data-copy="sketchStyle"></span><select id="bass-style" data-action="set-bass-style" data-entity="sketch-style" data-focus-key="bass-style" data-aria-copy="sketchBassStyle"><option value="root" data-copy="sketchRoot"></option><option value="root-fifth" data-copy="sketchRootFifth"></option></select></label>
+              </fieldset>
+            </div>
             <form id="harmony-range-form" data-action="suggest-harmony"><div class="form-grid">
               <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="harmony-start"></label>
               <label><span data-copy="rangeEndLabel"></span><input name="endTick" type="number" min="1" step="1" value="1920" required data-focus-key="harmony-end"></label></div>

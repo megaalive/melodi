@@ -27,7 +27,7 @@ test("canonical chord lock defaults false and rejects nonboolean flags", () => {
 test("schema4 explicitly stores lock and preserves volume; old schemas migrate unlocked", () => {
   const song = fixture();
   const project = JSON.parse(serializeProject(song));
-  assert.equal(project.schemaVersion, 4);
+  assert.equal(project.schemaVersion, 5);
   assert.equal(project.song.chords[0].locked, true);
   assert.deepEqual(deserializeProject(project), song);
   for (const schemaVersion of [1, 2, 3]) {
@@ -45,10 +45,10 @@ test("schema4 explicitly stores lock and preserves volume; old schemas migrate u
 test("Share6 compact lock roundtrip regenerates IDs without changing volume", async () => {
   const song = fixture();
   const portable = toPortableProject(song);
-  assert.equal(portable.version, 6);
+  assert.equal(portable.version, 7);
   assert.deepEqual(portable.project.tracks.find((track) => track.kind === "chords").events, [[9, "minor", 0, 1440, 1]]);
   const payload = await encodeSharePayload(song, { CompressionStreamCtor: null });
-  assert.ok(payload.startsWith("6.j."));
+  assert.ok(payload.startsWith("7.j."));
   const restored = await decodeSharePayload(payload, { idFactory: ids("receiver") });
   assert.equal(restored.chords[0].locked, true);
   assert.notEqual(restored.chords[0].id, song.chords[0].id);

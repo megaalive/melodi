@@ -1,27 +1,27 @@
-import { harmonyContextRange, renderHarmonyInspector } from "./ui/harmony.js?v=20260930.25";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.25";
-import { createCommands } from "./core/commands.js?v=20260930.25";
+import { harmonyContextRange, renderHarmonyInspector } from "./ui/harmony.js?v=20260930.26";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.26";
+import { createCommands } from "./core/commands.js?v=20260930.26";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.25";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.25";
-import { createAudioPlayer } from "./audio/player.js?v=20260930.25";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.26";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.26";
+import { createAudioPlayer } from "./audio/player.js?v=20260930.26";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.25";
-import { createScoreView } from "./ui/score.js?v=20260930.25";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260930.25";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.25";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.25";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.25";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.25";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.26";
+import { createScoreView } from "./ui/score.js?v=20260930.26";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260930.26";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.26";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.26";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.26";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.26";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260930.25";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.25";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.25";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.25";
-import { deserializeProject } from "./core/serialization.js?v=20260930.25";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.25";
+import { createDraftPersistence } from "./storage/draft.js?v=20260930.26";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.26";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.26";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.26";
+import { deserializeProject } from "./core/serialization.js?v=20260930.26";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.26";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -47,6 +47,7 @@ const translate = (key, values) => message(language, key, values);
 
 function canonicalSongEndTick(song) {
   let endTick = song.notes.reduce((end, note) => Math.max(end, note.startTick + note.durationTicks), 0);
+  for (const chord of song.chords ?? []) endTick = Math.max(endTick, chord.startTick + chord.durationTicks);
   for (const track of song.tracks) {
     if (track.kind !== "percussion") continue;
     for (const hit of track.events) endTick = Math.max(endTick, hit.startTick + (hit.durationTicks ?? 1));
@@ -2045,7 +2046,9 @@ function renderInstrumentMixControls(mix) {
 }
 
 function updateVolumeLabel(slider) {
-  const piece = slider.dataset.channelId === "melody" ? translate("melodyInstrumentLabel") : slider.dataset.volumePiece;
+  const piece = slider.dataset.channelId === "melody" ? translate("melodyInstrumentLabel")
+    : slider.dataset.channelId === "harmony" ? translate("sketchHarmony")
+    : slider.dataset.channelId === "bass" ? translate("sketchBass") : slider.dataset.volumePiece;
   const label = translate("mixVolumeAria", { piece, percent: slider.value });
   slider.title = label;
   slider.setAttribute("aria-label", label);
@@ -2056,6 +2059,11 @@ document.addEventListener("input", (event) => {
   if (event.target instanceof Element && event.target.matches("[data-channel-volume]")) updateVolumeLabel(event.target);
 });
 document.addEventListener("change", (event) => {
+  if (event.target instanceof Element && event.target.dataset.action === "set-harmony-style") {
+    run(() => commands.setHarmonyStyle(event.target.value));
+  } else if (event.target instanceof Element && event.target.dataset.action === "set-bass-style") {
+    run(() => commands.setBassStyle(event.target.value));
+  }
   if (event.target instanceof Element && event.target.matches("[data-channel-volume]")) {
     run(() => commands.setInstrumentVolume(event.target.dataset.channelId, Number(event.target.value) / 100));
   }
@@ -2070,6 +2078,8 @@ const publicCommands = Object.freeze({
   setInstrumentMute: commands.setInstrumentMute,
   setInstrumentSolo: commands.setInstrumentSolo,
   setInstrumentVolume: commands.setInstrumentVolume,
+  setHarmonyStyle: commands.setHarmonyStyle,
+  setBassStyle: commands.setBassStyle,
   addNote: (input) => commands.addNote(input, { actor: "user" }),
   updateNote: (noteId, patch) => commands.updateNote(noteId, patch, { actor: "user" }),
   updateNotes: (updates) => commands.updateNotes(updates, { actor: "user" }),

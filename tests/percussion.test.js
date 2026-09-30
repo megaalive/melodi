@@ -63,8 +63,8 @@ test("project schema v4 menyimpan percussion dan tetap membaca schema v1 tanpa t
 
   const serialized = serializeProject(commands.getSong());
   const envelope = JSON.parse(serialized);
-  assert.equal(SCHEMA_VERSION, 4);
-  assert.equal(envelope.schemaVersion, 4);
+  assert.equal(SCHEMA_VERSION, 5);
+  assert.equal(envelope.schemaVersion, 5);
   assert.equal(envelope.song.tracks[0].events[0].pieceId, "snare");
   assert.deepEqual(deserializeProject(serialized), commands.getSong());
 
@@ -87,7 +87,7 @@ test("share v6 membawa percussion track tanpa membocorkan canonical IDs", () => 
   const canonical = commands.getSong();
   const portable = toPortableProject(canonical);
 
-  assert.equal(SHARE_VERSION, 6);
+  assert.equal(SHARE_VERSION, 7);
   const track = portable.project.tracks.find((item) => item.kind === "percussion");
   assert.ok(track);
   assert.equal(track.id, "percussion-1");

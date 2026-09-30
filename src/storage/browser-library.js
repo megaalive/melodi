@@ -1,4 +1,4 @@
-import { deserializeProject, serializeProject } from "../core/serialization.js?v=20260930.25";
+import { deserializeProject, serializeProject } from "../core/serialization.js?v=20260930.26";
 
 export const BROWSER_LIBRARY_DATABASE = "melodi";
 export const BROWSER_LIBRARY_STORE = "songs";

@@ -1,4 +1,4 @@
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.25";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.26";
 
 const DEFAULT_CHANNEL_STATE = Object.freeze({ mute: false, solo: false, volume: 1 });
 
@@ -16,6 +16,7 @@ function readMonitoringState(state) {
 export function createInstrumentMix(song, previous = null) {
   const previousChannels = previous?.channels ?? {};
   const channels = { melody: { ...readMonitoringState(previousChannels.melody), volume: song?.mix?.melody ?? 1 } };
+  for (const channel of ["harmony", "bass"]) channels[channel] = { ...readMonitoringState(previousChannels[channel]), volume: song?.sketch?.[channel]?.volume ?? 1 };
   for (const track of song?.tracks ?? []) {
     if (track.kind !== "percussion") continue;
     const kit = findPercussionKit(track.kitId);
@@ -44,7 +45,9 @@ export function volumeGain(volume = 1) {
 }
 
 export function instrumentGain(mix, channelId) {
-  return isInstrumentAudible(mix, channelId) ? volumeGain(mix?.channels?.[channelId]?.volume) : 0;
+  if (!isInstrumentAudible(mix, channelId)) return 0;
+  const volume = mix?.channels?.[channelId]?.volume ?? 1;
+  return channelId === "harmony" || channelId === "bass" ? Math.max(0, Math.min(1, volume)) : volumeGain(volume);
 }
 
 export const DEFAULT_INSTRUMENT_CHANNEL_STATE = DEFAULT_CHANNEL_STATE;

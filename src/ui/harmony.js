@@ -8,8 +8,13 @@ export function harmonyContextRange(song, state) {
   if (!selected.length) return null;
   return { startTick: Math.min(...selected.map(note => note.startTick)), endTick: Math.max(...selected.map(note => note.startTick + note.durationTicks)) };
 }
+export function renderSketchControls(song) {
+  document.getElementById('harmony-style').value = song.sketch?.harmony?.style ?? 'block';
+  document.getElementById('bass-style').value = song.sketch?.bass?.style ?? 'root';
+}
 export function renderHarmonyInspector(song, state, session, translate) {
   const byId = id => document.getElementById(id);
+  renderSketchControls(song);
   const context = harmonyContextRange(song, state);
   const rangeForm = byId('harmony-range-form');
   const pendingRange = rangeForm.dataset.pending === 'true'

@@ -1,7 +1,7 @@
-import { createSong, MelodiError } from "./model.js?v=20260930.25";
+import { createSong, createDefaultSketch, MelodiError } from "./model.js?v=20260930.26";
 
-export const SCHEMA_VERSION = 4;
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4]);
+export const SCHEMA_VERSION = 5;
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4, 5]);
 
 export function serializeProject(song) {
   const canonicalSong = createSong(song);
@@ -27,5 +27,5 @@ export function deserializeProject(input) {
   const song = project.schemaVersion < 4 && Array.isArray(project.song?.chords)
     ? { ...project.song, chords: project.song.chords.map((chord) => ({ ...chord, locked: false })) }
     : project.song;
-  return createSong(song);
+  return createSong(project.schemaVersion < 5 ? { ...song, sketch: createDefaultSketch() } : song);
 }

@@ -229,7 +229,7 @@ function mixedFixture() {
 test("share v5 rebinds distinct percussion volumes to newly decoded track IDs", async () => {
   const original = mixedFixture();
   const portable = toPortableProject(original);
-  assert.equal(portable.version, 6);
+  assert.equal(portable.version, 7);
   assert.equal(portable.project.tracks[0].volume, 0.63);
   assert.deepEqual(portable.project.tracks.filter((track) => track.kind === "percussion").map((track) => track.volumes),
     [{ snare: 0, ride: 0.42 }, { snare: 0.87 }]);
