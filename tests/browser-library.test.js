@@ -284,7 +284,7 @@ test("browser library preserves canonical channel volumes without runtime mute o
   assert.equal(opened.ok, true);
   assert.deepEqual(opened.song.mix, { melody: 0.75, percussion: { "library-kit": { kick: 0, ride: 0.46 } } });
   const envelope = JSON.parse(indexedDB.database.stores.get(BROWSER_LIBRARY_STORE).get(song.id).project);
-  assert.equal(envelope.schemaVersion, 4);
+  assert.equal(envelope.schemaVersion, 5);
   assert.deepEqual(Object.keys(envelope.song.mix).sort(), ["melody", "percussion"]);
   assert.deepEqual(Object.keys(envelope.song.mix.percussion["library-kit"]).sort(), ["kick", "ride"]);
   assert.equal(Object.hasOwn(envelope.song, "playback"), false);

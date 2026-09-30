@@ -1,14 +1,14 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.25";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.27";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.25";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.25";
+import { createAgentSnapshot } from "./snapshot.js?v=20260930.27";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.27";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.25";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.25";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20260930.25";
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.25";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260930.27";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.27";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20260930.27";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.27";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -108,6 +108,7 @@ export function createCommands(initialSong, {
   let lastAcceptedNoteIds = [];
   const songEndTick = () => {
     let end = song.notes.reduce((value, note) => Math.max(value, note.startTick + note.durationTicks), 0);
+    for (const chord of song.chords) end = Math.max(end, chord.startTick + chord.durationTicks);
     for (const track of song.tracks) {
       if (track.kind !== "percussion") continue;
       for (const hit of track.events) end = Math.max(end, hit.startTick + (hit.durationTicks ?? 1));
@@ -277,6 +278,7 @@ export function createCommands(initialSong, {
     const keys = Object.keys(input);
     if (!keys.length || keys.some((key) => !allowed.includes(key))
       || (!partial && allowed.some((key) => !Object.hasOwn(input, key)))) fail("invalid-chord-patch");
+    if (Object.hasOwn(input, "quality") && !["major", "minor", "diminished"].includes(input.quality)) fail("unsupported-chord-quality");
   }
 
   function readGenerationState() {
@@ -421,6 +423,10 @@ export function createCommands(initialSong, {
     if (mix.channels[channelId][flag] === enabled) return enabled;
     if (flag === "volume") {
       commit((candidate) => {
+        if (channelId === "harmony" || channelId === "bass") {
+          candidate.sketch[channelId].volume = enabled;
+          return;
+        }
         candidate.mix ??= { melody: 1, percussion: {} };
         if (channelId === "melody") candidate.mix.melody = enabled;
         else {
@@ -438,6 +444,23 @@ export function createCommands(initialSong, {
     refreshPlaybackMix();
     notifyChange("mix");
     return enabled;
+  }
+
+  function refreshPlaybackSong() {
+    if (playback.status === "playing" && audioPlayer) {
+      let tick = playback.currentTick;
+      try { tick = audioPlayer.getPosition(); } catch {}
+      setPlaybackPosition(tick);
+      updatePlayerSafely(() => audioPlayer.songChanged(tick, playback.loop));
+    }
+  }
+
+  function setSketchStyle(channel, style) {
+    const styles = channel === "harmony" ? ["block", "arpeggio"] : ["root", "root-fifth"];
+    if (!styles.includes(style)) fail("invalid-sketch-style");
+    if (song.sketch[channel].style === style) return style;
+    commit((candidate) => { candidate.sketch[channel].style = style; }, refreshPlaybackSong);
+    return style;
   }
 
   function refreshPlaybackMix() {
@@ -568,6 +591,12 @@ export function createCommands(initialSong, {
     setInstrumentVolume(channelId, volume) {
       return setInstrumentValue(channelId, "volume", volume);
     },
+    setHarmonyStyle(style) {
+      return setSketchStyle("harmony", style);
+    },
+    setBassStyle(style) {
+      return setSketchStyle("bass", style);
+    },
     canUndo() {
       return undoStack.length > 0;
     },
@@ -630,7 +659,7 @@ export function createCommands(initialSong, {
     addChord(input) {
       validateChordFields(input);
       const chord = { id: idFactory(), ...cloneData(input), locked: false };
-      commit((candidate) => { candidate.chords.push(chord); });
+      commit((candidate) => { candidate.chords.push(chord); }, refreshPlaybackSong);
       return cloneData(findChord(chord.id));
     },
     updateChord(chordId, patch) {
@@ -638,13 +667,13 @@ export function createCommands(initialSong, {
       if (chord.locked) fail("locked-chord");
       validateChordFields(patch, true);
       if (Object.entries(patch).every(([key, value]) => chord[key] === value)) return cloneData(chord);
-      commit((candidate) => { Object.assign(candidate.chords.find((item) => item.id === chordId), cloneData(patch)); });
+      commit((candidate) => { Object.assign(candidate.chords.find((item) => item.id === chordId), cloneData(patch)); }, refreshPlaybackSong);
       return cloneData(findChord(chordId));
     },
     deleteChord(chordId) {
       const chord = findChord(chordId);
       if (chord.locked) fail("locked-chord");
-      commit((candidate) => { candidate.chords = candidate.chords.filter((item) => item.id !== chordId); });
+      commit((candidate) => { candidate.chords = candidate.chords.filter((item) => item.id !== chordId); }, refreshPlaybackSong);
       return chordId;
     },
     setChordLocked(chordId, locked) {

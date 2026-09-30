@@ -1,4 +1,4 @@
-import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.25";
+import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.27";
 
 export const PPQ = 480;
 
@@ -179,8 +179,22 @@ function validateSongMix(song) {
   }
 }
 
+export function createDefaultSketch() {
+  return { harmony: { style: "block", volume: 1 }, bass: { style: "root", volume: 1 } };
+}
+
+function validateSongSketch(sketch) {
+  requireKeys(sketch, ["harmony", "bass"], "invalid-song-sketch");
+  for (const [channel, styles] of [["harmony", ["block", "arpeggio"]], ["bass", ["root", "root-fifth"]]]) {
+    requireKeys(sketch[channel], ["style", "volume"], "invalid-song-sketch");
+    const { style, volume } = sketch[channel];
+    if (!styles.includes(style) || typeof volume !== "number" || !Number.isFinite(volume)
+      || volume < 0 || volume > 1) fail("invalid-song-sketch");
+  }
+}
+
 function validateSong(song) {
-  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks", ...(isRecord(song) && Object.hasOwn(song, "mix") ? ["mix"] : [])]);
+  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks", "sketch", ...(isRecord(song) && Object.hasOwn(song, "mix") ? ["mix"] : [])]);
   requireId(song.id);
   requireText(song.title);
 
@@ -242,6 +256,7 @@ function validateSong(song) {
   }
   for (const track of song.tracks) validateInstrumentTrack(track, ids);
   validateSongMix(song);
+  validateSongSketch(song.sketch);
 
   for (const chord of song.chords) {
     requireKeys(chord, ["id", "rootPitchClass", "quality", "startTick", "durationTicks", "locked"], "invalid-chord");
@@ -270,7 +285,9 @@ function validateSong(song) {
 }
 
 export function createSong(data) {
-  const input = normalizeSongInput(data);
+  const legacyInput = normalizeSongInput(data);
+  const input = isRecord(legacyInput) && !Object.hasOwn(legacyInput, "sketch")
+    ? { ...legacyInput, sketch: createDefaultSketch() } : legacyInput;
   const normalized = isRecord(input) && Array.isArray(input.chords)
     ? { ...input, chords: input.chords.map((chord) => isRecord(chord) && !Object.hasOwn(chord, "locked")
       ? { ...chord, locked: false } : chord) } : input;

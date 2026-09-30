@@ -70,7 +70,7 @@ test("Save File serializes the song and downloads it through a temporary object 
 
   assert.equal(serializedSong, song);
   assert.deepEqual(createdBlob.parts, [serializedPayload]);
-  assert.equal(JSON.parse(createdBlob.parts[0]).schemaVersion, 4);
+  assert.equal(JSON.parse(createdBlob.parts[0]).schemaVersion, 5);
   const reopened = deserializeProject(createdBlob.parts[0]);
   assert.equal(reopened.mix.melody, 0.7);
   assert.deepEqual(reopened.mix.percussion["file-kit"], { ride: 0.52, snare: 0 });

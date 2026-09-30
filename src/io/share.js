@@ -1,8 +1,8 @@
-import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260930.25";
+import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260930.27";
 
 export const SHARE_FORMAT = "melodi-share";
-export const SHARE_VERSION = 6;
-const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4, 5, 6]);
+export const SHARE_VERSION = 7;
+const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4, 5, 6, 7]);
 export const SHARE_HASH_KEY = "m";
 export const MAX_SHARE_COMPRESSED_BYTES = 64 * 1024;
 export const MAX_SHARE_DECODED_BYTES = 512 * 1024;
@@ -201,6 +201,7 @@ export function toPortableProject(song) {
           id: "harmony",
           kind: "chords",
           role: "harmony",
+          ...canonical.sketch.harmony,
           events: canonical.chords.map((chord) => [
             chord.rootPitchClass,
             chord.quality,
@@ -209,6 +210,7 @@ export function toPortableProject(song) {
             chord.locked ? 1 : 0
           ])
         },
+        { id: "bass", kind: "sketch", role: "bass", ...canonical.sketch.bass, events: [] },
         ...canonical.tracks
           .filter((track) => track.kind === "percussion")
           .map((track, index) => ({
@@ -244,6 +246,16 @@ export function fromPortableProject(envelope, idFactory = createId) {
     && track.kind === "notes" && track.role === "lead");
   if (!melodyTrack || !Array.isArray(melodyTrack.events)) fail("malformed-share");
   const harmonyTrack = project.tracks.find((track) => isRecord(track) && track.kind === "chords");
+
+  const bassTrack = project.tracks.find((track) => isRecord(track) && track.kind === "sketch" && track.role === "bass");
+  let sketch;
+  if (envelope.version >= 7) {
+    if (!harmonyTrack || !bassTrack || !Array.isArray(bassTrack.events) || bassTrack.events.length !== 0) fail("malformed-share");
+    sketch = {
+      harmony: { style: harmonyTrack.style, volume: harmonyTrack.volume },
+      bass: { style: bassTrack.style, volume: bassTrack.volume }
+    };
+  }
 
   const notes = melodyTrack.events.map((event) => decodeNote(event, idFactory, envelope.version));
   const phraseRows = project.arrangement.phrases;
@@ -330,6 +342,7 @@ export function fromPortableProject(envelope, idFactory = createId) {
     lyrics: { rawText: lyricData[0], syllables },
     chords,
     tracks,
+    ...(sketch ? { sketch } : {}),
     ...(hasMix ? { mix: {
       melody: Object.hasOwn(melodyTrack, "volume") ? melodyTrack.volume : 1,
       percussion: percussionVolumes

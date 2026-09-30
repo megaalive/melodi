@@ -1,7 +1,8 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20260930.25";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.25";
-import { percussionVoiceSpec } from "./percussion.js?v=20260930.25";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20260930.25";
+import { MelodiError, PPQ } from "../core/model.js?v=20260930.27";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.27";
+import { percussionVoiceSpec } from "./percussion.js?v=20260930.27";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20260930.27";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20260930.27";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
@@ -301,6 +302,49 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     oscillator.stop(event.endTime);
   }
 
+  function scheduleSketchVoice(event, channelGain) {
+    const bass = event.note.channel === "bass";
+    const envelope = context.createGain();
+    const sources = [];
+    const componentGains = [];
+    const duration = event.endTime - event.startTime;
+    const attack = Math.min(bass ? 0.018 : 0.008, duration * 0.2);
+    const release = Math.min(0.06, duration * 0.25);
+    const peak = (bass ? 0.16 : 0.075) * channelGain;
+    const sustainAt = Math.max(event.startTime + attack, event.endTime - release);
+    envelope.gain.setValueAtTime(0, event.startTime);
+    envelope.gain.linearRampToValueAtTime(peak, event.startTime + attack);
+    envelope.gain.linearRampToValueAtTime(peak * (bass ? 0.75 : 0.45), sustainAt);
+    envelope.gain.linearRampToValueAtTime(0, event.endTime);
+    envelope.connect(masterGain);
+    const frequency = 440 * 2 ** ((event.note.pitch - 69) / 12);
+    const id = ++nextVoiceId;
+    const voice = { sources, gain: envelope, startTime: event.startTime, endTime: event.endTime, stopped: false };
+    voices.set(id, voice);
+    let remaining = 2;
+    for (const component of [{ type: "sine", ratio: 1, gain: 0.8 }, { type: "triangle", ratio: bass ? 1 : 2, gain: 0.2 }]) {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      sources.push(oscillator);
+      componentGains.push(gain);
+      oscillator.type = component.type;
+      oscillator.frequency.setValueAtTime(frequency * component.ratio, event.startTime);
+      gain.gain.setValueAtTime(component.gain, event.startTime);
+      oscillator.connect(gain);
+      gain.connect(envelope);
+      oscillator.addEventListener("ended", () => {
+        remaining -= 1;
+        if (remaining !== 0) return;
+        for (const source of sources) { try { source.disconnect(); } catch {} }
+        for (const componentGain of componentGains) { try { componentGain.disconnect(); } catch {} }
+        try { envelope.disconnect(); } catch {}
+        voices.delete(id);
+      }, { once: true });
+      oscillator.start(event.startTime);
+      oscillator.stop(event.endTime);
+    }
+  }
+
   function chokePercussionGroup(group, atTime) {
     if (!group) return;
     for (const id of chokeVoices.get(group) ?? []) {
@@ -473,6 +517,12 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     };
     const noteEvents = planNoteEvents(song, options);
     const percussionEvents = planPercussionEvents(song, options);
+    // Derived notes share transport clipping, rehydration, cycle keys and clock
+    // with melody; they never enter canonical Song.notes.
+    const sketchEvents = planNoteEvents({ notes: [...planHarmonyEvents(song), ...planBassEvents(song)] }, {
+      ...options,
+      scheduledKeys: { has: (key) => scheduled.has(`sketch:${key}`) }
+    });
     const mix = getMix();
 
     for (const event of noteEvents) {
@@ -491,6 +541,16 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       try {
         schedulePercussionVoice(event, gain);
         scheduled.set(event.key, event.cycle);
+      } catch {
+        fail("audio-scheduling-failed");
+      }
+    }
+    for (const event of sketchEvents) {
+      const gain = instrumentGain(mix, event.note.channel);
+      if (gain === 0) continue;
+      try {
+        scheduleSketchVoice(event, gain);
+        scheduled.set(`sketch:${event.key}`, event.cycle);
       } catch {
         fail("audio-scheduling-failed");
       }

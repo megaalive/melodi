@@ -197,7 +197,7 @@ Inspector Harmoni menawarkan beberapa triad dari range eksplisit `[startTick, en
 Keluarga fungsi dibatasi ke tonik (I/III/VI), predominan (II/IV), dan dominan
 (V/VII) untuk mayor dan minor natural tujuh nada. Scale tujuh nada lain memakai
 fungsi `other`; scale selain tujuh nada ditolak. Ini model sederhana, bukan kepastian teori.
-Preview saat ini visual; audio harmoni, bass, dan accompaniment belum tersedia.
+Preview kandidat tetap visual; chord yang diterima berbunyi melalui guide synth Harmoni dan Bass R5-B.
 Chord diterima langsung masuk Song dan Score. Kandidat runtime dibersihkan sesudah
 edit canonical. Chord terkunci harus dibuka secara eksplisit sebelum edit/hapus;
 range persis yang unlocked dapat diganti, overlap parsial ditolak.
@@ -232,3 +232,27 @@ Project schema v4 menyimpan `locked` secara eksplisit; v1–v3 dibaca sebagai
 unlocked. Share v6 memakai bit 0 flag chord; v1–v5 tetap dibaca unlocked dan
 semantik volume v5 tetap dipertahankan. Sesi kandidat, selection, serta M/S tidak
 disimpan sebagai keputusan harmoni.
+
+## Sketch accompaniment R5-B
+
+Chord canonical menjadi sumber playback Harmoni dan Bass; event turunan tidak
+ditambahkan ke `song.notes`. Harmoni memakai triad blok dengan voice leading
+inversi terbatas, atau arpeggio quarter di 4/4 dan eighth berkelompok di 6/8.
+Bass memakai root rendah atau root/fifth (pulse dotted-quarter untuk 6/8).
+Guide synth internal berbagi clock/scheduler Web Audio yang sama dengan Melody
+dan Drums. Range, boundary chord, dan loop membatasi event.
+
+Inspector Harmoni menyediakan Mute, Volume 0–100%, dan pilihan pola per channel.
+Style/volume `song.sketch` persistent dan undoable; Mute runtime-only. Perubahan
+mix/pola saat playback menjadwalkan ulang dari posisi sekarang. Project schema v5
+dan Share v7 menyimpan pengaturan; format lama tetap dibaca dengan default
+block/root dan unity. Lock chord serta volume Melody/percussion tetap dipertahankan.
+
+```js
+api.setHarmonyStyle("arpeggio");
+api.setBassStyle("root-fifth");
+api.setInstrumentVolume("harmony", 0.65);
+api.setInstrumentMute("bass", true);
+```
+
+Tidak ada groove generator, mode playback final, atau R5-C dalam tahap ini.

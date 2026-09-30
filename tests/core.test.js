@@ -557,7 +557,8 @@ test("state snapshot is detached and reports the actual command surface", () => 
       sections: fixture().sections,
       phrases: fixture().phrases,
       chords: fixture().chords,
-      tracks: fixture().tracks
+      tracks: fixture().tracks,
+      sketch: { harmony: { style: "block", volume: 1 }, bass: { style: "root", volume: 1 } }
     },
     playback: {
       status: "stopped",
@@ -572,7 +573,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     selection: null,
     selectedNoteIds: [],
     selectedPercussionHitIds: [],
-    mix: { channels: { melody: { mute: false, solo: false, volume: 1 } } },
+    mix: { channels: Object.fromEntries(["melody", "harmony", "bass"].map(channel => [channel, { mute: false, solo: false, volume: 1 }])) },
     editor: { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 },
     view: { mode: "piano-roll", follow: true },
     generation: {
@@ -591,7 +592,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "setHarmonyStyle", "setBassStyle", "addNote", "updateNote", "updateNotes", "deleteNote",
       "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "selectPercussionHits", "clearPercussionSelection", "deletePercussionHits", "duplicatePercussionHits", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
@@ -668,7 +669,7 @@ test("transport state stays outside the canonical song and project serialization
   commands.seek(960);
   commands.setLoop(240, 1680);
   commands.setLoopEnabled(true);
-  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "timing", "title", "tracks"]);
+  assert.deepEqual(Object.keys(commands.getSong()).sort(), ["chords", "id", "key", "lyrics", "notes", "phrases", "scale", "sections", "sketch", "timing", "title", "tracks"]);
   const restored = deserializeProject(serializeProject(commands.getSong()));
   assert.equal(Object.hasOwn(restored, "playback"), false);
   assert.deepEqual(restored.notes, fixture().notes);

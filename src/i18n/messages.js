@@ -3,7 +3,10 @@ export const DEFAULT_LANGUAGE = "id";
 export const MESSAGES = {
   id: {
     "harmonyHeading": "Harmoni",
-    "harmonyHelp": "Beberapa pilihan, bukan satu jawaban benar. Preview visual; audio harmoni belum tersedia.",
+    "harmonyHelp": "Beberapa pilihan, bukan satu jawaban benar. Chord diterima berbunyi bersama Harmoni dan Bass saat playback.",
+    sketchHarmony: "Harmoni", sketchBass: "Bass", sketchMute: "Mute", sketchVolume: "Volume", sketchStyle: "Pola",
+    sketchHarmonyMute: "Mute Harmoni", sketchBassMute: "Mute Bass", sketchHarmonyStyle: "Pola Harmoni", sketchBassStyle: "Pola Bass",
+    sketchBlock: "Triad blok", sketchArpeggio: "Arpeggio", sketchRoot: "Root", sketchRootFifth: "Root + Fifth",
     "harmonyInstruction": "Pilih range berisi melodi, atau isi tick awal dan akhir.",
     "harmonyRange": "Range [{start}, {end}) tick",
     "harmonyUseSelection": "Gunakan seleksi",
@@ -653,7 +656,10 @@ export const MESSAGES = {
   },
   en: {
     "harmonyHeading": "Harmony",
-    "harmonyHelp": "Several choices, not one correct answer. Visual preview; harmony audio is not available yet.",
+    "harmonyHelp": "Several choices, not one correct answer. Accepted chords sound with Harmony and Bass during playback.",
+    sketchHarmony: "Harmony", sketchBass: "Bass", sketchMute: "Mute", sketchVolume: "Volume", sketchStyle: "Style",
+    sketchHarmonyMute: "Mute Harmony", sketchBassMute: "Mute Bass", sketchHarmonyStyle: "Harmony style", sketchBassStyle: "Bass style",
+    sketchBlock: "Block triad", sketchArpeggio: "Arpeggio", sketchRoot: "Root", sketchRootFifth: "Root + Fifth",
     "harmonyInstruction": "Select a range containing melody, or enter explicit start and end ticks.",
     "harmonyRange": "Range [{start}, {end}) ticks",
     "harmonyUseSelection": "Use selection",

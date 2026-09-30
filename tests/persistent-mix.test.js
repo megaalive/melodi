@@ -79,8 +79,8 @@ test("project schema4 preserves only song volumes; v1/v2 missing mix remains uni
   commands.setInstrumentSolo(ride, true);
   commands.setInstrumentMute("melody", true);
   const project = serializeProject(commands.getSong());
-  assert.equal(SCHEMA_VERSION, 4);
-  assert.equal(JSON.parse(project).schemaVersion, 4);
+  assert.equal(SCHEMA_VERSION, 5);
+  assert.equal(JSON.parse(project).schemaVersion, 5);
   assert.equal(project.includes('"mute"'), false);
   assert.equal(project.includes('"solo"'), false);
   const portable = JSON.stringify(toPortableProject(commands.getSong()));
