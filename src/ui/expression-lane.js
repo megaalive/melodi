@@ -186,6 +186,13 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
       x1: x + 3, x2: Math.max(x + 3, x + width - 3), y1: y, y2: y,
       class: "expression-value-line", "pointer-events": "none"
     }, group);
+    if (mode === "vibrato") {
+      const wave = svg("polyline", {
+        class: "expression-vibrato-wave", "pointer-events": "none",
+        "aria-hidden": "true"
+      }, group);
+      updateVibratoWave(wave, note, x, width, value);
+    }
     svg("circle", {
       cx: x + Math.min(Math.max(8, width / 2), Math.max(8, width - 5)),
       cy: y, r: 4.5,
@@ -197,6 +204,29 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
         "text-anchor": "middle", class: "expression-value-label", "pointer-events": "none"
       }, group, valueLabel(mode, value));
     }
+  }
+
+  function updateVibratoWave(wave, note, x, width, depth) {
+    if (!(depth > 0) || width < 12) {
+      wave.setAttribute("points", "");
+      return;
+    }
+    const delay = clamp(note.vibrato?.delayPosition ?? 0, 0, 1);
+    const left = x + 3 + Math.max(0, width - 6) * delay;
+    const span = Math.max(0, x + width - 3 - left);
+    if (span < 6) { wave.setAttribute("points", ""); return; }
+    // Gelombang memperjelas adanya vibrato; handle tetap menunjukkan depth asli.
+    const depthY = expressionY("vibrato", depth);
+    const center = depthY > TOP + 36 ? depthY - 20 : depthY + 26;
+    const amplitude = Math.min(8, Math.max(4, depth * 12));
+    const seconds = note.durationTicks / song.timing.ppq * 60 / song.timing.tempo;
+    const cycles = clamp(seconds * (note.vibrato?.rateHz ?? 5.5) * (1 - delay), 1, Math.max(1, span / 12));
+    const samples = Math.max(16, Math.ceil(cycles * 16));
+    const points = Array.from({ length: samples + 1 }, (_, index) => {
+      const position = index / samples;
+      return `${left + span * position},${center - Math.sin(position * cycles * Math.PI * 2) * amplitude}`;
+    });
+    wave.setAttribute("points", points.join(" "));
   }
 
   function renderNotes() {
@@ -251,9 +281,15 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
       const line = group.querySelector(".expression-value-line");
       const point = group.querySelector(".expression-value-point");
       const label = group.querySelector(".expression-value-label");
+      const wave = group.querySelector(".expression-vibrato-wave");
       const y = expressionY(mode, value);
       if (line) { line.setAttribute("y1", String(y)); line.setAttribute("y2", String(y)); }
       if (point) point.setAttribute("cy", String(y));
+      if (wave) {
+        const note = song.notes.find((candidate) => candidate.id === id);
+        const hit = group.querySelector(".expression-note-hit");
+        if (note && hit) updateVibratoWave(wave, note, Number(hit.getAttribute("x")), Number(hit.getAttribute("width")), value);
+      }
       if (label) {
         label.setAttribute("y", String(Math.max(TOP + 10, y - 7)));
         label.textContent = valueLabel(mode, value);

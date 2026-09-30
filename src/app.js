@@ -1,30 +1,31 @@
-import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.31";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.31";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.31";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.31";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.31";
-import { createCommands } from "./core/commands.js?v=20261001.31";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261001.32';
+import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.32";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.32";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.32";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.32";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.32";
+import { createCommands } from "./core/commands.js?v=20261001.32";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.31";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.31";
-import { createAudioPlayer } from "./audio/player.js?v=20261001.31";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.32";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.32";
+import { createAudioPlayer } from "./audio/player.js?v=20261001.32";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.31";
-import { createScoreView } from "./ui/score.js?v=20261001.31";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261001.31";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.31";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.31";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.31";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.31";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.32";
+import { createScoreView } from "./ui/score.js?v=20261001.32";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261001.32";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.32";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.32";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.32";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.32";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261001.31";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.31";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.31";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.31";
-import { deserializeProject } from "./core/serialization.js?v=20261001.31";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.31";
+import { createDraftPersistence } from "./storage/draft.js?v=20261001.32";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.32";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.32";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.32";
+import { deserializeProject } from "./core/serialization.js?v=20261001.32";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.32";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -44,6 +45,7 @@ let shareLoadStatus = "none";
 let uiPreferences;
 let lastHarmonyPlaybackContext = null;
 let studioView = null;
+let progressionView = null;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -477,7 +479,7 @@ function showChordContextMenu(chord, event) {
     button.dataset.harmonyId = chord.id;
     button.disabled = (button.dataset.action === "edit-chord" || button.dataset.action === "delete-chord") && chord.locked;
     if (button.dataset.action === "toggle-chord-lock") button.textContent = translate(chord.locked ? "harmonyUnlock" : "harmonyLock");
-    if (button.dataset.action === "duplicate-chord") button.disabled = !["major", "minor", "diminished"].includes(chord.quality);
+    if (button.dataset.action === "duplicate-chord") button.disabled = !["major", "minor", "diminished", "augmented"].includes(chord.quality);
   }
   menu.hidden = false;
   const rect = menu.getBoundingClientRect();
@@ -1243,6 +1245,7 @@ function renderPlayback() {
   if (lastHarmonyPlaybackContext !== harmonyContextKey && byId("harmony-range-form").dataset.pending !== "true") {
     lastHarmonyPlaybackContext = harmonyContextKey;
     renderHarmonyInspector(song, state, commands.getHarmonyState(), translate);
+  progressionView?.render();
   }
   const statusKey = {
     stopped: "playbackStopped",
@@ -1370,6 +1373,7 @@ function render() {
   renderEditorControls();
   renderGeneration(state);
   renderHarmonyInspector(song, state, commands.getHarmonyState(), translate);
+  progressionView?.render();
   renderPanelDisclosures(song, state);
   rollView.render(song, state, null, songEndTick);
   expressionView?.render(song, state, rollView.getGeometry());
@@ -1783,6 +1787,7 @@ commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
   onEditorChange() {
     renderEditorControls();
     renderHarmonyInspector(commands.getSong(), commands.getState(), commands.getHarmonyState(), translate);
+    progressionView?.render();
     studioView?.render(commands.getSong(), commands.getState());
     if (rollView) {
       const state = commands.getState();
@@ -2260,6 +2265,11 @@ const publicCommands = Object.freeze({
   acceptCandidate: commands.acceptCandidate,
   lockAcceptedNotes: commands.lockAcceptedNotes,
   clearGeneration: commands.clearGeneration,
+  generateHarmonyProgression: commands.generateHarmonyProgression,
+  getHarmonyProgression: commands.getHarmonyProgression,
+  chooseHarmonyProgressionChord: commands.chooseHarmonyProgressionChord,
+  clearHarmonyProgression: commands.clearHarmonyProgression,
+  applyHarmonyProgression: commands.applyHarmonyProgression,
   suggestHarmony: commands.suggestHarmony,
   getHarmonyState: commands.getHarmonyState,
   selectHarmonyCandidate: commands.selectHarmonyCandidate,
@@ -3024,6 +3034,7 @@ window.addEventListener("pagehide", () => persistence.flush());
 // setelah reload/back-forward, yang dapat membuat beberapa panel advanced terbuka sekaligus.
 document.querySelectorAll("details").forEach((details) => { details.open = false; });
 
+progressionView = createProgressionWorkspace(commands, () => language, reportError);
 studioView = createStudioWorkspace(commands, translate, reportError);
 render();
 if (shareLoadStatus === "loaded") announce("shareLoaded");

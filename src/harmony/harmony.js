@@ -1,4 +1,4 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261001.31";
+import { MelodiError, PPQ } from "../core/model.js?v=20261001.32";
 
 const MAJOR = "0,2,4,5,7,9,11";
 const MINOR = "0,2,3,5,7,8,10";
@@ -18,12 +18,12 @@ export function deriveDiatonicTriads(song) {
   return intervals.flatMap((interval, degree) => {
     const third = (intervals[(degree + 2) % 7] - interval + 12) % 12;
     const fifth = (intervals[(degree + 4) % 7] - interval + 12) % 12;
-    const quality = third === 4 && fifth === 7 ? "major" : third === 3 && fifth === 7 ? "minor" : third === 3 && fifth === 6 ? "diminished" : null;
+    const quality = third === 4 && fifth === 7 ? "major" : third === 3 && fifth === 7 ? "minor" : third === 3 && fifth === 6 ? "diminished" : third === 4 && fifth === 8 ? "augmented" : null;
     if (!quality) return [];
     const rootPitchClass = (root + interval) % 12;
     // Model fungsi sengaja terbatas; skala lain tidak diberi kepastian palsu.
     const family = [0, 2, 5].includes(degree) ? "tonic" : [1, 3].includes(degree) ? "predominant" : "dominant";
-    const numeral = quality === "major" ? ROMAN[degree] : ROMAN[degree].toLowerCase();
+    const numeral = ["major", "augmented"].includes(quality) ? ROMAN[degree] : ROMAN[degree].toLowerCase();
     return [{ rootPitchClass, quality, scaleDegree: degree + 1, romanNumeral: numeral + (quality === "diminished" ? "°" : ""), function: ordinary ? family : "other", chordTonePitchClasses: [rootPitchClass, (rootPitchClass + third) % 12, (rootPitchClass + fifth) % 12] }];
   });
 }

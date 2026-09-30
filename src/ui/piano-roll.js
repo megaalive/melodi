@@ -1,9 +1,9 @@
 import { midiToPitch, PPQ } from "../core/model.js";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261001.31";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.31";
-import { harmonyChordSymbol } from "./harmony.js?v=20261001.31";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261001.32";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.32";
+import { harmonyChordSymbol } from "./harmony.js?v=20261001.32";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -496,7 +496,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       // Short spans keep their full canonical width; label fits inside that span.
       const label = svgElement("svg", { x: x + 4, y: PIANO_RULER_HEIGHT + 2, width: Math.max(0, width - 8), height: HARMONY_LANE_HEIGHT - 4,
         overflow: "hidden", "pointer-events": "none", "aria-hidden": "true" }, group);
-      svgElement("text", { x: 0, y: 25, fill: selectedChord ? "white" : "var(--text)", "font-size": 13 }, label, `${symbol}${chord.locked ? " 🔒" : ""}`);
+      svgElement("text", { x: 0, y: 25, fill: selectedChord ? "var(--on-accent)" : "var(--text)", "font-size": 13 }, label, `${symbol}${chord.locked ? " 🔒" : ""}`);
       if (selectedChord && !chord.locked) svgElement("rect", { x: x + Math.max(0, width - 20), y: PIANO_RULER_HEIGHT + 2,
         width: Math.min(20, width), height: HARMONY_LANE_HEIGHT - 4, rx: 3, fill: "var(--accent)", opacity: .6,
         "data-action": "resize-chord", "aria-hidden": "true", style: "cursor: ew-resize" }, group);

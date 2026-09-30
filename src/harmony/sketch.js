@@ -1,6 +1,6 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261001.31";
+import { MelodiError, PPQ } from "../core/model.js?v=20261001.32";
 
-const INTERVALS = { major: [0, 4, 7], minor: [0, 3, 7], diminished: [0, 3, 6] };
+const INTERVALS = { major: [0, 4, 7], minor: [0, 3, 7], diminished: [0, 3, 6], augmented: [0, 4, 8] };
 
 function settings(song, options, channel, styles) {
   const style = options.style ?? song.sketch?.[channel]?.style ?? styles[0];
