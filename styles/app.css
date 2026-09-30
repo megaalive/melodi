@@ -4260,12 +4260,12 @@ body[data-view-mode="drums"] .workspace-sidebar {
 /* Inspector harmoni menggunakan kontrol eksplisit dan tetap ringkas di mobile. */
 .harmony-card { min-width: 0; }
 .sketch-controls { display: grid; gap: .5rem; margin: .6rem 0; min-width: 0; }
-.sketch-controls fieldset { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: .5rem; min-width: 0; margin: 0; padding: .5rem; border: 1px solid var(--border); border-radius: .5rem; }
+.sketch-controls fieldset { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .5rem; min-width: 0; margin: 0; padding: .5rem; border: 1px solid var(--border); border-radius: .5rem; }
 .sketch-controls legend { padding: 0 .25rem; font-weight: 600; }
 .sketch-controls label { min-width: 0; display: grid; gap: .25rem; }
 .sketch-controls button { min-height: 44px; }
 .sketch-controls [aria-pressed="true"] { background: var(--accent); color: white; }
-@media (max-width: 420px) { .sketch-controls fieldset { grid-template-columns: auto minmax(0, 1fr); } .sketch-controls fieldset label:last-child { grid-column: 1 / -1; } }
+.sketch-controls fieldset label:last-child { grid-column: 1 / -1; }
 .harmony-card input, .harmony-card select { width: 100%; min-width: 0; }
 .harmony-card .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .harmony-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin: .6rem 0; }

@@ -47,5 +47,5 @@ test('sketch copy is bilingual and mobile layout can shrink without fixed width'
   assert.doesNotMatch(message('en','harmonyHelp'),/not available/);
   const css=read('../styles/app.css');
   assert.match(css,/\.sketch-controls fieldset \{[^}]*minmax\(0, 1fr\)[^}]*min-width: 0/);
-  assert.match(css,/@media \(max-width: 420px\).*\.sketch-controls fieldset/);
+  assert.match(css,/\.sketch-controls fieldset label:last-child \{ grid-column: 1 \/ -1;/);
 });
