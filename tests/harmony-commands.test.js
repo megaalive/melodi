@@ -117,7 +117,10 @@ test("adjacent locked chords do not overlap a half-open candidate range", () => 
 });
 
 test("acceptance refuses multiple exact chords instead of silently deleting a sequence", () => {
-  const c = fixture(); c.addChord(fields); c.addChord({ ...fields, rootPitchClass: 5 });
+  const c = fixture();
+  const legacy = c.getSong();
+  legacy.chords = [{ ...fields, id: 'legacy-a', locked: false }, { ...fields, id: 'legacy-b', rootPitchClass: 5, locked: false }];
+  c.loadSong(legacy);
   const session = c.suggestHarmony({ startTick: 0, endTick: 960 });
   const depth = c.getState().history.undoDepth;
   assert.throws(() => c.acceptHarmonyCandidate(session.candidates[0].id), { code: "chord-conflict" });

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createPianoRollView, createRollGeometry, midiToY, rulerSeekTick, tickToX } from "../src/ui/piano-roll.js";
+import { createPianoRollView, createRollGeometry, midiToY, rulerSeekTick, tickToX, PIANO_RULER_HEIGHT } from "../src/ui/piano-roll.js";
 
 // Piano Roll adalah file yang menyentuh DOM, jadi tidak bisa diimpor di Node tanpa
 // stub. Stub ini cukup untuk exercise render(): yang diuji adalah apa yang digambar,
@@ -307,7 +307,7 @@ test("Piano Roll menggambar ruler seek terpisah dari area note", () => {
   const rulers = svg.byClass("roll-ruler-hit");
   assert.equal(rulers.length, 1);
   assert.equal(rulers[0].dataset.action, "seek-ruler");
-  assert.equal(Number(rulers[0].getAttribute("height")), view.getGeometry().top);
+  assert.equal(Number(rulers[0].getAttribute("height")), PIANO_RULER_HEIGHT);
 });
 
 test("custom playback range is visible on the timeline ruler", () => {

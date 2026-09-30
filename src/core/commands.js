@@ -1,14 +1,15 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.27";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.29";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20261001.29";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.27";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.27";
+import { createAgentSnapshot } from "./snapshot.js?v=20261001.29";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.29";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.27";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.27";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20260930.27";
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.27";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261001.29";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.29";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.29";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261001.29";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -94,6 +95,7 @@ export function createCommands(initialSong, {
   let selectedPercussionHitIds = [];
   let mix = createInstrumentMix(song);
   let snap = DEFAULT_SNAP;
+  let chordSnap = "bar";
   let tool = DEFAULT_EDITOR_TOOL;
   let zoom = DEFAULT_ROLL_ZOOM;
   let viewMode = "piano-roll";
@@ -106,15 +108,29 @@ export function createCommands(initialSong, {
   let harmonySession = null;
   let generationAuditionToken = 0;
   let lastAcceptedNoteIds = [];
-  const songEndTick = () => {
-    let end = song.notes.reduce((value, note) => Math.max(value, note.startTick + note.durationTicks), 0);
-    for (const chord of song.chords) end = Math.max(end, chord.startTick + chord.durationTicks);
-    for (const track of song.tracks) {
-      if (track.kind !== "percussion") continue;
-      for (const hit of track.events) end = Math.max(end, hit.startTick + (hit.durationTicks ?? 1));
+  let selectedChordId = null;
+  let harmonyRange = null;
+  const songEndTick = () => canonicalSongEndTick(song);
+
+  function effectiveHarmonyRange() {
+    if (selection && selection.endTick > selection.startTick) {
+      return { startTick: selection.startTick, endTick: selection.endTick };
     }
-    return end;
-  };
+    const notes = song.notes.filter((note) => selectedNoteIds.includes(note.id));
+    if (notes.length) return {
+      startTick: Math.min(...notes.map((note) => note.startTick)),
+      endTick: Math.max(...notes.map((note) => note.startTick + note.durationTicks))
+    };
+    return harmonyRange ? cloneData(harmonyRange) : barRangeAtTick(song, Math.max(0, Math.floor(playback.currentTick)));
+  }
+
+  function reconcileHarmonySelection({ reset = false } = {}) {
+    if (reset) { selectedChordId = null; harmonyRange = null; return; }
+    if (!selectedChordId) return;
+    const chord = song.chords.find((item) => item.id === selectedChordId);
+    if (!chord) { selectedChordId = null; harmonyRange = null; return; }
+    harmonyRange = { startTick: chord.startTick, endTick: chord.startTick + chord.durationTicks };
+  }
 
   /*
    * Note manual harus masuk ke phrase terdekat secara waktu. Baseline sekarang
@@ -265,6 +281,16 @@ export function createCommands(initialSong, {
     return chord;
   }
 
+  function overlappingChords({ startTick, durationTicks }, ignoreChordId = null) {
+    const endTick = startTick + durationTicks;
+    return song.chords.filter(chord => chord.id !== ignoreChordId
+      && chord.startTick < endTick && chord.startTick + chord.durationTicks > startTick);
+  }
+
+  function assertChordPlacement(placement, ignoreChordId = null) {
+    if (overlappingChords(placement, ignoreChordId).length) fail("chord-conflict");
+  }
+
   function harmonyCandidate(candidateId) {
     if (!harmonySession) fail("harmony-session-missing");
     const candidate = harmonySession.candidates.find((item) => item.id === candidateId);
@@ -355,6 +381,7 @@ export function createCommands(initialSong, {
     lastAcceptedNoteIds = [];
     try { audioPlayer?.cancelPreview?.(); } catch {}
     song = validated;
+    reconcileHarmonySelection();
     mix = createInstrumentMix(song, mix);
     syncAutomaticLoopRange();
     selection = null;
@@ -375,6 +402,7 @@ export function createCommands(initialSong, {
     const validated = createSong(candidate);
     pushHistory();
     song = validated;
+    reconcileHarmonySelection();
     mix = createInstrumentMix(song, mix);
     syncAutomaticLoopRange();
     canonicalRevision += 1;
@@ -516,12 +544,14 @@ export function createCommands(initialSong, {
     playRequest += 1;
     updatePlayerSafely(() => audioPlayer?.stop());
     song = nextSong;
+    reconcileHarmonySelection({ reset: true });
     mix = createInstrumentMix(song);
     selection = null;
     selectedNoteIds = [];
     selectedPercussionHitIds = [];
     copiedNotes = null;
     snap = DEFAULT_SNAP;
+    chordSnap = "bar";
     tool = DEFAULT_EDITOR_TOOL;
     zoom = DEFAULT_ROLL_ZOOM;
     viewMode = "piano-roll";
@@ -576,11 +606,41 @@ export function createCommands(initialSong, {
     getState() {
       return createAgentSnapshot(song, selection, readPlayback(), {
         snap,
+        chordSnap,
         tool,
         zoom,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
-      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState(), selectedPercussionHitIds, mix, readHarmonyState());
+      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState(), selectedPercussionHitIds, mix, readHarmonyState(), { selectedChordId, harmonyRange: effectiveHarmonyRange() });
+    },
+    selectChord(chordId) {
+      const chord = findChord(chordId);
+      selectedChordId = chordId;
+      harmonyRange = { startTick: chord.startTick, endTick: chord.startTick + chord.durationTicks };
+      selection = null;
+      selectedNoteIds = [];
+      selectedPercussionHitIds = [];
+      harmonySession = null;
+      notifyChange("selection");
+      return cloneData(chord);
+    },
+    clearChordSelection() {
+      selectedChordId = null;
+      harmonyRange = null;
+      harmonySession = null;
+      notifyChange("selection");
+      return null;
+    },
+    setHarmonyRange(startTick, endTick) {
+      if (!Number.isSafeInteger(startTick) || startTick < 0 || !Number.isSafeInteger(endTick) || endTick <= startTick) fail("invalid-range");
+      selectedChordId = null;
+      harmonyRange = { startTick, endTick };
+      selection = null;
+      selectedNoteIds = [];
+      selectedPercussionHitIds = [];
+      harmonySession = null;
+      notifyChange("selection");
+      return cloneData(harmonyRange);
     },
     setInstrumentMute(channelId, enabled) {
       return setInstrumentValue(channelId, "mute", enabled);
@@ -641,15 +701,14 @@ export function createCommands(initialSong, {
     },
     acceptHarmonyCandidate(candidateId = harmonySession?.selectedCandidateId) {
       const candidate = harmonyCandidate(candidateId);
-      const endTick = candidate.startTick + candidate.durationTicks;
-      const overlaps = song.chords.filter((chord) => chord.startTick < endTick
-        && chord.startTick + chord.durationTicks > candidate.startTick);
+      const overlaps = overlappingChords(candidate);
       if (overlaps.some((chord) => chord.locked)) fail("locked-chord");
       if (overlaps.length > 1 || overlaps.some((chord) => chord.startTick !== candidate.startTick
         || chord.durationTicks !== candidate.durationTicks)) fail("chord-conflict");
       const fields = { rootPitchClass: candidate.rootPitchClass, quality: candidate.quality,
         startTick: candidate.startTick, durationTicks: candidate.durationTicks };
       const chord = overlaps[0];
+      assertChordPlacement(candidate, chord?.id);
       const result = chord ? commands.updateChord(chord.id, fields) : commands.addChord(fields);
       // Penerimaan yang identik tetap mengakhiri sesi tanpa menambah history.
       harmonySession = null;
@@ -658,6 +717,7 @@ export function createCommands(initialSong, {
     },
     addChord(input) {
       validateChordFields(input);
+      assertChordPlacement(input);
       const chord = { id: idFactory(), ...cloneData(input), locked: false };
       commit((candidate) => { candidate.chords.push(chord); }, refreshPlaybackSong);
       return cloneData(findChord(chord.id));
@@ -667,6 +727,11 @@ export function createCommands(initialSong, {
       if (chord.locked) fail("locked-chord");
       validateChordFields(patch, true);
       if (Object.entries(patch).every(([key, value]) => chord[key] === value)) return cloneData(chord);
+      const proposed = { ...chord, ...patch };
+      // Legacy overlap remains readable/editable; only a changed placement can introduce a new collision.
+      if (proposed.startTick !== chord.startTick || proposed.durationTicks !== chord.durationTicks) {
+        assertChordPlacement(proposed, chordId);
+      }
       commit((candidate) => { Object.assign(candidate.chords.find((item) => item.id === chordId), cloneData(patch)); }, refreshPlaybackSong);
       return cloneData(findChord(chordId));
     },
@@ -1032,11 +1097,14 @@ export function createCommands(initialSong, {
       }
       selection = null;
       selectedNoteIds = [];
+      selectedChordId = null;
+      harmonySession = null;
       selectedPercussionHitIds = [...hitIds];
       notifyChange("selection");
       return cloneData(selectedPercussionHitIds);
     },
     clearPercussionSelection() {
+      harmonySession = null;
       selectedPercussionHitIds = [];
       notifyChange("selection");
       return [];
@@ -1296,12 +1364,15 @@ export function createCommands(initialSong, {
         seen.add(noteId);
       }
       selection = null;
+      selectedChordId = null;
+      harmonySession = null;
       selectedNoteIds = [...noteIds];
       selectedPercussionHitIds = [];
       notifyChange("selection");
       return cloneData(selectedNoteIds);
     },
     clearSelection() {
+      harmonySession = null;
       selection = null;
       selectedNoteIds = [];
       selectedPercussionHitIds = [];
@@ -1363,6 +1434,13 @@ export function createCommands(initialSong, {
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(pasted);
+    },
+    setChordSnap(value) {
+      if (!["bar", "half-bar", "beat"].includes(value)) fail("invalid-chord-snap");
+      chordSnapTicks(song, value);
+      chordSnap = value;
+      notifyEditorChange();
+      return chordSnap;
     },
     setSnap(value) {
       if (!Object.hasOwn(SNAP_TICKS, value)) fail("invalid-snap");
@@ -1429,6 +1507,8 @@ export function createCommands(initialSong, {
       const noteIds = song.notes
         .filter((note) => note.startTick < endTick && note.startTick + note.durationTicks > startTick)
         .map((note) => note.id);
+      selectedChordId = null;
+      harmonySession = null;
       selection = { startTick, endTick, noteIds };
       selectedNoteIds = [...noteIds];
       selectedPercussionHitIds = [];

@@ -49,7 +49,7 @@ test('sketch commands are public and UI events use canonical command pathways',(
     assert.match(app,new RegExp(`run\\(\\(\\) => commands\\.${name}\\(event.target.value\\)\\)`));
   }
   assert.match(app,/commands\.setInstrumentVolume\(event\.target\.dataset\.channelId, Number\(event\.target\.value\) \/ 100\)/);
-  assert.match(app,/for \(const chord of song\.chords \?\? \[\]\)/);
+  assert.match(read("../src/core/timeline.js"),/for \(const chord of song\.chords \?\? \[\]\)/);
 });
 
 test('sketch copy is bilingual and mobile layout can shrink without fixed width',()=>{

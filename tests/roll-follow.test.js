@@ -50,7 +50,10 @@ test("the app follow decision disables center lock for custom ranges without cha
 test("the app passes its canonical note-and-percussion range decision to both rolls", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   assert.match(app, /function canonicalSongEndTick\(song\)/);
-  assert.match(app, /track\.kind !== "percussion"/);
+  assert.match(app, /canonicalSongEndTick as musicalEndTick/);
+  const timeline = readFileSync(resolve("src/core/timeline.js"), "utf8");
+  assert.match(timeline, /track\.kind !== "percussion"/);
+  assert.match(timeline, /chord.startTick \+ chord.durationTicks/);
   assert.match(app, /const customPlaybackRange = playback\.loop\.startTick !== 0 \|\| playback\.loop\.endTick !== songEndTick/);
   assert.match(app, /playbackFollowMode\(follow, customPlaybackRange\)/);
   assert.match(app, /rollView\?\.updatePlayback\(playback, \{ followMode, songEndTick \}\)/);

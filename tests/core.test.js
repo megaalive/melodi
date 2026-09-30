@@ -133,7 +133,7 @@ test("loading a project resets editor/runtime state and keeps the imported canon
   assert.deepEqual(loaded, imported);
   assert.deepEqual(commands.getSong(), imported);
   assert.deepEqual(commands.getSelectedNoteIds(), []);
-  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", chordSnap: "bar", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
   assert.deepEqual(commands.getState().view, { mode: "piano-roll", follow: true });
   assert.deepEqual(commands.getState().history, { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 });
   assert.equal(commands.getState().playback.currentTick, 0);
@@ -574,7 +574,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     selectedNoteIds: [],
     selectedPercussionHitIds: [],
     mix: { channels: Object.fromEntries(["melody", "harmony", "bass"].map(channel => [channel, { mute: false, solo: false, volume: 1 }])) },
-    editor: { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 },
+    editor: { snap: "1/8", chordSnap: "bar", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 },
     view: { mode: "piano-roll", follow: true },
     generation: {
       status: "idle",
@@ -588,14 +588,16 @@ test("state snapshot is detached and reports the actual command surface", () => 
       acceptedNoteIds: []
     },
     harmony: { status: "idle", range: null, candidates: [], selectedCandidateId: null },
+    selectedChordId: null,
+    harmonyRange: { startTick: 0, endTick: 1920 },
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "setHarmonyStyle", "setBassStyle", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "selectChord", "clearChordSelection", "setHarmonyRange", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "setHarmonyStyle", "setBassStyle", "addNote", "updateNote", "updateNotes", "deleteNote",
       "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "selectPercussionHits", "clearPercussionSelection", "deletePercussionHits", "duplicatePercussionHits", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
-      "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
+      "setSnap", "setChordSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",
       "mergeLyricSyllables", "moveLyricSyllable", "assignSyllableNotes", "newSong", "newIdea",
       "listExamples", "loadExample", "setSongTitle", "loadSong", "listBrowserSongs", "saveBrowserSong",
       "openBrowserSong", "deleteBrowserSong",
@@ -775,7 +777,7 @@ test("copy and paste create new user notes with relative timing and pitch but no
   const commands = createCommands(fixture(), { idFactory: () => `paste-${++nextId}` });
   commands.selectNotes(["note-1", "note-3"]);
   assert.equal(commands.copySelection(), 2);
-  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: true, clipboardCount: 2 });
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", chordSnap: "bar", tool: "select", zoom: 1, canPaste: true, clipboardCount: 2 });
 
   const pasted = commands.pasteNotes(1920, 72);
   assert.deepEqual(pasted.map(({ pitch, startTick, durationTicks, source, anchor, locked }) => ({ pitch, startTick, durationTicks, source, anchor, locked })), [
@@ -864,7 +866,7 @@ test("New Song and backward-compatible New Idea create a blank project and reset
   assert.deepEqual(fresh.chords, []);
   assert.deepEqual(fresh.tracks, []);
   assert.deepEqual(commands.getSelectedNoteIds(), []);
-  assert.deepEqual(commands.getState().editor, { snap: "1/8", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
+  assert.deepEqual(commands.getState().editor, { snap: "1/8", chordSnap: "bar", tool: "select", zoom: 1, canPaste: false, clipboardCount: 0 });
   assert.equal(commands.getState().playback.status, "stopped");
   assert.equal(commands.getState().playback.currentTick, 0);
   assert.equal(Object.hasOwn(fresh, "playback"), false);
