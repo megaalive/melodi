@@ -272,3 +272,20 @@ test("invalid IDs and noncanonical song input return safe validation statuses", 
   assert.deepEqual(await browserLibrary.deleteBrowserSong(" "), { ok: false, status: "invalid-id", error: "invalid-id" });
   assert.deepEqual(await browserLibrary.saveBrowserSong({ id: "missing-title" }), { ok: false, status: "invalid-song", error: "invalid-song" });
 });
+
+test("browser library preserves canonical channel volumes without runtime mute or solo state", async () => {
+  const indexedDB = new FakeIndexedDB();
+  const browserLibrary = library(indexedDB);
+  const song = fixture("Balanced kit");
+  song.tracks = [{ id: "library-kit", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [] }];
+  song.mix = { melody: 0.75, percussion: { "library-kit": { kick: 0, ride: 0.46 } } };
+  assert.equal((await browserLibrary.saveBrowserSong(song)).ok, true);
+  const opened = await browserLibrary.openBrowserSong(song.id);
+  assert.equal(opened.ok, true);
+  assert.deepEqual(opened.song.mix, { melody: 0.75, percussion: { "library-kit": { kick: 0, ride: 0.46 } } });
+  const envelope = JSON.parse(indexedDB.database.stores.get(BROWSER_LIBRARY_STORE).get(song.id).project);
+  assert.equal(envelope.schemaVersion, 3);
+  assert.deepEqual(Object.keys(envelope.song.mix).sort(), ["melody", "percussion"]);
+  assert.deepEqual(Object.keys(envelope.song.mix.percussion["library-kit"]).sort(), ["kick", "ride"]);
+  assert.equal(Object.hasOwn(envelope.song, "playback"), false);
+});

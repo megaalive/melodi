@@ -1,4 +1,4 @@
-import { cloneData } from "./model.js?v=20260930.20";
+import { cloneData } from "./model.js?v=20260930.21";
 import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([
@@ -107,7 +107,8 @@ export function createAgentSnapshot(song, selection, playback = {
       sections: cloneData(song.sections),
       phrases: cloneData(song.phrases),
       chords: cloneData(song.chords),
-      tracks: cloneData(song.tracks)
+      tracks: cloneData(song.tracks),
+      ...(song.mix ? { mix: cloneData(song.mix) } : {})
     },
     playback: {
       status: playback.status,

@@ -1,12 +1,13 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.20";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.21";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.20";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.20";
+import { createAgentSnapshot } from "./snapshot.js?v=20260930.21";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.21";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.20";
-import { createInstrumentMix } from "../audio/mix.js?v=20260930.20";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260930.21";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.21";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.21";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -387,15 +388,34 @@ export function createCommands(initialSong, {
       if (typeof enabled !== "number" || !Number.isFinite(enabled) || enabled < 0 || enabled > 1) fail("invalid-instrument-volume");
     } else if (typeof enabled !== "boolean") fail("invalid-instrument-state");
     if (mix.channels[channelId][flag] === enabled) return enabled;
+    if (flag === "volume") {
+      commit((candidate) => {
+        candidate.mix ??= { melody: 1, percussion: {} };
+        if (channelId === "melody") candidate.mix.melody = enabled;
+        else {
+          for (const track of candidate.tracks) {
+            const piece = findPercussionKit(track.kitId)?.pieces.find((item) => percussionChannelId(track.id, item.id) === channelId);
+            if (!piece) continue;
+            candidate.mix.percussion = { ...candidate.mix.percussion, [track.id]: { ...candidate.mix.percussion[track.id], [piece.id]: enabled } };
+            break;
+          }
+        }
+      }, refreshPlaybackMix);
+      return enabled;
+    }
     mix = { channels: { ...mix.channels, [channelId]: { ...mix.channels[channelId], [flag]: enabled } } };
+    refreshPlaybackMix();
+    notifyChange("mix");
+    return enabled;
+  }
+
+  function refreshPlaybackMix() {
     if (playback.status === "playing" && audioPlayer) {
       let tick = playback.currentTick;
       try { tick = audioPlayer.getPosition(); } catch {}
       setPlaybackPosition(tick);
       updatePlayerSafely(() => audioPlayer.mixChanged(tick, playback.loop));
     }
-    notifyChange("mix");
-    return enabled;
   }
 
   function deleteNoteIds(noteIds, { actor = "user" } = {}) {

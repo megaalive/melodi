@@ -1,5 +1,5 @@
-import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.20";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.20";
+import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.21";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.21";
 
 const EXAMPLES = Object.freeze([
   Object.freeze({
@@ -52,8 +52,8 @@ function createJazzDrumsSong(idFactory) {
     add("closed-hi-hat", barStart + beatTicks * 3, 61, "normal");
 
     // Feathered two-beat bass pulse with a little phrase variation.
-    add("kick", barStart, bar % 4 === 0 ? 54 : 48, "ghost");
-    add("kick", barStart + beatTicks * 2, bar % 2 === 0 ? 50 : 44, "ghost");
+    add("kick", barStart, bar % 4 === 0 ? 54 : 48, "normal");
+    add("kick", barStart + beatTicks * 2, bar % 2 === 0 ? 50 : 44, "normal");
 
     // Syncopated low-velocity comping; selected accents move across the bar.
     add("snare", barStart + beatTicks + beatTicks / 2, 37, "ghost");
