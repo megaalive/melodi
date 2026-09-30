@@ -940,7 +940,7 @@ test("Ride output scalar combines with channel volume and zero skips every sourc
       peaks.push(volume === 0 ? 0 : context.gains[1].gain.events[1][1]);
     } finally { player.stop(); }
   }
-  const expectedPeak = 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude * 0.7;
+  const expectedPeak = 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude * 0.5;
   assert.equal(peaks[0], expectedPeak);
   assert.equal(peaks[1], expectedPeak * 0.25);
   assert.equal(peaks[2], 0);
@@ -984,7 +984,7 @@ test("volume command passes active position through the existing mix contract", 
   commands.stop();
 });
 
-test("100 percent preserves percussion peaks for pieces outside the explicit Ride balance", async () => {
+test("100 percent uses nominal calibrated percussion peaks", async () => {
   for (const pieceId of ["kick", "snare", "closed-hi-hat", "crash"]) {
     const song = fixture();
     song.notes = [];
@@ -996,7 +996,56 @@ test("100 percent preserves percussion peaks for pieces outside the explicit Rid
     const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
     try {
       await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
-      assert.equal(context.gains[1].gain.events[1][1], 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude, pieceId);
+      assert.equal(context.gains[1].gain.events[1][1], 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude * percussionVoiceSpec("gm-standard", hit).outputGain, pieceId);
     } finally { player.stop(); }
   }
+});
+
+
+test("every percussion factory trim is multiplied once by the square user gain", async () => {
+  const trims = { kick: 1, snare: 0.8, "closed-hi-hat": 0.75, "open-hi-hat": 0.7, ride: 0.5, crash: 0.6, "high-tom": 0.85, "mid-tom": 0.85, "low-tom": 0.85 };
+  for (const [pieceId, trim] of Object.entries(trims)) {
+    for (const volume of [1, 0.5, 0]) {
+      const song = fixture();
+      song.notes = [];
+      song.phrases[0].noteIds = [];
+      const hit = { id: `trim-${pieceId}`, pieceId, startTick: 0, velocity: 100, articulation: "normal" };
+      song.tracks.push({ id: "trim-track", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [hit] });
+      const mix = createInstrumentMix(song);
+      mix.channels[percussionChannelId("trim-track", pieceId)].volume = volume;
+      const context = new FakeAudioContext();
+      const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
+      try {
+        await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
+        if (volume === 0) {
+          assert.equal(context.oscillators.length + context.bufferSources.length, 0, pieceId);
+        } else {
+          const expected = 0.42 * percussionVoiceSpec("gm-standard", hit).amplitude * trim * volume ** 2;
+          assert.equal(context.gains[1].gain.events[1][1], expected, `${pieceId} at ${volume}`);
+        }
+      } finally { player.stop(); }
+    }
+  }
+});
+
+test("canonical volume undo and redo reanchor at the running clock without restarting monitoring", async () => {
+  const ref = {};
+  const commands = createCommands(fixture(), { audioPlayerFactory: fakePlayerFactory(ref) });
+  await commands.play();
+  commands.setInstrumentSolo("melody", true);
+  ref.position = 720;
+  commands.setInstrumentVolume("melody", 0.5);
+  assert.equal(ref.callbacks.getMix().channels.melody.volume, 0.5);
+  ref.position = 800;
+  commands.undo();
+  assert.deepEqual(ref.calls.at(-1), ["song", 800, commands.getState().playback.loop]);
+  assert.equal(ref.callbacks.getMix().channels.melody.volume, 1);
+  assert.equal(ref.callbacks.getMix().channels.melody.solo, true);
+  ref.position = 880;
+  commands.redo();
+  assert.deepEqual(ref.calls.at(-1), ["song", 880, commands.getState().playback.loop]);
+  assert.equal(ref.callbacks.getMix().channels.melody.volume, 0.5);
+  assert.equal(commands.getState().playback.status, "playing");
+  assert.equal(ref.calls.filter(([name]) => name === "play").length, 1);
+  commands.stop();
 });

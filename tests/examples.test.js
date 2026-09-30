@@ -46,7 +46,11 @@ test("Jazz Drums example is drums-only, swung, fills two phrases, and ends in a 
   }
   assert.ok(byPiece("ride").some((hit) => hit.startTick % 480 === 320), "Ride uses a triplet swing subdivision");
   assert.ok(byPiece("snare").some((hit) => hit.articulation === "ghost"));
-  assert.ok(byPiece("kick").every((hit) => hit.velocity <= 54), "kick stays feathered");
+  assert.ok(byPiece("kick").every((hit) => hit.velocity >= 44 && hit.velocity <= 54), "kick stays feathered");
+  assert.equal(byPiece("kick").length, 16, "two bass pulses per bar remain");
+  assert.ok(byPiece("kick").every((hit) => hit.articulation === "normal"), "main feathered pulse avoids double ghost attenuation");
+  assert.equal(byPiece("ride").length, 64, "eight swung Ride hits per bar remain");
+  assert.ok(byPiece("ride").every((hit) => hit.velocity >= 48 && hit.velocity <= 82));
   assert.equal(byPiece("crash").at(-1).startTick, 7 * 1920 + 3 * 480);
   assert.equal(byPiece("crash").at(-1).durationTicks, 480);
   const endTick = Math.max(...track.events.map((hit) => hit.startTick + (hit.durationTicks ?? 1)));

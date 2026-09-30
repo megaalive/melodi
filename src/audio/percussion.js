@@ -1,5 +1,5 @@
-import { MelodiError } from "../core/model.js?v=20260930.20";
-import { findPercussionKit, findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20260930.20";
+import { MelodiError } from "../core/model.js?v=20260930.21";
+import { findPercussionKit, findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20260930.21";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -45,8 +45,11 @@ function noise(frequency, gain, duration, {
 // Voice definitions are inharmonic modal frequencies for cymbal-like pieces,
 // plus filtered noise where the physical source needs a broadband component.
 // Frequencies are multiplied by hit tuning when percussionVoiceSpec is called.
+// Trim pabrik menentukan keluaran nominal saat volume user 100%.
+// Kick tetap unity; karakter komponen voice dipertahankan.
 const VOICE_SPECS = Object.freeze({
   kick: Object.freeze({
+    outputGain: 1,
     duration: 0.34,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 145, 0.92, 48)),
@@ -57,6 +60,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   snare: Object.freeze({
+    outputGain: 0.8,
     duration: 0.23,
     oscillators: Object.freeze([
       Object.freeze(oscillator("triangle", 185, 0.43, 132)),
@@ -68,6 +72,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   "closed-hi-hat": Object.freeze({
+    outputGain: 0.75,
     duration: 0.075,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 5100, 0.1)),
@@ -80,6 +85,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   "open-hi-hat": Object.freeze({
+    outputGain: 0.7,
     // Its hit duration follows the existing MIDI-duration mapping below.
     duration: 0.55,
     oscillators: Object.freeze([
@@ -93,7 +99,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   ride: Object.freeze({
-    outputGain: 0.7,
+    outputGain: 0.5,
     duration: 0.78,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 2480, 0.24)),
@@ -106,6 +112,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   crash: Object.freeze({
+    outputGain: 0.6,
     duration: 1.28,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 2310, 0.16)),
@@ -121,6 +128,7 @@ const VOICE_SPECS = Object.freeze({
     ])
   }),
   "high-tom": Object.freeze({
+    outputGain: 0.85,
     duration: 0.3,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 205, 0.78, 155)),
@@ -129,6 +137,7 @@ const VOICE_SPECS = Object.freeze({
     noise: Object.freeze([])
   }),
   "mid-tom": Object.freeze({
+    outputGain: 0.85,
     duration: 0.34,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 165, 0.8, 120)),
@@ -137,6 +146,7 @@ const VOICE_SPECS = Object.freeze({
     noise: Object.freeze([])
   }),
   "low-tom": Object.freeze({
+    outputGain: 0.85,
     duration: 0.4,
     oscillators: Object.freeze([
       Object.freeze(oscillator("sine", 125, 0.84, 88)),
@@ -170,7 +180,7 @@ export function percussionVoiceSpec(kitId, hit) {
     kitId: kit.id,
     pieceId: piece.id,
     amplitude,
-    outputGain: voice.outputGain ?? 1,
+    outputGain: voice.outputGain,
     pan,
     chokeGroup: percussionChokeGroup(kitId, pieceId),
     duration,

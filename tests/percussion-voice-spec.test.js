@@ -119,11 +119,13 @@ test("unknown kits and pieces fail closed instead of returning a generic oscilla
   );
 });
 
-test("Ride balance has a bounded explicit output scalar and preserves voice identity", () => {
+test("every piece has a bounded factory trim and Ride retains its voice identity", () => {
+  const trims = { kick: 1, snare: 0.8, "closed-hi-hat": 0.75, "open-hi-hat": 0.7, ride: 0.5, crash: 0.6, "high-tom": 0.85, "mid-tom": 0.85, "low-tom": 0.85 };
   for (const piece of GM_STANDARD_KIT.pieces) {
     const voice = spec(piece.id);
     assert.ok(Number.isFinite(voice.outputGain) && voice.outputGain > 0 && voice.outputGain <= 1);
-    assert.equal(voice.outputGain, piece.id === "ride" ? 0.7 : 1);
+    assert.equal(voice.outputGain, trims[piece.id]);
+    assert.equal(spec(piece.id, { velocity: 32, articulation: "ghost" }).outputGain, trims[piece.id], "factory trim is independent of expression");
   }
   const ride = spec("ride");
   const crash = spec("crash");
