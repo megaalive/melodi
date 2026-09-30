@@ -123,6 +123,6 @@ test("volume commands validate channels and reset detached runtime levels on loa
   commands.newSong();
   assert.deepEqual(commands.getMixState().channels, { melody: { mute: false, solo: false, volume: 1 } });
   commands.setInstrumentVolume("melody", 0.5);
-  commands.loadSong(createExample("jazz-drums-medium-swing"));
+  commands.loadSong(createExample("punk-drums-fast-drive"));
   assert.ok(Object.values(commands.getMixState().channels).every((state) => state.volume === 1));
 });
