@@ -1,5 +1,5 @@
-import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.22";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.22";
+import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.23";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.23";
 
 const EXAMPLES = Object.freeze([
   Object.freeze({
@@ -21,6 +21,14 @@ const EXAMPLES = Object.freeze([
     kind: "drums",
     tags: Object.freeze(["drums", "punk", "straight"]),
     factory: (idFactory) => createPunkDrumsSong(idFactory)
+  }),
+  Object.freeze({
+    id: "day-by-day-chorus",
+    titleKey: "exampleDayByDayTitle",
+    descriptionKey: "exampleDayByDayDescription",
+    kind: "melody",
+    tags: Object.freeze(["melody", "vocal", "chorus"]),
+    factory: (idFactory) => createDayByDayChorus(idFactory)
   })
 ]);
 
@@ -93,6 +101,23 @@ function createPunkDrumsSong(idFactory) {
       kitId: GM_STANDARD_KIT.id,
       events: events.sort((left, right) => left.startTick - right.startTick || left.pieceId.localeCompare(right.pieceId))
     }]
+  });
+}
+
+function createDayByDayChorus(idFactory) {
+  // Pemetaan persis ABC pengguna: L:1/8, setiap suffix 4 adalah 960 tick.
+  const pitches = [78, 71, 74, 76, 78, 78, 78, 78, 78, 71, 74, 76, 78, 78, 78, 78];
+  const notes = pitches.map((pitch, index) => ({
+    id: idFactory(), pitch, startTick: index * 960, durationTicks: 960,
+    source: "user", anchor: false, locked: false
+  }));
+  const phrase = { id: idFactory(), noteIds: notes.map((note) => note.id) };
+  return createSong({
+    id: idFactory(), title: "Day by Day — Chorus",
+    timing: { ppq: PPQ, tempo: 118, timeSignature: { numerator: 4, denominator: 4 } },
+    key: "F#m", scale: { name: "minor", intervals: [0, 2, 3, 5, 7, 8, 10] },
+    sections: [{ id: idFactory(), name: "Chorus", phraseIds: [phrase.id] }],
+    phrases: [phrase], notes, lyrics: { rawText: "", syllables: [] }, chords: [], tracks: []
   });
 }
 
