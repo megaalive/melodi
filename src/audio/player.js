@@ -1,7 +1,7 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20260930.19";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.19";
-import { percussionVoiceSpec } from "./percussion.js?v=20260930.19";
-import { isInstrumentAudible, percussionChannelId } from "./mix.js?v=20260930.19";
+import { MelodiError, PPQ } from "../core/model.js?v=20260930.20";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20260930.20";
+import { percussionVoiceSpec } from "./percussion.js?v=20260930.20";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20260930.20";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
@@ -200,7 +200,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     }
   }
 
-  function scheduleVoice(event) {
+  function scheduleVoice(event, channelGain = 1) {
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
     const panner = typeof context.createStereoPanner === "function" ? context.createStereoPanner() : null;
@@ -259,7 +259,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
         modulators.push({ oscillator: vibratoOscillator, gain: vibratoGain });
       }
     }
-    const noteVolume = note.volume ?? 1;
+    const noteVolume = (note.volume ?? 1) * channelGain;
     envelope.gain.setValueAtTime(0, event.startTime);
     envelope.gain.linearRampToValueAtTime(0.18 * noteVolume, event.startTime + attack);
     envelope.gain.setValueAtTime(0.14 * noteVolume, sustainAt);
@@ -323,7 +323,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     }
   }
 
-  function schedulePercussionVoice(event) {
+  function schedulePercussionVoice(event, channelGain = 1) {
     const spec = percussionVoiceSpec(event.track.kitId, event.hit);
     if (!spec.oscillators.length) return;
 
@@ -333,7 +333,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     const panner = typeof context.createStereoPanner === "function" ? context.createStereoPanner() : null;
     const startTime = event.startTime;
     const endTime = startTime + spec.duration;
-    const peak = 0.42 * spec.amplitude;
+    const peak = 0.42 * spec.amplitude * spec.outputGain * channelGain;
     envelope.gain.setValueAtTime(0, startTime);
     envelope.gain.linearRampToValueAtTime(peak, startTime + Math.min(0.004, spec.duration * 0.08));
     envelope.gain.linearRampToValueAtTime(0, endTime);
@@ -476,18 +476,20 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     const mix = getMix();
 
     for (const event of noteEvents) {
-      if (!isInstrumentAudible(mix, "melody")) continue;
+      const gain = instrumentGain(mix, "melody");
+      if (gain === 0) continue;
       try {
-        scheduleVoice(event);
+        scheduleVoice(event, gain);
         scheduled.set(event.key, event.cycle);
       } catch {
         fail("audio-scheduling-failed");
       }
     }
     for (const event of percussionEvents) {
-      if (!isInstrumentAudible(mix, percussionChannelId(event.track.id, event.hit.pieceId))) continue;
+      const gain = instrumentGain(mix, percussionChannelId(event.track.id, event.hit.pieceId));
+      if (gain === 0) continue;
       try {
-        schedulePercussionVoice(event);
+        schedulePercussionVoice(event, gain);
         scheduled.set(event.key, event.cycle);
       } catch {
         fail("audio-scheduling-failed");

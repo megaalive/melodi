@@ -1,6 +1,6 @@
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.19";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.20";
 
-const DEFAULT_CHANNEL_STATE = Object.freeze({ mute: false, solo: false });
+const DEFAULT_CHANNEL_STATE = Object.freeze({ mute: false, solo: false, volume: 1 });
 
 export function percussionChannelId(trackId, pieceId) {
   return `percussion:${trackId}:${pieceId}`;
@@ -9,7 +9,8 @@ export function percussionChannelId(trackId, pieceId) {
 function readChannelState(state) {
   return {
     mute: state?.mute === true,
-    solo: state?.solo === true
+    solo: state?.solo === true,
+    volume: Number.isFinite(state?.volume) ? Math.max(0, Math.min(1, state.volume)) : 1
   };
 }
 
@@ -36,6 +37,15 @@ export function isInstrumentAudible(mix, channelId) {
 
 export function instrumentChannelIds(song) {
   return Object.keys(createInstrumentMix(song).channels);
+}
+
+export function volumeGain(volume = 1) {
+  const level = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 1;
+  return level * level;
+}
+
+export function instrumentGain(mix, channelId) {
+  return isInstrumentAudible(mix, channelId) ? volumeGain(mix?.channels?.[channelId]?.volume) : 0;
 }
 
 export const DEFAULT_INSTRUMENT_CHANNEL_STATE = DEFAULT_CHANNEL_STATE;

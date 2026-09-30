@@ -118,3 +118,18 @@ test("unknown kits and pieces fail closed instead of returning a generic oscilla
     (error) => error.code === "unsupported-percussion-voice"
   );
 });
+
+test("Ride balance has a bounded explicit output scalar and preserves voice identity", () => {
+  for (const piece of GM_STANDARD_KIT.pieces) {
+    const voice = spec(piece.id);
+    assert.ok(Number.isFinite(voice.outputGain) && voice.outputGain > 0 && voice.outputGain <= 1);
+    assert.equal(voice.outputGain, piece.id === "ride" ? 0.7 : 1);
+  }
+  const ride = spec("ride");
+  const crash = spec("crash");
+  assert.equal(ride.duration, 0.78);
+  assert.equal(crash.duration, 1.28);
+  assert.deepEqual(ride.oscillators.map(({ frequency, gain }) => [frequency, gain]), [[2480, 0.24], [3370, 0.15], [4210, 0.13], [5960, 0.08]]);
+  assert.notDeepEqual(ride.oscillators, crash.oscillators);
+  assert.equal(ride.noise[0].gain, 0.2);
+});

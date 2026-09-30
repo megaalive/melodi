@@ -1,12 +1,12 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.19";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.20";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.19";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.19";
+import { createAgentSnapshot } from "./snapshot.js?v=20260930.20";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.20";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.19";
-import { createInstrumentMix } from "../audio/mix.js?v=20260930.19";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260930.20";
+import { createInstrumentMix } from "../audio/mix.js?v=20260930.20";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -381,9 +381,11 @@ export function createCommands(initialSong, {
     });
   }
 
-  function setInstrumentFlag(channelId, flag, enabled) {
+  function setInstrumentValue(channelId, flag, enabled) {
     if (typeof channelId !== "string" || !Object.hasOwn(mix.channels, channelId)) fail("instrument-channel-not-found");
-    if (typeof enabled !== "boolean") fail("invalid-instrument-state");
+    if (flag === "volume") {
+      if (typeof enabled !== "number" || !Number.isFinite(enabled) || enabled < 0 || enabled > 1) fail("invalid-instrument-volume");
+    } else if (typeof enabled !== "boolean") fail("invalid-instrument-state");
     if (mix.channels[channelId][flag] === enabled) return enabled;
     mix = { channels: { ...mix.channels, [channelId]: { ...mix.channels[channelId], [flag]: enabled } } };
     if (playback.status === "playing" && audioPlayer) {
@@ -506,10 +508,13 @@ export function createCommands(initialSong, {
       }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState(), selectedPercussionHitIds, mix);
     },
     setInstrumentMute(channelId, enabled) {
-      return setInstrumentFlag(channelId, "mute", enabled);
+      return setInstrumentValue(channelId, "mute", enabled);
     },
     setInstrumentSolo(channelId, enabled) {
-      return setInstrumentFlag(channelId, "solo", enabled);
+      return setInstrumentValue(channelId, "solo", enabled);
+    },
+    setInstrumentVolume(channelId, volume) {
+      return setInstrumentValue(channelId, "volume", volume);
     },
     canUndo() {
       return undoStack.length > 0;
