@@ -34,7 +34,7 @@ function rawFixture() {
         { id: "syllable-2", text: "ku", noteIds: ["note-1", "note-2"] }
       ]
     },
-    chords: [{ id: "chord-1", rootPitchClass: 0, quality: "major", startTick: 0, durationTicks: 1920 }]
+    chords: [{ id: "chord-1", rootPitchClass: 0, quality: "major", startTick: 0, durationTicks: 1920, locked: false }]
   };
 }
 
@@ -586,11 +586,12 @@ test("state snapshot is detached and reports the actual command surface", () => 
       candidates: [],
       acceptedNoteIds: []
     },
+    harmony: { status: "idle", range: null, candidates: [], selectedCandidateId: null },
     anchorNoteIds: ["note-1"],
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "addNote", "updateNote", "updateNotes", "deleteNote",
       "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "selectPercussionHits", "clearPercussionSelection", "deletePercussionHits", "duplicatePercussionHits", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",

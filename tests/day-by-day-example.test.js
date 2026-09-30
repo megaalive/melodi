@@ -46,9 +46,9 @@ test("chorus Score projects sixteen notes across eight measures with F-sharp spe
   assert.equal((abc.match(/\^f4/g) ?? []).length, 10);
 });
 
-test("chorus retains old project/share formats and roundtrips through canonical infrastructure", () => {
+test("chorus preserves project/share roundtrips with current formats and roundtrips through canonical infrastructure", () => {
   const song = createExample("day-by-day-chorus");
-  assert.equal(SCHEMA_VERSION, 3); assert.equal(SHARE_VERSION, 5);
+  assert.equal(SCHEMA_VERSION, 4); assert.equal(SHARE_VERSION, 6);
   assert.deepEqual(deserializeProject(serializeProject(song)), song);
   const receiver = fromPortableProject(toPortableProject(song));
   assert.deepEqual(receiver.notes.map(({ pitch, startTick, durationTicks }) => [pitch,startTick,durationTicks]), song.notes.map(({ pitch, startTick, durationTicks }) => [pitch,startTick,durationTicks]));

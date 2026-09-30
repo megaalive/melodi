@@ -1,13 +1,14 @@
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.23";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.24";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.23";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.23";
+import { createAgentSnapshot } from "./snapshot.js?v=20260930.24";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.24";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.23";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.23";
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.23";
+import { createExample, listExamples } from "../examples/catalog.js?v=20260930.24";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.24";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20260930.24";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.24";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -102,6 +103,7 @@ export function createCommands(initialSong, {
   let undoStack = [];
   let redoStack = [];
   let generationSession = null;
+  let harmonySession = null;
   let generationAuditionToken = 0;
   let lastAcceptedNoteIds = [];
   const songEndTick = () => {
@@ -250,6 +252,33 @@ export function createCommands(initialSong, {
     return true;
   }
 
+  function readHarmonyState() {
+    return cloneData(harmonySession ?? {
+      status: "idle", range: null, candidates: [], selectedCandidateId: null
+    });
+  }
+
+  function findChord(chordId) {
+    const chord = song.chords.find((item) => item.id === chordId);
+    if (!chord) fail("chord-not-found");
+    return chord;
+  }
+
+  function harmonyCandidate(candidateId) {
+    if (!harmonySession) fail("harmony-session-missing");
+    const candidate = harmonySession.candidates.find((item) => item.id === candidateId);
+    if (!candidate) fail("harmony-candidate-not-found");
+    return candidate;
+  }
+
+  function validateChordFields(input, partial = false) {
+    const allowed = ["rootPitchClass", "quality", "startTick", "durationTicks"];
+    if (!input || typeof input !== "object" || Array.isArray(input)) fail("invalid-chord-patch");
+    const keys = Object.keys(input);
+    if (!keys.length || keys.some((key) => !allowed.includes(key))
+      || (!partial && allowed.some((key) => !Object.hasOwn(input, key)))) fail("invalid-chord-patch");
+  }
+
   function readGenerationState() {
     if (!generationSession) {
       return {
@@ -318,6 +347,7 @@ export function createCommands(initialSong, {
   function restoreSong(nextSong) {
     const validated = createSong(nextSong);
     canonicalRevision += 1;
+    harmonySession = null;
     generationAuditionToken += 1;
     generationSession = null;
     lastAcceptedNoteIds = [];
@@ -346,6 +376,7 @@ export function createCommands(initialSong, {
     mix = createInstrumentMix(song, mix);
     syncAutomaticLoopRange();
     canonicalRevision += 1;
+    harmonySession = null;
     if (generationSession?.auditionCandidateId) {
       generationSession.auditionCandidateId = null;
       generationAuditionToken += 1;
@@ -455,6 +486,7 @@ export function createCommands(initialSong, {
     const nextSong = createSong(input);
     if (recordUndo) pushHistory();
     canonicalRevision += 1;
+    harmonySession = null;
     generationAuditionToken += 1;
     generationSession = null;
     lastAcceptedNoteIds = [];
@@ -525,7 +557,7 @@ export function createCommands(initialSong, {
         zoom,
         canPaste: Boolean(copiedNotes),
         clipboardCount: copiedNotes?.notes.length ?? 0
-      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState(), selectedPercussionHitIds, mix);
+      }, selectedNoteIds, { mode: viewMode, follow: followMode }, readGenerationState(), readHistoryState(), selectedPercussionHitIds, mix, readHarmonyState());
     },
     setInstrumentMute(channelId, enabled) {
       return setInstrumentValue(channelId, "mute", enabled);
@@ -553,6 +585,74 @@ export function createCommands(initialSong, {
       const next = redoStack.pop();
       undoStack.push(cloneData(song));
       return restoreSong(next);
+    },
+    getHarmonyState() {
+      return readHarmonyState();
+    },
+    suggestHarmony(request) {
+      const candidates = inferHarmonyCandidates(song, request);
+      harmonySession = {
+        status: "ready", range: { startTick: request.startTick, endTick: request.endTick },
+        candidates, selectedCandidateId: candidates[0]?.id ?? null
+      };
+      notifyChange("harmony");
+      return readHarmonyState();
+    },
+    selectHarmonyCandidate(candidateId) {
+      harmonyCandidate(candidateId);
+      harmonySession.selectedCandidateId = candidateId;
+      notifyChange("harmony");
+      return readHarmonyState();
+    },
+    clearHarmonySuggestions() {
+      const changed = harmonySession !== null;
+      harmonySession = null;
+      if (changed) notifyChange("harmony");
+      return changed;
+    },
+    acceptHarmonyCandidate(candidateId = harmonySession?.selectedCandidateId) {
+      const candidate = harmonyCandidate(candidateId);
+      const endTick = candidate.startTick + candidate.durationTicks;
+      const overlaps = song.chords.filter((chord) => chord.startTick < endTick
+        && chord.startTick + chord.durationTicks > candidate.startTick);
+      if (overlaps.some((chord) => chord.locked)) fail("locked-chord");
+      if (overlaps.length > 1 || overlaps.some((chord) => chord.startTick !== candidate.startTick
+        || chord.durationTicks !== candidate.durationTicks)) fail("chord-conflict");
+      const fields = { rootPitchClass: candidate.rootPitchClass, quality: candidate.quality,
+        startTick: candidate.startTick, durationTicks: candidate.durationTicks };
+      const chord = overlaps[0];
+      const result = chord ? commands.updateChord(chord.id, fields) : commands.addChord(fields);
+      // Penerimaan yang identik tetap mengakhiri sesi tanpa menambah history.
+      harmonySession = null;
+      notifyChange("harmony");
+      return result;
+    },
+    addChord(input) {
+      validateChordFields(input);
+      const chord = { id: idFactory(), ...cloneData(input), locked: false };
+      commit((candidate) => { candidate.chords.push(chord); });
+      return cloneData(findChord(chord.id));
+    },
+    updateChord(chordId, patch) {
+      const chord = findChord(chordId);
+      if (chord.locked) fail("locked-chord");
+      validateChordFields(patch, true);
+      if (Object.entries(patch).every(([key, value]) => chord[key] === value)) return cloneData(chord);
+      commit((candidate) => { Object.assign(candidate.chords.find((item) => item.id === chordId), cloneData(patch)); });
+      return cloneData(findChord(chordId));
+    },
+    deleteChord(chordId) {
+      const chord = findChord(chordId);
+      if (chord.locked) fail("locked-chord");
+      commit((candidate) => { candidate.chords = candidate.chords.filter((item) => item.id !== chordId); });
+      return chordId;
+    },
+    setChordLocked(chordId, locked) {
+      const chord = findChord(chordId);
+      if (typeof locked !== "boolean") fail("invalid-chord-lock");
+      if (chord.locked === locked) return cloneData(chord);
+      commit((candidate) => { candidate.chords.find((item) => item.id === chordId).locked = locked; });
+      return cloneData(findChord(chordId));
     },
     generateGap(request) {
       clearAuditionState({ notify: false });

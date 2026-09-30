@@ -1,7 +1,7 @@
-import { createSong, MelodiError } from "./model.js?v=20260930.23";
+import { createSong, MelodiError } from "./model.js?v=20260930.24";
 
-export const SCHEMA_VERSION = 3;
-const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3]);
+export const SCHEMA_VERSION = 4;
+const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4]);
 
 export function serializeProject(song) {
   const canonicalSong = createSong(song);
@@ -19,5 +19,13 @@ export function deserializeProject(input) {
     throw new MelodiError("malformed-project");
   }
   if (!SUPPORTED_SCHEMA_VERSIONS.has(project.schemaVersion)) throw new MelodiError("unsupported-version");
-  return createSong(project.song);
+  if (project.schemaVersion >= 4 && Array.isArray(project.song?.chords)
+    && project.song.chords.some((chord) => typeof chord?.locked !== "boolean")) {
+    throw new MelodiError("invalid-chord");
+  }
+  // Format lama belum mengenal lock chord; keputusan lama tetap dapat diedit.
+  const song = project.schemaVersion < 4 && Array.isArray(project.song?.chords)
+    ? { ...project.song, chords: project.song.chords.map((chord) => ({ ...chord, locked: false })) }
+    : project.song;
+  return createSong(song);
 }

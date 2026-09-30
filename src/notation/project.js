@@ -257,6 +257,7 @@ export function projectSongToScore(song) {
       rootPitchClass: chord.rootPitchClass,
       rootName: spellPitchNameInKey(60 + chord.rootPitchClass, song.key),
       quality: chord.quality,
+      locked: chord.locked ?? false,
       startTick: chord.startTick,
       durationTicks: chord.durationTicks,
       measureIndex

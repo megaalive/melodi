@@ -33,6 +33,7 @@ function chordQualitySuffix(quality) {
   const normalized = String(quality ?? "").trim().toLowerCase();
   if (["major", "maj", "major triad"].includes(normalized)) return "";
   if (["minor", "min", "minor triad"].includes(normalized)) return "m";
+  if (["diminished", "dim", "diminished triad"].includes(normalized)) return "dim";
   if (["dominant7", "dominant 7", "7"].includes(normalized)) return "7";
   if (["major7", "major 7", "maj7"].includes(normalized)) return "maj7";
   if (["minor7", "minor 7", "min7", "m7"].includes(normalized)) return "m7";
@@ -107,7 +108,18 @@ export function projectSongToAbc(song) {
       const chordsByTick = new Map(measure.chords.map((chord) => [chord.startTick, chord]));
       const events = measureEventsForLane(measure, laneIndex, projection);
       for (const event of events) {
-        tokens.push(eventToken(event, projection, noteClassById, chordsByTick, laneIndex === 0));
+        // Chord yang mulai di tengah note/rest tetap tampak pada tick yang tepat.
+        // Pemecahan hanya proyeksi ABC; canonical note dan durasinya tidak berubah.
+        const boundaries = laneIndex === 0 ? [...chordsByTick.keys()]
+          .filter((tick) => tick > event.startTick && tick < event.startTick + event.durationTicks)
+          .sort((left, right) => left - right) : [];
+        const starts = [event.startTick, ...boundaries];
+        for (let index = 0; index < starts.length; index += 1) {
+          const endTick = starts[index + 1] ?? event.startTick + event.durationTicks;
+          tokens.push(eventToken({ ...event, startTick: starts[index], durationTicks: endTick - starts[index],
+            tieToNext: event.kind === "note" && (index < starts.length - 1 || event.tieToNext)
+          }, projection, noteClassById, chordsByTick, laneIndex === 0));
+        }
       }
       tokens.push("|");
     }
