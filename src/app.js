@@ -1,29 +1,30 @@
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.29";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.29";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.29";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.29";
-import { createCommands } from "./core/commands.js?v=20261001.29";
+import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.30";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.30";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.30";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.30";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.30";
+import { createCommands } from "./core/commands.js?v=20261001.30";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.29";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.29";
-import { createAudioPlayer } from "./audio/player.js?v=20261001.29";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.30";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.30";
+import { createAudioPlayer } from "./audio/player.js?v=20261001.30";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.29";
-import { createScoreView } from "./ui/score.js?v=20261001.29";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261001.29";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.29";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.29";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.29";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.29";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.30";
+import { createScoreView } from "./ui/score.js?v=20261001.30";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261001.30";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.30";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.30";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.30";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.30";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261001.29";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.29";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.29";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.29";
-import { deserializeProject } from "./core/serialization.js?v=20261001.29";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.29";
+import { createDraftPersistence } from "./storage/draft.js?v=20261001.30";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.30";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.30";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.30";
+import { deserializeProject } from "./core/serialization.js?v=20261001.30";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.30";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -42,6 +43,7 @@ let shareSession = false;
 let shareLoadStatus = "none";
 let uiPreferences;
 let lastHarmonyPlaybackContext = null;
+let studioView = null;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -305,10 +307,9 @@ function renderScoreControls(song, state = normalizeRuntimeState(commands.getSta
   if (notes.length === 0) {
     summary.textContent = translate("scoreSelectionNone");
   } else if (notes.length === 1) {
-    summary.textContent = translate("scoreSelectionOne", {
+    summary.textContent = translate("studioNotePosition", {
       pitch: midiToPitch(notes[0].pitch),
-      tick: notes[0].startTick,
-      duration: notes[0].durationTicks
+      ...musicalPosition(song, notes[0].startTick)
     });
   } else {
     summary.textContent = translate("scoreSelectionMany", { count: notes.length });
@@ -485,6 +486,7 @@ function showChordContextMenu(chord, event) {
 }
 
 function openChordEditor(chordId = null) {
+  studioView?.openPanel('chords');
   const form = byId("harmony-chord-form");
   const song = commands.getSong();
   const chord = song.chords.find(item => item.id === chordId);
@@ -837,6 +839,7 @@ function renderNotes(song, state) {
 
 function renderSyllables(song, state) {
   const list = byId("syllable-list");
+  const openSyllables = new Set([...list.querySelectorAll('.syllable-editor[open]')].map(node=>node.closest('[data-entity-id]').dataset.entityId));
   const currentSyllableIds = normalizePlaybackState(state?.playback).currentSyllableIds;
   list.replaceChildren();
   song.lyrics.syllables.forEach((syllable, index) => {
@@ -862,7 +865,15 @@ function renderSyllables(song, state) {
     save.dataset.focusKey = `save-syllable-${syllable.id}`;
     save.textContent = translate("updateSyllableButton");
     form.append(fieldset, save);
-    item.append(form);
+    const editor = document.createElement('details');
+    editor.className = 'syllable-editor';
+    editor.open = openSyllables.has(syllable.id);
+    const chip = document.createElement('summary');
+    chip.textContent = syllable.text || '…';
+    chip.dataset.focusKey = `syllable-chip-${syllable.id}`;
+    chip.setAttribute('aria-label', translate('studioEditSyllable', {text:syllable.text || '…'}));
+    editor.append(chip, form);
+    item.append(editor);
 
     const mapping = document.createElement("fieldset");
     mapping.className = "note-selection";
@@ -875,7 +886,8 @@ function renderSyllables(song, state) {
     const assignedIds = new Set(syllable.noteIds);
     const noteOptions = [...assigned, ...song.notes.filter((note) => !assignedIds.has(note.id))];
     for (const note of noteOptions) {
-      const text = translate("syllableNoteOption", { pitch: midiToPitch(note.pitch), tick: note.startTick });
+      const position = musicalPosition(song, note.startTick);
+      const text = `${midiToPitch(note.pitch)} · ${position.bar}.${position.beat}`;
       options.append(makeCheckboxLabel(text, syllable.noteIds.includes(note.id), "assign-syllable-note", {
         syllableId: syllable.id,
         noteId: note.id,
@@ -891,7 +903,7 @@ function renderSyllables(song, state) {
         ? translate("syllableNoNotes")
         : textForNote(song, syllable.noteIds[0]);
     mapping.append(mappingSummary);
-    item.append(mapping);
+    editor.append(mapping);
 
     const actions = document.createElement("div");
     actions.className = "syllable-actions";
@@ -913,7 +925,7 @@ function renderSyllables(song, state) {
     const remove = makeButton(translate("deleteSyllableButton"), "delete-syllable", {
       syllableId: syllable.id,
       focusKey: `delete-syllable-${syllable.id}`,
-      focusFallback: neighbor ? `syllable-text-${neighbor.id}` : "new-syllable"
+      focusFallback: neighbor ? `syllable-chip-${neighbor.id}` : "new-syllable"
     });
     remove.className = "secondary";
     actions.append(earlier, later, remove);
@@ -922,10 +934,10 @@ function renderSyllables(song, state) {
         leftId: syllable.id,
         rightId: song.lyrics.syllables[index + 1].id,
         focusKey: `merge-syllables-${syllable.id}-${song.lyrics.syllables[index + 1].id}`,
-        focusFallback: `syllable-text-${syllable.id}`
+        focusFallback: `syllable-chip-${syllable.id}`
       }));
     }
-    item.append(actions);
+    editor.append(actions);
 
     const details = document.createElement("details");
     const summary = document.createElement("summary");
@@ -957,14 +969,15 @@ function renderSyllables(song, state) {
     split.textContent = translate("splitSyllableButton");
     splitForm.append(splitFields, split);
     details.append(splitForm);
-    item.append(details);
+    editor.append(details);
     list.append(item);
   });
 }
 
 function textForNote(song, noteId) {
   const note = song.notes.find((item) => item.id === noteId);
-  return note ? `${midiToPitch(note.pitch)} · tick ${note.startTick}` : "";
+  if (!note) return "";
+  return translate('studioNotePosition', {pitch:midiToPitch(note.pitch), ...musicalPosition(song,note.startTick)});
 }
 
 function renderEditorControls() {
@@ -1223,6 +1236,7 @@ function renderPlayback() {
   if (!commands) return;
   const state = normalizeRuntimeState(commands.getState());
   const playback = state.playback;
+  studioView?.updatePlayback(commands.getSong(), playback);
   const song = commands.getSong();
   const harmonyContext = state.harmonyRange ?? harmonyContextRange(song, state);
   const harmonyContextKey = `${song.id}:${harmonyContext.startTick}:${harmonyContext.endTick}:${state.selectedChordId}`;
@@ -1366,6 +1380,7 @@ function render() {
   renderGuitar(state);
   renderDrums(song, state);
   renderInstrumentMixControls(state.mix);
+  studioView?.render(song, state);
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -1640,7 +1655,12 @@ async function requestLoadExample(id) {
   clearPendingForms();
   leaveShareSession();
   const loaded = run(() => commands.loadExample(id));
-  if (loaded) announce("exampleOpened", "success", { title });
+  if (loaded) {
+    const song = commands.getSong();
+    commands.setViewMode(song.notes.length === 0 && song.tracks.some(track => track.kind === 'percussion' && track.events.length) ? 'drums' : 'piano-roll');
+    studioView?.openPanel(null);
+    announce("exampleOpened", "success", { title });
+  }
   return loaded;
 }
 
@@ -1763,6 +1783,7 @@ commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
   onEditorChange() {
     renderEditorControls();
     renderHarmonyInspector(commands.getSong(), commands.getState(), commands.getHarmonyState(), translate);
+    studioView?.render(commands.getSong(), commands.getState());
     if (rollView) {
       const state = commands.getState();
       const song = commands.getSong();
@@ -2030,9 +2051,9 @@ function renderPercussionExpression(song) {
 
   form.dataset.trackId = expression.trackId;
   form.dataset.hitId = expression.hitId;
-  byId("percussion-expression-summary").textContent = translate("percussionExpressionSummary", {
+  byId("percussion-expression-summary").textContent = translate("studioHitPosition", {
     piece: expression.pieceName,
-    tick: expression.startTick,
+    ...musicalPosition(song, expression.startTick),
     velocity: expression.velocity
   });
   byId("percussion-choke-value").textContent = expression.chokeGroup
@@ -2103,6 +2124,7 @@ function updateVolumeLabel(slider) {
   slider.title = label;
   slider.setAttribute("aria-label", label);
   slider.setAttribute("aria-valuetext", `${slider.value}%`);
+  if (slider.nextElementSibling?.hasAttribute('data-studio-volume')) slider.nextElementSibling.textContent = `${slider.value}%`;
 }
 
 document.addEventListener("input", (event) => {
@@ -3002,6 +3024,7 @@ window.addEventListener("pagehide", () => persistence.flush());
 // setelah reload/back-forward, yang dapat membuat beberapa panel advanced terbuka sekaligus.
 document.querySelectorAll("details").forEach((details) => { details.open = false; });
 
+studioView = createStudioWorkspace(commands, translate, reportError);
 render();
 if (shareLoadStatus === "loaded") announce("shareLoaded");
 else if (shareLoadStatus !== "none") announce("shareInvalid", "error");
