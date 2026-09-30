@@ -3782,7 +3782,7 @@ body[data-view-mode="drums"] .workspace-sidebar {
   --drum-row-height: 1.8rem;
   --drum-step-width: 1.8rem;
   display: grid;
-  grid-template-columns: minmax(8.3rem, 9.5rem) repeat(var(--drum-column-count), var(--drum-step-width));
+  grid-template-columns: 12rem repeat(var(--drum-column-count), var(--drum-step-width));
   grid-auto-rows: var(--drum-row-height);
   width: max-content;
   min-width: 100%;
@@ -3803,9 +3803,8 @@ body[data-view-mode="drums"] .workspace-sidebar {
 }
 .drum-grid-corner {
   position: sticky;
-  z-index: 6;
+  z-index: 9;
   top: 0;
-  left: 0;
   padding: 0 0.5rem;
   background: var(--surface-float);
 }
@@ -3905,14 +3904,29 @@ body[data-view-mode="drums"] .workspace-sidebar {
   background: var(--playhead);
 }
 .drum-row-label {
-  position: sticky;
+  position: relative;
   z-index: 5;
-  left: 0;
   padding: 0 0.5rem;
   white-space: nowrap;
   background: var(--surface-float);
   color: var(--text);
   gap: 0.2rem;
+  border-right-color: var(--border-strong);
+}
+.instrument-volume {
+  width: 4rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent-strong);
+}
+.drum-row-volume {
+  flex: 0 0 3rem;
+  width: 3rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent-strong);
 }
 .drum-row-piece-name {
   flex: 1 1 auto;
@@ -4060,13 +4074,13 @@ body[data-view-mode="drums"] .workspace-sidebar {
   outline-offset: -2px;
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 46rem) {
   .drum-grid {
     /* Shell memakai target touch 44px; samakan track grid agar tombol Drum dan
        ruler tidak meluber ke baris atau kolom tetangga. */
     --drum-row-height: 2.75rem;
     --drum-step-width: 2.75rem;
-    grid-template-columns: minmax(10rem, 10rem) repeat(var(--drum-column-count), var(--drum-step-width));
+    grid-template-columns: 13.5rem repeat(var(--drum-column-count), var(--drum-step-width));
     grid-auto-rows: var(--drum-row-height);
   }
   .drum-cell {
@@ -4075,7 +4089,7 @@ body[data-view-mode="drums"] .workspace-sidebar {
     height: 2.4rem;
     min-height: 2.4rem;
   }
-  .drum-row-mix-button { min-width: 1.8rem; min-height: 1.8rem; }
+  .drum-row-mix-button { min-width: 2.75rem; min-height: 2.75rem; }
 }
 
 @media (max-width: 46rem) {

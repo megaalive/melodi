@@ -1,7 +1,7 @@
-import { PPQ } from "../core/model.js?v=20260930.19";
-import { SNAP_TICKS } from "../core/editor.js?v=20260930.19";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.19";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260930.19";
+import { PPQ } from "../core/model.js?v=20260930.20";
+import { SNAP_TICKS } from "../core/editor.js?v=20260930.20";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.20";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20260930.20";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -166,6 +166,14 @@ export function createDrumGridView(root, {
   let selectedHitIds = [];
   let primarySelectedHitId = null;
   let suppressNextClick = false;
+
+  function syncFrozenDrumGutter() {
+    const offset = root.parentElement?.scrollLeft ?? 0;
+    for (const label of root.querySelectorAll('[data-entity="drum-row-label"]')) {
+      label.style.transform = `translateX(${offset}px)`;
+    }
+  }
+  root.parentElement?.addEventListener?.("scroll", syncFrozenDrumGutter, { passive: true });
 
   function updateSelectionDom() {
     const selected = new Set(selectedHitIds);
@@ -536,6 +544,7 @@ export function createDrumGridView(root, {
 
     for (const piece of projection.kit.pieces) {
       const label = makeElement("div", "drum-row-label");
+      label.dataset.entity = "drum-row-label";
       label.dataset.pieceId = piece.id;
       const pieceName = makeElement("span", "drum-row-piece-name", piece.name);
       label.append(pieceName);
@@ -555,6 +564,21 @@ export function createDrumGridView(root, {
         button.setAttribute("aria-pressed", String(mix[flag] === true));
         label.append(button);
       }
+      const slider = makeElement("input", "instrument-volume drum-row-volume");
+      slider.type = "range";
+      slider.min = "0";
+      slider.max = "100";
+      slider.step = "1";
+      slider.value = String(Math.round((mix.volume ?? 1) * 100));
+      slider.disabled = !projection.track;
+      slider.dataset.channelVolume = "true";
+      slider.dataset.channelId = channelId;
+      slider.dataset.volumePiece = piece.name;
+      slider.dataset.focusKey = `mix:${channelId}:volume`;
+      const volumeLabel = translate("mixVolumeAria", { piece: piece.name, percent: Number(slider.value) });
+      slider.setAttribute("aria-label", volumeLabel);
+      slider.title = volumeLabel;
+      label.append(slider);
       root.append(label);
 
       for (const tick of projection.columns) {
@@ -615,6 +639,7 @@ export function createDrumGridView(root, {
     selectionRect.hidden = true;
     root.append(bodyRange, playheadLine, selectionRect);
     updatePlayback(currentPlayback, { songEndTick: currentSongEndTick });
+    syncFrozenDrumGutter();
 
     return projection;
   }
@@ -660,6 +685,7 @@ export function createDrumGridView(root, {
         scrollContainer.scrollLeft = followMode === "nearest"
           ? nearestScrollLeft(scrollGeometry)
           : centeredScrollLeft(scrollGeometry);
+        syncFrozenDrumGutter();
       }
     }
   }

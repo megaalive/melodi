@@ -205,7 +205,10 @@ class GridElement {
     const scroll = this.parentElement;
     const rootLeft = -(scroll?.scrollLeft ?? 0);
     if (this.dataset.entity === "drum-grid") return { left: rootLeft, top: 40, right: rootLeft + 1568, bottom: 540, width: 1568, height: 500 };
-    if (this.className === "drum-grid-corner") return { left: 0, top: 40, right: 128, bottom: 70, width: 128, height: 30 };
+    if (this.className === "drum-grid-corner") {
+      const left = -(this.parentElement?.parentElement?.scrollLeft ?? 0) + Number(this.style.transform?.match(/translateX\(([-\d.]+)px\)/)?.[1] ?? 0);
+      return { left, top: 40, right: left + 128, bottom: 70, width: 128, height: 30 };
+    }
     if (this.dataset.entity === "drum-ruler") return { left: rootLeft + 128, top: 40, right: rootLeft + 1568, bottom: 70, width: 1440, height: 30 };
     if (this.className === "drum-grid-step") {
       const tick = Number(this.dataset.tick);
@@ -226,7 +229,7 @@ class GridElement {
 function drumViewFixture(options = {}) {
   globalThis.document = { createElement: (tag) => new GridElement(tag) };
   globalThis.Element = GridElement;
-  const scroll = { clientWidth: 400, scrollWidth: 1568, scrollLeft: 0, scrollTop: 72 };
+  const scroll = Object.assign(new GridElement("div"), { clientWidth: 400, scrollWidth: 1568, scrollLeft: 0, scrollTop: 72 });
   const root = new GridElement("div");
   root.dataset.entity = "drum-grid";
   root.scrollWidth = 1568;
@@ -242,6 +245,7 @@ test("Drum Grid memusatkan step di area setelah kolom label dan mempertahankan p
 
   assert.equal(scroll.scrollLeft, 614);
   assert.equal(scroll.scrollTop, 72);
+  assert.ok(root.querySelectorAll('[data-entity="drum-row-label"]').every((label) => label.style.transform === "translateX(614px)"));
   assert.ok(root.querySelectorAll('[data-tick="6000"]').every((element) => element.dataset.currentStep === "true"));
 });
 
@@ -260,15 +264,32 @@ test("playhead dan full-song center follow berubah pada tick berbeda di Snap cel
 });
 
 test("Drum Grid custom range memakai nearest horizontal follow dan Follow mati tidak menggulir", () => {
-  const { scroll, view } = drumViewFixture();
+  const { root, scroll, view } = drumViewFixture();
   view.updatePlayback({ status: "playing", currentTick: 6000 }, { followMode: "nearest" });
   assert.equal(scroll.scrollLeft, 478);
+  assert.ok(root.querySelectorAll('[data-entity="drum-row-label"]').every((label) => label.style.transform === "translateX(478px)"));
   assert.equal(scroll.scrollTop, 72);
 
   scroll.scrollLeft = 73;
   view.updatePlayback({ status: "playing", currentTick: 9000 }, { followMode: "none" });
   assert.equal(scroll.scrollLeft, 73);
   assert.equal(scroll.scrollTop, 72);
+});
+
+test("native horizontal scroll freezes corner and every piece control, including after snap render", () => {
+  const { root, scroll, view } = drumViewFixture();
+  for (const offset of [0, 320, 1200]) {
+    scroll.scrollLeft = offset;
+    scroll.dispatchEvent({ type: "scroll", bubbles: false });
+    const gutter = root.querySelectorAll('[data-entity="drum-row-label"]');
+    assert.equal(gutter.length, 10);
+    assert.ok(gutter.every((label) => label.style.transform === `translateX(${offset}px)`));
+    assert.equal(scroll.scrollTop, 72);
+  }
+  view.render(songFixture(), { editor: { snap: "1/16", tool: "select" } });
+  assert.equal(scroll.scrollLeft, 1200);
+  assert.equal(scroll.scrollTop, 72);
+  assert.ok(root.querySelectorAll('[data-entity="drum-row-label"]').every((label) => label.style.transform === "translateX(1200px)"));
 });
 
 test("Drum Grid berhenti pada batas konten dan tidak meminta browser scrollIntoView", () => {
@@ -487,18 +508,20 @@ test("Drum Roll shortcuts are scoped to its grid or selection actions, not mute/
   assert.equal(isDrumKeyboardTarget(targetFor("#drum-grid-scroll")), true);
   assert.equal(isDrumKeyboardTarget(targetFor("#drums-selection-toolbar")), true);
   assert.equal(isDrumKeyboardTarget(targetFor("#drum-grid-scroll", ".instrument-mix-button")), false);
+  assert.equal(isDrumKeyboardTarget(targetFor("#drum-grid-scroll", "input")), false);
   assert.equal(isDrumKeyboardTarget(targetFor("#drums-section")), false);
 });
 
-test("per-piece mix controls stay in sticky labels and expose accessible mute/solo state", () => {
+test("per-piece mix controls stay in frozen labels and expose accessible mute/solo/volume state", () => {
   const song = songWithHits([{ id: "kick", pieceId: "kick", startTick: 0, velocity: 100, articulation: "normal" }]);
   const mix = { channels: {
     melody: { mute: false, solo: false },
-    "percussion:drums-main:kick": { mute: true, solo: false }
+    "percussion:drums-main:kick": { mute: true, solo: false, volume: 0.72 }
   } };
   const { root, view } = drumViewFixture({ translate: (key, values = {}) => key === "mixMutePieceAria"
     ? `Toggle ${values.piece} mute`
-    : key === "mixSoloPieceAria" ? `Toggle ${values.piece} solo` : key });
+    : key === "mixSoloPieceAria" ? `Toggle ${values.piece} solo`
+    : key === "mixVolumeAria" ? `Volume ${values.piece}, ${values.percent}%` : key });
   view.render(song, { editor: { snap: "1/8", tool: "select" }, mix }, 11520);
   const kickLabel = root.querySelectorAll(".drum-row-label").find((label) => label.dataset.pieceId === "kick");
   const controls = kickLabel.children.filter((item) => item.dataset.mixFlag);
@@ -506,6 +529,31 @@ test("per-piece mix controls stay in sticky labels and expose accessible mute/so
   assert.deepEqual(controls.map((button) => button.dataset.mixFlag), ["mute", "solo"]);
   assert.deepEqual(controls.map((button) => button.getAttribute("aria-pressed")), ["true", "false"]);
   assert.deepEqual(controls.map((button) => button.getAttribute("aria-label")), ["Toggle Kick mute", "Toggle Kick solo"]);
+  const slider = kickLabel.children.find((item) => item.dataset.channelVolume);
+  assert.equal(slider.type, "range");
+  assert.equal(slider.min, "0");
+  assert.equal(slider.max, "100");
+  assert.equal(slider.step, "1");
+  assert.equal(slider.value, "72");
+  assert.equal(slider.dataset.channelId, "percussion:drums-main:kick");
+  assert.equal(slider.getAttribute("aria-label"), "Volume Kick, 72%");
+  assert.equal(slider.title, "Volume Kick, 72%");
+  assert.equal(root.querySelectorAll(".drum-row-volume").length, 9);
+  assert.ok(root.querySelectorAll(".drum-row-volume").filter((item) => item !== slider).every((item) => item.value === "100"));
+});
+
+test("drum volume pointer and click cannot create hits or rectangle selections", () => {
+  const added = [];
+  const { root, view } = drumViewFixture({ onAddHit: (hit) => added.push(hit) });
+  view.render(songWithHits([]), { editor: { snap: "1/8", tool: "draw" } });
+  const slider = root.querySelector(".drum-row-volume");
+  slider.dispatchEvent(pointer("pointerdown", 50));
+  slider.dispatchEvent(pointer("pointermove", 150));
+  slider.dispatchEvent(pointer("pointerup", 150));
+  slider.dispatchEvent({ type: "click", bubbles: true });
+  assert.deepEqual(added, []);
+  assert.deepEqual(view.getSelectedHitIds(), []);
+  assert.equal(root.querySelector(".drum-selection-rect").hidden, true);
 });
 
 test("Drum Roll markup places the roll before Hit Expression and renders separate multi-selection summary", () => {
