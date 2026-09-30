@@ -219,7 +219,7 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
     const depthY = expressionY("vibrato", depth);
     const center = depthY > TOP + 36 ? depthY - 20 : depthY + 26;
     const amplitude = Math.min(8, Math.max(4, depth * 12));
-    const seconds = note.durationTicks / song.timing.ppq * 60 / song.timing.tempo;
+    const seconds = note.durationTicks / (song.timing?.ppq ?? 480) * 60 / (song.timing?.tempo ?? 120);
     const cycles = clamp(seconds * (note.vibrato?.rateHz ?? 5.5) * (1 - delay), 1, Math.max(1, span / 12));
     const samples = Math.max(16, Math.ceil(cycles * 16));
     const points = Array.from({ length: samples + 1 }, (_, index) => {
