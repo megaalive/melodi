@@ -1,26 +1,27 @@
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.23";
-import { createCommands } from "./core/commands.js?v=20260930.23";
+import { harmonyContextRange, renderHarmonyInspector } from "./ui/harmony.js?v=20260930.24";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.24";
+import { createCommands } from "./core/commands.js?v=20260930.24";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.23";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.23";
-import { createAudioPlayer } from "./audio/player.js?v=20260930.23";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.24";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.24";
+import { createAudioPlayer } from "./audio/player.js?v=20260930.24";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.23";
-import { createScoreView } from "./ui/score.js?v=20260930.23";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260930.23";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.23";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.23";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.23";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.23";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.24";
+import { createScoreView } from "./ui/score.js?v=20260930.24";
+import { createGuitarView } from "./ui/guitar-view.js?v=20260930.24";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.24";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.24";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.24";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.24";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260930.23";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.23";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.23";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.23";
-import { deserializeProject } from "./core/serialization.js?v=20260930.23";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.23";
+import { createDraftPersistence } from "./storage/draft.js?v=20260930.24";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.24";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.24";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.24";
+import { deserializeProject } from "./core/serialization.js?v=20260930.24";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.24";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1246,6 +1247,14 @@ function renderPlayback() {
 
 function render() {
   if (!commands) return;
+  const chordEditor = byId("harmony-chord-form");
+  const editedChord = commands.getSong().chords.find(chord => chord.id === chordEditor?.dataset.chordId);
+  if (chordEditor?.dataset.chordId && !editedChord) {
+    delete chordEditor.dataset.chordId;
+    chordEditor.dataset.pending = "false";
+    chordEditor.reset();
+  }
+  for (const control of chordEditor?.querySelectorAll("input, select, button[type=submit]") ?? []) control.disabled = Boolean(editedChord?.locked);
   const active = document.activeElement;
   const focusKey = active?.dataset?.focusKey;
   const focusFallback = active?.dataset?.focusFallback;
@@ -1299,6 +1308,7 @@ function render() {
   renderSyllables(song, state);
   renderEditorControls();
   renderGeneration(state);
+  renderHarmonyInspector(song, state, commands.getHarmonyState(), translate);
   renderPanelDisclosures(song, state);
   rollView.render(song, state, null, songEndTick);
   expressionView?.render(song, state, rollView.getGeometry());
@@ -1661,6 +1671,11 @@ async function requestDeleteBrowserSong(id, title) {
 }
 
 function clearPendingForms() {
+  const chordForm = byId("harmony-chord-form");
+  if (chordForm) { delete chordForm.dataset.chordId; chordForm.reset(); }
+  const harmonyRange = byId("harmony-range-form");
+  harmonyRange?.reset();
+  if (byId("harmony-editor")) byId("harmony-editor").open = false;
   for (const form of document.forms) {
     form.dataset.pending = "false";
     form.dataset.submitting = "false";
@@ -2157,6 +2172,15 @@ const publicCommands = Object.freeze({
   acceptCandidate: commands.acceptCandidate,
   lockAcceptedNotes: commands.lockAcceptedNotes,
   clearGeneration: commands.clearGeneration,
+  suggestHarmony: commands.suggestHarmony,
+  getHarmonyState: commands.getHarmonyState,
+  selectHarmonyCandidate: commands.selectHarmonyCandidate,
+  acceptHarmonyCandidate: commands.acceptHarmonyCandidate,
+  clearHarmonySuggestions: commands.clearHarmonySuggestions,
+  addChord: commands.addChord,
+  updateChord: commands.updateChord,
+  deleteChord: commands.deleteChord,
+  setChordLocked: commands.setChordLocked,
   regenerateGap: commands.regenerateGap
 });
 const publicSurface = Object.freeze({ getState: commands.getState, commands: publicCommands });
@@ -2183,7 +2207,13 @@ document.addEventListener("submit", (event) => {
   const action = form.dataset.action;
   form.dataset.submitting = "true";
   let result;
-  if (action === "add-note") {
+  if (action === "suggest-harmony") {
+    result = run(() => commands.suggestHarmony({ startTick: Number(data.get("startTick")), endTick: Number(data.get("endTick")) }));
+  } else if (action === "save-chord") {
+    const chord = { rootPitchClass: Number(data.get("rootPitchClass")), quality: data.get("quality"), startTick: Number(data.get("startTick")), durationTicks: Number(data.get("durationTicks")) };
+    result = run(() => form.dataset.chordId ? commands.updateChord(form.dataset.chordId, chord) : commands.addChord(chord));
+    if (result) { delete form.dataset.chordId; form.dataset.pending = "false"; }
+  } else if (action === "add-note") {
     result = run(() => commands.addNote({
       pitch: pitchToMidi(data.get("pitch")),
       startTick: Number(data.get("startTick")),
@@ -2326,7 +2356,29 @@ document.addEventListener("click", (event) => {
   if (!target) return;
   if (target.closest("#project-menu")) closeProjectMenu();
   const state = commands.getState();
-  if (target.dataset.action === "delete-selected-percussion-hits") {
+  if (target.dataset.action === "select-harmony") {
+    run(() => commands.selectHarmonyCandidate(target.dataset.harmonyId));
+  } else if (target.dataset.action === "accept-harmony") {
+    run(() => commands.acceptHarmonyCandidate(target.dataset.harmonyId));
+  } else if (target.dataset.action === "clear-harmony") {
+    run(() => commands.clearHarmonySuggestions());
+  } else if (target.dataset.action === "harmony-use-selection") {
+    const range = harmonyContextRange(commands.getSong(), state);
+    if (range) { const form = byId("harmony-range-form"); form.elements.startTick.value = range.startTick; form.elements.endTick.value = range.endTick; form.dataset.pending = "false"; }
+  } else if (target.dataset.action === "toggle-chord-lock") {
+    const chord = commands.getSong().chords.find(item => item.id === target.dataset.harmonyId);
+    if (chord) run(() => commands.setChordLocked(chord.id, !chord.locked));
+  } else if (target.dataset.action === "delete-chord") {
+    run(() => commands.deleteChord(target.dataset.harmonyId));
+  } else if (target.dataset.action === "edit-chord" || target.dataset.action === "new-chord") {
+    const form = byId("harmony-chord-form");
+    const chord = commands.getSong().chords.find(item => item.id === target.dataset.harmonyId);
+    delete form.dataset.chordId;
+    if (chord) { form.dataset.chordId = chord.id; for (const key of ["rootPitchClass", "quality", "startTick", "durationTicks"]) form.elements[key].value = chord[key]; }
+    else form.reset();
+    for (const control of form.querySelectorAll("input, select, button[type=submit]")) control.disabled = Boolean(chord?.locked);
+    form.dataset.pending = "true"; byId("harmony-editor").open = true; form.elements.rootPitchClass.focus();
+  } else if (target.dataset.action === "delete-selected-percussion-hits") {
     run(() => commands.deletePercussionHits(), "drumsHitsDeleted");
   } else if (target.dataset.action === "duplicate-selected-percussion-hits") {
     const duplicates = run(() => commands.duplicatePercussionHits());
