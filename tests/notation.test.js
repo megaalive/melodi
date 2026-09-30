@@ -133,6 +133,7 @@ test("pitch and chord spelling follows C, G, and F key signatures", () => {
     rootPitchClass: 10,
     rootName: "Bb",
     quality: "major",
+    locked: false,
     startTick: 1920,
     durationTicks: 480,
     measureIndex: 1

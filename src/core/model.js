@@ -1,4 +1,4 @@
-import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.23";
+import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.25";
 
 export const PPQ = 480;
 
@@ -244,10 +244,11 @@ function validateSong(song) {
   validateSongMix(song);
 
   for (const chord of song.chords) {
-    requireKeys(chord, ["id", "rootPitchClass", "quality", "startTick", "durationTicks"], "invalid-chord");
+    requireKeys(chord, ["id", "rootPitchClass", "quality", "startTick", "durationTicks", "locked"], "invalid-chord");
     requireId(chord.id);
     if (!Number.isSafeInteger(chord.rootPitchClass) || chord.rootPitchClass < 0 || chord.rootPitchClass > 11) fail("invalid-chord");
     requireText(chord.quality);
+    if (typeof chord.locked !== "boolean") fail("invalid-chord");
     requireTick(chord.startTick);
     requireDuration(chord.durationTicks);
     if (!Number.isSafeInteger(chord.startTick + chord.durationTicks)) fail("invalid-tick");
@@ -269,7 +270,10 @@ function validateSong(song) {
 }
 
 export function createSong(data) {
-  const normalized = normalizeSongInput(data);
+  const input = normalizeSongInput(data);
+  const normalized = isRecord(input) && Array.isArray(input.chords)
+    ? { ...input, chords: input.chords.map((chord) => isRecord(chord) && !Object.hasOwn(chord, "locked")
+      ? { ...chord, locked: false } : chord) } : input;
   validateSong(normalized);
   return cloneData(normalized);
 }

@@ -115,6 +115,7 @@ test("share v4 mempertahankan expression dan vibrato sementara v1-v3 tetap dapat
 
   const v3 = structuredClone(portable);
   v3.version = 3;
+  v3.project.tracks.find((track) => track.kind === "chords").events = v3.project.tracks.find((track) => track.kind === "chords").events.map((row) => row.slice(0, 4));
   const v3Restored = fromPortableProject(v3, deterministicIds("v3"));
   assert.equal(v3Restored.notes[0].volume, 0.66);
   assert.equal(v3Restored.notes[0].pan, -0.35);
@@ -123,6 +124,7 @@ test("share v4 mempertahankan expression dan vibrato sementara v1-v3 tetap dapat
 
   const v2 = structuredClone(portable);
   v2.version = 2;
+  v2.project.tracks.find((track) => track.kind === "chords").events = v2.project.tracks.find((track) => track.kind === "chords").events.map((row) => row.slice(0, 4));
   v2.project.tracks.find((track) => track.id === "melody").events =
     v2.project.tracks.find((track) => track.id === "melody").events.map((row) => row.slice(0, 6));
   const v2Restored = fromPortableProject(v2, deterministicIds("v2"));
@@ -132,6 +134,7 @@ test("share v4 mempertahankan expression dan vibrato sementara v1-v3 tetap dapat
 
   const legacy = structuredClone(portable);
   legacy.version = 1;
+  legacy.project.tracks.find((track) => track.kind === "chords").events = legacy.project.tracks.find((track) => track.kind === "chords").events.map((row) => row.slice(0, 4));
   legacy.project.tracks.find((track) => track.id === "melody").events =
     legacy.project.tracks.find((track) => track.id === "melody").events.map((row) => row.slice(0, 5));
   const legacyRestored = fromPortableProject(legacy, deterministicIds("legacy"));
@@ -226,7 +229,7 @@ function mixedFixture() {
 test("share v5 rebinds distinct percussion volumes to newly decoded track IDs", async () => {
   const original = mixedFixture();
   const portable = toPortableProject(original);
-  assert.equal(portable.version, 5);
+  assert.equal(portable.version, 6);
   assert.equal(portable.project.tracks[0].volume, 0.63);
   assert.deepEqual(portable.project.tracks.filter((track) => track.kind === "percussion").map((track) => track.volumes),
     [{ snare: 0, ride: 0.42 }, { snare: 0.87 }]);
@@ -247,6 +250,7 @@ test("share v5 rebinds distinct percussion volumes to newly decoded track IDs", 
 test("share v4 preserves musical events and restores implicit unity without v5 channel fields", () => {
   const portable = toPortableProject(mixedFixture());
   portable.version = 4;
+  portable.project.tracks.find((track) => track.kind === "chords").events = portable.project.tracks.find((track) => track.kind === "chords").events.map((row) => row.slice(0, 4));
   delete portable.project.tracks[0].volume;
   for (const track of portable.project.tracks) delete track.volumes;
   const restored = fromPortableProject(portable, deterministicIds("v4-unity"));

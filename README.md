@@ -190,3 +190,45 @@ The piano roll is exercised through a small SVG stub, which keeps `tests/piano-r
 
 `addNote` and `pasteNotes` register the new note in `phrases[0].noteIds`, inserted in tick order. This is not bookkeeping for its own sake: `createGenerationContext` fails with `generation-cross-phrase` unless both anchors are in the same phrase, so a song built by clicking notes in the roll could never have a gap filled. Notes added by hand are exactly the ones a user wants to extend, which made the flagship generation flow unreachable for them. Order matters because `acceptCandidate` splices accepted notes in by indexing `noteIds` at the right anchor.
 
+
+## Harmoni R5-A
+
+Inspector Harmoni menawarkan beberapa triad dari range eksplisit `[startTick, endTick)`.
+Keluarga fungsi dibatasi ke tonik (I/III/VI), predominan (II/IV), dan dominan
+(V/VII) untuk mayor dan minor natural tujuh nada. Scale tujuh nada lain memakai
+fungsi `other`; scale selain tujuh nada ditolak. Ini model sederhana, bukan kepastian teori.
+Preview saat ini visual; audio harmoni, bass, dan accompaniment belum tersedia.
+Chord diterima langsung masuk Song dan Score. Kandidat runtime dibersihkan sesudah
+edit canonical. Chord terkunci harus dibuka secara eksplisit sebelum edit/hapus;
+range persis yang unlocked dapat diganti, overlap parsial ditolak.
+
+```js
+const api = window.melodi.commands;
+const session = api.suggestHarmony({ startTick: 0, endTick: 1920 });
+api.selectHarmonyCandidate(session.candidates[0].id);
+const chord = api.acceptHarmonyCandidate(session.candidates[0].id);
+api.setChordLocked(chord.id, true);
+api.getHarmonyState();
+api.setChordLocked(chord.id, false);
+api.updateChord(chord.id, { rootPitchClass: 5, quality: "major" });
+api.deleteChord(chord.id);
+api.addChord({ rootPitchClass: 0, quality: "minor", startTick: 0, durationTicks: 1920 });
+api.clearHarmonySuggestions();
+```
+
+Inspector menyediakan form tick, tombol pilih/terima/bersihkan, dan form root,
+quality, start, duration tanpa koordinat screenshot atau drag. Seleksi note/range
+bisa digunakan sebagai konteks. Semua edit memakai command canonical undo/redo.
+
+
+Skor deterministik memakai durasi overlap dikali bobot onset: awal birama 2,
+awal beat 1.5, posisi lain 1. Skor adalah `100 × weightedCoverage - 20 ×
+penaltyWeight / totalWeight + 2 × matchedChordToneCount`. Penalti hanya untuk
+non-chord tone pada posisi kuat yang overlap setidaknya 240 tick. Maksimal empat
+kandidat diurutkan menurut skor, lalu degree; ID kandidat hanya identitas runtime.
+Metadata menyertakan bobot, cakupan, durasi cocok/tidak cocok, dan pitch class triad.
+
+Project schema v4 menyimpan `locked` secara eksplisit; v1–v3 dibaca sebagai
+unlocked. Share v6 memakai bit 0 flag chord; v1–v5 tetap dibaca unlocked dan
+semantik volume v5 tetap dipertahankan. Sesi kandidat, selection, serta M/S tidak
+disimpan sebagai keputusan harmoni.

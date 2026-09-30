@@ -70,7 +70,7 @@ test("volume edits have one history step while monitoring survives edits and und
   assert.equal(commands.getMixState().channels[crash].mute, false);
 });
 
-test("project schema3 preserves only song volumes; v1/v2 missing mix remains unity", () => {
+test("project schema4 preserves only song volumes; v1/v2 missing mix remains unity", () => {
   const song = fixture();
   const commands = createCommands(song);
   const ride = percussionChannelId(song.tracks[0].id, "ride");
@@ -79,8 +79,8 @@ test("project schema3 preserves only song volumes; v1/v2 missing mix remains uni
   commands.setInstrumentSolo(ride, true);
   commands.setInstrumentMute("melody", true);
   const project = serializeProject(commands.getSong());
-  assert.equal(SCHEMA_VERSION, 3);
-  assert.equal(JSON.parse(project).schemaVersion, 3);
+  assert.equal(SCHEMA_VERSION, 4);
+  assert.equal(JSON.parse(project).schemaVersion, 4);
   assert.equal(project.includes('"mute"'), false);
   assert.equal(project.includes('"solo"'), false);
   const portable = JSON.stringify(toPortableProject(commands.getSong()));

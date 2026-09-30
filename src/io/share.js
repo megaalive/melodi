@@ -1,8 +1,8 @@
-import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260930.23";
+import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260930.25";
 
 export const SHARE_FORMAT = "melodi-share";
-export const SHARE_VERSION = 5;
-const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4, 5]);
+export const SHARE_VERSION = 6;
+const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4, 5, 6]);
 export const SHARE_HASH_KEY = "m";
 export const MAX_SHARE_COMPRESSED_BYTES = 64 * 1024;
 export const MAX_SHARE_DECODED_BYTES = 512 * 1024;
@@ -205,7 +205,8 @@ export function toPortableProject(song) {
             chord.rootPitchClass,
             chord.quality,
             chord.startTick,
-            chord.durationTicks
+            chord.durationTicks,
+            chord.locked ? 1 : 0
           ])
         },
         ...canonical.tracks
@@ -274,16 +275,21 @@ export function fromPortableProject(envelope, idFactory = createId) {
     return { id: idFactory(), text: row[0], noteIds: row[1].map((index) => notes[index].id) };
   });
 
-  const chordRows = harmonyTrack?.events ?? [];
+  const chordRows = harmonyTrack ? harmonyTrack.events : [];
   if (!Array.isArray(chordRows)) fail("malformed-share");
   const chords = chordRows.map((row) => {
-    if (!Array.isArray(row) || row.length !== 4) fail("malformed-share");
+    const expectedLength = envelope.version >= 6 ? 5 : 4;
+    if (!Array.isArray(row) || row.length !== expectedLength) fail("malformed-share");
+    if (envelope.version >= 6 && (!Number.isSafeInteger(row[4]) || row[4] < 0 || row[4] > 1)) {
+      fail("malformed-share");
+    }
     return {
       id: idFactory(),
       rootPitchClass: row[0],
       quality: row[1],
       startTick: row[2],
-      durationTicks: row[3]
+      durationTicks: row[3],
+      locked: envelope.version >= 6 ? Boolean(row[4] & 1) : false
     };
   });
 

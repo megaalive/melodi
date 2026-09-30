@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20260930.23">
+    <meta name="melodi-build" content="20260930.25">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20260930.23">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.23"></script>
-    <script type="module" src="./src/app.js?v=20260930.23"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20260930.25">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20260930.25"></script>
+    <script type="module" src="./src/app.js?v=20260930.25"></script>
   </head>
   <body>
     <header class="page-header">
@@ -475,6 +475,22 @@
         </div>
 
         <aside class="workspace-sidebar" aria-label="Editor tools">
+          <section id="harmony-panel" class="inspector-card harmony-card" aria-labelledby="harmony-heading">
+            <h2 id="harmony-heading" data-copy="harmonyHeading"></h2><p class="muted" data-copy="harmonyHelp"></p>
+            <form id="harmony-range-form" data-action="suggest-harmony"><div class="form-grid">
+              <label><span data-copy="rangeStartLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="harmony-start"></label>
+              <label><span data-copy="rangeEndLabel"></span><input name="endTick" type="number" min="1" step="1" value="1920" required data-focus-key="harmony-end"></label></div>
+              <div class="harmony-actions"><button type="button" data-action="harmony-use-selection" data-copy="harmonyUseSelection"></button><button type="submit" data-copy="harmonySuggest"></button><button id="harmony-clear" type="button" class="secondary" data-action="clear-harmony" data-copy="harmonyClear"></button></div></form>
+            <p id="harmony-status" class="muted" aria-live="polite"></p><ol id="harmony-candidates" class="harmony-list" data-entity="harmony-candidate-list"></ol>
+            <h3 data-copy="harmonyChords"></h3><ol id="harmony-chords" class="harmony-list" data-entity="chord-list"></ol>
+            <details id="harmony-editor"><summary data-copy="harmonyEditHeading"></summary><form id="harmony-chord-form" data-action="save-chord"><div class="form-grid">
+              <label><span data-copy="harmonyRoot"></span><select name="rootPitchClass" data-focus-key="chord-root"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">Eb</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">Ab</option><option value="9">A</option><option value="10">Bb</option><option value="11">B</option></select></label>
+              <label><span data-copy="harmonyQuality"></span><select name="quality" data-focus-key="chord-quality"><option value="major" data-copy="harmonyMajor"></option><option value="minor" data-copy="harmonyMinor"></option><option value="diminished" data-copy="harmonyDiminished"></option></select></label>
+              <label><span data-copy="startTickLabel"></span><input name="startTick" type="number" min="0" step="1" value="0" required data-focus-key="chord-start"></label>
+              <label><span data-copy="durationLabel"></span><input name="durationTicks" type="number" min="1" step="1" value="1920" required data-focus-key="chord-duration"></label></div>
+              <div class="harmony-actions"><button type="submit" data-copy="harmonySave"></button><button type="button" class="secondary" data-action="new-chord" data-copy="harmonyNew"></button></div></form></details>
+          </section>
+
           <section id="generation-panel" class="inspector-card" aria-labelledby="generation-heading" hidden>
             <div class="inspector-heading">
               <h2 id="generation-heading" data-copy="generationHeading"></h2>
