@@ -180,7 +180,7 @@ function validateSongMix(song) {
 }
 
 function validateSong(song) {
-  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks", ...(Object.hasOwn(song, "mix") ? ["mix"] : [])]);
+  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks", ...(isRecord(song) && Object.hasOwn(song, "mix") ? ["mix"] : [])]);
   requireId(song.id);
   requireText(song.title);
 

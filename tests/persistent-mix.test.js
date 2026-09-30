@@ -12,6 +12,12 @@ function fixture() {
   return createExample("jazz-drums-medium-swing", () => `persistent-${++next}`);
 }
 
+test("optional song mix keeps malformed root validation in the canonical error contract", () => {
+  for (const malformed of [null, undefined, [], 1, "song"]) {
+    assert.throws(() => createSong(malformed), { code: "invalid-project" });
+  }
+});
+
 test("canonical song mix validates volumes and semantic track/piece references", () => {
   const song = fixture();
   const trackId = song.tracks[0].id;
