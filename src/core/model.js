@@ -1,3 +1,5 @@
+import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.21";
+
 export const PPQ = 480;
 
 export class MelodiError extends Error {
@@ -163,8 +165,22 @@ function normalizeSongInput(data) {
   return { ...data, tracks: [] };
 }
 
+function validateSongMix(song) {
+  if (!Object.hasOwn(song, "mix")) return;
+  requireKeys(song.mix, ["melody", "percussion"], "invalid-song-mix");
+  const validVolume = (volume) => typeof volume === "number" && Number.isFinite(volume) && volume >= 0 && volume <= 1;
+  if (!validVolume(song.mix.melody) || !isRecord(song.mix.percussion)) fail("invalid-song-mix");
+  for (const [trackId, pieces] of Object.entries(song.mix.percussion)) {
+    const track = song.tracks.find((item) => item.id === trackId && item.kind === "percussion");
+    if (!track || !isRecord(pieces)) fail("invalid-song-mix");
+    for (const [pieceId, volume] of Object.entries(pieces)) {
+      if (!findPercussionPiece(track.kitId, pieceId) || !validVolume(volume)) fail("invalid-song-mix");
+    }
+  }
+}
+
 function validateSong(song) {
-  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks"]);
+  requireKeys(song, ["id", "title", "timing", "key", "scale", "sections", "phrases", "notes", "lyrics", "chords", "tracks", ...(Object.hasOwn(song, "mix") ? ["mix"] : [])]);
   requireId(song.id);
   requireText(song.title);
 
@@ -225,6 +241,7 @@ function validateSong(song) {
     ids.push(syllable.id);
   }
   for (const track of song.tracks) validateInstrumentTrack(track, ids);
+  validateSongMix(song);
 
   for (const chord of song.chords) {
     requireKeys(chord, ["id", "rootPitchClass", "quality", "startTick", "durationTicks"], "invalid-chord");

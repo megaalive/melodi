@@ -1,8 +1,8 @@
-import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260930.20";
+import { PPQ, createId, createSong, MelodiError } from "../core/model.js?v=20260930.21";
 
 export const SHARE_FORMAT = "melodi-share";
-export const SHARE_VERSION = 4;
-const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4]);
+export const SHARE_VERSION = 5;
+const SUPPORTED_SHARE_VERSIONS = new Set([1, 2, 3, 4, 5]);
 export const SHARE_HASH_KEY = "m";
 export const MAX_SHARE_COMPRESSED_BYTES = 64 * 1024;
 export const MAX_SHARE_DECODED_BYTES = 512 * 1024;
@@ -111,6 +111,12 @@ function encodePercussionHit(hit) {
   return tuple;
 }
 
+function portablePieceVolumes(song, trackId) {
+  const volumes = Object.fromEntries(Object.entries(song.mix?.percussion?.[trackId] ?? {})
+    .filter(([, volume]) => volume !== 1));
+  return Object.keys(volumes).length ? { volumes } : {};
+}
+
 function decodePercussionHit(tuple, idFactory) {
   if (!Array.isArray(tuple) || tuple.length < 4 || tuple.length > 7) fail("malformed-share");
   const [pieceId, startTick, velocity, articulation, durationTicks, pan, tuning] = tuple;
@@ -180,6 +186,8 @@ export function toPortableProject(song) {
           id: "melody",
           kind: "notes",
           role: "lead",
+          ...(canonical.mix?.melody !== undefined && canonical.mix.melody !== 1
+            ? { volume: canonical.mix.melody } : {}),
           events: canonical.notes.map(encodeNote),
           lyrics: [
             canonical.lyrics.rawText,
@@ -207,6 +215,7 @@ export function toPortableProject(song) {
             kind: "percussion",
             role: track.role,
             kit: track.kitId,
+            ...portablePieceVolumes(canonical, track.id),
             events: track.events.map(encodePercussionHit)
           }))
       ]
@@ -278,6 +287,7 @@ export function fromPortableProject(envelope, idFactory = createId) {
     };
   });
 
+  const percussionVolumes = {};
   const tracks = envelope.version >= 4
     ? project.tracks
         .filter((track) => isRecord(track) && track.kind === "percussion")
@@ -285,8 +295,13 @@ export function fromPortableProject(envelope, idFactory = createId) {
           if (typeof track.role !== "string" || typeof track.kit !== "string" || !Array.isArray(track.events)) {
             fail("malformed-share");
           }
+          const id = idFactory();
+          if (envelope.version >= 5 && Object.hasOwn(track, "volumes")) {
+            if (!isRecord(track.volumes)) fail("malformed-share");
+            percussionVolumes[id] = { ...track.volumes };
+          }
           return {
-            id: idFactory(),
+            id,
             kind: "percussion",
             role: track.role,
             kitId: track.kit,
@@ -295,6 +310,8 @@ export function fromPortableProject(envelope, idFactory = createId) {
         })
     : [];
 
+  const hasMix = envelope.version >= 5 && (Object.hasOwn(melodyTrack, "volume")
+    || Object.keys(percussionVolumes).length > 0);
   return createSong({
     id: idFactory(),
     title: project.title,
@@ -306,7 +323,11 @@ export function fromPortableProject(envelope, idFactory = createId) {
     notes,
     lyrics: { rawText: lyricData[0], syllables },
     chords,
-    tracks
+    tracks,
+    ...(hasMix ? { mix: {
+      melody: Object.hasOwn(melodyTrack, "volume") ? melodyTrack.volume : 1,
+      percussion: percussionVolumes
+    } } : {})
   });
 }
 

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createBlankSong } from "../src/core/model.js";
-import { serializeProject } from "../src/core/serialization.js";
+import { deserializeProject, serializeProject } from "../src/core/serialization.js";
 import { saveProjectFile } from "../src/io/project-file.js";
 
 test("Save File serializes the song and downloads it through a temporary object URL", () => {
   const song = createBlankSong(() => "file-test-id");
   song.title = "Jazz Drums — Medium Swing";
+  song.tracks = [{ id: "file-kit", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [] }];
+  song.mix = { melody: 0.7, percussion: { "file-kit": { ride: 0.52, snare: 0 } } };
   const serializedPayload = serializeProject(song);
   const scheduled = [];
   const revoked = [];
@@ -68,6 +70,10 @@ test("Save File serializes the song and downloads it through a temporary object 
 
   assert.equal(serializedSong, song);
   assert.deepEqual(createdBlob.parts, [serializedPayload]);
+  assert.equal(JSON.parse(createdBlob.parts[0]).schemaVersion, 3);
+  const reopened = deserializeProject(createdBlob.parts[0]);
+  assert.equal(reopened.mix.melody, 0.7);
+  assert.deepEqual(reopened.mix.percussion["file-kit"], { ride: 0.52, snare: 0 });
   assert.deepEqual(createdBlob.options, { type: "application/json;charset=utf-8" });
   assert.equal(filename.endsWith(".melodi.json"), true);
   assert.equal(anchor.download, filename);

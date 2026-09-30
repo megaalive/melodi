@@ -115,7 +115,7 @@ test("volume commands validate channels and reset detached runtime levels on loa
   const snapshot = commands.getState();
   snapshot.mix.channels.melody.volume = 0;
   assert.equal(commands.getMixState().channels.melody.volume, 0.5);
-  assert.equal(Object.hasOwn(commands.getSong(), "mix"), false);
+  assert.deepEqual(commands.getSong().mix, { melody: 0.5, percussion: { "drums-a": { kick: 0 } } });
   commands.loadSong(songWithTrack());
   assert.equal(commands.getMixState().channels.melody.volume, 1);
   assert.equal(commands.getMixState().channels[kick].volume, 1);

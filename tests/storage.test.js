@@ -181,3 +181,18 @@ test("autosave keeps the canonical project only and stores lyric ordering and no
   assert.deepEqual(payload.song.lyrics.syllables.map((item) => item.id), ["second", "first"]);
   assert.equal(payload.song.notes[0].startTick, 120);
 });
+
+test("draft persistence restores saved Melody and percussion volumes", () => {
+  const song = fixture();
+  song.tracks = [{ id: "draft-kit", kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [] }];
+  song.mix = { melody: 0.2, percussion: { "draft-kit": { ride: 0.56, kick: 0 } } };
+  const storage = memoryStorage();
+  const persistence = draftStore(storage, fakeTimers());
+  persistence.schedule(song);
+  assert.equal(persistence.flush(), true);
+  const restored = draftStore(storage, fakeTimers()).load();
+  assert.equal(restored.status, "restored");
+  assert.equal(restored.song.mix.melody, 0.2);
+  assert.deepEqual(restored.song.mix.percussion["draft-kit"], { ride: 0.56, kick: 0 });
+  assert.equal(Object.hasOwn(JSON.parse(storage.values.get(DRAFT_STORAGE_KEY)), "playback"), false);
+});

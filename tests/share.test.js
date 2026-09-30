@@ -210,3 +210,73 @@ test("share decoder rejects malformed or unsupported envelopes", async () => {
     code: "malformed-share"
   });
 });
+
+function mixedFixture() {
+  const song = fixture();
+  song.tracks = ["original-A", "original-B"].map((id, index) => ({
+    id, kind: "percussion", role: "rhythm", kitId: "gm-standard",
+    events: [{ id: `hit-${index}`, pieceId: "snare", startTick: index * 480, velocity: 96, articulation: "normal" }]
+  }));
+  song.mix = { melody: 0.63, percussion: {
+    "original-A": { snare: 0, ride: 0.42 }, "original-B": { snare: 0.87 }
+  } };
+  return createSong(song);
+}
+
+test("share v5 rebinds distinct percussion volumes to newly decoded track IDs", async () => {
+  const original = mixedFixture();
+  const portable = toPortableProject(original);
+  assert.equal(portable.version, 5);
+  assert.equal(portable.project.tracks[0].volume, 0.63);
+  assert.deepEqual(portable.project.tracks.filter((track) => track.kind === "percussion").map((track) => track.volumes),
+    [{ snare: 0, ride: 0.42 }, { snare: 0.87 }]);
+  for (const track of original.tracks) assert.equal(JSON.stringify(portable).includes(track.id), false);
+  const restored = await decodeSharePayload(await encodeSharePayload(original, { CompressionStreamCtor: null }), {
+    idFactory: deterministicIds("new-runtime")
+  });
+  const [a, b] = restored.tracks;
+  assert.notEqual(a.id, original.tracks[0].id);
+  assert.notEqual(b.id, original.tracks[1].id);
+  assert.equal(restored.mix.melody, 0.63);
+  assert.deepEqual(restored.mix.percussion[a.id], { snare: 0, ride: 0.42 });
+  assert.deepEqual(restored.mix.percussion[b.id], { snare: 0.87 });
+  assert.equal(Object.hasOwn(restored.mix.percussion, "original-A"), false);
+  assert.equal(Object.hasOwn(restored.mix.percussion, "original-B"), false);
+});
+
+test("share v4 preserves musical events and restores implicit unity without v5 channel fields", () => {
+  const portable = toPortableProject(mixedFixture());
+  portable.version = 4;
+  delete portable.project.tracks[0].volume;
+  for (const track of portable.project.tracks) delete track.volumes;
+  const restored = fromPortableProject(portable, deterministicIds("v4-unity"));
+  assert.equal(restored.mix?.melody ?? 1, 1);
+  assert.equal(restored.mix?.percussion?.[restored.tracks[0].id]?.snare ?? 1, 1);
+  assert.equal(restored.tracks.length, 2);
+  assert.equal(restored.tracks[1].events[0].startTick, 480);
+});
+
+test("share v5 rejects malformed melody and piece channel volumes", () => {
+  for (const value of [null, "0.5", -0.1, 1.1, NaN, Infinity]) {
+    const portable = toPortableProject(mixedFixture());
+    portable.project.tracks[0].volume = value;
+    assert.throws(() => fromPortableProject(portable, deterministicIds("bad-volume")));
+  }
+  for (const volumes of [null, [], { snare: -1 }, { snare: "0.3" }, { missing: 0.3 }, { snare: NaN }]) {
+    const portable = toPortableProject(mixedFixture());
+    portable.project.tracks.find((track) => track.kind === "percussion").volumes = volumes;
+    assert.throws(() => fromPortableProject(portable, deterministicIds("bad-piece")));
+  }
+});
+
+test("share v5 omits unity channels and rejects runtime M/S keys in piece volumes", () => {
+  const song = mixedFixture();
+  song.mix.melody = 1;
+  song.mix.percussion["original-A"].ride = 1;
+  const portable = toPortableProject(song);
+  assert.equal(Object.hasOwn(portable.project.tracks[0], "volume"), false);
+  const percussion = portable.project.tracks.find((track) => track.kind === "percussion");
+  assert.deepEqual(percussion.volumes, { snare: 0 });
+  percussion.volumes = { snare: 0.5, muted: true };
+  assert.throws(() => fromPortableProject(portable, deterministicIds("mute-reject")), { code: "invalid-song-mix" });
+});

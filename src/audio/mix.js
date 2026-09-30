@@ -1,4 +1,4 @@
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.20";
+import { findPercussionKit } from "../instruments/percussion.js?v=20260930.21";
 
 const DEFAULT_CHANNEL_STATE = Object.freeze({ mute: false, solo: false, volume: 1 });
 
@@ -6,23 +6,22 @@ export function percussionChannelId(trackId, pieceId) {
   return `percussion:${trackId}:${pieceId}`;
 }
 
-function readChannelState(state) {
+function readMonitoringState(state) {
   return {
     mute: state?.mute === true,
-    solo: state?.solo === true,
-    volume: Number.isFinite(state?.volume) ? Math.max(0, Math.min(1, state.volume)) : 1
+    solo: state?.solo === true
   };
 }
 
 export function createInstrumentMix(song, previous = null) {
   const previousChannels = previous?.channels ?? {};
-  const channels = { melody: readChannelState(previousChannels.melody) };
+  const channels = { melody: { ...readMonitoringState(previousChannels.melody), volume: song?.mix?.melody ?? 1 } };
   for (const track of song?.tracks ?? []) {
     if (track.kind !== "percussion") continue;
     const kit = findPercussionKit(track.kitId);
     for (const piece of kit?.pieces ?? []) {
       const channelId = percussionChannelId(track.id, piece.id);
-      channels[channelId] = readChannelState(previousChannels[channelId]);
+      channels[channelId] = { ...readMonitoringState(previousChannels[channelId]), volume: song?.mix?.percussion?.[track.id]?.[piece.id] ?? 1 };
     }
   }
   return { channels };
@@ -30,7 +29,7 @@ export function createInstrumentMix(song, previous = null) {
 
 export function isInstrumentAudible(mix, channelId) {
   const channels = mix?.channels ?? {};
-  const channel = readChannelState(channels[channelId]);
+  const channel = readMonitoringState(channels[channelId]);
   const anySolo = Object.values(channels).some((state) => state?.solo === true);
   return !channel.mute && (!anySolo || channel.solo);
 }
