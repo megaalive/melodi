@@ -1,15 +1,16 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.31";
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20261001.31";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.32";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261001.32";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261001.31";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.31";
+import { createAgentSnapshot } from "./snapshot.js?v=20261001.32";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.32";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261001.31";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.31";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.31";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261001.31";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261001.32";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.32";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.32";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261001.32";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261001.32";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -106,6 +107,7 @@ export function createCommands(initialSong, {
   let redoStack = [];
   let generationSession = null;
   let harmonySession = null;
+  let harmonyProgressionSession = null;
   let generationAuditionToken = 0;
   let lastAcceptedNoteIds = [];
   let selectedChordId = null;
@@ -304,7 +306,7 @@ export function createCommands(initialSong, {
     const keys = Object.keys(input);
     if (!keys.length || keys.some((key) => !allowed.includes(key))
       || (!partial && allowed.some((key) => !Object.hasOwn(input, key)))) fail("invalid-chord-patch");
-    if (Object.hasOwn(input, "quality") && !["major", "minor", "diminished"].includes(input.quality)) fail("unsupported-chord-quality");
+    if (Object.hasOwn(input, "quality") && !SUPPORTED_CHORD_QUALITIES.includes(input.quality)) fail("unsupported-chord-quality");
   }
 
   function readGenerationState() {
@@ -535,6 +537,7 @@ export function createCommands(initialSong, {
 
   function replaceSong(input, { recordUndo = false, clearHistory = false } = {}) {
     const nextSong = createSong(input);
+    harmonyProgressionSession = null;
     if (recordUndo) pushHistory();
     canonicalRevision += 1;
     harmonySession = null;
@@ -677,6 +680,63 @@ export function createCommands(initialSong, {
     },
     getHarmonyState() {
       return readHarmonyState();
+    },
+    getHarmonyProgression() {
+      if (!harmonyProgressionSession) return null;
+      return cloneData({ ...harmonyProgressionSession,
+        status: harmonyProgressionSession.revision === canonicalRevision ? "ready" : "stale" });
+    },
+    generateHarmonyProgression(request = {}) {
+      harmonyProgressionSession = { ...planHarmonyProgression(song, request), revision: canonicalRevision };
+      notifyChange("harmony");
+      return commands.getHarmonyProgression();
+    },
+    chooseHarmonyProgressionChord(index, rootPitchClass, quality) {
+      if (!harmonyProgressionSession) fail("harmony-session-missing");
+      if (harmonyProgressionSession.revision !== canonicalRevision) fail("harmony-progression-stale");
+      if (!Number.isSafeInteger(index)) fail("harmony-candidate-not-found");
+      const chord = harmonyProgressionSession.chords[index];
+      if (!chord) fail("harmony-candidate-not-found");
+      validateChordFields({rootPitchClass, quality}, true);
+      if (!Number.isSafeInteger(rootPitchClass) || rootPitchClass < 0 || rootPitchClass > 11) fail("invalid-chord");
+      const alternative = chord.alternatives.find(item => item.rootPitchClass === rootPitchClass && item.quality === quality);
+      Object.assign(chord, { rootPitchClass, quality, romanNumeral: alternative?.romanNumeral ?? null });
+      notifyChange("harmony");
+      return commands.getHarmonyProgression();
+    },
+    clearHarmonyProgression() {
+      const changed = harmonyProgressionSession !== null;
+      harmonyProgressionSession = null;
+      if (changed) notifyChange("harmony");
+      return changed;
+    },
+    applyHarmonyProgression() {
+      if (!harmonyProgressionSession) fail("harmony-session-missing");
+      if (harmonyProgressionSession.revision !== canonicalRevision) fail("harmony-progression-stale");
+      const preview = harmonyProgressionSession;
+      if (!preview.chords.length) return [];
+      const newChords = preview.chords.map(({rootPitchClass,quality,startTick,durationTicks}) =>
+        ({id:idFactory(),rootPitchClass,quality,startTick,durationTicks,locked:false}));
+      commit(candidate => {
+        const retained = [];
+        for (const chord of candidate.chords) {
+          const end = chord.startTick + chord.durationTicks;
+          if (chord.locked || end <= preview.startTick || chord.startTick >= preview.endTick) {
+            retained.push(chord);
+            continue;
+          }
+          // Bagian chord di luar pilihan tetap utuh ketika progresi mengganti rentang tengah.
+          if (chord.startTick < preview.startTick) retained.push({...chord,durationTicks:preview.startTick-chord.startTick});
+          if (end > preview.endTick) retained.push({...chord,id:chord.startTick < preview.startTick ? idFactory() : chord.id,
+            startTick:preview.endTick,durationTicks:end-preview.endTick});
+        }
+        for (const chord of newChords) {
+          if (retained.some(item => item.startTick < chord.startTick + chord.durationTicks
+            && item.startTick + item.durationTicks > chord.startTick)) fail("chord-conflict");
+        }
+        candidate.chords = [...retained,...newChords].sort((a,b) => a.startTick-b.startTick);
+      }, () => { harmonyProgressionSession = null; refreshPlaybackSong(); });
+      return cloneData(newChords);
     },
     suggestHarmony(request) {
       const candidates = inferHarmonyCandidates(song, request);

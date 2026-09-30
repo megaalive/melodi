@@ -34,6 +34,7 @@ function chordQualitySuffix(quality) {
   if (["major", "maj", "major triad"].includes(normalized)) return "";
   if (["minor", "min", "minor triad"].includes(normalized)) return "m";
   if (["diminished", "dim", "diminished triad"].includes(normalized)) return "dim";
+  if (["augmented", "aug", "augmented triad"].includes(normalized)) return "aug";
   if (["dominant7", "dominant 7", "7"].includes(normalized)) return "7";
   if (["major7", "major 7", "maj7"].includes(normalized)) return "maj7";
   if (["minor7", "minor 7", "min7", "m7"].includes(normalized)) return "m7";

@@ -4386,7 +4386,7 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .piano-roll-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll { height: clamp(330px,calc(100dvh - 505px),650px); min-height: 330px; }
 .studio #expression-panel { order: 10; border-top: 1px solid var(--border); padding: 7px 10px; background: var(--surface-subtle); }
 .studio .expression-help { display: none; }
-.studio #expression-scroll { height: 100px; min-height: 0; }
+.studio #expression-scroll { height: 146px; min-height: 146px; }
 .studio .expression-panel-heading { align-items: center; gap: 10px; margin-bottom: 5px; }
 .studio .expression-heading-copy { margin-right: auto; }
 .studio .expression-heading-copy h3 { font-size: 12px; }
@@ -4518,3 +4518,170 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
   .studio #lyrics-section { padding: 12px; }
   .studio .lyrics-form textarea { font-size: 19px; min-height: 230px; padding: 12px; }
 }
+
+/* Gelombang vibrato dibaca terpisah dari handle depth yang tetap presisi. */
+.expression-vibrato-wave {
+  fill: none;
+  stroke: var(--expression-ink);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .85;
+}
+.expression-note[data-selected="true"] .expression-vibrato-wave {
+  stroke: var(--expression-selected-ink);
+  stroke-width: 2.8;
+}
+.expression-note[data-current="true"] .expression-vibrato-wave {
+  stroke: var(--expression-current-ink);
+  stroke-width: 2.8;
+}
+
+/* Ink follows its actual background: note bodies stay dark in both themes. */
+:root {
+  --note-ink: #f5f8f7;
+  --expression-note-ink: var(--note-ink);
+}
+.roll-note-mark { fill: var(--note-ink); }
+[data-entity="note"][data-source="generated"] .roll-note-mark { fill: var(--text); }
+[data-entity="note"][data-selected="true"] .roll-note-mark { fill: var(--highlight-selected-ink); }
+[data-entity="note"][data-current="true"] .roll-note-mark { fill: var(--highlight-current-ink); }
+.roll-note-expression { opacity: 1; }
+button.danger-button { color: var(--on-accent); }
+.studio-overview-chord { fill: var(--ember); }
+.studio-overview-drum { fill: var(--text-muted); }
+#score .abcjs-beam-elem path,
+#score .abcjs-stem path,
+#score .abcjs-bar path,
+#score .abcjs-staff path { fill: currentColor; }
+
+/* Keep explicit and system dark mode readable without light-dark(). */
+@supports not (color: light-dark(#fff, #000)) {
+  :root[data-theme="dark"] {
+    --paper: #14171a;
+    --surface: #1b1f23;
+    --surface-subtle: #22272c;
+    --border: #2d333a;
+    --border-strong: #464f57;
+    --text: #e7e4de;
+    --text-muted: #949ca2;
+    --petrol: #4f97a8;
+    --petrol-strong: #6bafbe;
+    --petrol-soft: #182b30;
+    --ember: #e08a3c;
+    --ember-soft: #31231a;
+    --danger: #e07a7a;
+    --success: #6cbf8a;
+    --focus: #e08a3c;
+    --accent: #4f97a8;
+    --accent-strong: #6bafbe;
+    --accent-soft: #182b30;
+    --anchor: #e08a3c;
+    --note-user: #3f7f8e;
+    --note-user-stroke: #6bafbe;
+    --note-generated: #4a7d88;
+    --note-anchor: #e08a3c;
+    --note-anchor-stroke: #b06a24;
+    --note-locked: #d8ab63;
+    --playhead: #e08a3c;
+    --candidate-ghost: #4a7d88;
+    --candidate-ghost-active: #8acfdd;
+    --candidate-ghost-idle: #3a444b;
+    --highlight-current: #3d7a4d;
+    --highlight-current-ink: #b6e3c0;
+    --highlight-selected: #7a5a1e;
+    --highlight-selected-ink: #f0cf9a;
+    --on-accent: #0f1417;
+    --chip-surface: #e7e4de;
+    --chip-ink: #14171a;
+    --toast-surface: #18211d;
+    --toast-ink: #cfe8d8;
+    --toast-surface-error: #241a1c;
+    --toast-ink-error: #f0d2d4;
+    --pitch-tint-high: #221f1e;
+    --pitch-tint-low: #181f24;
+    --score-ink: #e7e4de;
+    --score-ink-muted: #949ca2;
+    --neck-board: #26221d;
+    --neck-nut: #383026;
+    --neck-inlay: #453b2e;
+    --warning-surface: #2a2013;
+    --warning-ink: #e0b872;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"] ) {
+    --paper: #14171a;
+    --surface: #1b1f23;
+    --surface-subtle: #22272c;
+    --border: #2d333a;
+    --border-strong: #464f57;
+    --text: #e7e4de;
+    --text-muted: #949ca2;
+    --petrol: #4f97a8;
+    --petrol-strong: #6bafbe;
+    --petrol-soft: #182b30;
+    --ember: #e08a3c;
+    --ember-soft: #31231a;
+    --danger: #e07a7a;
+    --success: #6cbf8a;
+    --focus: #e08a3c;
+    --accent: #4f97a8;
+    --accent-strong: #6bafbe;
+    --accent-soft: #182b30;
+    --anchor: #e08a3c;
+    --note-user: #3f7f8e;
+    --note-user-stroke: #6bafbe;
+    --note-generated: #4a7d88;
+    --note-anchor: #e08a3c;
+    --note-anchor-stroke: #b06a24;
+    --note-locked: #d8ab63;
+    --playhead: #e08a3c;
+    --candidate-ghost: #4a7d88;
+    --candidate-ghost-active: #8acfdd;
+    --candidate-ghost-idle: #3a444b;
+    --highlight-current: #3d7a4d;
+    --highlight-current-ink: #b6e3c0;
+    --highlight-selected: #7a5a1e;
+    --highlight-selected-ink: #f0cf9a;
+    --on-accent: #0f1417;
+    --chip-surface: #e7e4de;
+    --chip-ink: #14171a;
+    --toast-surface: #18211d;
+    --toast-ink: #cfe8d8;
+    --toast-surface-error: #241a1c;
+    --toast-ink-error: #f0d2d4;
+    --pitch-tint-high: #221f1e;
+    --pitch-tint-low: #181f24;
+    --score-ink: #e7e4de;
+    --score-ink-muted: #949ca2;
+    --neck-board: #26221d;
+    --neck-nut: #383026;
+    --neck-inlay: #453b2e;
+    --warning-surface: #2a2013;
+    --warning-ink: #e0b872;
+    }
+  }
+}
+
+
+/* Preview progresi berupa blok musik, bukan tabel parameter. */
+.studio .progression-workspace { border-bottom: 1px solid var(--border); padding: .5rem 0; min-width: 0; }
+.studio .progression-toolbar, .studio .progression-alternatives { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; }
+.studio .progression-toolbar select { width: auto; max-width: 100%; }
+.studio .progression-hint { font-size: .75rem; color: var(--text-muted); margin: .4rem 0; }
+.studio .progression-strip { display: flex; gap: .3rem; overflow-x: auto; max-width: 100%; padding: .3rem 0 .6rem; }
+.studio .progression-block { flex: 0 0 82px; display: grid; gap: .2rem; text-align: left; min-height: 58px; background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.studio .progression-block small { font-size: .65rem; color: var(--text-muted); }
+.studio .progression-block strong { font-size: 1.15rem; }
+.studio .progression-block[aria-pressed=true], .studio .progression-alternatives button[aria-pressed=true] { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -2px; }
+.studio .progression-alternatives { margin-bottom: .6rem; font-size: .8rem; }
+.studio .progression-alternatives button { min-height: 32px; }
+.studio #harmony-timeline-tools { display: block; }
+@media (max-width: 760px) { .studio .progression-toolbar > strong { width: 100%; } .studio .progression-toolbar select { flex: 1; min-width: 0; } }
+
+.studio .harmony-timeline-tools #harmony-candidates { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: .5rem; }
+.studio .harmony-timeline-tools #harmony-candidates li { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; max-width: none; padding: .6rem; }
+.studio .harmony-timeline-tools #harmony-candidates li > button { flex: none; white-space: normal; overflow-wrap: normal; min-width: 0; text-align: left; }
+.studio .harmony-timeline-tools #harmony-candidates li > button:first-child { grid-column: 1 / -1; font-weight: 700; font-size: .9rem; }
+.studio .harmony-timeline-tools #harmony-candidates p { align-self: center; }
+.studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony] { white-space: nowrap; padding-inline: .6rem; color: var(--accent); }

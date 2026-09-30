@@ -264,3 +264,11 @@ api.setInstrumentMute("bass", true);
 ```
 
 Tidak ada groove generator, mode playback final, atau R5-C dalam tahap ini.
+
+### Progresi chord per birama
+
+Di Piano Roll, pilih gaya Pop, Jazz, Ballad, atau Circle of Fifths, lalu buat progresi untuk seluruh lagu atau pilihan timeline. Preview menampilkan blok per birama; pilih blok dan alternatif chord atau kualitasnya sebelum menerapkan. Penerapan mengganti chord yang tidak terkunci di bagian tersebut dalam satu langkah undo. Chord terkunci dan bagian di luar pilihan dipertahankan. Setelah diterapkan, chord tetap bisa digambar, dipindah, diresize, atau diedit seperti biasa.
+
+Generator tidak membatasi jumlah birama secara tetap. Kecocokan nada melodi (durasi dan ketukan kuat), gerak akar descending fifth, fungsi harmoni, serta akhir frase menjadi pertimbangan. Preset Jazz memakai pendekatan ii–V–I dalam triad; belum menyusun seventh/extended jazz voicing. Mayor, minor, diminished, dan augmented tersedia untuk editing dan playback. Preferensi teori merupakan bobot, bukan jaminan bahwa setiap progresi cocok secara musikal; keputusan akhir tetap melalui pendengaran.
+
+Rujukan teori: [fungsi harmoni dan cadence](https://viva.pressbooks.pub/openmusictheory/chapter/intro-to-harmony/), [ii–V–I](https://viva.pressbooks.pub/openmusictheory/chapter/ii-v-i/), dan [circle-of-fifths progression](https://musictheory.pugetsound.edu/mt21c/CircleOfFifths.html).
