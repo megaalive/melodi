@@ -4383,6 +4383,7 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .harmony-timeline-tools #harmony-candidates { width: 100%; margin: 4px 0; }
 .studio .instrument-mix-strip { font-size: 10px; margin: 2px 0 5px; padding: 3px 6px; border-radius: 3px; }
 .studio .piano-roll-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll, .studio .score-scroll, .studio[data-view-mode="score"] .score-scroll, .studio[data-view-mode="combined"] .score-scroll { height: clamp(210px,calc(100dvh - 505px),650px); min-height: 210px; max-height: none; border-radius: 3px; resize: vertical; }
+.studio .piano-roll-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll { height: clamp(330px,calc(100dvh - 505px),650px); min-height: 330px; }
 .studio #expression-panel { order: 10; border-top: 1px solid var(--border); padding: 7px 10px; background: var(--surface-subtle); }
 .studio .expression-help { display: none; }
 .studio #expression-scroll { height: 100px; min-height: 0; }
