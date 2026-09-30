@@ -1,5 +1,5 @@
-import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.21";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.21";
+import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20260930.22";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20260930.22";
 
 const EXAMPLES = Object.freeze([
   Object.freeze({
@@ -15,16 +15,16 @@ const EXAMPLES = Object.freeze([
     }
   }),
   Object.freeze({
-    id: "jazz-drums-medium-swing",
-    titleKey: "exampleJazzDrumsTitle",
-    descriptionKey: "exampleJazzDrumsDescription",
+    id: "punk-drums-fast-drive",
+    titleKey: "examplePunkDrumsTitle",
+    descriptionKey: "examplePunkDrumsDescription",
     kind: "drums",
-    tags: Object.freeze(["drums", "jazz", "swing"]),
-    factory: (idFactory) => createJazzDrumsSong(idFactory)
+    tags: Object.freeze(["drums", "punk", "straight"]),
+    factory: (idFactory) => createPunkDrumsSong(idFactory)
   })
 ]);
 
-function createJazzDrumsSong(idFactory) {
+function createPunkDrumsSong(idFactory) {
   const events = [];
   const add = (pieceId, startTick, velocity, articulation = "normal", durationTicks) => {
     events.push({
@@ -39,43 +39,46 @@ function createJazzDrumsSong(idFactory) {
 
   const beatTicks = PPQ;
   const barTicks = beatTicks * 4;
+  const eighthTicks = beatTicks / 2;
   for (let bar = 0; bar < 8; bar += 1) {
     const barStart = bar * barTicks;
-    for (let beat = 0; beat < 4; beat += 1) {
-      const beatStart = barStart + beat * beatTicks;
-      add("ride", beatStart, beat === 0 || beat === 2 ? 82 : 69);
-      add("ride", beatStart + Math.floor(beatTicks * 2 / 3), beat === 0 || beat === 2 ? 54 : 48, "ghost");
+    // Leave space for the short beat-four pickup and the final half-bar fill.
+    const hatCount = bar === 3 ? 6 : bar === 7 ? 4 : 8;
+    for (let eighth = 0; eighth < hatCount; eighth += 1) {
+      const open = (bar === 4 || bar === 6) && eighth === 7;
+      add(open ? "open-hi-hat" : "closed-hi-hat", barStart + eighth * eighthTicks,
+        eighth % 2 === 0 ? 86 + bar % 3 : 72 + bar % 5,
+        eighth % 2 === 0 ? "accent" : "normal");
     }
-
-    // Light foot/closes on beats two and four, leaving the swung Ride audible.
-    add("closed-hi-hat", barStart + beatTicks, 56, "ghost");
-    add("closed-hi-hat", barStart + beatTicks * 3, 61, "normal");
-
-    // Feathered two-beat bass pulse with a little phrase variation.
-    add("kick", barStart, bar % 4 === 0 ? 54 : 48, "normal");
-    add("kick", barStart + beatTicks * 2, bar % 2 === 0 ? 50 : 44, "normal");
-
-    // Syncopated low-velocity comping; selected accents move across the bar.
-    add("snare", barStart + beatTicks + beatTicks / 2, 37, "ghost");
-    add("snare", barStart + beatTicks * 3 + (bar % 2 ? 160 : 240), 42, "ghost");
-    if (bar % 2 === 1) add("snare", barStart + beatTicks * 2, 69, "accent");
+    add("snare", barStart + beatTicks, 110 + bar % 3, "accent");
+    add("snare", barStart + beatTicks * 3, 114 + bar % 3, "accent");
+    const kickOffsets = bar === 7 ? [0, 240] : [0, 240, 960, 1200];
+    if (bar === 1 || bar === 2 || bar === 5 || bar === 6) kickOffsets.push(1680);
+    for (const offset of kickOffsets) {
+      add("kick", barStart + offset, offset === 0 ? 108 : 92 + (bar * 3 + offset / 240) % 13);
+    }
   }
 
-  // Short tom pickups anticipate the two four-bar phrases. The final crash
-  // lands on beat four of the last bar after its fill.
-  for (const bar of [3, 7]) {
-    const barStart = bar * barTicks;
-    const fillStart = bar === 3 ? barStart + beatTicks * 3 : barStart + beatTicks * 2 + 160;
-    add("low-tom", fillStart, 58, "normal");
-    add("mid-tom", fillStart + 160, 64, "normal");
-    add("high-tom", fillStart + 320, 72, "accent");
-  }
-  add("crash", 7 * barTicks + beatTicks * 3, 112, "accent", beatTicks);
+  // Four straight sixteenths lead into the second phrase.
+  const pickup = 3 * barTicks + 3 * beatTicks;
+  add("low-tom", pickup, 96);
+  add("mid-tom", pickup + 120, 100);
+  add("high-tom", pickup + 240, 104, "accent");
+  add("snare", pickup + 360, 112, "accent");
+  add("crash", 4 * barTicks, 112, "accent");
+
+  // The final half-bar resolves into a real Crash with a full beat of duration.
+  const ending = 7 * barTicks + 2 * beatTicks;
+  add("low-tom", ending, 100);
+  add("mid-tom", ending + 120, 104);
+  add("high-tom", ending + 240, 108, "accent");
+  add("snare", ending + 360, 116, "accent");
+  add("crash", 7 * barTicks + 3 * beatTicks, 116, "accent", beatTicks);
 
   return createSong({
     id: idFactory(),
-    title: "Jazz Drums — Medium Swing",
-    timing: { ppq: PPQ, tempo: 132, timeSignature: { numerator: 4, denominator: 4 } },
+    title: "Punk Drums — Fast Drive",
+    timing: { ppq: PPQ, tempo: 184, timeSignature: { numerator: 4, denominator: 4 } },
     key: "C",
     scale: { name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] },
     sections: [],

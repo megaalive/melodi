@@ -9,7 +9,7 @@ import { toPortableProject } from "../src/io/share.js";
 
 function fixture() {
   let next = 0;
-  return createExample("jazz-drums-medium-swing", () => `persistent-${++next}`);
+  return createExample("punk-drums-fast-drive", () => `persistent-${++next}`);
 }
 
 test("optional song mix keeps malformed root validation in the canonical error contract", () => {

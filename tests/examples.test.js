@@ -30,41 +30,64 @@ test("starter melody example preserves the existing 81 BPM Am 6/8 arrangement", 
   assert.equal(listExamples()[0].id, "starter-melody");
 });
 
-test("Jazz Drums example is drums-only, swung, fills two phrases, and ends in a crash", () => {
-  const song = createExample("jazz-drums-medium-swing", (() => { let id = 0; return () => `jazz-example-${++id}`; })());
-  assert.equal(song.timing.tempo, 132);
+test("catalog contains only starter melody and Punk with no Jazz alias", () => {
+  assert.deepEqual(listExamples().map(({ id }) => id), ["starter-melody", "punk-drums-fast-drive"]);
+  assert.equal(listExamples()[1].titleKey, "examplePunkDrumsTitle");
+  assert.throws(() => createExample("jazz-drums-medium-swing"), { code: "example-not-found" });
+});
+
+test("Punk Drums is a straight 184 BPM drums-only eight-bar arrangement", () => {
+  const song = createExample("punk-drums-fast-drive");
+  assert.equal(song.title, "Punk Drums — Fast Drive");
+  assert.equal(song.timing.tempo, 184);
+  assert.equal(song.timing.ppq, 480);
   assert.deepEqual(song.timing.timeSignature, { numerator: 4, denominator: 4 });
-  assert.equal(song.notes.length, 0);
-  assert.equal(song.chords.length, 0);
+  assert.deepEqual(song.notes, []);
+  assert.deepEqual(song.chords, []);
   assert.deepEqual(song.lyrics, { rawText: "", syllables: [] });
   assert.equal(song.tracks.length, 1);
   const track = song.tracks[0];
+  assert.equal(track.kind, "percussion");
   assert.equal(track.kitId, "gm-standard");
   const byPiece = (pieceId) => track.events.filter((hit) => hit.pieceId === pieceId);
-  for (const piece of ["ride", "closed-hi-hat", "kick", "snare", "low-tom", "mid-tom", "high-tom", "crash"]) {
+  for (const piece of ["closed-hi-hat", "open-hi-hat", "kick", "snare", "low-tom", "mid-tom", "high-tom", "crash"]) {
     assert.ok(byPiece(piece).length > 0, `${piece} is present`);
   }
-  assert.ok(byPiece("ride").some((hit) => hit.startTick % 480 === 320), "Ride uses a triplet swing subdivision");
-  assert.ok(byPiece("snare").some((hit) => hit.articulation === "ghost"));
-  assert.ok(byPiece("kick").every((hit) => hit.velocity >= 44 && hit.velocity <= 54), "kick stays feathered");
-  assert.equal(byPiece("kick").length, 16, "two bass pulses per bar remain");
-  assert.ok(byPiece("kick").every((hit) => hit.articulation === "normal"), "main feathered pulse avoids double ghost attenuation");
-  assert.equal(byPiece("ride").length, 64, "eight swung Ride hits per bar remain");
-  assert.ok(byPiece("ride").every((hit) => hit.velocity >= 48 && hit.velocity <= 82));
-  assert.equal(byPiece("crash").at(-1).startTick, 7 * 1920 + 3 * 480);
+  assert.equal(byPiece("ride").length, 0);
+  const hats = track.events.filter((hit) => hit.pieceId.endsWith("hi-hat"));
+  for (const bar of [0, 1, 2, 4, 5, 6]) {
+    assert.deepEqual(hats.filter((hit) => Math.floor(hit.startTick / 1920) === bar)
+      .map((hit) => hit.startTick % 1920), [0, 240, 480, 720, 960, 1200, 1440, 1680]);
+  }
+  assert.ok(hats.every((hit) => hit.startTick % 240 === 0));
+  assert.ok(track.events.every((hit) => hit.startTick % 120 === 0), "no inherited triplet swing subdivision");
+  assert.ok(hats.every((hit) => hit.velocity >= 72 && hit.velocity <= 88));
+  for (let bar = 0; bar < 8; bar += 1) {
+    for (const beat of [1, 3]) {
+      assert.ok(byPiece("snare").some((hit) => hit.startTick === bar * 1920 + beat * 480));
+    }
+    for (const offset of (bar === 7 ? [0, 240] : [0, 240, 960, 1200])) {
+      assert.ok(byPiece("kick").some((hit) => hit.startTick === bar * 1920 + offset));
+    }
+  }
+  assert.ok(byPiece("kick").every((hit) => hit.articulation === "normal" && hit.velocity >= 92 && hit.velocity <= 108));
+  assert.ok(byPiece("snare").every((hit) => hit.velocity >= 104 && hit.velocity <= 116));
+  assert.deepEqual(byPiece("crash").map((hit) => hit.startTick), [4 * 1920, 7 * 1920 + 3 * 480]);
+  for (const start of [3 * 1920 + 1440, 7 * 1920 + 960]) {
+    assert.deepEqual(track.events.filter((hit) => hit.startTick >= start && hit.startTick < start + 480 && hit.pieceId.endsWith("tom"))
+      .map((hit) => [hit.pieceId, hit.startTick - start]), [["low-tom", 0], ["mid-tom", 120], ["high-tom", 240]]);
+  }
+  assert.ok(track.events.filter((hit) => hit.pieceId.endsWith("tom") || hit.pieceId === "crash")
+    .every((hit) => hit.velocity >= 96 && hit.velocity <= 116));
   assert.equal(byPiece("crash").at(-1).durationTicks, 480);
-  const endTick = Math.max(...track.events.map((hit) => hit.startTick + (hit.durationTicks ?? 1)));
-  assert.equal(endTick, 8 * 1920);
+  assert.equal(Math.max(...track.events.map((hit) => hit.startTick + (hit.durationTicks ?? 1))), 15360);
+  assert.equal(song.mix, undefined, "example carries no custom volume preset");
+  assert.ok(Object.values(createCommands(song).getMixState().channels).every((channel) => channel.volume === 1));
 });
 
-test("Jazz Drums automatic full-song playback range ends at exactly eight bars", () => {
-  const song = createExample("jazz-drums-medium-swing");
-  const commands = createCommands(song);
-
-  assert.deepEqual(commands.getState().playback.loop, {
-    enabled: true,
-    startTick: 0,
-    endTick: 8 * 1920
+test("Punk Drums automatic full-song playback range ends at exactly eight bars", () => {
+  assert.deepEqual(createCommands(createExample("punk-drums-fast-drive")).getState().playback.loop, {
+    enabled: true, startTick: 0, endTick: 15360
   });
 });
 
