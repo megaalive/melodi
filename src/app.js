@@ -1,29 +1,29 @@
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange } from "./ui/harmony.js?v=20260930.28";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20260930.28";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20260930.28";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20260930.28";
-import { createCommands } from "./core/commands.js?v=20260930.28";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.29";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.29";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.29";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.29";
+import { createCommands } from "./core/commands.js?v=20261001.29";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20260930.28";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20260930.28";
-import { createAudioPlayer } from "./audio/player.js?v=20260930.28";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.29";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.29";
+import { createAudioPlayer } from "./audio/player.js?v=20261001.29";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20260930.28";
-import { createScoreView } from "./ui/score.js?v=20260930.28";
-import { createGuitarView } from "./ui/guitar-view.js?v=20260930.28";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20260930.28";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20260930.28";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20260930.28";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20260930.28";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.29";
+import { createScoreView } from "./ui/score.js?v=20261001.29";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261001.29";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.29";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.29";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.29";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.29";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
 import { resolveSelectedAnchorGap } from "./ui/generation.js";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20260930.28";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20260930.28";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20260930.28";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20260930.28";
-import { deserializeProject } from "./core/serialization.js?v=20260930.28";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20260930.28";
+import { createDraftPersistence } from "./storage/draft.js?v=20261001.29";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.29";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.29";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.29";
+import { deserializeProject } from "./core/serialization.js?v=20261001.29";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.29";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -495,6 +495,9 @@ function openChordEditor(chordId = null) {
     for (const key of ["rootPitchClass", "quality", "startTick", "durationTicks"]) form.elements[key].value = chord[key];
     commands.selectChord(chord.id);
   } else {
+    const drawChord = readChordDrawDefaults();
+    form.elements.rootPitchClass.value = drawChord.rootPitchClass;
+    form.elements.quality.value = drawChord.quality;
     setHarmonyEditorRange(harmonyContextRange(song, commands.getState()));
   }
   for (const control of form.querySelectorAll("input, select, button[type=submit]")) control.disabled = Boolean(chord?.locked);
@@ -1368,7 +1371,7 @@ function render() {
     const target = copyFocusableElement(key);
     if (target && target.form?.dataset.submitting !== "true") {
       target.value = value;
-      target.form.dataset.pending = "true";
+      if (!["set-chord-draw", "set-chord-snap"].includes(target.dataset.action)) target.form.dataset.pending = "true";
     }
   }
 
@@ -1788,10 +1791,7 @@ commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
 
 rollView = createPianoRollView(byId("piano-roll"), commands, {
   translate,
-  getChordDrawDefaults() {
-    const form = byId("harmony-chord-form");
-    return { rootPitchClass: Number(form.elements.rootPitchClass.value), quality: form.elements.quality.value };
-  },
+  getChordDrawDefaults: readChordDrawDefaults,
   onChordContextMenu: showChordContextMenu,
   onAddNote(input) {
     try {
@@ -2109,6 +2109,7 @@ document.addEventListener("input", (event) => {
   if (event.target instanceof Element && event.target.matches("[data-channel-volume]")) updateVolumeLabel(event.target);
 });
 document.addEventListener("change", (event) => {
+  if (event.target instanceof Element && event.target.dataset.action === "set-chord-draw") renderChordDrawControl(commands.getSong());
   if (event.target instanceof Element && event.target.dataset.action === "set-chord-snap") run(() => commands.setChordSnap(event.target.value));
   if (event.target instanceof Element && event.target.dataset.action === "set-harmony-style") {
     run(() => commands.setHarmonyStyle(event.target.value));
@@ -2365,7 +2366,7 @@ document.addEventListener("input", (event) => {
   }
   if (target instanceof HTMLInputElement && ["checkbox", "radio"].includes(target.type)) return;
   if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) && target.form) {
-    target.form.dataset.pending = "true";
+    if (!["set-chord-draw", "set-chord-snap"].includes(target.dataset.action)) target.form.dataset.pending = "true";
     if (target.form.id === "generation-form" && ["generation-start", "generation-end"].includes(target.id)) {
       target.form.dataset.gapReady = "false";
       target.form.dataset.gapHint = "generationGapReapply";

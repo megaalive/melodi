@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPianoRollView, tickToX, chordSnapTicks, chordGesturePatch, chordDrawRange, PIANO_RULER_HEIGHT } from '../src/ui/piano-roll.js';
+import { createBlankSong } from '../src/core/model.js';
+import { createCommands } from '../src/core/commands.js';
 
 class Element {
   constructor(tag) { this.tagName=tag; this.children=[]; this.dataset={}; this.attrs={}; this.listeners={}; this.scrollLeft=0; this.scrollTop=0; this.clientWidth=900; this.clientHeight=600; }
@@ -34,6 +36,47 @@ function setup({chords=[],tool='select',zoom=1,numerator=6,denominator=8}={}) {
   return {song,state,svg,scroll,view,calls,dispatch};
 }
 const chord=(id='c',startTick=0,durationTicks=1440,locked=false)=>({id,startTick,durationTicks,rootPitchClass:9,quality:'minor',locked});
+
+function guardedView(tool='select') {
+  const song=createBlankSong();song.timing.timeSignature={numerator:6,denominator:8};
+  let id=0;const commands=createCommands(song,{idFactory:()=>`guard-${++id}`});
+  const fields={rootPitchClass:9,quality:'minor',startTick:0,durationTicks:1440};
+  const first=commands.addChord(fields); commands.addChord({...fields,startTick:1440});
+  commands.setTool(tool);commands.selectChord(first.id);
+  const scroll=new Element('div'),svg=new Element('svg');scroll.append(svg);const errors=[];
+  let drawDefault={rootPitchClass:5,quality:'major'};
+  const view=createPianoRollView(svg,commands,{onError:error=>errors.push(error.code),getChordDrawDefaults:()=>drawDefault});
+  const render=()=>view.render(commands.getSong(),commands.getState());render();
+  return {commands,svg,view,errors,first,render,setDraw:value=>{drawDefault=value;},gesture(kind,from,to){
+    render();const group=svg.querySelectorAll('[data-entity="chord"]').find(node=>node.dataset.entityId===first.id);
+    const target=kind==='draw'?svg.querySelector('[data-entity="harmony-bar"]'):kind==='resize'?group.querySelector('[data-action="resize-chord"]'):group;
+    for(const [type,x] of [['pointerdown',from],['pointermove',to],['pointerup',to]]) svg.dispatch(type,{target,clientX:x,clientY:50});
+  }};
+}
+
+test('Real commands reject Draw move and resize collisions and renderer snaps back without history',()=>{
+  for(const kind of ['draw','move','resize']) {
+    const s=guardedView(kind==='draw'?'draw':'select'),g=s.view.getGeometry();
+    const before=s.commands.getSong(),history=s.commands.getState().history;
+    const start=kind==='resize'?1440:0;
+    s.gesture(kind,tickToX(start,g)+2,tickToX(start+1440,g)+2);
+    assert.deepEqual(s.errors,['chord-conflict']);assert.deepEqual(s.commands.getSong(),before);assert.deepEqual(s.commands.getState().history,history);
+    const rendered=s.svg.querySelectorAll('[data-entity="chord"]').find(node=>node.dataset.entityId===s.first.id);
+    assert.equal(rendered.dataset.startTick,'0');assert.equal(rendered.dataset.durationTicks,'1440');
+  }
+});
+test('Adjacent move resize and visible draw defaults succeed through real canonical commands',()=>{
+  const s=guardedView(),g=s.view.getGeometry();
+  s.gesture('move',tickToX(0,g)+2,tickToX(2880,g)+2);
+  assert.equal(s.commands.getSong().chords.find(c=>c.id===s.first.id).startTick,2880);
+  s.gesture('resize',tickToX(4320,g)-2,tickToX(5760,g)-2);
+  assert.equal(s.commands.getSong().chords.find(c=>c.id===s.first.id).durationTicks,2880);
+  s.commands.setTool('draw');s.gesture('draw',tickToX(5760,g)+2,tickToX(5760,g)+2);
+  assert.equal(s.commands.getSong().chords.at(-1).rootPitchClass,5);
+  s.setDraw({rootPitchClass:2,quality:'minor'});s.gesture('draw',tickToX(7200,g)+2,tickToX(7200,g)+2);
+  assert.equal(s.commands.getSong().chords.at(-1).rootPitchClass,2);assert.equal(s.commands.getSong().chords.at(-1).quality,'minor');
+  assert.deepEqual(s.errors,[]);
+});
 
 test('empty chord lane remains visible and shares meter bar geometry above pitches',()=>{
   const {svg,view}=setup(); const g=view.getGeometry();

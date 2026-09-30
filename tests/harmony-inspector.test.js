@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { harmonyContextRange, harmonyRangeLabel, renderHarmonyInspector, syncHarmonyRangeForm } from '../src/ui/harmony.js';
+import { harmonyContextRange, harmonyRangeLabel, renderHarmonyInspector, syncHarmonyRangeForm, readChordDrawDefaults, renderChordDrawControl } from '../src/ui/harmony.js';
 import { message } from '../src/i18n/messages.js';
 
 const song = { timing:{ppq:480,timeSignature:{numerator:6,denominator:8}},key:'C',notes:[],chords:[] };
@@ -17,11 +17,39 @@ function dom() {
   const nodes={};
   for(const id of ['harmony-style','bass-style','harmony-range-form','harmony-location','harmony-status','harmony-candidates','harmony-clear','harmony-selected-chord','harmony-chords','harmony-chord-form','harmony-edit-location','chord-snap']) nodes[id]=new Node();
   nodes['harmony-range-form'].elements={startTick:{value:0},endTick:{value:0}};
+  for(const id of ['chord-draw-root','chord-draw-quality','chord-draw-symbol']) nodes[id]=new Node();
+  nodes['chord-draw-root'].value='9'; nodes['chord-draw-quality'].value='minor';
   nodes['harmony-chord-form'].elements={startTick:{value:0},durationTicks:{value:0},rootPitchClass:{value:0},quality:{value:'major'}};
   return {nodes,getElementById:id=>nodes[id],createElement:()=>new Node()};
 }
 function withDom(fn){const old=globalThis.document;const document=dom();globalThis.document=document;try{fn(document.nodes);}finally{globalThis.document=old;}}
 const session={candidates:[],status:'idle',selectedCandidateId:null};
+
+test('Visible draw chord stays independent of selected chord and pending sidebar edits',()=>withDom(nodes=>{
+  renderChordDrawControl(song);
+  assert.equal(nodes['chord-draw-symbol'].textContent,'Am');
+  nodes['chord-draw-root'].value='5'; nodes['chord-draw-quality'].value='major';
+  nodes['harmony-chord-form'].elements.rootPitchClass.value=2;
+  renderHarmonyInspector(song,state,session,tr);
+  assert.deepEqual(readChordDrawDefaults(),{rootPitchClass:5,quality:'major'});
+  assert.equal(nodes['chord-draw-symbol'].textContent,'F');
+  nodes['chord-draw-root'].value='2'; nodes['chord-draw-quality'].value='minor';
+  renderChordDrawControl(song); assert.equal(nodes['chord-draw-symbol'].textContent,'Dm');
+}));
+
+test('Draw picker is beside Snap, stays musical and does not freeze the selected range as a pending form',()=>{
+  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../src/app.js',import.meta.url),'utf8');
+  assert.match(html,/id="chord-draw-picker"/);
+  assert.match(html,/id="chord-draw-root"[^>]*data-aria-copy="harmonyDrawRoot"/);
+  assert.match(html,/id="chord-draw-quality"[^>]*data-aria-copy="harmonyDrawQuality"/);
+  assert.match(app,/getChordDrawDefaults: readChordDrawDefaults/);
+  assert.match(app,/const drawChord = readChordDrawDefaults\(\)/);
+  assert.equal((app.match(/!\["set-chord-draw", "set-chord-snap"\]\.includes\(target.dataset.action\)/g)??[]).length,2);
+  for(const language of ['id','en']) for(const key of ['harmonyDrawChord','harmonyDrawRoot','harmonyDrawQuality']) assert.notEqual(message(language,key),key);
+  assert.equal(message('id','error_chord-conflict'),'Bagian itu sudah memiliki chord.');
+  assert.equal(message('en','error_chord-conflict'),'That range already contains a chord.');
+});
 
 test('Harmony range derives meter and playhead bars for 6/8,4/4 and 5/4',()=>{
   assert.deepEqual(harmonyContextRange(song,state),{startTick:0,endTick:1440});

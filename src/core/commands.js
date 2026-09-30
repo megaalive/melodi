@@ -1,15 +1,15 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20260930.28";
-import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20260930.28";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.29";
+import { cloneData, createBlankSong, createId, createSong, MelodiError } from "./model.js?v=20261001.29";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20260930.28";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20260930.28";
+import { createAgentSnapshot } from "./snapshot.js?v=20261001.29";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.29";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20260930.28";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20260930.28";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20260930.28";
-import { findPercussionKit } from "../instruments/percussion.js?v=20260930.28";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261001.29";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.29";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.29";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261001.29";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -279,6 +279,16 @@ export function createCommands(initialSong, {
     const chord = song.chords.find((item) => item.id === chordId);
     if (!chord) fail("chord-not-found");
     return chord;
+  }
+
+  function overlappingChords({ startTick, durationTicks }, ignoreChordId = null) {
+    const endTick = startTick + durationTicks;
+    return song.chords.filter(chord => chord.id !== ignoreChordId
+      && chord.startTick < endTick && chord.startTick + chord.durationTicks > startTick);
+  }
+
+  function assertChordPlacement(placement, ignoreChordId = null) {
+    if (overlappingChords(placement, ignoreChordId).length) fail("chord-conflict");
   }
 
   function harmonyCandidate(candidateId) {
@@ -691,15 +701,14 @@ export function createCommands(initialSong, {
     },
     acceptHarmonyCandidate(candidateId = harmonySession?.selectedCandidateId) {
       const candidate = harmonyCandidate(candidateId);
-      const endTick = candidate.startTick + candidate.durationTicks;
-      const overlaps = song.chords.filter((chord) => chord.startTick < endTick
-        && chord.startTick + chord.durationTicks > candidate.startTick);
+      const overlaps = overlappingChords(candidate);
       if (overlaps.some((chord) => chord.locked)) fail("locked-chord");
       if (overlaps.length > 1 || overlaps.some((chord) => chord.startTick !== candidate.startTick
         || chord.durationTicks !== candidate.durationTicks)) fail("chord-conflict");
       const fields = { rootPitchClass: candidate.rootPitchClass, quality: candidate.quality,
         startTick: candidate.startTick, durationTicks: candidate.durationTicks };
       const chord = overlaps[0];
+      assertChordPlacement(candidate, chord?.id);
       const result = chord ? commands.updateChord(chord.id, fields) : commands.addChord(fields);
       // Penerimaan yang identik tetap mengakhiri sesi tanpa menambah history.
       harmonySession = null;
@@ -708,6 +717,7 @@ export function createCommands(initialSong, {
     },
     addChord(input) {
       validateChordFields(input);
+      assertChordPlacement(input);
       const chord = { id: idFactory(), ...cloneData(input), locked: false };
       commit((candidate) => { candidate.chords.push(chord); }, refreshPlaybackSong);
       return cloneData(findChord(chord.id));
@@ -717,6 +727,11 @@ export function createCommands(initialSong, {
       if (chord.locked) fail("locked-chord");
       validateChordFields(patch, true);
       if (Object.entries(patch).every(([key, value]) => chord[key] === value)) return cloneData(chord);
+      const proposed = { ...chord, ...patch };
+      // Legacy overlap remains readable/editable; only a changed placement can introduce a new collision.
+      if (proposed.startTick !== chord.startTick || proposed.durationTicks !== chord.durationTicks) {
+        assertChordPlacement(proposed, chordId);
+      }
       commit((candidate) => { Object.assign(candidate.chords.find((item) => item.id === chordId), cloneData(patch)); }, refreshPlaybackSong);
       return cloneData(findChord(chordId));
     },

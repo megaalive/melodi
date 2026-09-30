@@ -1,7 +1,13 @@
-import { spellPitchNameInKey } from "../notation/project.js?v=20260930.28";
-import { songBarTicks, barRangeAtTick } from "../core/timeline.js?v=20260930.28";
+import { spellPitchNameInKey } from "../notation/project.js?v=20261001.29";
+import { songBarTicks, barRangeAtTick } from "../core/timeline.js?v=20261001.29";
 export function harmonyChordSymbol(chord, key = "C") {
   return `${spellPitchNameInKey(60 + chord.rootPitchClass, key)}${({ major: '', minor: 'm', diminished: 'dim' })[chord.quality] ?? chord.quality}`;
+}
+export function readChordDrawDefaults() {
+  return { rootPitchClass: Number(document.getElementById('chord-draw-root').value), quality: document.getElementById('chord-draw-quality').value };
+}
+export function renderChordDrawControl(song) {
+  document.getElementById('chord-draw-symbol').textContent = harmonyChordSymbol(readChordDrawDefaults(), song.key);
 }
 export function harmonyContextRange(song, state) {
   if (state.selection && state.selection.endTick > state.selection.startTick) return { startTick: state.selection.startTick, endTick: state.selection.endTick };
@@ -36,6 +42,7 @@ export function renderSketchControls(song) {
 export function renderHarmonyInspector(song, state, session, translate) {
   const byId = id => document.getElementById(id);
   renderSketchControls(song);
+  renderChordDrawControl(song);
   byId('chord-snap').value = state.editor?.chordSnap ?? 'bar';
   const range = syncHarmonyRangeForm(song, state);
   byId('harmony-location').textContent = harmonyRangeLabel(song, range, translate);
