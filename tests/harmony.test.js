@@ -75,14 +75,30 @@ test("range rejects fractional, empty, negative and beyond-timeline requests", (
   assert.throws(() => suggestHarmony(gap, { startTick: 0, endTick: 480 }), { code: "harmony-empty-range" });
 });
 
-test("repeated supplied chorus bars retain equivalent chord identities and scores", () => {
-  let nextId = 0;
-  const fixture = createExample("day-by-day-chorus", () => `harmony-fixture-${++nextId}`);
-  const musicalResult = (startTick, endTick) => suggestHarmony(fixture, { startTick, endTick }).map(({ id, startTick: ignoredStart, ...candidate }) => candidate);
-  assert.deepEqual(musicalResult(0, 1920), musicalResult(7680, 9600));
-  assert.deepEqual(musicalResult(1920, 3840), musicalResult(9600, 11520));
-  assert.equal(musicalResult(0, 1920).length, 4);
-  assert.ok(musicalResult(0, 1920).every(candidate => Number.isFinite(candidate.score)));
+test("Starter Melody offers deterministic bounded harmony with factual metadata", () => {
+  const fixture = createExample("starter-melody");
+  assert.equal(fixture.key, "Am");
+  assert.deepEqual(fixture.timing.timeSignature, { numerator: 6, denominator: 8 });
+  const triads = deriveDiatonicTriads(fixture);
+  for (const range of [{ startTick: 0, endTick: 1440 }, { startTick: 1440, endTick: 2880 }]) {
+    const candidates = suggestHarmony(fixture, range);
+    assert.ok(candidates.length > 1 && candidates.length <= 4);
+    assert.deepEqual(candidates, suggestHarmony(fixture, range));
+    assert.equal(new Set(candidates.map(candidate => candidate.id)).size, candidates.length);
+    const overlapping = fixture.notes.filter(note => note.startTick < range.endTick && note.startTick + note.durationTicks > range.startTick);
+    assert.ok(overlapping.length > 0);
+    for (const candidate of candidates) {
+      assert.ok(Number.isFinite(candidate.score));
+      const triad = triads.find(item => item.scaleDegree === candidate.scaleDegree);
+      assert.equal(candidate.function, triad.function);
+      assert.equal(candidate.romanNumeral, triad.romanNumeral);
+      assert.deepEqual(candidate.metadata.chordTonePitchClasses, triad.chordTonePitchClasses);
+      const matched = overlapping.filter(note => triad.chordTonePitchClasses.includes(note.pitch % 12));
+      assert.equal(candidate.metadata.matchedChordToneCount, new Set(matched.map(note => note.pitch % 12)).size);
+      assert.equal(candidate.metadata.matchedDurationTicks, matched.reduce((total, note) => total + Math.min(range.endTick, note.startTick + note.durationTicks) - Math.max(range.startTick, note.startTick), 0));
+      assert.ok(candidate.metadata.weightedCoverage >= 0 && candidate.metadata.weightedCoverage <= 1);
+    }
+  }
 });
 
 test("unusual scales use neutral functions and unsupported shapes fail explicitly", () => {

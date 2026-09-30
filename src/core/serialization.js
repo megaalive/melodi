@@ -1,4 +1,4 @@
-import { createSong, MelodiError } from "./model.js?v=20260930.24";
+import { createSong, MelodiError } from "./model.js?v=20260930.25";
 
 export const SCHEMA_VERSION = 4;
 const SUPPORTED_SCHEMA_VERSIONS = new Set([1, 2, 3, 4]);
