@@ -13,6 +13,14 @@ npm run check
 
 Serve this directory with any static HTTP server and open its `index.html`. For example, `python -m http.server 8000` serves the local root at `http://localhost:8000/`.
 
+## Studio workspace
+
+The transport stays above a visible mode bar: Piano Roll, Drum Roll, Score, Lyrics, Guitar, and Split. The song overview uses real note/chord/hit data; clicking a bar seeks to its start. Its readout shows bar and beat in the current meter.
+
+The editor uses the full canvas until a supporting panel is needed. Mixer contains Melody, Harmony, and Bass monitoring and patterns; Drum Roll retains its per-piece controls in the frozen gutter. Chord and Gap Melody open contextual panels. On narrow screens these panels become dismissible bottom sheets. Selecting a chord opens its inspector; closing it restores focus to its panel button.
+
+Lyrics are a writing sheet with expandable syllable chips. Detailed mapping remains available inside each chip, using bar/beat labels. Numeric utilities remain in the collapsed Tools disclosure. All controls continue to use the existing command layer; this workspace introduces no Song schema, Share format, or audio-engine changes.
+
 ## Canonical model
 
 The project model is plain serializable data. `timing.ppq` is fixed at 480; note and chord positions are safe integer ticks, and durations are positive integer ticks. `note.pitch` is the only canonical pitch value and is an integer MIDI pitch from 0 through 127 (`C4 = 60`). Note names in the UI are derived from that value.
