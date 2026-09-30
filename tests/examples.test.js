@@ -30,8 +30,8 @@ test("starter melody example preserves the existing 81 BPM Am 6/8 arrangement", 
   assert.equal(listExamples()[0].id, "starter-melody");
 });
 
-test("catalog contains only starter melody and Punk with no Jazz alias", () => {
-  assert.deepEqual(listExamples().map(({ id }) => id), ["starter-melody", "punk-drums-fast-drive"]);
+test("catalog contains starter, Punk and user-supplied chorus with no Jazz alias", () => {
+  assert.deepEqual(listExamples().map(({ id }) => id), ["starter-melody", "punk-drums-fast-drive", "day-by-day-chorus"]);
   assert.equal(listExamples()[1].titleKey, "examplePunkDrumsTitle");
   assert.throws(() => createExample("jazz-drums-medium-swing"), { code: "example-not-found" });
 });

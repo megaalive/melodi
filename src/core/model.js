@@ -1,4 +1,4 @@
-import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.22";
+import { findPercussionPiece } from "../instruments/percussion.js?v=20260930.23";
 
 export const PPQ = 480;
 
