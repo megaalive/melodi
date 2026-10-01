@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.54";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.56";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261001.54";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.54";
-import { harmonyChordSymbol } from "./harmony.js?v=20261001.54";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261001.56";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.56";
+import { harmonyChordSymbol } from "./harmony.js?v=20261001.56";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -356,12 +356,16 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   let chordDrag = null;
   let chordLongPress = null;
   let chordPressPoint = null;
+  let pendingViewportResize = false;
+  let pendingViewportAnchorTick = null;
+  let viewportResizeScheduled = false;
   let timelineEndTick = 1;
   let lastPlaybackTick = 0;
   let lastPlaybackRange = "0:1";
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
   let compactPitchRange = null;
+  let lastFollowMode = "none";
 
   function focusChordEditor() {
     const editor = svg.closest?.("#piano-roll-scroll") ?? scrollContainer;
@@ -381,8 +385,30 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   function syncFrozenPitchLabels() {
     const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
     if (!layer) return;
-    const left = scrollContainer?.scrollLeft ?? 0;
+    const boundsWidth = svg.getBoundingClientRect?.().width ?? 0;
+    const scaleX = boundsWidth > 0 ? geometry.width / boundsWidth : 1;
+    const left = (scrollContainer?.scrollLeft ?? 0) * scaleX;
     layer.setAttribute("transform", `translate(${left} 0)`);
+  }
+
+  function scheduleViewportResize() {
+    if (!pendingViewportResize || activeDrag || chordDrag || selectionDrag || drawDrag || rulerDrag || finishingDrag
+      || viewportResizeScheduled) return;
+    viewportResizeScheduled = true;
+    requestAnimationFrame(() => {
+      viewportResizeScheduled = false;
+      if (!pendingViewportResize || activeDrag || chordDrag || selectionDrag || drawDrag || rulerDrag || finishingDrag) return;
+      const viewportAnchorTick = pendingViewportAnchorTick;
+      pendingViewportResize = false;
+      pendingViewportAnchorTick = null;
+      const song = commands.getSong();
+      if (!song) return;
+      const state = commands.getState();
+      render(song, state, null, timelineEndTick, { viewportAnchorTick });
+      if (state.playback?.status === "playing") {
+        updatePlayback(state.playback, { followMode: lastFollowMode, songEndTick: timelineEndTick });
+      }
+    });
   }
 
   function setGroupSelection(noteId, event) {
@@ -396,7 +422,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     commands.selectNotes(next);
   }
 
-  function render(song, state = commands.getState(), focusTickOverride = null, songEndTickOverride = null) {
+  function render(song, state = commands.getState(), focusTickOverride = null, songEndTickOverride = null, { viewportAnchorTick = null } = {}) {
     state = normalizeRuntimeState(state);
     const savedLeft = scrollContainer?.scrollLeft ?? 0;
     const savedTop = scrollContainer?.scrollTop ?? 0;
@@ -770,7 +796,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       // menggulir ke kanan akan ditarik balik ke kiri pada render berikutnya
       // (misalnya saat mengubah tempo), dan baris yang sudah digulir user hilang.
       const focusChanged = focusTick !== lastFocusTick;
-      if (focusChanged) {
+      if (Number.isFinite(viewportAnchorTick)) {
+        const maxScrollLeft = Math.max(0, geometry.width - scrollContainer.clientWidth);
+        scrollContainer.scrollLeft = Math.max(0, Math.min(maxScrollLeft, tickToX(viewportAnchorTick, geometry) - geometry.labelWidth));
+      } else if (focusChanged) {
         const maxScrollLeft = Math.max(0, geometry.width - scrollContainer.clientWidth);
         scrollContainer.scrollLeft = Math.max(0, Math.min(maxScrollLeft, tickToX(focusTick, geometry) - scrollContainer.clientWidth * 0.35));
       } else {
@@ -786,6 +815,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     followMode = "center",
     songEndTick = timelineEndTick
   } = {}) {
+    lastFollowMode = followMode;
     const rangeSignature = `${playback.loop?.startTick ?? 0}:${playback.loop?.endTick ?? songEndTick}`;
     if (rangeSignature !== lastPlaybackRange) {
       render(commands.getSong(), commands.getState(), null, songEndTick);
@@ -1145,6 +1175,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       } catch (error) { onError(error); }
       render(commands.getSong(), commands.getState());
       focusChordEditor();
+      scheduleViewportResize();
       return;
     }
     if (rulerDrag && rulerDrag.pointerId === event.pointerId) {
@@ -1168,6 +1199,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       }
       ignoreNextClick = true;
       setTimeout(() => { ignoreNextClick = false; }, 0);
+      scheduleViewportResize();
       return;
     }
     if (drawDrag && drawDrag.pointerId === event.pointerId) {
@@ -1189,13 +1221,17 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       }
       ignoreNextClick = true;
       setTimeout(() => { ignoreNextClick = false; }, 0);
+      scheduleViewportResize();
       return;
     }
     if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
       const drag = selectionDrag;
       selectionDrag = null;
       drag.element?.remove();
-      if (cancelled || !drag.moved) return;
+      if (cancelled || !drag.moved) {
+        scheduleViewportResize();
+        return;
+      }
       const left = Math.min(drag.startX, drag.currentX);
       const right = Math.max(drag.startX, drag.currentX);
       const top = Math.min(drag.startY, drag.currentY);
@@ -1216,6 +1252,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       else commands.clearSelection();
       ignoreNextClick = true;
       setTimeout(() => { ignoreNextClick = false; }, 0);
+      scheduleViewportResize();
       return;
     }
     if (!activeDrag || activeDrag.pointerId !== event.pointerId) return;
@@ -1264,6 +1301,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       const state = normalizeRuntimeState(commands.getState());
       updatePlayback(state.playback, { follow: state.view.follow });
     }
+    scheduleViewportResize();
   }
 
   function handleClick(event) {
@@ -1377,15 +1415,22 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   svg.addEventListener("click", handleClick);
 
   if (typeof ResizeObserver !== "undefined" && scrollContainer) {
+    let observedWidth = scrollContainer.clientWidth;
     const resizeObserver = new ResizeObserver(() => {
+      const width = scrollContainer.clientWidth;
       const height = scrollContainer.clientHeight;
-      if (!height || (height < 400) === compactPitchRange
-        || activeDrag || chordDrag || selectionDrag || drawDrag || rulerDrag) return;
-      requestAnimationFrame(() => {
-        if (activeDrag || chordDrag || selectionDrag || drawDrag || rulerDrag) return;
-        const song = commands.getSong();
-        if (song?.notes?.length) render(song, commands.getState());
-      });
+      const widthChanged = width !== observedWidth;
+      const pitchFramingChanged = height > 0 && (height < 400) !== compactPitchRange;
+      observedWidth = width;
+      // A resize can clamp scrollLeft without dispatching a scroll event. Keep
+      // the frozen gutter attached to the viewport even when no redraw is needed.
+      syncFrozenPitchLabels();
+      if (!widthChanged && !pitchFramingChanged) return;
+      if (!height) return;
+      const anchorX = (scrollContainer.scrollLeft ?? 0) + geometry.labelWidth;
+      pendingViewportAnchorTick = xToTick(anchorX, geometry);
+      pendingViewportResize = true;
+      scheduleViewportResize();
     });
     resizeObserver.observe(scrollContainer);
   }

@@ -17,6 +17,7 @@ class StubElement {
     this.clientHeight = 600;
     this.scrollLeft = 0;
     this.scrollTop = 0;
+    this.rectWidth = null;
     this.listeners = new Map();
   }
 
@@ -57,7 +58,10 @@ class StubElement {
     this.parentElement = null;
   }
   setPointerCapture() {}
-  getBoundingClientRect() { return { left: 0, top: 0, width: this.clientWidth, height: this.clientHeight }; }
+  getBoundingClientRect() {
+    const width = this.rectWidth ?? this.clientWidth;
+    return { left: 0, top: 0, width, height: this.clientHeight };
+  }
   querySelectorAll(selector) {
     if (selector.startsWith(".")) {
       const className = selector.slice(1);
@@ -187,6 +191,129 @@ test("resizing the same desktop canvas updates pitch framing without changing So
     resized();
     assert.equal(visibleRowCount(svg),19);
     assert.equal(JSON.stringify(state.song),original);
+  } finally {
+    delete globalThis.ResizeObserver;
+    delete globalThis.requestAnimationFrame;
+  }
+});
+
+test("width-only roll resize recenters playback and keeps the pitch gutter frozen without a selection", () => {
+  let resized;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { resized = callback; }
+    observe() {}
+  };
+  globalThis.requestAnimationFrame = callback => callback();
+  try {
+    const { svg, scroll, view, state } = setup();
+    const longSong = song([note("anchor", 60, 120000, 480)]);
+    const songEndTick = 124800;
+    state.song = longSong;
+    state.playback.status = "playing";
+    state.playback.currentTick = 60000;
+    state.playback.loop = { enabled: false, startTick: 0, endTick: songEndTick };
+    view.render(longSong, state, null, songEndTick);
+    svg.rectWidth = Number(svg.getAttribute("width"));
+    view.updatePlayback(state.playback, { followMode: "center", songEndTick });
+    assert.deepEqual(state.selectedNoteIds, []);
+    assert.ok(scroll.scrollLeft > 0, "the interior playhead starts after the left edge");
+
+    for (const width of [640, 1100]) {
+      const previousLayer = svg.querySelector('[data-entity="pitch-label-layer"]');
+      scroll.clientWidth = width;
+      resized();
+
+      const geometry = view.getGeometry();
+      const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
+      const playheadX = tickToX(state.playback.currentTick, geometry);
+      const timelineCenter = geometry.labelWidth + (scroll.clientWidth - geometry.labelWidth) / 2;
+      assert.notEqual(layer, previousLayer, "the width resize redraws the roll");
+      assert.ok(Math.abs(playheadX - scroll.scrollLeft - timelineCenter) < 1e-8,
+        "the live playhead is centered after a viewport-only resize");
+      assert.equal(layer.getAttribute("transform"), `translate(${scroll.scrollLeft} 0)`);
+      assert.deepEqual(state.selectedNoteIds, [], "resize does not require or create a selected note");
+    }
+  } finally {
+    delete globalThis.ResizeObserver;
+    delete globalThis.requestAnimationFrame;
+  }
+});
+
+test("frozen pitch gutter converts CSS scroll pixels to SVG coordinates", () => {
+  const { svg, scroll, view, state } = setup();
+  view.render(song([note("n1", 60), note("n2", 64, 3840)]), state);
+  const geometry = view.getGeometry();
+  svg.rectWidth = geometry.width * 2;
+  scroll.scrollLeft = 240;
+  scroll.dispatch("scroll");
+
+  assert.equal(svg.querySelector('[data-entity="pitch-label-layer"]').getAttribute("transform"), "translate(120 0)");
+});
+
+test("width resize during a cancelled draw gesture is applied after the gesture ends", () => {
+  let resized;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { resized = callback; }
+    observe() {}
+  };
+  globalThis.requestAnimationFrame = callback => callback();
+  try {
+    const { svg, scroll, view, state } = setup({ tool: "draw" });
+    state.song = song([]);
+    view.render(state.song, state);
+    const geometry = view.getGeometry();
+    const previousLayer = svg.querySelector('[data-entity="pitch-label-layer"]');
+    const point = {
+      clientX: (geometry.labelWidth + 16) * svg.clientWidth / geometry.width,
+      clientY: (geometry.top + 8) * svg.clientHeight / geometry.height,
+      target: svg
+    };
+
+    svg.dispatch("pointerdown", point);
+    scroll.clientWidth = 640;
+    resized();
+    assert.equal(svg.querySelector('[data-entity="pitch-label-layer"]'), previousLayer,
+      "the active gesture is not interrupted by a resize");
+
+    svg.dispatch("pointercancel", { pointerId: 1, target: svg });
+    assert.notEqual(svg.querySelector('[data-entity="pitch-label-layer"]'), previousLayer,
+      "the pending resize redraws after the canceled gesture ends");
+  } finally {
+    delete globalThis.ResizeObserver;
+    delete globalThis.requestAnimationFrame;
+  }
+});
+
+test("width resize during a cancelled ruler gesture is applied after the gesture ends", () => {
+  let resized;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { resized = callback; }
+    observe() {}
+  };
+  globalThis.requestAnimationFrame = callback => callback();
+  try {
+    const { svg, scroll, view, state } = setup();
+    state.song = song([note("n1", 60), note("n2", 64, 3840)]);
+    view.render(state.song, state);
+    const geometry = view.getGeometry();
+    const ruler = svg.querySelector('[data-action="seek-ruler"]');
+    const previousLayer = svg.querySelector('[data-entity="pitch-label-layer"]');
+    ruler.closest = selector => selector === '[data-action="seek-ruler"]' ? ruler : null;
+    svg.contains = node => node === svg || svg.all().includes(node);
+    svg.dispatch("pointerdown", {
+      clientX: tickToX(2400, geometry) * svg.clientWidth / geometry.width,
+      clientY: 8 * svg.clientHeight / geometry.height,
+      target: ruler
+    });
+
+    scroll.clientWidth = 640;
+    resized();
+    assert.equal(svg.querySelector('[data-entity="pitch-label-layer"]'), previousLayer,
+      "the active ruler gesture is not interrupted by a resize");
+
+    svg.dispatch("pointercancel", { pointerId: 1, target: ruler });
+    assert.notEqual(svg.querySelector('[data-entity="pitch-label-layer"]'), previousLayer,
+      "the pending resize redraws after the canceled ruler gesture ends");
   } finally {
     delete globalThis.ResizeObserver;
     delete globalThis.requestAnimationFrame;
@@ -429,6 +556,7 @@ test("pitch label gutter stays frozen during horizontal scroll", () => {
     note("n2", 64, 3840, 480)
   ]), state);
 
+  svg.rectWidth = Number(svg.getAttribute("width"));
   const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
   assert.ok(layer, "frozen pitch label layer exists");
   assert.equal(layer.getAttribute("transform"), "translate(0 0)");
@@ -447,6 +575,7 @@ test("full-song playback centers Piano Roll inside the timeline after the frozen
   state.playback.status = "playing";
   view.render(longSong, state, null, 12480);
 
+  svg.rectWidth = Number(svg.getAttribute("width"));
   const geometry = view.getGeometry();
   const midpoint = geometry.labelWidth + (scroll.clientWidth - geometry.labelWidth) / 2;
   state.playback.currentTick = 2400;

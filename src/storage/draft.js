@@ -1,4 +1,4 @@
-import { deserializeProject, serializeProject } from "../core/serialization.js?v=20261001.54";
+import { deserializeProject, serializeProject } from "../core/serialization.js?v=20261001.56";
 
 export const DRAFT_STORAGE_KEY = "melodi.draft.v1";
 
