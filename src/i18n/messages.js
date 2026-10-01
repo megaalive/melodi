@@ -2,6 +2,8 @@ export const DEFAULT_LANGUAGE = "id";
 
 export const MESSAGES = {
   id: {
+    sheetPeek: "Ringkas", sheetHalf: "Sedang", sheetFull: "Penuh",
+    durationEighth: "Durasi note 1/8", durationQuarter: "Durasi note 1/4", durationHalf: "Durasi note 1/2",
     "harmonyHeading": "Harmoni",
     "harmonyHelp": "Harmoni dan Bass berbunyi hanya pada bagian yang memiliki chord.",
     sketchHarmony: "Harmoni", sketchBass: "Bass", sketchMute: "Mute", sketchVolume: "Volume", sketchStyle: "Pola",
@@ -665,6 +667,8 @@ export const MESSAGES = {
     themeChanged: "Tema diubah."
   },
   en: {
+    sheetPeek: "Peek", sheetHalf: "Half", sheetFull: "Full",
+    durationEighth: "Note duration 1/8", durationQuarter: "Note duration 1/4", durationHalf: "Note duration 1/2",
     "harmonyHeading": "Harmony",
     "harmonyHelp": "Harmony and Bass play only where chord blocks exist.",
     sketchHarmony: "Harmony", sketchBass: "Bass", sketchMute: "Mute", sketchVolume: "Volume", sketchStyle: "Style",

@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.36';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.37';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -10,12 +10,33 @@ export function musicalPosition(song, tick) {
 export function createStudioWorkspace(commands, translate, onError) {
   const byId = id => document.getElementById(id);
   let panel = null;
+  let sheetSize = 'half';
   let lastPanel = 'chords';
   let lastChord = null;
   let overviewSong = null;
   const sidebar = document.querySelector('.workspace-sidebar');
   const settings = document.querySelector('.studio-settings');
   const mixer = byId('studio-mixer-channels');
+  const expressionHome = byId('expression-panel')?.parentElement;
+  const selectionBar = document.createElement('div');
+  selectionBar.id = 'note-selection-bar';
+  selectionBar.className = 'note-selection-bar';
+  selectionBar.hidden = true;
+  const noteTools = document.querySelector('.expression-note-tools');
+  if (noteTools) {
+    for (const group of [...noteTools.querySelectorAll('.editor-toolbar-group')]) selectionBar.append(group);
+    for (const [action, label] of [['context-toggle-anchor','contextAnchor'],['context-toggle-lock','contextLock'],['context-duplicate','contextDuplicate'],['context-delete','contextDelete']]) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.dataset.action = action; button.dataset.copy = label;
+      selectionBar.append(button);
+    }
+    const expression = document.createElement('button');
+    expression.type = 'button'; expression.dataset.studioPanel = 'expression'; expression.dataset.copy = 'expressionHeading';
+    selectionBar.append(expression);
+    document.querySelector('.roll-surface').after(selectionBar);
+  }
+  const drumExpression = byId('studio-drum-expression');
+  if (drumExpression) drumExpression.append(byId('percussion-multi-selection'),byId('percussion-expression-form'));
   document.querySelector('.expression-panel-heading').insertBefore(document.querySelector('.expression-toolbar'), byId('expression-collapse'));
   mixer.append(document.querySelector('.sketch-controls'));
   const melody = document.querySelector('.instrument-mix-strip');
@@ -29,6 +50,8 @@ export function createStudioWorkspace(commands, translate, onError) {
     slider.after(value);
   }
   byId('harmony-panel').prepend(byId('harmony-timeline-tools'));
+  const candidateDock = byId('candidate-dock');
+  if (candidateDock) byId('generation-panel').append(candidateDock);
   document.querySelector('.brand-block').append(document.querySelector('.song-strip'));
   const history = document.querySelector('.history-buttons');
   const headerActions = document.querySelector('.header-actions');
@@ -68,21 +91,28 @@ export function createStudioWorkspace(commands, translate, onError) {
   }
 
   function openPanel(value) {
+    if (value && value !== panel) sheetSize = 'half';
     if (value) lastPanel = value;
     panel = value;
     render(commands.getSong(), commands.getState(), false);
     if (panel && matchMedia('(max-width: 760px)').matches) sidebar.querySelector('[data-studio-close]').focus({preventScroll:true});
   }
+  function restorePanelFocus() {
+    const trigger = document.querySelector(`button[data-studio-panel="${lastPanel}"]`);
+    const fallback = document.querySelector('[data-studio-view][aria-pressed="true"]');
+    (trigger?.getClientRects().length ? trigger : fallback)?.focus({preventScroll:true});
+  }
   document.addEventListener('click', event => {
     if (settings.open && !settings.contains(event.target)) settings.open = false;
-    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek]');
+    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek], [data-studio-size]');
     if (!target) return;
     try {
-      if (target.dataset.studioView) {
+      if (target.dataset.studioSize) { sheetSize = target.dataset.studioSize; render(commands.getSong(),commands.getState(),false); }
+      else if (target.dataset.studioView) {
         panel = null;
         commands.setViewMode(target.dataset.studioView);
       } else if (target.dataset.studioPanel) openPanel(panel === target.dataset.studioPanel ? null : target.dataset.studioPanel);
-      else if (target.hasAttribute('data-studio-close')) { openPanel(null); document.querySelector(`[data-studio-panel="${lastPanel}"]`)?.focus({preventScroll:true}); }
+      else if (target.hasAttribute('data-studio-close')) { openPanel(null); restorePanelFocus(); }
       else commands.seek(Number(target.dataset.studioSeek));
     } catch (error) { onError(error); }
   });
@@ -90,7 +120,7 @@ export function createStudioWorkspace(commands, translate, onError) {
     if (event.key === 'Escape' && !event.defaultPrevented && settings.open && settings.contains(event.target)) {
       settings.open = false; settings.querySelector('summary').focus(); event.preventDefault(); return;
     }
-    if (event.key === 'Escape' && !event.defaultPrevented && sidebar.contains(event.target) && panel) { openPanel(null); document.querySelector(`[data-studio-panel="${lastPanel}"]`)?.focus(); }
+    if (event.key === 'Escape' && !event.defaultPrevented && sidebar.contains(event.target) && panel) { openPanel(null); restorePanelFocus(); }
     const current = event.target.closest?.('[data-studio-view]');
     if (!current || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
     const tabs = [...document.querySelectorAll('[data-studio-view]')];
@@ -144,12 +174,28 @@ export function createStudioWorkspace(commands, translate, onError) {
     if (autoSelect && state.selectedChordId && state.selectedChordId !== lastChord) { panel = 'chords'; lastPanel = panel; }
     lastChord = state.selectedChordId;
     document.body.dataset.studioPanel = panel ?? 'none';
+    sidebar.dataset.sheetSize = sheetSize;
+    selectionBar.hidden = !state.selectedNoteIds.length;
+    for (const button of selectionBar.querySelectorAll('button[data-copy]')) {
+      button.textContent = translate(button.dataset.copy);
+      button.title = button.textContent;
+      const flag = ({'context-toggle-anchor':'anchor','context-toggle-lock':'locked'})[button.dataset.action];
+      if (flag) button.setAttribute('aria-pressed',String(song.notes.filter(note=>state.selectedNoteIds.includes(note.id)).every(note=>note[flag])));
+    }
+    const drumToolbar = byId('drums-selection-toolbar');
+    if (drumToolbar) drumToolbar.hidden = !state.selectedPercussionHitIds?.length;
+    if (drumExpression) drumExpression.hidden = panel !== 'drum-expression';
+    const expressionPanel = byId('expression-panel');
+    if (expressionPanel) {
+      if (panel === 'expression') sidebar.append(expressionPanel);
+      else if (expressionPanel.parentElement === sidebar) expressionHome.append(expressionPanel);
+    }
     document.body.dataset.studioSelection = String(state.selectedNoteIds.length > 0);
     sidebar.hidden = !panel;
     byId('studio-mixer').hidden = panel !== 'mixer';
     byId('harmony-panel').hidden = panel !== 'chords';
     byId('generation-panel').hidden = panel !== 'generate';
-    byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate'})[panel] ?? 'studioPanels');
+    byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',expression:'expressionHeading','drum-expression':'percussionExpressionHeading'})[panel] ?? 'studioPanels');
     document.querySelectorAll('button[data-studio-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioPanel===panel)));
     document.querySelectorAll('[data-studio-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioView===state.view.mode)));
     if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing])) renderOverview(song);

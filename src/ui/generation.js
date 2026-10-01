@@ -19,6 +19,13 @@ export function resolveSelectedAnchorGap(song, selectedNoteIds) {
     return { status: "grid" };
   }
   if (endTick - startTick > MAX_GENERATION_TICKS) return { status: "too-long" };
+  const occupied = song.notes.find(note => note.id !== leftAnchor.id && note.id !== rightAnchor.id
+    && note.startTick < endTick && note.startTick + note.durationTicks > startTick);
+  if (occupied) return { status: occupied.anchor || occupied.locked ? "protected" : "occupied" };
+  const phrases = (song.phrases ?? []).filter(phrase =>
+    phrase.noteIds.includes(leftAnchor.id) && phrase.noteIds.includes(rightAnchor.id));
+  if (phrases.length !== 1) return { status: "cross-phrase" };
+  if (phrases[0].noteIds.indexOf(leftAnchor.id) >= phrases[0].noteIds.indexOf(rightAnchor.id)) return { status: "order" };
 
   return {
     status: "ready",

@@ -4,6 +4,7 @@ import { resolveSelectedAnchorGap } from "../src/ui/generation.js";
 
 function songWithAnchors({ leftStart = 0, leftDuration = 480, rightStart = 960, rightDuration = 480, leftAnchor = true, rightAnchor = true } = {}) {
   return {
+    phrases: [{ id: "phrase", noteIds: ["left", "right"] }],
     notes: [
       { id: "left", startTick: leftStart, durationTicks: leftDuration, anchor: leftAnchor },
       { id: "right", startTick: rightStart, durationTicks: rightDuration, anchor: rightAnchor }
@@ -21,6 +22,17 @@ test("selected anchors derive the empty gap in musical order", () => {
       rightAnchorNoteId: "right"
     }
   });
+});
+
+test("readiness rejects occupied, protected, and unassigned gaps before Generate", () => {
+  const song = songWithAnchors();
+  song.notes.push({ id: "inside", startTick: 480, durationTicks: 120 });
+  assert.equal(resolveSelectedAnchorGap(song, ["left", "right"]).status, "occupied");
+  song.notes[2].locked = true;
+  assert.equal(resolveSelectedAnchorGap(song, ["left", "right"]).status, "protected");
+  song.notes.pop();
+  song.phrases = [];
+  assert.equal(resolveSelectedAnchorGap(song, ["left", "right"]).status, "cross-phrase");
 });
 
 test("anchor gap selection explains incomplete and unusable pairs", () => {

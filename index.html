@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261001.36">
+    <meta name="melodi-build" content="20261001.37">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261001.36">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261001.36"></script>
-    <script type="module" src="./src/app.js?v=20261001.36"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261001.37">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261001.37"></script>
+    <script type="module" src="./src/app.js?v=20261001.37"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -384,9 +384,9 @@
                   </div>
                   <div class="editor-toolbar-group" role="group" data-aria-copy="durationGroupLabel">
                     <span class="editor-toolbar-label" data-copy="durationGroupLabel"></span>
-                    <button type="button" data-action="set-selected-duration" data-snap="1/8" data-focus-key="duration-1-8" disabled>1/8</button>
-                    <button type="button" data-action="set-selected-duration" data-snap="1/4" data-focus-key="duration-1-4" disabled>1/4</button>
-                    <button type="button" data-action="set-selected-duration" data-snap="1/2" data-focus-key="duration-1-2" disabled>1/2</button>
+                    <button type="button" data-action="set-selected-duration" data-snap="1/8" data-aria-copy="durationEighth" data-focus-key="duration-1-8" disabled>1/8</button>
+                    <button type="button" data-action="set-selected-duration" data-snap="1/4" data-aria-copy="durationQuarter" data-focus-key="duration-1-4" disabled>1/4</button>
+                    <button type="button" data-action="set-selected-duration" data-snap="1/2" data-aria-copy="durationHalf" data-focus-key="duration-1-2" disabled>1/2</button>
                   </div>
                   <ol id="note-list" class="note-list expression-note-list" data-entity="note-list"></ol>
                 </div>
@@ -444,11 +444,12 @@
               </div>
             </div>
             <p id="drums-status" class="muted drums-status" role="status" aria-live="polite"></p>
-            <div id="drums-selection-toolbar" class="drums-selection-toolbar" role="group" data-aria-copy="drumsSelectionActionsLabel">
+            <div id="drums-selection-toolbar" class="drums-selection-toolbar" role="group" data-aria-copy="drumsSelectionActionsLabel" hidden>
               <span id="drums-selection-count" class="drums-selection-count" aria-live="polite"></span>
               <button id="drums-duplicate-selection" type="button" class="secondary" data-action="duplicate-selected-percussion-hits" data-copy="drumsDuplicateSelection"></button>
               <button id="drums-delete-selection" type="button" class="secondary" data-action="delete-selected-percussion-hits" data-copy="drumsDeleteSelection"></button>
               <button id="drums-clear-selection" type="button" class="secondary" data-action="clear-percussion-selection" data-copy="drumsClearSelection"></button>
+              <button type="button" data-studio-panel="drum-expression" data-copy="percussionExpressionHeading"></button>
             </div>
             <div id="drum-grid-scroll" class="drum-grid-scroll" role="region" tabindex="0" data-aria-copy="drumsRegionLabel">
               <div id="drum-grid" class="drum-grid" data-entity="drum-grid"></div>
@@ -517,7 +518,8 @@
         </div>
 
         <aside class="workspace-sidebar" aria-label="Editor tools">
-          <div class="studio-inspector-head"><strong id="studio-panel-title"></strong><button type="button" class="secondary" data-studio-close data-aria-copy="studioClose">×</button></div>
+          <div class="studio-inspector-head"><strong id="studio-panel-title"></strong><div class="studio-sheet-sizes"><button type="button" data-studio-size="peek" data-copy="sheetPeek"></button><button type="button" data-studio-size="half" data-copy="sheetHalf"></button><button type="button" data-studio-size="full" data-copy="sheetFull"></button></div><button type="button" class="secondary" data-studio-close data-aria-copy="studioClose">×</button></div>
+          <section id="studio-drum-expression" hidden></section>
           <section id="studio-mixer" class="inspector-card" hidden><h2 data-copy="studioMixer"></h2><p class="muted" data-copy="studioMixerHelp"></p><div id="studio-mixer-channels"></div></section>
           <section id="harmony-panel" class="inspector-card harmony-card" aria-labelledby="harmony-heading">
             <h2 id="harmony-heading" data-copy="harmonyHeading"></h2><p class="muted" data-copy="harmonyHelp"></p>
