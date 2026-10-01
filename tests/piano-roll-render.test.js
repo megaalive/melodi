@@ -146,6 +146,47 @@ function visibleRowCount(svg) {
   return Math.round((height - geometry.top) / geometry.rowHeight);
 }
 
+test("short canvas reduces empty pitch margins without dropping musical notes", () => {
+  const { svg, scroll, view, state } = setup();
+  const source = song([note("low",69),note("high",76,480)]);
+  scroll.clientHeight = 300;
+  view.render(source,state);
+  assert.equal(visibleRowCount(svg),13);
+  assert.equal(svg.byClass("roll-pitch-label")[0].textContent,"G5");
+  assert.deepEqual(svg.querySelectorAll('[data-entity="note"]').map(el=>el.dataset.entityId),["low","high"]);
+  scroll.clientHeight = 600;
+  view.render(source,state);
+  assert.equal(visibleRowCount(svg),19);
+  assert.equal(source.notes[0].pitch,69);
+  assert.equal(source.notes[1].pitch,76);
+});
+
+test("resizing the same desktop canvas updates pitch framing without changing Song", () => {
+  let resized;
+  globalThis.ResizeObserver = class {
+    constructor(callback) { resized = callback; }
+    observe() {}
+  };
+  globalThis.requestAnimationFrame = callback => callback();
+  try {
+    const { svg, scroll, view, state } = setup();
+    state.song = song([note("low",69),note("high",76,480)]);
+    const original = JSON.stringify(state.song);
+    view.render(state.song,state);
+    assert.equal(visibleRowCount(svg),19);
+    scroll.clientHeight = 300;
+    resized();
+    assert.equal(visibleRowCount(svg),13);
+    scroll.clientHeight = 600;
+    resized();
+    assert.equal(visibleRowCount(svg),19);
+    assert.equal(JSON.stringify(state.song),original);
+  } finally {
+    delete globalThis.ResizeObserver;
+    delete globalThis.requestAnimationFrame;
+  }
+});
+
 test("label pitch digambar di setiap baris, bukan hanya baris C", () => {
   const { svg, view, state } = setup();
   view.render(song([note("n1", 60)]), state);

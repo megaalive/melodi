@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.38";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.42";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261001.38";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.38";
-import { harmonyChordSymbol } from "./harmony.js?v=20261001.38";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261001.42";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.42";
+import { harmonyChordSymbol } from "./harmony.js?v=20261001.42";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -314,6 +314,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   let lastPlaybackRange = "0:1";
   let pendingPlaybackFollow = false;
   let lastFocusTick = null;
+  let compactPitchRange = null;
 
   function focusChordEditor() {
     const editor = svg.closest?.("#piano-roll-scroll") ?? scrollContainer;
@@ -368,9 +369,13 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       const lowest = Math.min(...musicalPitches);
       const highest = Math.max(...musicalPitches);
       const center = Math.round((lowest + highest) / 2);
-      const minimumSpan = 18;
-      let min = Math.max(0, Math.min(lowest - 4, center - Math.floor(minimumSpan / 2)));
-      let max = Math.min(127, Math.max(highest + 4, min + minimumSpan));
+      const visibleHeight = scrollContainer?.clientHeight || (typeof window === "undefined" ? 800 : window.innerHeight) - 310;
+      const compact = visibleHeight > 0 && visibleHeight < 400;
+      compactPitchRange = compact;
+      const minimumSpan = compact ? 12 : 18;
+      const padding = compact ? 2 : 4;
+      let min = Math.max(0, Math.min(lowest - padding, center - Math.floor(minimumSpan / 2)));
+      let max = Math.min(127, Math.max(highest + padding, min + minimumSpan));
       if (max - min < minimumSpan) min = Math.max(0, max - minimumSpan);
       pitchRange = { min, max };
     }
@@ -1306,6 +1311,20 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
   svg.addEventListener("pointercancel", (event) => finishDrag(event, true));
   svg.addEventListener("lostpointercapture", (event) => finishDrag(event, true));
   svg.addEventListener("click", handleClick);
+
+  if (typeof ResizeObserver !== "undefined" && scrollContainer) {
+    const resizeObserver = new ResizeObserver(() => {
+      const height = scrollContainer.clientHeight;
+      if (!height || (height < 400) === compactPitchRange
+        || activeDrag || chordDrag || selectionDrag || drawDrag || rulerDrag) return;
+      requestAnimationFrame(() => {
+        if (activeDrag || chordDrag || selectionDrag || drawDrag || rulerDrag) return;
+        const song = commands.getSong();
+        if (song?.notes?.length) render(song, commands.getState());
+      });
+    });
+    resizeObserver.observe(scrollContainer);
+  }
 
   return Object.freeze({
     render,
