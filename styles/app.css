@@ -659,7 +659,7 @@ p { margin: 0.45rem 0 0.8rem; }
   border: 1px solid var(--border-strong);
   border-radius: 0.45rem;
   background: var(--surface);
-  touch-action: pan-x pan-y;
+  touch-action: none;
 }
 #piano-roll { display: block; max-width: none; }
 .selection-readout { min-height: 1.2rem; margin: 0.42rem 0 0; }
@@ -1366,7 +1366,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 }
 
 @media (pointer: coarse) {
-  .roll-note, .roll-move-hit, .roll-resize-handle { touch-action: pan-x pan-y; }
+  .roll-note, .roll-move-hit, .roll-resize-handle { touch-action: none; }
 }
 
 @media (max-width: 68rem) {
@@ -4071,7 +4071,7 @@ body[data-view-mode="drums"] .workspace-grid {
   outline-offset: -2px;
 }
 
-@media (pointer: coarse), (max-width: 46rem) {
+@media (pointer: coarse), (max-width: 1024px) {
   .drum-grid {
     /* Shell memakai target touch 44px; samakan track grid agar tombol Drum dan
        ruler tidak meluber ke baris atau kolom tetangga. */
@@ -4088,6 +4088,9 @@ body[data-view-mode="drums"] .workspace-grid {
   }
   .drum-row-mix-button { min-width: 44px; min-height: 44px; }
 }
+
+/* Canvas owns pinch and two-finger pan; scrolling outside it stays native. */
+.drum-grid { touch-action: none; }
 
 @media (max-width: 46rem) {
   .drums-pane-heading {
@@ -4750,7 +4753,7 @@ button.secondary:hover:not(:disabled),
 button.danger-button:hover:not(:disabled) { background: var(--danger); color: var(--on-accent); }
 
 /* Alat chord tinggal satu toolbar; isi musik memakai ruang timeline. */
-.studio #piano-roll-section { padding-top: 4px; }
+.studio #piano-roll-section { padding-top: 3px; }
 .studio .compact-pane-heading { margin-bottom: 0; min-height: 30px; }
 .studio #harmony-timeline-tools { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 0 0 12px; }
 .studio .progression-workspace { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; border: 0; padding: 0; min-width: 0; }

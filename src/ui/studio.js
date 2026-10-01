@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.37';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.38';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -159,7 +159,7 @@ export function createStudioWorkspace(commands, translate, onError) {
       song.tracks.filter(track=>track.kind==='percussion').forEach(track=>track.events.forEach(hit=>rect(hit.startTick,hit.durationTicks??60,26,3,'drum')));
       button.append(svg);track.append(button);
     }
-    overviewSong = JSON.stringify([song.notes,song.chords,song.tracks,song.timing]);
+    overviewSong = JSON.stringify([song.notes,song.chords,song.tracks,song.timing,translate('studioSeekBar', {bar:1})]);
   }
 
   function updatePlayback(song, playback) {
@@ -198,7 +198,7 @@ export function createStudioWorkspace(commands, translate, onError) {
     byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',expression:'expressionHeading','drum-expression':'percussionExpressionHeading'})[panel] ?? 'studioPanels');
     document.querySelectorAll('button[data-studio-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioPanel===panel)));
     document.querySelectorAll('[data-studio-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioView===state.view.mode)));
-    if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing])) renderOverview(song);
+    if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing,translate('studioSeekBar', {bar:1})])) renderOverview(song);
     updatePlayback(song,state.playback);
   }
   return {render,openPanel,updatePlayback};
