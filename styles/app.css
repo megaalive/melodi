@@ -4432,11 +4432,25 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio #expression-panel { order: 10; border-top: 1px solid var(--border); padding: 7px 10px; background: var(--surface-subtle); }
 .studio .expression-help { display: none; }
 .studio #expression-scroll { height: 146px; min-height: 146px; }
-.studio .expression-panel-heading { align-items: center; gap: 10px; margin-bottom: 5px; }
-.studio .expression-heading-copy { margin-right: auto; }
+.studio .expression-panel-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 5px 10px;
+  margin-bottom: 5px;
+}
+.studio .expression-heading-copy { grid-column: 1; grid-row: 1; min-width: 0; margin-right: 0; }
+.studio .workspace-sidebar #expression-heading { display: none; }
 .studio .expression-heading-copy h3 { font-size: 12px; }
 .studio .expression-status { font-size: 10px; }
-.studio .expression-toolbar { margin: 0; }
+.studio .expression-toolbar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  margin: 0;
+  justify-content: flex-start;
+}
+.studio .expression-panel-heading > #expression-collapse { grid-column: 2; grid-row: 1; }
 .studio[data-studio-selection="false"] .expression-context-tools { display: none; }
 .studio .expression-panel[data-collapsed="true"] .expression-toolbar { display: none; }
 .studio .expression-mode-group button { font-size: 11px; min-height: 28px; }
@@ -4604,8 +4618,6 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
   .studio .pane-heading { gap: 5px; }
   .studio .pane-title-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
   .studio .pane-title-row > button[data-studio-panel="chords"] { flex: 0 0 auto; min-height: 36px; padding: 4px 8px; }
-  .studio .expression-panel-heading { flex-wrap: wrap; }
-  .studio .expression-toolbar { order: 3; flex-basis: 100%; justify-content: flex-start; }
   .studio .editor-toolbar { gap: 6px; flex-wrap: wrap; width: 100%; overflow: visible; justify-content: flex-start; }
   .studio .editor-toolbar-group { flex: 0 0 auto; }
   .studio #snap-select { width: 60px; flex: 0 0 60px; }

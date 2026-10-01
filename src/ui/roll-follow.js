@@ -6,9 +6,9 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-export function playbackFollowMode(follow, customPlaybackRange) {
+export function playbackFollowMode(follow) {
   if (!follow) return "none";
-  return customPlaybackRange ? "nearest" : "center";
+  return "center";
 }
 
 export function centeredScrollLeft({ playheadX, viewportWidth, gutterWidth, contentWidth } = {}) {
