@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261001.42">
+    <meta name="melodi-build" content="20261001.43">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261001.42">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261001.42"></script>
-    <script type="module" src="./src/app.js?v=20261001.42"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261001.43">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261001.43"></script>
+    <script type="module" src="./src/app.js?v=20261001.43"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -35,11 +35,15 @@
           </div>
         </details>
         <input id="project-file-input" type="file" accept=".melodi.json,application/json" hidden>
-        <div class="header-controls" role="group" data-aria-copy="appearanceLanguageGroupLabel">
-          <button type="button" class="command-button secondary icon-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"></rect><path d="M5 7h1M9.5 7h1M14 7h1M5 10h1M9.5 10h1M14 10h1M6 13.5h8"></path></svg>
-          </button>
-          <details class="studio-settings">
+        <details class="studio-menu" data-aria-copy="studioMenuLabel">
+          <summary data-aria-copy="studioMenuLabel"><span data-copy="studioMenuButton"></span></summary>
+          <div class="studio-menu-popover">
+            <div class="studio-menu-actions">
+              <div class="header-controls" role="group" data-aria-copy="appearanceLanguageGroupLabel">
+                <button type="button" class="command-button secondary icon-button" data-action="command-palette" data-aria-copy="paletteOpenLabel" data-focus-key="command-palette" aria-keyshortcuts="Control+K Meta+K">
+                  <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"></rect><path d="M5 7h1M9.5 7h1M14 7h1M5 10h1M9.5 10h1M14 10h1M6 13.5h8"></path></svg>
+                </button>
+                <details class="studio-settings">
             <summary data-aria-copy="studioSettings"><span data-copy="studioSettingsButton"></span></summary>
             <div class="studio-settings-popover">
           <label class="header-select-control">
@@ -61,7 +65,14 @@
           </label>
             </div>
           </details>
-        </div>
+              </div>
+              <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
+                <button id="undo" type="button" class="secondary" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 6 3 9l4 3M3.5 9H11a5 5 0 0 1 5 5"></path></svg></button>
+                <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m13 6 4 3-4 3M16.5 9H9a5 5 0 0 0-5 5"></path></svg></button>
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
     </header>
 
@@ -90,11 +101,6 @@
               <button id="play" type="button" data-action="play" data-aria-copy="playButton"><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5.5 3.5 16 10 5.5 16.5z" fill="currentColor" stroke="none"></path></svg></button>
               <button id="pause" type="button" data-action="pause" data-aria-copy="pauseButton" disabled hidden><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6 4v12M14 4v12" stroke-width="3"></path></svg></button>
               <button id="stop" type="button" class="secondary" data-action="stop" data-aria-copy="stopButton"><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="5" y="5" width="10" height="10" rx="1" fill="currentColor" stroke="none"></rect></svg></button>
-            </div>
-
-            <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
-              <button id="undo" type="button" class="secondary" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 6 3 9l4 3M3.5 9H11a5 5 0 0 1 5 5"></path></svg></button>
-              <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m13 6 4 3-4 3M16.5 9H9a5 5 0 0 0-5 5"></path></svg></button>
             </div>
 
             <dl id="playback-readout" class="playback-readout" aria-live="off">
@@ -144,14 +150,19 @@
           <button type="button" data-studio-view="drums" data-copy="studioDrumRoll" aria-pressed="false"></button>
           <button type="button" data-studio-view="score" data-copy="viewScoreOption" aria-pressed="false"></button>
           <button type="button" data-studio-view="lyrics" data-copy="viewLyricsOption" aria-pressed="false"></button>
-          <button type="button" data-studio-view="guitar" data-copy="viewGuitarOption" aria-pressed="false"></button>
-          <button type="button" data-studio-view="combined" data-copy="viewCombinedOption" aria-pressed="false"></button>
+          <details class="studio-more">
+            <summary data-aria-copy="studioMoreLabel"><span data-copy="studioMoreButton"></span></summary>
+            <div class="studio-more-popover">
+              <button type="button" data-studio-view="guitar" data-copy="viewGuitarOption" aria-pressed="false"></button>
+              <div class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
+                <button type="button" data-studio-panel="mixer" data-copy="studioMixer" aria-pressed="false" aria-controls="studio-mixer"></button>
+                <button type="button" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-pressed="false" aria-controls="harmony-panel"></button>
+                <button type="button" data-studio-panel="generate" data-copy="studioGenerate" aria-pressed="false" aria-controls="generation-panel"></button>
+              </div>
+            </div>
+          </details>
         </nav>
-        <div class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
-          <button type="button" data-studio-panel="mixer" data-copy="studioMixer" aria-pressed="false" aria-controls="studio-mixer"></button>
-          <button type="button" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-pressed="false" aria-controls="harmony-panel"></button>
-          <button type="button" data-studio-panel="generate" data-copy="studioGenerate" aria-pressed="false" aria-controls="generation-panel"></button>
-        </div>
+        <div class="studio-toolbar-actions"></div>
         <div class="editor-view-controls" role="group" data-aria-copy="viewControlGroupLabel">
           <label class="compact-field">
             <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3" width="6.5" height="5.5" rx=".7"></rect><rect x="11" y="3" width="6.5" height="5.5" rx=".7"></rect><rect x="2.5" y="10.5" width="15" height="6.5" rx=".7"></rect></svg>
@@ -274,6 +285,7 @@
                 <div class="score-layout-group" role="group" data-aria-copy="scoreLayoutGroupLabel">
                   <button id="score-layout-flow" type="button" data-action="set-score-layout" data-score-layout="flow" data-copy="scoreFlowButton" data-aria-copy="scoreFlowAria" aria-pressed="true"></button>
                   <button id="score-layout-page" type="button" data-action="set-score-layout" data-score-layout="page" data-copy="scorePageButton" data-aria-copy="scorePageAria" aria-pressed="false"></button>
+                  <button type="button" data-studio-view="combined" data-copy="scoreSplitButton" data-aria-copy="scoreSplitAria" aria-pressed="false"></button>
                 </div>
                 <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
               </div>

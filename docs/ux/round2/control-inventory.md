@@ -27,8 +27,8 @@ Penempatan: **T0** selalu terlihat; **T1** saat pilihan/konteks; **T2** panel/sh
 | Lirik | Menulis dan memetakan lirik | sesekali | T0 saat mode Lirik aktif |
 | Gitar | Melihat posisi nada di fretboard | sesekali | T0 desktop; T2 di Lainnya pada ponsel |
 | Split | Melihat Roll dan Score bersama | sesekali | T4 sebagai mode; fungsi menjadi tata letak Score T2 |
-| Mixer | Menyeimbangkan bagian/kanal | sesekali | Pemicu T0 di transport desktop; isi popover/sheet T2 |
-| Chord | Mendapat/mengubah harmoni | sesekali | T2 sheet; saran dari key dan phrase/loop aktif tampak saat dibuka tanpa perlu seleksi nada; edit kontekstual T1 |
+| Mixer | Menyeimbangkan bagian/kanal | sesekali | Pemicu T0 di transport desktop; berada di Lainnya pada ponsel; isi panel T2 |
+| Chord | Mendapat/mengubah harmoni | sesekali | Pemicu T0 di sisi mode desktop/ponsel portrait; pada ponsel landscape di Lainnya; isi panel T2. Saran dari key dan phrase/loop aktif tampak saat dibuka tanpa perlu seleksi nada; edit kontekstual T1 |
 | Gap Melody / Isi celah | Mencari alternatif di antara anchor | inti namun sesekali | Pemicu T1 setelah dua anchor; kandidat langsung di atas roll T1 |
 | Pilih/Gambar Piano Roll | Memilih atau menambah nada | sangat sering | T0 dekat kanvas; Draw langsung aktif pada lagu kosong |
 | Snap, Zoom | Mengatur presisi dan framing | sesekali | T2 di ponsel, T0 ringkas desktop |
