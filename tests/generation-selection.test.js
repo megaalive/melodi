@@ -24,6 +24,23 @@ test("selected anchors derive the empty gap in musical order", () => {
   });
 });
 
+test("two selected non-anchor notes can define temporary fill boundaries without mutation", () => {
+  const song = songWithAnchors({ leftAnchor: false, rightAnchor: false });
+  assert.equal(resolveSelectedAnchorGap(song, ["left", "right"]).status, "mark-two");
+  const result = resolveSelectedAnchorGap(song, ["right", "left"], { allowTransient: true });
+  assert.deepEqual(result, {
+    status: "ready",
+    gap: {
+      startTick: 480,
+      endTick: 960,
+      leftAnchorNoteId: "left",
+      rightAnchorNoteId: "right",
+      transientAnchorNoteIds: ["left", "right"]
+    }
+  });
+  assert.equal(song.notes.some((note) => note.anchor), false);
+});
+
 test("readiness rejects occupied, protected, and unassigned gaps before Generate", () => {
   const song = songWithAnchors();
   song.notes.push({ id: "inside", startTick: 480, durationTicks: 120 });

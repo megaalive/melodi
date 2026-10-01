@@ -1,5 +1,5 @@
-import { spellPitchNameInKey } from "../notation/project.js?v=20261001.43";
-import { songBarTicks, barRangeAtTick } from "../core/timeline.js?v=20261001.43";
+import { spellPitchNameInKey } from "../notation/project.js?v=20261001.53";
+import { songBarTicks, barRangeAtTick } from "../core/timeline.js?v=20261001.53";
 export function harmonyChordSymbol(chord, key = "C") {
   return `${spellPitchNameInKey(60 + chord.rootPitchClass, key)}${({ major: '', minor: 'm', diminished: 'dim', augmented: 'aug' })[chord.quality] ?? chord.quality}`;
 }
@@ -13,6 +13,9 @@ export function harmonyContextRange(song, state) {
   if (state.selection && state.selection.endTick > state.selection.startTick) return { startTick: state.selection.startTick, endTick: state.selection.endTick };
   const selected = (song.notes ?? []).filter(note => (state.selectedNoteIds ?? []).includes(note.id));
   if (selected.length) return { startTick: Math.min(...selected.map(note => note.startTick)), endTick: Math.max(...selected.map(note => note.startTick + note.durationTicks)) };
+  if (state.playback?.loop?.enabled && state.playback.loop.endTick > state.playback.loop.startTick) {
+    return { startTick: state.playback.loop.startTick, endTick: state.playback.loop.endTick };
+  }
   if (state.harmonyRange?.endTick > state.harmonyRange?.startTick) return { ...state.harmonyRange };
   return barRangeAtTick(song, state.playback?.currentTick ?? 0);
 }
