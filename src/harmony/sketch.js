@@ -1,4 +1,4 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261001.32";
+import { MelodiError, PPQ } from "../core/model.js?v=20261001.33";
 
 const INTERVALS = { major: [0, 4, 7], minor: [0, 3, 7], diminished: [0, 3, 6], augmented: [0, 4, 8] };
 

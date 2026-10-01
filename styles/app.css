@@ -4685,3 +4685,30 @@ button.danger-button { color: var(--on-accent); }
 .studio .harmony-timeline-tools #harmony-candidates li > button:first-child { grid-column: 1 / -1; font-weight: 700; font-size: .9rem; }
 .studio .harmony-timeline-tools #harmony-candidates p { align-self: center; }
 .studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony] { white-space: nowrap; padding-inline: .6rem; color: var(--accent); }
+
+/* Hover harus selalu mengganti pasangan latar dan tinta bersama. */
+button:hover:not(:disabled) { color: var(--on-accent); }
+button.secondary:hover:not(:disabled),
+.editor-toolbar-group button:hover:not(:disabled),
+.score-layout-group button:hover:not(:disabled),
+.project-menu-popover button:hover:not(:disabled),
+.panel-collapse-button:hover:not(:disabled),
+.command-button:hover:not(:disabled),
+.note-context-menu button:hover:not(:disabled),
+.studio .studio-views button:hover:not(:disabled),
+.studio .studio-panel-switches button:hover:not(:disabled),
+.studio .progression-block:hover:not(:disabled),
+.studio .instrument-mix-button:hover:not(:disabled),
+.studio .sketch-controls button:hover:not(:disabled),
+.studio .expression-toolbar button:hover:not(:disabled),
+.studio .harmony-list li > button:hover:not(:disabled),
+.studio .studio-overview-track button:hover:not(:disabled) {
+  background: var(--accent-soft); color: var(--accent-strong);
+}
+.studio .progression-block:hover:not(:disabled) small { color: var(--accent-strong); }
+.drum-cell:hover:not(:disabled), .drum-cell[data-hit="true"]:hover:not(:disabled) { color: var(--accent-strong); }
+.drum-cell[data-hit="true"]:hover:not(:disabled) { background: var(--accent-soft); }
+.progression-context-menu { position: fixed; z-index: 160; min-width: 180px; max-width: calc(100vw - 16px); }
+.progression-context-menu [aria-checked="true"] { background: var(--accent-soft); color: var(--accent-strong); }
+.drum-grid-ruler-surface:hover:not(:disabled) { background: transparent; color: var(--text); }
+button.danger-button:hover:not(:disabled) { background: var(--danger); color: var(--on-accent); }
