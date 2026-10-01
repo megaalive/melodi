@@ -1,16 +1,16 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.36";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261001.36";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.37";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261001.37";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261001.36";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.36";
+import { createAgentSnapshot } from "./snapshot.js?v=20261001.37";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.37";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261001.36";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.36";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.36";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261001.36";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261001.36";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261001.37";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.37";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.37";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261001.37";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261001.37";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -140,7 +140,10 @@ export function createCommands(initialSong, {
    * struktur section dan membuat note baru muncul di bagian yang salah.
    */
   function registerNoteInPhrase(targetSong, note) {
-    if (!targetSong.phrases.length) return;
+    if (!targetSong.phrases.length) {
+      if (targetSong.notes.length !== 1) return;
+      targetSong.phrases.push({ id: idFactory(), noteIds: [] });
+    }
     const noteById = new Map(targetSong.notes.map((item) => [item.id, item]));
     const ranges = targetSong.phrases.map((phrase) => {
       const items = phrase.noteIds.map((id) => noteById.get(id)).filter(Boolean);

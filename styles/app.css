@@ -3728,9 +3728,6 @@ details[open] > .disclosure-summary .disclosure-chevron {
 body[data-view-mode="drums"] .workspace-grid {
   grid-template-columns: minmax(0, 1fr);
 }
-body[data-view-mode="drums"] .workspace-sidebar {
-  display: none;
-}
 .drums-pane-heading {
   align-items: center;
 }
@@ -4078,18 +4075,18 @@ body[data-view-mode="drums"] .workspace-sidebar {
   .drum-grid {
     /* Shell memakai target touch 44px; samakan track grid agar tombol Drum dan
        ruler tidak meluber ke baris atau kolom tetangga. */
-    --drum-row-height: 2.75rem;
-    --drum-step-width: 2.75rem;
+    --drum-row-height: 44px;
+    --drum-step-width: 44px;
     grid-template-columns: 13.5rem repeat(var(--drum-column-count), var(--drum-step-width));
     grid-auto-rows: var(--drum-row-height);
   }
   .drum-cell {
-    width: 2.4rem;
-    min-width: 2.4rem;
-    height: 2.4rem;
-    min-height: 2.4rem;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
   }
-  .drum-row-mix-button { min-width: 2.75rem; min-height: 2.75rem; }
+  .drum-row-mix-button { min-width: 44px; min-height: 44px; }
 }
 
 @media (max-width: 46rem) {
@@ -4407,6 +4404,15 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio #selection-summary, .studio #expression-selection-summary { font-size: 10px; }
 .studio .workspace-sidebar { position: sticky; top: 82px; align-self: start; max-height: calc(100dvh - 92px); overflow: auto; display: block; padding: 0; border-left: 1px solid var(--border); background: var(--surface-subtle); scrollbar-width: thin; }
 .studio .workspace-sidebar[hidden] { display: none !important; }
+.note-selection-bar { position: sticky; bottom: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px; background: var(--surface); border: 1px solid var(--border); font-size: var(--text-xs); }
+.note-selection-bar[hidden], .drums-selection-toolbar[hidden] { display: none !important; }
+.note-selection-bar button { min-height: 44px; min-width: 44px; padding: 4px 6px; font-size: var(--text-xs); }
+.note-selection-bar .editor-toolbar-group { flex-wrap: wrap; gap: 3px; padding: 0; border: 0; }
+.note-selection-bar .editor-toolbar-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.studio-sheet-sizes { display: none; }
+.studio .workspace-sidebar .candidate-dock { position: static; width: auto; padding: 0; margin: 8px 0 0; }
+.studio .workspace-sidebar .candidate-dock .generation-candidates { display: grid; grid-auto-flow: row; grid-auto-columns: minmax(0,1fr); grid-template-columns: minmax(0,1fr); max-height: none; overflow: visible; }
+.studio .workspace-sidebar .candidate-dock .generation-candidate-card { min-width: 0; }
 .studio-inspector-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; background: var(--surface); }
 .studio-inspector-head button { min-height: 26px; width: 26px; padding: 1px; font-size: 18px; }
 .studio .workspace-sidebar .inspector-card { padding: 12px; border: 0; border-radius: 0; background: transparent; }
@@ -4507,6 +4513,15 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
   .studio-overview-label > span { display: none; }
   .studio-overview-track button { min-height: 44px; }
   .studio .workspace-pane { padding: 7px; }
+  .note-selection-bar { bottom: calc(100px + env(safe-area-inset-bottom)); }
+  .studio:not([data-studio-panel="none"]) .note-selection-bar { position: static; }
+  .studio-sheet-sizes { display: flex; gap: 2px; }
+  .studio .studio-inspector-head { padding: 4px; min-height: 54px; gap: 3px; }
+  .studio .studio-inspector-head button { width: auto; min-width: 44px; min-height: 44px; font-size: var(--text-xs); }
+  .studio .workspace-sidebar[data-sheet-size="peek"] { height: 54px; max-height: 54px; overflow: hidden; }
+  .studio .workspace-sidebar[data-sheet-size="peek"] > :not(.studio-inspector-head) { display: none; }
+  .studio .workspace-sidebar[data-sheet-size="full"] { height: calc(100dvh - 150px); max-height: calc(100dvh - 150px); }
+  .studio .workspace-sidebar button, .studio .workspace-sidebar input, .studio .workspace-sidebar select { min-height: 44px; }
   .studio .compact-pane-heading { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px; }
   .studio .compact-pane-heading .editor-toolbar { grid-column: 1/-1; grid-row: 2; }
   .studio .compact-pane-heading > .panel-collapse-button { grid-column: 2; grid-row: 1; }

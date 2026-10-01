@@ -1,6 +1,24 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createCommands } from "../src/core/commands.js";
+import { createBlankSong } from "../src/core/model.js";
+
+test("New Song supports anchor generation and phrase membership follows note undo", () => {
+  const commands = createCommands(createBlankSong());
+  commands.newSong();
+  const left = commands.addNote({ pitch: 60, startTick: 0, durationTicks: 480 });
+  assert.deepEqual(commands.getSong().phrases[0].noteIds, [left.id]);
+  commands.undo();
+  assert.equal(commands.getSong().phrases.length, 0);
+  assert.equal(commands.getSong().notes.length, 0);
+  commands.redo();
+  const right = commands.addNote({ pitch: 64, startTick: 960, durationTicks: 480 });
+  commands.setAnchor(left.id, true);
+  commands.setAnchor(right.id, true);
+  commands.generateGap({ startTick: 480, endTick: 960, seed: 1 });
+  assert.equal(commands.getState().generation.status, "ready");
+  assert.ok(commands.getState().generation.candidates.length > 0);
+});
 
 // Menambah atau menempel note harus mendaftarkan note itu ke phrase, kalau tidak
 // phrase jadi tidak lagi mencerminkan song. Akibatnya generateGap gagal dengan

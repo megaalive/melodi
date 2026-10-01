@@ -338,7 +338,8 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   assert.match(runtime, /drums:\s*\["drums"\]/);
   assert.doesNotMatch(runtime, /expression:\s*\[[^\]]*"drums"/);
 
-  assert.match(css, /body\[data-view-mode="drums"\] \.workspace-sidebar/);
+  assert.match(section, /data-studio-panel="drum-expression"/);
+  assert.match(html, /id="studio-drum-expression"/);
   assert.match(css, /\.drum-cell\[data-current-step="true"\]/);
   assert.match(css, /\.drum-hit-marker/);
 });

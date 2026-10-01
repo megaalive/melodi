@@ -1,31 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261001.36';
-import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.36";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.36";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.36";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.36";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.36";
-import { createCommands } from "./core/commands.js?v=20261001.36";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261001.37';
+import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.37";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.37";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.37";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.37";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.37";
+import { createCommands } from "./core/commands.js?v=20261001.37";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.36";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.36";
-import { createAudioPlayer } from "./audio/player.js?v=20261001.36";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.37";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.37";
+import { createAudioPlayer } from "./audio/player.js?v=20261001.37";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.36";
-import { createScoreView } from "./ui/score.js?v=20261001.36";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261001.36";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.36";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.36";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.36";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.36";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.37";
+import { createScoreView } from "./ui/score.js?v=20261001.37";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261001.37";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.37";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.37";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.37";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.37";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261001.37";
+import { createGenerationContext } from "./generation/context.js?v=20261001.37";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261001.36";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.36";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.36";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.36";
-import { deserializeProject } from "./core/serialization.js?v=20261001.36";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.36";
+import { createDraftPersistence } from "./storage/draft.js?v=20261001.37";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.37";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.37";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.37";
+import { deserializeProject } from "./core/serialization.js?v=20261001.37";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.37";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1068,6 +1069,33 @@ function renderGeneration(state) {
   const generation = state.generation ?? { status: "idle", candidates: [], acceptedNoteIds: [] };
   const sessionReady = generation.status === "ready" && Array.isArray(generation.candidates);
   const acceptedNoteIds = Array.isArray(generation.acceptedNoteIds) ? generation.acceptedNoteIds : [];
+  if (!sessionReady && (!acceptedNoteIds.length || state.selectedNoteIds.length === 2) && form.dataset.manualGap !== "true") {
+    const selectedGap = resolveSelectedAnchorGap(commands.getSong(), state.selectedNoteIds);
+    const hints = { "select-two":"generationGapSelectTwo", "mark-two":"generationGapMarkTwo", empty:"generationGapEmpty", grid:"generationGapGrid", "too-long":"generationGapTooLong", protected:"error_generation-protected-note", occupied:"error_generation-gap-occupied", "cross-phrase":"error_generation-cross-phrase", order:"error_generation-anchor-order", ready:"generationGapReady" };
+    form.dataset.gapReady = String(selectedGap.status === "ready");
+    form.dataset.gapHint = hints[selectedGap.status];
+    if (selectedGap.gap) {
+      byId("generation-start").value = String(selectedGap.gap.startTick);
+      byId("generation-end").value = String(selectedGap.gap.endTick);
+      leftAnchorField.value = selectedGap.gap.leftAnchorNoteId;
+      rightAnchorField.value = selectedGap.gap.rightAnchorNoteId;
+      form.dataset.pending = "true";
+    }
+  }
+  if (!sessionReady && form.dataset.manualGap === "true") {
+    try {
+      createGenerationContext(commands.getSong(), {
+        startTick: Number(byId("generation-start").value), endTick: Number(byId("generation-end").value),
+        ...(leftAnchorField.value ? { leftAnchorNoteId:leftAnchorField.value } : {}),
+        ...(rightAnchorField.value ? { rightAnchorNoteId:rightAnchorField.value } : {})
+      });
+      form.dataset.gapReady = "true";
+      form.dataset.gapHint = "generationManualGapReady";
+    } catch (error) {
+      form.dataset.gapReady = "false";
+      form.dataset.gapHint = `error_${error.code}`;
+    }
+  }
   if (dock) dock.hidden = !sessionReady;
   const fields = {
     "generation-start": generation.gap?.startTick,
@@ -1762,6 +1790,7 @@ function clearPendingForms() {
   }
   const generationForm = byId("generation-form");
   if (generationForm) {
+    delete generationForm.dataset.manualGap;
     generationForm.dataset.gapReady = "false";
     generationForm.dataset.gapHint = "generationGapChooseAnchors";
     byId("generation-left-anchor").value = "";
@@ -2410,6 +2439,7 @@ document.addEventListener("input", (event) => {
   if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) && target.form) {
     if (!["set-chord-draw", "set-chord-snap"].includes(target.dataset.action)) target.form.dataset.pending = "true";
     if (target.form.id === "generation-form" && ["generation-start", "generation-end"].includes(target.id)) {
+      target.form.dataset.manualGap = "true";
       target.form.dataset.gapReady = "false";
       target.form.dataset.gapHint = "generationGapReapply";
       byId("generation-left-anchor").value = "";
@@ -2700,6 +2730,8 @@ document.addEventListener("click", (event) => {
     render();
   } else if (target.dataset.action === "use-generation-ticks") {
     const form = byId("generation-form");
+    form.dataset.manualGap = "true";
+    form.dataset.manualGap = "true";
     const startValue = byId("generation-start").value.trim();
     const endValue = byId("generation-end").value.trim();
     const startTick = Number(startValue);
@@ -2744,6 +2776,7 @@ document.addEventListener("click", (event) => {
     if (marked) render();
   } else if (target.dataset.action === "use-selected-anchors") {
     const form = byId("generation-form");
+    delete form.dataset.manualGap;
     const selectedGap = resolveSelectedAnchorGap(commands.getSong(), commands.getSelectedNoteIds());
     if (selectedGap.status !== "ready") {
       const hintByStatus = {
@@ -2751,7 +2784,11 @@ document.addEventListener("click", (event) => {
         "mark-two": "generationGapMarkTwo",
         empty: "generationGapEmpty",
         grid: "generationGapGrid",
-        "too-long": "generationGapTooLong"
+        "too-long": "generationGapTooLong",
+        protected: "error_generation-protected-note",
+        occupied: "error_generation-gap-occupied",
+        "cross-phrase": "error_generation-cross-phrase",
+        order: "error_generation-anchor-order"
       };
       form.dataset.gapReady = "false";
       form.dataset.gapHint = hintByStatus[selectedGap.status] ?? "generationGapChooseAnchors";
