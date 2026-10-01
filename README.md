@@ -137,11 +137,11 @@ All typography comes from six steps, `--text-2xs` through `--text-xl`. This repl
 
 ## Layout
 
-Above 46rem the workspace chrome is a single sticky row: transport and edit history on the left, tempo, loop, and the Advanced disclosure in the middle, view mode and Follow Mode on the right. Below 46rem the same chrome becomes a fixed bottom bar with 44px touch targets, so the canvas starts at the top of the page and playback stays under the thumb.
+The header contains song title, key, meter, Project, history, palette, and labelled Settings. Transport and mode tabs are the primary workspace controls. At widths up to 760px, transport and mode navigation form a fixed bottom dock with 44px targets; history moves to Settings, while tempo and Follow move to Playback.
 
 The Advanced panel is an absolutely positioned popover rather than inline content. That keeps the sticky bar a constant height, which is why no rule needs to guess how tall the bar is when the panel is open. Regions are shown from `VIEW_REGION_MODES` in `core/runtime-state.js`; an unknown region name is hidden rather than shown.
 
-The song strip is deliberately not merged into the chrome, so there are still four bands rather than two. Measured below 46rem, the fixed bottom chrome is already 223px of a 780px viewport. Folding the 78px song strip into it would make the permanently visible chrome 301px, which is 39% of the screen, and would push the canvas down rather than reclaim space. The bands are cheap because the two of them that matter scroll away: the page header and the song strip are `static`, and only the chrome is fixed. The real cost on a small screen is the height of the fixed chrome, not the number of bands, and that is a progressive-disclosure problem rather than a band-counting one.
+Build 20261001.36 measured a 99.2px fixed dock at 390×844 and 360×740. The original song-strip nodes now sit in the header. Chord timeline tools live in Chords and the original Melody monitoring strip lives in Mixer. These moves retain their hooks and canonical command paths. See `docs/ux-stage1-20261001.md` for measurements and verification limits.
 
 
 ## Views
