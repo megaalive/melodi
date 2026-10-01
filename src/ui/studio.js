@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.35';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.36';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -18,9 +18,8 @@ export function createStudioWorkspace(commands, translate, onError) {
   const mixer = byId('studio-mixer-channels');
   document.querySelector('.expression-panel-heading').insertBefore(document.querySelector('.expression-toolbar'), byId('expression-collapse'));
   mixer.append(document.querySelector('.sketch-controls'));
-  const melody = document.querySelector('.instrument-mix-strip').cloneNode(true);
+  const melody = document.querySelector('.instrument-mix-strip');
   melody.classList.add('studio-melody-channel');
-  melody.querySelectorAll('[data-focus-key]').forEach(node => { node.dataset.focusKey = `studio:${node.dataset.focusKey}`; });
   mixer.prepend(melody);
   for (const slider of document.querySelectorAll('[data-channel-volume]')) {
     const value = document.createElement('span');
@@ -29,8 +28,39 @@ export function createStudioWorkspace(commands, translate, onError) {
     value.setAttribute('aria-hidden', 'true');
     slider.after(value);
   }
-  const melodyStrip = document.querySelector('#piano-roll-section .instrument-mix-strip');
-  document.querySelector('#piano-roll-section .pane-title-row')?.append(melodyStrip);
+  byId('harmony-panel').prepend(byId('harmony-timeline-tools'));
+  document.querySelector('.brand-block').append(document.querySelector('.song-strip'));
+  const history = document.querySelector('.history-buttons');
+  const headerActions = document.querySelector('.header-actions');
+  const transportSettings = document.querySelector('.playback-settings-group');
+  const advanced = document.querySelector('.transport-advanced');
+  const advancedBody = document.querySelector('.transport-advanced-grid');
+  const tempo = document.querySelector('.tempo-control');
+  const follow = document.querySelector('.follow-mode-control');
+  const panelSwitches = document.querySelector('.studio-panel-switches');
+  const modeToolbar = byId('view-controls');
+  const overview = document.querySelector('.studio-overview');
+  const narrow = matchMedia('(max-width: 760px)');
+  function arrangeControls() {
+    const advancedSummary = advanced.querySelector('summary');
+    advancedSummary.dataset.ariaCopy = narrow.matches ? 'transportOptions' : 'transportAdvanced';
+    advancedSummary.setAttribute('aria-label', translate(advancedSummary.dataset.ariaCopy));
+    const advancedLabel = advancedSummary.querySelector('[data-copy]');
+    advancedLabel.dataset.copy = advancedSummary.dataset.ariaCopy;
+    advancedLabel.textContent = translate(advancedLabel.dataset.copy);
+    if (narrow.matches) {
+      settings.querySelector('.studio-settings-popover').prepend(history);
+      advancedBody.prepend(tempo, follow);
+      overview.append(panelSwitches);
+    } else {
+      headerActions.insertBefore(history, document.querySelector('.header-controls'));
+      transportSettings.prepend(tempo);
+      transportSettings.append(follow);
+      modeToolbar.append(panelSwitches);
+    }
+  }
+  narrow.addEventListener('change', arrangeControls);
+  arrangeControls();
   const utility = document.querySelector('.utility-card');
   if (utility) {
     utility.classList.add('studio-advanced');
@@ -45,7 +75,7 @@ export function createStudioWorkspace(commands, translate, onError) {
   }
   document.addEventListener('click', event => {
     if (settings.open && !settings.contains(event.target)) settings.open = false;
-    const target = event.target.closest?.('[data-studio-view], [data-studio-panel], [data-studio-close], [data-studio-seek]');
+    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek]');
     if (!target) return;
     try {
       if (target.dataset.studioView) {
@@ -120,7 +150,7 @@ export function createStudioWorkspace(commands, translate, onError) {
     byId('harmony-panel').hidden = panel !== 'chords';
     byId('generation-panel').hidden = panel !== 'generate';
     byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate'})[panel] ?? 'studioPanels');
-    document.querySelectorAll('[data-studio-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioPanel===panel)));
+    document.querySelectorAll('button[data-studio-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioPanel===panel)));
     document.querySelectorAll('[data-studio-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioView===state.view.mode)));
     if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing])) renderOverview(song);
     updatePlayback(song,state.playback);
