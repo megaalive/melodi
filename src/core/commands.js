@@ -1,16 +1,17 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.43";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261001.43";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261001.53";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261001.53";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261001.43";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.43";
+import { createAgentSnapshot } from "./snapshot.js?v=20261001.53";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261001.53";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261001.43";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.43";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.43";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261001.43";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261001.43";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261001.53";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261001.53";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261001.53";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261001.53";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261001.53";
+import { syllabifyLyrics } from "./lyrics.js";
 
 function fail(code) {
   throw new MelodiError(code);
@@ -109,6 +110,7 @@ export function createCommands(initialSong, {
   let harmonySession = null;
   let harmonyProgressionSession = null;
   let generationAuditionToken = 0;
+  let noteAuditionToken = 0;
   let lastAcceptedNoteIds = [];
   let selectedChordId = null;
   let harmonyRange = null;
@@ -881,6 +883,9 @@ export function createCommands(initialSong, {
       }
       return readGenerationState();
     },
+    cancelCandidateAudition() {
+      return clearAuditionState();
+    },
     acceptCandidate(candidateId = generationSession?.activeCandidateId) {
       if (!generationSession) fail("generation-session-missing");
       if (generationSession.revision !== canonicalRevision) fail("generation-stale");
@@ -1112,6 +1117,59 @@ export function createCommands(initialSong, {
       syncAutomaticLoopRange();
       return { trackId, hit: cloneData(hit) };
     },
+    applyDrumGroovePreset(presetId = "pop") {
+      if (presetId !== "pop") fail("invalid-groove-preset");
+      const { numerator, denominator } = song.timing.timeSignature;
+      const beatTicks = song.timing.ppq * 4 / denominator;
+      const barTicks = beatTicks * numerator;
+      const startTick = playback.loop.enabled
+        ? playback.loop.startTick
+        : Math.floor(playback.currentTick / barTicks) * barTicks;
+      const endTick = playback.loop.enabled ? playback.loop.endTick : startTick + barTicks;
+      const barCount = Math.min(32, Math.ceil((endTick - startTick) / barTicks));
+      const hatStep = denominator === 8 ? beatTicks : beatTicks / 2;
+      const kickBeats = numerator === 6 && denominator === 8
+        ? [0]
+        : [0, Math.max(1, Math.floor(numerator / 2))];
+      const snareBeats = numerator === 6 && denominator === 8
+        ? [3]
+        : [...new Set([Math.floor(numerator / 4), Math.floor((3 * numerator) / 4)])];
+      const events = [];
+      for (let bar = 0; bar < barCount; bar += 1) {
+        const barStart = startTick + bar * barTicks;
+        for (let tick = barStart; tick < Math.min(endTick, barStart + barTicks); tick += hatStep) {
+          events.push({ pieceId: "closed-hi-hat", startTick: tick, velocity: tick === barStart ? 76 : 64 });
+        }
+        for (const beat of kickBeats) {
+          const tick = barStart + beat * beatTicks;
+          if (tick < endTick) events.push({ pieceId: "kick", startTick: tick, velocity: beat === 0 ? 108 : 96 });
+        }
+        for (const beat of snareBeats) {
+          const tick = barStart + beat * beatTicks;
+          if (tick < endTick) events.push({ pieceId: "snare", startTick: tick, velocity: 92 });
+        }
+      }
+      const existingTrack = song.tracks.find((track) => track.kind === "percussion" && track.kitId === "gm-standard");
+      const trackId = existingTrack?.id ?? idFactory();
+      const missing = events.filter((event) => !existingTrack?.events.some((hit) =>
+        hit.pieceId === event.pieceId && hit.startTick === event.startTick));
+      if (!missing.length) return { presetId, trackId, addedCount: 0, totalCount: existingTrack?.events.length ?? 0 };
+      const hits = missing.map((event) => ({
+        id: idFactory(), pieceId: event.pieceId, startTick: event.startTick,
+        velocity: event.velocity, articulation: "normal"
+      }));
+      commit((candidate) => {
+        let track = candidate.tracks.find((item) => item.id === trackId);
+        if (!track) {
+          track = { id: trackId, kind: "percussion", role: "rhythm", kitId: "gm-standard", events: [] };
+          candidate.tracks.push(track);
+        }
+        track.events.push(...hits);
+        track.events.sort((left, right) => left.startTick - right.startTick || left.pieceId.localeCompare(right.pieceId));
+      });
+      syncAutomaticLoopRange();
+      return { presetId, trackId, addedCount: hits.length, totalCount: (existingTrack?.events.length ?? 0) + hits.length };
+    },
     updatePercussionHit(trackId, hitId, patch) {
       if (patch === null || typeof patch !== "object" || Array.isArray(patch)) fail("invalid-percussion-hit");
       const allowed = new Set(["pieceId", "startTick", "velocity", "articulation", "durationTicks", "pan", "tuning"]);
@@ -1276,6 +1334,51 @@ export function createCommands(initialSong, {
       updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(note);
     },
+    addNotes(inputs, { actor = "user" } = {}) {
+      validateActor(actor);
+      if (!Array.isArray(inputs) || inputs.length === 0) fail("invalid-note");
+      const allowed = new Set(["pitch", "startTick", "durationTicks", "pitchBend", "volume", "pan", "vibrato"]);
+      const notes = inputs.map((input) => {
+        if (input === null || typeof input !== "object" || Array.isArray(input)
+          || Object.keys(input).some((key) => !allowed.has(key))) fail("invalid-note");
+        return {
+          id: idFactory(),
+          pitch: input.pitch,
+          startTick: input.startTick,
+          durationTicks: input.durationTicks,
+          ...(input.pitchBend ? { pitchBend: cloneData(input.pitchBend) } : {}),
+          ...(Object.hasOwn(input, "volume") ? { volume: input.volume } : {}),
+          ...(Object.hasOwn(input, "pan") ? { pan: input.pan } : {}),
+          ...(input.vibrato ? { vibrato: cloneData(input.vibrato) } : {}),
+          source: actor === "generator" ? "generated" : "user",
+          anchor: false,
+          locked: false
+        };
+      });
+      commit((candidate) => {
+        for (const note of notes) {
+          candidate.notes.push(note);
+          registerNoteInPhrase(candidate, note);
+        }
+      });
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
+      return cloneData(notes);
+    },
+    async auditionNote(pitch, durationTicks = 240) {
+      if (!audioPlayer || typeof audioPlayer.playPreview !== "function") fail("audio-unavailable");
+      if (!Number.isSafeInteger(pitch) || pitch < 0 || pitch > 127
+        || !Number.isSafeInteger(durationTicks) || durationTicks <= 0) fail("invalid-note");
+      if (playback.status === "playing") commands.pause();
+      const token = ++noteAuditionToken;
+      try { audioPlayer.cancelPreview?.(); } catch {}
+      return Boolean(await audioPlayer.playPreview([{
+        id: `note-preview-${token}`,
+        pitch,
+        startTick: 0,
+        durationTicks
+      }], { tempo: song.timing.tempo }));
+    },
     updateNotes(updates, { actor = "user" } = {}) {
       validateActor(actor);
       if (!Array.isArray(updates) || updates.length === 0) fail("invalid-note-patch");
@@ -1325,6 +1428,36 @@ export function createCommands(initialSong, {
       if (typeof rawText !== "string") fail("invalid-lyrics");
       commit((candidate) => { candidate.lyrics.rawText = rawText; });
       return rawText;
+    },
+    mapLyricsToNotes(rawText = song.lyrics.rawText) {
+      if (typeof rawText !== "string") fail("invalid-lyrics");
+      const syllableTexts = syllabifyLyrics(rawText);
+      if (!syllableTexts.length) fail("lyrics-empty");
+      const range = selection && selection.endTick > selection.startTick
+        ? selection
+        : playback.loop.enabled ? playback.loop : null;
+      const notes = song.notes
+        .filter((note) => !range || note.startTick < range.endTick && note.startTick + note.durationTicks > range.startTick)
+        .sort((left, right) => left.startTick - right.startTick || left.id.localeCompare(right.id));
+      if (!notes.length) fail("lyrics-no-notes");
+      if (syllableTexts.length > notes.length) fail("lyrics-too-many-syllables");
+      const syllables = syllableTexts.map((text, index) => {
+        const start = Math.floor(index * notes.length / syllableTexts.length);
+        const end = Math.floor((index + 1) * notes.length / syllableTexts.length);
+        const previous = song.lyrics.syllables[index];
+        return {
+          id: previous?.text === text ? previous.id : idFactory(),
+          text,
+          noteIds: notes.slice(start, end).map((note) => note.id)
+        };
+      });
+      const unchanged = rawText === song.lyrics.rawText
+        && JSON.stringify(syllables) === JSON.stringify(song.lyrics.syllables);
+      if (!unchanged) commit((candidate) => {
+        candidate.lyrics.rawText = rawText;
+        candidate.lyrics.syllables = cloneData(syllables);
+      });
+      return { syllableCount: syllables.length, noteCount: notes.length, mappedCount: notes.length, unchanged };
     },
     addLyricSyllable(text = "", index = song.lyrics.syllables.length) {
       if (typeof text !== "string") fail("invalid-lyrics");

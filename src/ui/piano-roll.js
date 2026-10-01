@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.43";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.53";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261001.43";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.43";
-import { harmonyChordSymbol } from "./harmony.js?v=20261001.43";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261001.53";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.53";
+import { harmonyChordSymbol } from "./harmony.js?v=20261001.53";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -189,6 +189,53 @@ export function drawNoteInputFromDrag(startPoint, currentPoint, geometry, snap =
   return { pitch, startTick, durationTicks };
 }
 
+export function appendPhraseTracePoint(points, point) {
+  if (!Array.isArray(points) || !Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return points;
+  const last = points.at(-1);
+  if (last && Math.hypot(point.x - last.x, point.y - last.y) < 2) return points;
+  const next = [...points, point];
+  if (next.length <= 256) return next;
+  const reduced = next.filter((_, index) => index % 2 === 0);
+  if (reduced.at(-1) !== next.at(-1)) reduced.push(next.at(-1));
+  return reduced;
+}
+
+export function drawPhraseInputsFromTrace(points, geometry, snap = "1/8") {
+  if (!Array.isArray(points) || points.length < 2 || !SNAP_TICKS[snap]
+    || points.some((point) => !Number.isFinite(point?.x) || !Number.isFinite(point?.y))) return null;
+  const interval = SNAP_TICKS[snap];
+  const firstTick = snapTick(xToTick(points[0].x, geometry), snap);
+  const lastTick = snapTick(xToTick(points.at(-1).x, geometry), snap);
+  const distance = Math.abs(lastTick - firstTick);
+  if (distance < interval * 2) return null;
+
+  const startTick = Math.min(firstTick, lastTick);
+  const steps = Math.round(distance / interval);
+  const path = lastTick >= firstTick ? points : [...points].reverse();
+  const yAtX = (x) => {
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const left = path[index];
+      const right = path[index + 1];
+      if (x < Math.min(left.x, right.x) || x > Math.max(left.x, right.x)) continue;
+      const width = right.x - left.x;
+      if (Math.abs(width) < 0.001) return right.y;
+      const progress = (x - left.x) / width;
+      return left.y + (right.y - left.y) * progress;
+    }
+    return x <= path[0].x ? path[0].y : path.at(-1).y;
+  };
+
+  return Array.from({ length: steps + 1 }, (_, index) => {
+    const noteStartTick = startTick + index * interval;
+    const x = tickToX(noteStartTick, geometry);
+    return {
+      pitch: Math.max(0, Math.min(127, yToMidi(yAtX(x), geometry))),
+      startTick: noteStartTick,
+      durationTicks: interval
+    };
+  });
+}
+
 export function noteHitLayout(note, x, width, geometry, notes) {
   const noteEnd = note.startTick + note.durationTicks;
   const pixelsPerTick = geometry.pixelsPerQuarter / geometry.ppq;
@@ -296,7 +343,7 @@ function isBlackKey(midi) {
   return [1, 3, 6, 8, 10].includes(midi % 12);
 }
 
-export function createPianoRollView(svg, commands, { onAddNote = () => {}, onContextMenu = () => {}, onChordContextMenu = () => {}, onHarmonyPreviewRender = () => {}, getChordDrawDefaults = () => ({ rootPitchClass: 0, quality: "major" }), onError = () => {}, translate = () => "Chords" } = {}) {
+export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAddNotes = null, onAuditionNote = () => {}, onContextMenu = () => {}, onChordContextMenu = () => {}, onHarmonyPreviewRender = () => {}, getChordDrawDefaults = () => ({ rootPitchClass: 0, quality: "major" }), onError = () => {}, translate = () => "Chords" } = {}) {
   const scrollContainer = svg.parentElement;
   let geometry = createRollGeometry();
   let activeDrag = null;
@@ -879,7 +926,8 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       if (event.target.closest?.('[data-entity="candidate-note"], [data-action], text')) return;
       const point = pointerPoint(event);
       if (point.x < geometry.labelWidth || point.y < geometry.top || point.y >= geometry.height) return;
-      if (state.editor.tool === "draw") {
+      if (state.editor.tool === "draw" || state.song.notes.length === 0) {
+        if (state.editor.tool !== "draw") commands.setTool?.("draw");
         event.preventDefault();
         drawDrag = {
           pointerId: event.pointerId,
@@ -887,10 +935,15 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
           startY: point.y,
           currentX: point.x,
           currentY: point.y,
+          path: [point],
           snap: state.editor.snap,
           moved: false,
           element: null
         };
+        try {
+          const first = drawNoteInputFromDrag(point, point, geometry, state.editor.snap);
+          Promise.resolve(onAuditionNote(first)).catch(onError);
+        } catch (error) { onError(error); }
         try { svg.setPointerCapture(event.pointerId); } catch {}
         return;
       }
@@ -991,17 +1044,23 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       drawDrag.currentX = point.x;
       drawDrag.currentY = point.y;
       if (Math.hypot(point.x - drawDrag.startX, point.y - drawDrag.startY) >= 3) drawDrag.moved = true;
-      const input = drawNoteInputFromDrag({ x: drawDrag.startX, y: drawDrag.startY }, point, geometry, drawDrag.snap);
-      const x = tickToX(input.startTick, geometry);
-      const y = midiToY(input.pitch, geometry) + 2;
-      const width = input.durationTicks * geometry.pixelsPerQuarter / geometry.ppq;
+      drawDrag.path = appendPhraseTracePoint(drawDrag.path, point);
+      const phrase = drawPhraseInputsFromTrace(drawDrag.path, geometry, drawDrag.snap);
       if (!drawDrag.element) {
-        drawDrag.element = svgElement("rect", { class: "roll-draw-preview", "pointer-events": "none", "aria-hidden": "true" }, svg);
+        drawDrag.element = svgElement("g", { class: "roll-draw-preview-group", "pointer-events": "none", "aria-hidden": "true" }, svg);
       }
-      drawDrag.element.setAttribute("x", String(x));
-      drawDrag.element.setAttribute("y", String(y));
-      drawDrag.element.setAttribute("width", String(width));
-      drawDrag.element.setAttribute("height", String(geometry.rowHeight - 4));
+      drawDrag.element.replaceChildren();
+      const inputs = phrase ?? [drawNoteInputFromDrag({ x: drawDrag.startX, y: drawDrag.startY }, point, geometry, drawDrag.snap)];
+      for (const input of inputs) {
+        svgElement("rect", {
+          x: tickToX(input.startTick, geometry),
+          y: midiToY(input.pitch, geometry) + 2,
+          width: input.durationTicks * geometry.pixelsPerQuarter / geometry.ppq,
+          height: geometry.rowHeight - 4,
+          rx: 3,
+          class: phrase ? "roll-draw-preview roll-draw-preview-note" : "roll-draw-preview"
+        }, drawDrag.element);
+      }
       return;
     }
     if (selectionDrag && selectionDrag.pointerId === event.pointerId) {
@@ -1118,7 +1177,12 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
       if (!cancelled) {
         try {
           const point = pointerPoint(event);
-          onAddNote(drawNoteInputFromDrag({ x: drag.startX, y: drag.startY }, point, geometry, drag.snap));
+          drag.path = appendPhraseTracePoint(drag.path, point);
+          const phrase = drawPhraseInputsFromTrace(drag.path, geometry, drag.snap);
+          if (phrase?.length > 1) {
+            if (onAddNotes) onAddNotes(phrase);
+            else phrase.forEach(onAddNote);
+          } else onAddNote(drawNoteInputFromDrag({ x: drag.startX, y: drag.startY }, point, geometry, drag.snap));
         } catch (error) {
           onError(error);
         }

@@ -11,6 +11,7 @@ import {
 } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { deserializeProject, serializeProject } from "../src/core/serialization.js";
+import { syllabifyLyrics } from "../src/core/lyrics.js";
 
 function rawFixture() {
   return {
@@ -611,6 +612,24 @@ test("state snapshot is detached and reports the actual command surface", () => 
   assert.deepEqual(commands.getState(), commands.getState());
 });
 
+test("addNotes commits a traced phrase as one undoable edit", () => {
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `batch-note-${++nextId}` });
+  const before = commands.getSong().notes.length;
+  const notes = commands.addNotes([
+    { pitch: 60, startTick: 2880, durationTicks: 240 },
+    { pitch: 64, startTick: 3120, durationTicks: 240 },
+    { pitch: 67, startTick: 3360, durationTicks: 240 },
+    { pitch: 65, startTick: 3600, durationTicks: 240 }
+  ]);
+
+  assert.equal(notes.length, 4);
+  assert.deepEqual(commands.getSong().notes.slice(before).map((note) => note.pitch), [60, 64, 67, 65]);
+  assert.equal(commands.getState().history.undoDepth, 1);
+  assert.ok(commands.undo());
+  assert.equal(commands.getSong().notes.length, before);
+});
+
 test("every advertised action exists on the command object", () => {
   const commands = createCommands(fixture());
   const advertised = commands.getState().availableActions;
@@ -819,6 +838,22 @@ test("syllable add, edit, assign, unassign, delete, and reorder preserve stable 
   commands.deleteLyricSyllable(created.id);
   expectCode(() => commands.updateLyricSyllable(created.id, "stale"), "syllable-not-found");
   assert.equal(commands.getSong().lyrics.rawText, originalRawText);
+});
+
+test("lyrics can be syllabified and mapped across the active melody in one undoable edit", () => {
+  assert.deepEqual(syllabifyLyrics("Hello world!"), ["Hel", "lo", "world!"]);
+  let nextId = 0;
+  const commands = createCommands(fixture(), { idFactory: () => `auto-syllable-${++nextId}` });
+  const result = commands.mapLyricsToNotes("Hello world!");
+  assert.equal(result.syllableCount, 3);
+  assert.equal(result.noteCount, commands.getSong().notes.length);
+  assert.deepEqual(commands.getSong().lyrics.syllables.map(({ text }) => text), ["Hel", "lo", "world!"]);
+  assert.equal(commands.getSong().lyrics.syllables.flatMap(({ noteIds }) => noteIds).length, commands.getSong().notes.length);
+  assert.equal(commands.getState().history.undoDepth, 1);
+  assert.equal(commands.mapLyricsToNotes("Hello world!").unchanged, true);
+  expectCode(() => commands.mapLyricsToNotes("I am a musician"), "lyrics-too-many-syllables");
+  assert.ok(commands.undo());
+  assert.equal(commands.getSong().lyrics.rawText, fixture().lyrics.rawText);
 });
 
 test("syllable split keeps the original ID on the left and merge is adjacent, ordered, and deduplicated", () => {

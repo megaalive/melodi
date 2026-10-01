@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261001.43">
+    <meta name="melodi-build" content="20261001.53">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261001.43">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261001.43"></script>
-    <script type="module" src="./src/app.js?v=20261001.43"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261001.53">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261001.53"></script>
+    <script type="module" src="./src/app.js?v=20261001.53"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -27,7 +27,8 @@
             <button type="button" data-action="new-song" data-copy="newSongMenuItem"></button>
             <button type="button" data-action="show-examples" data-copy="examplesMenuItem"></button>
             <button type="button" data-action="show-browser-library" data-copy="openBrowserMenuItem"></button>
-            <button type="button" data-action="show-save-browser" data-copy="saveBrowserMenuItem"></button>
+            <button type="button" data-action="save-browser-direct" data-copy="saveBrowserMenuItem"></button>
+            <button type="button" data-action="show-save-browser" data-copy="saveBrowserAsMenuItem"></button>
             <hr>
             <button id="open-project-file" type="button" data-action="open-project-file" data-copy="openFileButton"></button>
             <button id="save-project-file" type="button" data-action="save-project-file" data-copy="saveFileButton"></button>
@@ -262,10 +263,17 @@
                 <div id="piano-roll-scroll" class="piano-roll-scroll" role="region" aria-label="Piano Roll grid" tabindex="0">
                   <svg id="piano-roll" role="img" aria-label="Piano Roll"></svg>
                 </div>
+                <div id="roll-gesture-cue" class="roll-gesture-cue" aria-hidden="true" hidden>
+                  <svg viewBox="0 0 320 96" preserveAspectRatio="none">
+                    <path d="M34 30 114 65 194 30 274 67" class="roll-gesture-line"></path>
+                    <g class="roll-gesture-point"><rect x="5" y="13" width="58" height="34" rx="5"></rect><circle cx="34" cy="30" r="10"></circle><text x="34" y="34">1</text></g>
+                    <g class="roll-gesture-point"><rect x="85" y="48" width="58" height="34" rx="5"></rect><circle cx="114" cy="65" r="10"></circle><text x="114" y="69">2</text></g>
+                    <g class="roll-gesture-point"><rect x="165" y="13" width="58" height="34" rx="5"></rect><circle cx="194" cy="30" r="10"></circle><text x="194" y="34">3</text></g>
+                    <g class="roll-gesture-point"><rect x="245" y="50" width="58" height="34" rx="5"></rect><circle cx="274" cy="67" r="10"></circle><text x="274" y="71">4</text></g>
+                  </svg>
+                </div>
                 <div id="piano-roll-empty" class="roll-empty" data-entity="roll-empty" hidden>
-                  <p class="roll-empty-title" data-copy="emptyRollTitle"></p>
                   <p class="roll-empty-hint" data-copy="emptyRollHint"></p>
-                  <p class="roll-empty-hint" data-copy="emptyRollSeedHint"></p>
                 </div>
               </div>
               <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
@@ -439,6 +447,7 @@
                 <p data-copy="drumsHelp"></p>
               </div>
               <div class="drums-toolbar">
+                <button type="button" class="drum-groove-preset" data-action="apply-drum-groove" data-groove-preset="pop" data-copy="drumsPopPreset" data-aria-copy="drumsPopPresetAria"></button>
                 <div class="editor-toolbar-group editor-tool-group drums-tool-group" role="group" data-aria-copy="toolGroupLabel">
                   <span class="editor-toolbar-label" data-copy="toolGroupLabel"></span>
                   <button id="drums-tool-select" type="button" data-action="set-tool" data-tool="select" data-copy="toolSelectButton" data-aria-copy="toolSelectAria" aria-pressed="true"></button>
@@ -520,6 +529,7 @@
             <form id="lyrics-form" class="panel lyrics-form" data-action="set-lyrics">
               <label><span data-copy="rawLyricsLabel"></span><textarea id="raw-lyrics" name="rawText" rows="4" data-focus-key="lyrics"></textarea></label>
               <button type="submit" data-copy="saveLyricsButton"></button>
+              <button id="lyrics-auto-map" type="button" class="secondary" data-action="auto-map-lyrics" data-copy="lyricsAutoMapButton" data-focus-key="lyrics-auto-map"></button>
             </form>
             <form id="add-syllable-form" class="panel syllable-add-form" data-action="add-syllable">
               <label><span data-copy="newSyllableLabel"></span><input name="text" type="text" data-focus-key="new-syllable"></label>
@@ -530,7 +540,7 @@
         </div>
 
         <aside class="workspace-sidebar" aria-label="Editor tools">
-          <div class="studio-inspector-head"><strong id="studio-panel-title"></strong><div class="studio-sheet-sizes"><button type="button" data-studio-size="peek" data-copy="sheetPeek"></button><button type="button" data-studio-size="half" data-copy="sheetHalf"></button><button type="button" data-studio-size="full" data-copy="sheetFull"></button></div><button type="button" class="secondary" data-studio-close data-aria-copy="studioClose">×</button></div>
+          <div class="studio-inspector-head"><strong id="studio-panel-title"></strong><div class="mobile-panel-peek-actions" role="group" data-aria-copy="studioPanels"></div><div class="studio-sheet-sizes"><button type="button" data-studio-size="peek" data-copy="sheetPeek"></button><button type="button" data-studio-size="half" data-copy="sheetHalf"></button><button type="button" data-studio-size="full" data-copy="sheetFull"></button></div><button type="button" class="secondary" data-studio-close data-aria-copy="studioClose">×</button></div>
           <section id="studio-drum-expression" hidden></section>
           <section id="studio-mixer" class="inspector-card" hidden><h2 data-copy="studioMixer"></h2><p class="muted" data-copy="studioMixerHelp"></p><div id="studio-mixer-channels"></div></section>
           <section id="harmony-panel" class="inspector-card harmony-card" aria-labelledby="harmony-heading">
@@ -561,6 +571,7 @@
               <p data-copy="generationHelp"></p>
             </div>
             <form id="generation-form" class="generation-form" data-action="generate-gap" data-gap-ready="false">
+              <input id="generation-transient-anchors" name="transientAnchorNoteIds" type="hidden" value="[]">
               <p id="generation-gap-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="generation-gap-hint"></p>
               <div id="generation-anchor-actions" class="generation-anchor-actions" role="group">
                 <button type="button" class="secondary" data-action="mark-selected-anchors" data-copy="generationMarkAnchors" data-focus-key="generation-mark-anchors"></button>
@@ -643,9 +654,14 @@
             <h2 id="candidate-dock-heading" data-copy="candidateDockHeading"></h2>
             <p id="candidate-dock-status" class="muted" data-copy="candidateDockHelp"></p>
           </div>
+          <div class="candidate-navigation" role="group" data-aria-copy="candidateListLabel">
+            <button type="button" class="secondary" data-action="candidate-nav" data-direction="-1" data-aria-copy="candidatePrevious" aria-controls="generation-candidates" aria-label="Previous candidate"><span aria-hidden="true">‹</span></button>
+            <button type="button" class="secondary" data-action="candidate-nav" data-direction="1" data-aria-copy="candidateNext" aria-controls="generation-candidates" aria-label="Next candidate"><span aria-hidden="true">›</span></button>
+          </div>
           <button type="button" class="secondary candidate-dock-close" data-action="clear-generation" data-copy="generationClear"></button>
         </div>
-        <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list"></ol>
+        <p class="candidate-scrub-help" data-copy="candidateScrubHelp"></p>
+        <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list" data-aria-copy="candidateListLabel"></ol>
       </section>
 
       <div id="note-context-menu" class="note-context-menu" role="menu" hidden aria-label="Note actions">

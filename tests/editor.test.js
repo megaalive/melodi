@@ -2,8 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { PPQ } from "../src/core/model.js";
 import {
+  appendPhraseTracePoint,
   createRollGeometry,
   drawNoteInputFromDrag,
+  drawPhraseInputsFromTrace,
   MAX_ROLL_BARS,
   midiToY,
   moveDeltaFromDrag,
@@ -15,6 +17,59 @@ import {
   xToTick,
   yToMidi
 } from "../src/ui/piano-roll.js";
+
+test("a continuous four-point trace becomes four snapped notes with the traced pitches", () => {
+  const geometry = createRollGeometry({ endTick: 1920 });
+  const points = [60, 64, 67, 65].map((pitch, index) => ({
+    x: tickToX(index * 240, geometry),
+    y: midiToY(pitch, geometry) + geometry.rowHeight / 2
+  }));
+
+  assert.deepEqual(drawPhraseInputsFromTrace(points, geometry, "1/8"), [
+    { pitch: 60, startTick: 0, durationTicks: 240 },
+    { pitch: 64, startTick: 240, durationTicks: 240 },
+    { pitch: 67, startTick: 480, durationTicks: 240 },
+    { pitch: 65, startTick: 720, durationTicks: 240 }
+  ]);
+});
+
+test("short horizontal gestures remain single-note drags and reverse sweeps stay chronological", () => {
+  const geometry = createRollGeometry({ endTick: 1920 });
+  const short = [60, 60].map((pitch, index) => ({
+    x: tickToX(index * 240, geometry),
+    y: midiToY(pitch, geometry) + geometry.rowHeight / 2
+  }));
+  assert.equal(drawPhraseInputsFromTrace(short, geometry, "1/8"), null);
+
+  const reverse = [67, 64, 60].map((pitch, index) => ({
+    x: tickToX((2 - index) * 240, geometry),
+    y: midiToY(pitch, geometry) + geometry.rowHeight / 2
+  }));
+  assert.deepEqual(drawPhraseInputsFromTrace(reverse, geometry, "1/8"), [
+    { pitch: 60, startTick: 0, durationTicks: 240 },
+    { pitch: 64, startTick: 240, durationTicks: 240 },
+    { pitch: 67, startTick: 480, durationTicks: 240 }
+  ]);
+});
+
+test("pointer release endpoint is retained when it arrives without a final move event", () => {
+  const geometry = createRollGeometry({ endTick: 1920 });
+  const path = [60, 64, 67].map((pitch, index) => ({
+    x: tickToX(index * 240, geometry),
+    y: midiToY(pitch, geometry) + geometry.rowHeight / 2
+  }));
+  const release = {
+    x: tickToX(720, geometry),
+    y: midiToY(65, geometry) + geometry.rowHeight / 2
+  };
+
+  assert.deepEqual(drawPhraseInputsFromTrace(appendPhraseTracePoint(path, release), geometry), [
+    { pitch: 60, startTick: 0, durationTicks: 240 },
+    { pitch: 64, startTick: 240, durationTicks: 240 },
+    { pitch: 67, startTick: 480, durationTicks: 240 },
+    { pitch: 65, startTick: 720, durationTicks: 240 }
+  ]);
+});
 
 test("snap intervals come from PPQ and round ties upward deterministically", () => {
   assert.deepEqual(SNAP_TICKS, { "1/4": 480, "1/8": 240, "1/16": 120 });

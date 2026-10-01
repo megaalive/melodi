@@ -107,8 +107,14 @@ function setup({ tool = "select" } = {}) {
     getSelectedNoteIds: () => state.selectedNoteIds,
     clearSelection: () => { state.selectedNoteIds = []; }
   };
-  const view = createPianoRollView(svg, commands, { onAddNote: (input) => added.push(input) });
-  return { svg, scroll, state, view, added };
+  const auditions = [];
+  const phrases = [];
+  const view = createPianoRollView(svg, commands, {
+    onAddNote: (input) => added.push(input),
+    onAddNotes: (inputs) => phrases.push(inputs),
+    onAuditionNote: (input) => auditions.push(input)
+  });
+  return { svg, scroll, state, view, added, auditions, phrases };
 }
 
 const song = (notes) => ({
@@ -279,7 +285,7 @@ test("tanpa sesi generation tidak ada ghost sama sekali", () => {
   assert.equal(svg.byClass("roll-candidate-note").length, 0);
 });
 
-test("blank click is safe in Select and only Draw creates a note", () => {
+test("blank Piano Roll starts direct note capture from either tool", () => {
   const select = setup({ tool: "select" });
   select.state.song = song([]);
   select.view.render(select.state.song, select.state);
@@ -289,7 +295,7 @@ test("blank click is safe in Select and only Draw creates a note", () => {
   select.svg.dispatch("pointerdown", { clientX: selectX, clientY: selectY });
   select.svg.dispatch("pointerup", { clientX: selectX, clientY: selectY });
   select.svg.dispatch("click", { clientX: selectX, clientY: selectY });
-  assert.equal(select.added.length, 0);
+  assert.deepEqual(select.added, [{ pitch: 60, startTick: 480, durationTicks: 240 }]);
 
   const draw = setup({ tool: "draw" });
   draw.state.song = song([]);
@@ -301,6 +307,31 @@ test("blank click is safe in Select and only Draw creates a note", () => {
   draw.svg.dispatch("pointerup", { clientX: drawX, clientY: drawY });
   draw.svg.dispatch("click", { clientX: drawX, clientY: drawY });
   assert.deepEqual(draw.added, [{ pitch: 60, startTick: 480, durationTicks: 240 }]);
+});
+
+test("one continuous four-point draw auditions its first pitch and commits four notes", () => {
+  const { svg, view, state, added, auditions, phrases } = setup({ tool: "draw" });
+  state.song = song([]);
+  view.render(state.song, state);
+  const geometry = view.getGeometry();
+  const trace = [67, 69, 71, 69].map((pitch, index) => ({
+    clientX: tickToX(index * 240, geometry) * svg.clientWidth / geometry.width,
+    clientY: (midiToY(pitch, geometry) + geometry.rowHeight / 2) * svg.clientHeight / geometry.height
+  }));
+
+  svg.dispatch("pointerdown", trace[0]);
+  for (const point of trace.slice(1, -1)) svg.dispatch("pointermove", point);
+  svg.dispatch("pointerup", trace.at(-1));
+
+  assert.deepEqual(auditions, [{ pitch: 67, startTick: 0, durationTicks: 240 }]);
+  assert.equal(phrases.length, 1);
+  assert.deepEqual(phrases[0].map(({ pitch, startTick, durationTicks }) => ({ pitch, startTick, durationTicks })), [
+    { pitch: 67, startTick: 0, durationTicks: 240 },
+    { pitch: 69, startTick: 240, durationTicks: 240 },
+    { pitch: 71, startTick: 480, durationTicks: 240 },
+    { pitch: 69, startTick: 720, durationTicks: 240 }
+  ]);
+  assert.deepEqual(added, [], "phrase is committed as one multi-note command");
 });
 
 test("piano roll mengekspos volume dan pan serta menampilkan indikator expression", () => {

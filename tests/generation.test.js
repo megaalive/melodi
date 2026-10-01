@@ -134,6 +134,17 @@ test("gap validation rejects empty, inverted, occupied, stale-anchor, and cross-
   }), request()), "generation-anchor-order");
 });
 
+test("selected unmarked notes are accepted only as explicit temporary generation boundaries", () => {
+  const song = createSong({
+    ...fixture(),
+    notes: fixture().notes.map((note) => ({ ...note, anchor: false }))
+  });
+  const temporary = request({ transientAnchorNoteIds: ["anchor-left", "anchor-right"] });
+  assert.equal(createGenerationContext(song, temporary).gap.transientAnchorNoteIds.length, 2);
+  expectGenerationCode(() => createGenerationContext(song, request()), "generation-anchor-required");
+  expectGenerationCode(() => createGenerationContext(song, request({ transientAnchorNoteIds: ["anchor-left", "unrelated"] })), "generation-anchor-required");
+});
+
 test("passing note is a scale tone between its structural pitches", () => {
   const context = { key: "C", scale: { intervals: [0, 2, 4, 5, 7, 9, 11] } };
   const passing = scalePassingNote(60, 64, context);

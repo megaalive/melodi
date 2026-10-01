@@ -57,6 +57,26 @@ test("percussion hit masuk melalui command boundary dan track dibuat lazily", ()
   assert.equal(commands.getSong().tracks[0].events.length, 2);
 });
 
+test("one-step Pop groove follows the Loop, avoids duplicates, and undoes as one edit", () => {
+  const commands = createCommands(songFixture(), { idFactory: deterministic("groove") });
+  const loop = commands.getState().playback.loop;
+  commands.setLoop(loop.startTick, loop.endTick);
+  commands.setLoopEnabled(true);
+
+  const applied = commands.applyDrumGroovePreset("pop");
+  const track = commands.getSong().tracks.find((item) => item.kind === "percussion");
+  assert.ok(track);
+  assert.ok(track.events.some((hit) => hit.pieceId === "kick"));
+  assert.ok(track.events.some((hit) => hit.pieceId === "snare"));
+  assert.ok(track.events.some((hit) => hit.pieceId === "closed-hi-hat"));
+  assert.equal(applied.addedCount, track.events.length);
+  assert.equal(commands.applyDrumGroovePreset("pop").addedCount, 0);
+  assert.equal(commands.getState().history.undoDepth, 1);
+
+  commands.undo();
+  assert.deepEqual(commands.getSong().tracks, []);
+});
+
 test("project schema v4 menyimpan percussion dan tetap membaca schema v1 tanpa tracks", () => {
   const commands = createCommands(songFixture(), { idFactory: deterministic("schema") });
   commands.addPercussionHit({ pieceId: "snare", startTick: 480, velocity: 96, articulation: "ghost" });

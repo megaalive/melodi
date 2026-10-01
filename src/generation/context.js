@@ -39,7 +39,16 @@ export function createGenerationContext(songInput, request) {
   const leftAnchor = song.notes.find((note) => note.id === leftAnchorNoteId);
   const rightAnchor = song.notes.find((note) => note.id === rightAnchorNoteId);
   if (!leftAnchor || !rightAnchor) fail("generation-anchor-not-found");
-  if (!leftAnchor.anchor || !rightAnchor.anchor) fail("generation-anchor-required");
+  const transientAnchorNoteIds = request.transientAnchorNoteIds ?? [];
+  if (!Array.isArray(transientAnchorNoteIds) || transientAnchorNoteIds.length > 2
+    || new Set(transientAnchorNoteIds).size !== transientAnchorNoteIds.length
+    || transientAnchorNoteIds.some((id) => id !== leftAnchorNoteId && id !== rightAnchorNoteId)) {
+    fail("generation-anchor-required");
+  }
+  if ((!leftAnchor.anchor && !transientAnchorNoteIds.includes(leftAnchorNoteId))
+    || (!rightAnchor.anchor && !transientAnchorNoteIds.includes(rightAnchorNoteId))) {
+    fail("generation-anchor-required");
+  }
   if (leftAnchor.startTick + leftAnchor.durationTicks !== startTick || rightAnchor.startTick !== endTick) {
     fail("generation-anchor-boundary");
   }
@@ -73,7 +82,7 @@ export function createGenerationContext(songInput, request) {
     .sort((left, right) => left.startTick - right.startTick || compareText(left.id, right.id));
   return Object.freeze({
     song,
-    gap: Object.freeze({ startTick, endTick, leftAnchorNoteId, rightAnchorNoteId }),
+    gap: Object.freeze({ startTick, endTick, leftAnchorNoteId, rightAnchorNoteId, transientAnchorNoteIds: [...transientAnchorNoteIds] }),
     leftAnchor,
     rightAnchor,
     phraseId: phrase.id,

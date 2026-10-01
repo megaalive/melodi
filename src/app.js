@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261001.43';
-import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.43";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.43";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.43";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.43";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.43";
-import { createCommands } from "./core/commands.js?v=20261001.43";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261001.53';
+import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.53";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.53";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.53";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.53";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.53";
+import { createCommands } from "./core/commands.js?v=20261001.53";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.43";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.43";
-import { createAudioPlayer } from "./audio/player.js?v=20261001.43";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.53";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.53";
+import { createAudioPlayer } from "./audio/player.js?v=20261001.53";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.43";
-import { createScoreView } from "./ui/score.js?v=20261001.43";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261001.43";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.43";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.43";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.43";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.43";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.53";
+import { createScoreView } from "./ui/score.js?v=20261001.53";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261001.53";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.53";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.53";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.53";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.53";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261001.43";
-import { createGenerationContext } from "./generation/context.js?v=20261001.43";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261001.53";
+import { createGenerationContext } from "./generation/context.js?v=20261001.53";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261001.43";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.43";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.43";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.43";
-import { deserializeProject } from "./core/serialization.js?v=20261001.43";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.43";
+import { createDraftPersistence } from "./storage/draft.js?v=20261001.53";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.53";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.53";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.53";
+import { deserializeProject } from "./core/serialization.js?v=20261001.53";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.53";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -47,6 +47,7 @@ let uiPreferences;
 let lastHarmonyPlaybackContext = null;
 let studioView = null;
 let progressionView = null;
+let candidateScrub = null;
 
 const byId = (id) => document.getElementById(id);
 const languageSelect = byId("language");
@@ -58,7 +59,8 @@ function canonicalSongEndTick(song) {
 }
 
 // Berbeda dari bahasa (yang in-memory), pilihan tema disimpan: ini preferensi
-// perangkat, dan reset tiap reload terasa seperti bug. Default tetap "system".
+// perangkat, dan reset tiap reload terasa seperti bug. Default mengikuti identitas
+// graphite utama; pilihan perangkat eksplisit tetap dipertahankan.
 const THEME_KEY = "melodi.theme";
 const THEMES = new Set(["system", "light", "dark"]);
 
@@ -69,9 +71,9 @@ function safeStorage() {
 function readStoredTheme() {
   try {
     const stored = safeStorage()?.getItem(THEME_KEY);
-    return THEMES.has(stored) ? stored : "system";
+    return THEMES.has(stored) ? stored : "dark";
   } catch {
-    return "system";
+    return "dark";
   }
 }
 
@@ -510,6 +512,27 @@ function openChordEditor(chordId = null) {
   byId("harmony-editor").open = true;
   render();
   form.elements.rootPitchClass.focus();
+}
+
+function prepareChordSuggestions() {
+  const song = commands.getSong();
+  const state = commands.getState();
+  const range = harmonyContextRange(song, state);
+  const hasNotes = song.notes.some((note) => note.startTick < range.endTick
+    && note.startTick + note.durationTicks > range.startTick);
+  if (!hasNotes) {
+    byId("harmony-status").textContent = translate("harmonyNeedNotes");
+    return;
+  }
+  const session = commands.getHarmonyState();
+  if (session.status === "ready" && session.range?.startTick === range.startTick
+    && session.range?.endTick === range.endTick) return;
+  const form = byId("harmony-range-form");
+  form.dataset.pending = "false";
+  run(() => {
+    commands.setHarmonyRange(range.startTick, range.endTick);
+    return commands.suggestHarmony(range);
+  });
 }
 
 function transposeSelectedNotes(delta) {
@@ -1058,7 +1081,8 @@ function renderGeneration(state) {
   const lockHelp = byId("generation-lock-help");
   const leftAnchorField = byId("generation-left-anchor");
   const rightAnchorField = byId("generation-right-anchor");
-  if (!form || !list || !status || !gapStatus || !anchorActions || !sessionActions || !useSelection || !generate || !regenerate || !clear || !lockAccepted || !lockHelp || !leftAnchorField || !rightAnchorField) {
+  const transientAnchorsField = byId("generation-transient-anchors");
+  if (!form || !list || !status || !gapStatus || !anchorActions || !sessionActions || !useSelection || !generate || !regenerate || !clear || !lockAccepted || !lockHelp || !leftAnchorField || !rightAnchorField || !transientAnchorsField) {
     panel.hidden = false;
     throw new Error("Incomplete R4 generation markup.");
   }
@@ -1070,10 +1094,12 @@ function renderGeneration(state) {
   const sessionReady = generation.status === "ready" && Array.isArray(generation.candidates);
   const acceptedNoteIds = Array.isArray(generation.acceptedNoteIds) ? generation.acceptedNoteIds : [];
   if (!sessionReady && (!acceptedNoteIds.length || state.selectedNoteIds.length === 2) && form.dataset.manualGap !== "true") {
-    const selectedGap = resolveSelectedAnchorGap(commands.getSong(), state.selectedNoteIds);
+    const selectedGap = resolveSelectedAnchorGap(commands.getSong(), state.selectedNoteIds, { allowTransient: true });
     const hints = { "select-two":"generationGapSelectTwo", "mark-two":"generationGapMarkTwo", empty:"generationGapEmpty", grid:"generationGapGrid", "too-long":"generationGapTooLong", protected:"error_generation-protected-note", occupied:"error_generation-gap-occupied", "cross-phrase":"error_generation-cross-phrase", order:"error_generation-anchor-order", ready:"generationGapReady" };
     form.dataset.gapReady = String(selectedGap.status === "ready");
-    form.dataset.gapHint = hints[selectedGap.status];
+    form.dataset.gapHint = selectedGap.status === "ready" && selectedGap.gap.transientAnchorNoteIds.length
+      ? "generationGapReadyTransient" : hints[selectedGap.status];
+    transientAnchorsField.value = JSON.stringify(selectedGap.gap?.transientAnchorNoteIds ?? []);
     if (selectedGap.gap) {
       byId("generation-start").value = String(selectedGap.gap.startTick);
       byId("generation-end").value = String(selectedGap.gap.endTick);
@@ -1096,7 +1122,14 @@ function renderGeneration(state) {
       form.dataset.gapHint = `error_${error.code}`;
     }
   }
-  if (dock) dock.hidden = !sessionReady;
+  if (dock) dock.hidden = !sessionReady && acceptedNoteIds.length === 0;
+  const fillGapButton = document.querySelector('#note-selection-bar [data-action="generate-selected-gap"]');
+  if (fillGapButton) {
+    const selectedGap = resolveSelectedAnchorGap(commands.getSong(), state.selectedNoteIds, { allowTransient: true });
+    fillGapButton.hidden = state.selectedNoteIds.length !== 2;
+    fillGapButton.disabled = selectedGap.status !== "ready" || sessionReady;
+    fillGapButton.setAttribute("aria-describedby", "generation-gap-status");
+  }
   const fields = {
     "generation-start": generation.gap?.startTick,
     "generation-end": generation.gap?.endTick,
@@ -1398,6 +1431,7 @@ function render() {
     region.hidden = !modes?.includes(state.view.mode);
   }
   byId("raw-lyrics").value = lyricsFormPending ? rawLyricsDraft : song.lyrics.rawText;
+  byId("lyrics-auto-map").disabled = song.notes.length === 0;
   byId("syllable-summary").textContent = song.lyrics.syllables.length
     ? translate("syllableSummary", { count: song.lyrics.syllables.length })
     : translate("noSyllables");
@@ -1424,6 +1458,7 @@ function render() {
   renderDrums(song, state);
   renderInstrumentMixControls(state.mix);
   studioView?.render(song, state);
+  byId("roll-gesture-cue").hidden = song.notes.length > 0;
 
   for (const [key, value] of pendingFields) {
     const target = copyFocusableElement(key);
@@ -1738,6 +1773,24 @@ async function saveBrowserSongFromDialog(title) {
   }
 }
 
+async function saveCurrentSongToBrowser() {
+  const wasShared = shareSession;
+  const result = await commands.saveBrowserSong(commands.getSong().title);
+  if (!result.ok) {
+    announce(browserFailureKey(result), "error");
+    return result;
+  }
+  let recoverySaved = true;
+  if (wasShared) {
+    leaveShareSession();
+    render();
+    const scheduled = persistence.schedule(commands.getSong());
+    recoverySaved = scheduled && persistence.flush();
+  }
+  announce(recoverySaved ? "browserLibrarySaved" : "draftSaveFailed", recoverySaved ? "success" : "error");
+  return result;
+}
+
 async function requestOpenBrowserSong(id, title) {
   byId("browser-library-dialog").close();
   if (!(await confirmInApp("confirmOpenBrowserTitle", "confirmOpenBrowserMessage", "confirmOpenBrowserButton", { title }))) return false;
@@ -1860,11 +1913,21 @@ rollView = createPianoRollView(byId("piano-roll"), commands, {
   getChordDrawDefaults: readChordDrawDefaults,
   onChordContextMenu: showChordContextMenu,
   onHarmonyPreviewRender: (svg, geometry) => progressionView?.renderTimeline(svg, geometry),
+  onAuditionNote(input) {
+    return commands.auditionNote(input.pitch, input.durationTicks);
+  },
   onAddNote(input) {
     try {
       const note = commands.addNote(input, { actor: "user" });
       commands.selectNotes([note.id]);
       announce("noteAddedFromRoll");
+    } catch (error) { reportError(error); }
+  },
+  onAddNotes(inputs) {
+    try {
+      const notes = commands.addNotes(inputs, { actor: "user" });
+      commands.selectNotes(notes.map((note) => note.id));
+      announce("phraseAddedFromRoll", "success", { count: notes.length });
     } catch (error) { reportError(error); }
   },
   onContextMenu: showNoteContextMenu,
@@ -2410,6 +2473,8 @@ document.addEventListener("submit", (event) => {
       return;
     }
     const lyricCount = String(data.get("lyricSyllableCount") ?? "").trim();
+    let transientAnchorNoteIds = [];
+    try { transientAnchorNoteIds = JSON.parse(data.get("transientAnchorNoteIds") || "[]"); } catch {}
     result = run(() => commands.generateGap({
       startTick: Number(data.get("startTick")),
       endTick: Number(data.get("endTick")),
@@ -2418,6 +2483,7 @@ document.addEventListener("submit", (event) => {
       voiceRange: { minPitch: Number(data.get("minPitch")), maxPitch: Number(data.get("maxPitch")) },
       ...(data.get("leftAnchorNoteId") ? { leftAnchorNoteId: data.get("leftAnchorNoteId") } : {}),
       ...(data.get("rightAnchorNoteId") ? { rightAnchorNoteId: data.get("rightAnchorNoteId") } : {}),
+      ...(Array.isArray(transientAnchorNoteIds) && transientAnchorNoteIds.length ? { transientAnchorNoteIds } : {}),
       ...(lyricCount === "" ? {} : { lyricSyllableCount: Number(lyricCount) })
     }));
     if (result) announce("generationReady", "success", { count: result.candidates.length });
@@ -2500,6 +2566,69 @@ document.addEventListener("change", (event) => {
   }
 });
 
+document.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0 || !event.isPrimary) return;
+  const target = event.target instanceof Element ? event.target : null;
+  const card = target?.closest('#generation-candidates [data-entity="melody-candidate"]');
+  if (!card || target.closest("button, summary, input, select, textarea, a")) return;
+  const list = card.closest("#generation-candidates");
+  candidateScrub = {
+    pointerId: event.pointerId,
+    list,
+    startX: event.clientX,
+    startY: event.clientY,
+    moved: false,
+    visited: new Set([card.dataset.entityId]),
+    candidateId: card.dataset.entityId
+  };
+  try { list.setPointerCapture(event.pointerId); } catch {}
+  event.preventDefault();
+  runAsync(() => commands.auditionCandidate(card.dataset.entityId));
+});
+
+document.addEventListener("pointermove", (event) => {
+  if (!candidateScrub || candidateScrub.pointerId !== event.pointerId) return;
+  if (Math.hypot(event.clientX - candidateScrub.startX, event.clientY - candidateScrub.startY) >= 5) candidateScrub.moved = true;
+  const rect = candidateScrub.list.getBoundingClientRect();
+  const edge = Math.min(36, rect.width * 0.16);
+  if (event.clientX >= rect.right - edge) {
+    const overshoot = Math.max(0, event.clientX - (rect.right - edge));
+    candidateScrub.list.scrollLeft += Math.max(4, Math.min(28, Math.round(overshoot * 0.65)));
+  } else if (event.clientX <= rect.left + edge) {
+    const overshoot = Math.max(0, rect.left + edge - event.clientX);
+    candidateScrub.list.scrollLeft -= Math.max(4, Math.min(28, Math.round(overshoot * 0.65)));
+  }
+  const probeX = Math.max(rect.left + 1, Math.min(rect.right - 1, event.clientX));
+  const target = document.elementFromPoint(probeX, event.clientY);
+  const card = target instanceof Element ? target.closest('#generation-candidates [data-entity="melody-candidate"]') : null;
+  if (!card || card.dataset.entityId === candidateScrub.candidateId) return;
+  candidateScrub.candidateId = card.dataset.entityId;
+  candidateScrub.visited.add(card.dataset.entityId);
+  runAsync(() => commands.auditionCandidate(card.dataset.entityId));
+});
+
+document.addEventListener("pointerup", (event) => {
+  if (!candidateScrub || candidateScrub.pointerId !== event.pointerId) return;
+  const rect = candidateScrub.list.getBoundingClientRect();
+  const probeX = Math.max(rect.left + 1, Math.min(rect.right - 1, event.clientX));
+  const target = document.elementFromPoint(probeX, event.clientY);
+  const card = target instanceof Element ? target.closest('#generation-candidates [data-entity="melody-candidate"]') : null;
+  const candidateId = card?.dataset.entityId ?? candidateScrub.candidateId;
+  const list = candidateScrub.list;
+  if (candidateId) run(() => commands.selectCandidate(candidateId));
+  const crossed = candidateScrub.visited.size > 1 || candidateScrub.moved;
+  candidateScrub = null;
+  if (crossed) event.preventDefault();
+  try { list.releasePointerCapture(event.pointerId); } catch {}
+}, true);
+
+document.addEventListener("pointercancel", (event) => {
+  if (!candidateScrub || candidateScrub.pointerId !== event.pointerId) return;
+  try { candidateScrub.list.releasePointerCapture(event.pointerId); } catch {}
+  candidateScrub = null;
+  run(() => commands.cancelCandidateAudition());
+});
+
 document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
@@ -2510,7 +2639,10 @@ document.addEventListener("click", (event) => {
     run(() => commands.selectHarmonyCandidate(target.dataset.harmonyId));
   } else if (target.dataset.action === "accept-harmony") {
     const chord = run(() => commands.acceptHarmonyCandidate(target.dataset.harmonyId));
-    if (chord) commands.selectChord(chord.id);
+    if (chord) {
+      commands.selectChord(chord.id);
+      studioView?.openPanel(null);
+    }
   } else if (target.dataset.action === "clear-harmony") {
     run(() => commands.clearHarmonySuggestions());
   } else if (target.dataset.action === "harmony-use-selection") {
@@ -2536,6 +2668,9 @@ document.addEventListener("click", (event) => {
     openChordEditor(target.dataset.harmonyId);
   } else if (target.dataset.action === "delete-selected-percussion-hits") {
     run(() => commands.deletePercussionHits(), "drumsHitsDeleted");
+  } else if (target.dataset.action === "apply-drum-groove") {
+    const result = run(() => commands.applyDrumGroovePreset(target.dataset.groovePreset ?? "pop"));
+    if (result) announce(result.addedCount ? "drumsGrooveApplied" : "drumsGrooveAlreadyPresent", "success", { count: result.addedCount });
   } else if (target.dataset.action === "duplicate-selected-percussion-hits") {
     const duplicates = run(() => commands.duplicatePercussionHits());
     if (duplicates?.length) announce("drumsHitsDuplicated", "success", { count: duplicates.length });
@@ -2681,6 +2816,12 @@ document.addEventListener("click", (event) => {
     run(() => commands.clearSelection(), "selectionCleared");
   } else if (target.dataset.action === "delete-syllable") {
     run(() => commands.deleteLyricSyllable(target.dataset.syllableId), "syllableDeleted");
+  } else if (target.dataset.action === "auto-map-lyrics") {
+    const result = run(() => commands.mapLyricsToNotes(byId("raw-lyrics").value));
+    if (result) {
+      byId("lyrics-form").dataset.pending = "false";
+      announce("lyricsAutoMapped", "success", { count: result.syllableCount });
+    }
   } else if (target.dataset.action === "move-syllable") {
     run(() => commands.moveLyricSyllable(target.dataset.syllableId, Number(target.dataset.targetIndex)), "syllableMoved");
   } else if (target.dataset.action === "merge-syllables") {
@@ -2711,6 +2852,8 @@ document.addEventListener("click", (event) => {
     openExamplesDialog();
   } else if (target.dataset.action === "show-save-browser") {
     showSaveBrowserDialog();
+  } else if (target.dataset.action === "save-browser-direct") {
+    runAsync(() => saveCurrentSongToBrowser());
   } else if (target.dataset.action === "show-browser-library") {
     void openBrowserLibraryDialog();
   } else if (target.dataset.action === "close-project-dialog") {
@@ -2808,6 +2951,37 @@ document.addEventListener("click", (event) => {
     form.dataset.gapReady = "true";
     form.dataset.gapHint = "generationGapReady";
     render();
+  } else if (target.dataset.action === "generate-selected-gap") {
+    const selectedGap = resolveSelectedAnchorGap(commands.getSong(), commands.getSelectedNoteIds(), { allowTransient: true });
+    const form = byId("generation-form");
+    if (selectedGap.status !== "ready") {
+      form.dataset.gapReady = "false";
+      form.dataset.gapHint = `generationGap${selectedGap.status[0].toUpperCase()}${selectedGap.status.slice(1)}`;
+      render();
+      return;
+    }
+    form.dataset.manualGap = "false";
+    form.dataset.pending = "true";
+    form.dataset.gapReady = "true";
+    form.dataset.gapHint = selectedGap.gap.transientAnchorNoteIds.length ? "generationGapReadyTransient" : "generationGapReady";
+    byId("generation-start").value = String(selectedGap.gap.startTick);
+    byId("generation-end").value = String(selectedGap.gap.endTick);
+    byId("generation-left-anchor").value = selectedGap.gap.leftAnchorNoteId;
+    byId("generation-right-anchor").value = selectedGap.gap.rightAnchorNoteId;
+    byId("generation-transient-anchors").value = JSON.stringify(selectedGap.gap.transientAnchorNoteIds);
+    const lyricCount = byId("generation-lyric-count").value.trim();
+    const generated = run(() => commands.generateGap({
+      startTick: selectedGap.gap.startTick,
+      endTick: selectedGap.gap.endTick,
+      leftAnchorNoteId: selectedGap.gap.leftAnchorNoteId,
+      rightAnchorNoteId: selectedGap.gap.rightAnchorNoteId,
+      ...(selectedGap.gap.transientAnchorNoteIds.length ? { transientAnchorNoteIds: selectedGap.gap.transientAnchorNoteIds } : {}),
+      seed: Number(byId("generation-seed").value),
+      styleProfile: byId("generation-style").value,
+      voiceRange: { minPitch: Number(byId("generation-min-pitch").value), maxPitch: Number(byId("generation-max-pitch").value) },
+      ...(lyricCount === "" ? {} : { lyricSyllableCount: Number(lyricCount) })
+    }));
+    if (generated) announce("generationReady", "success", { count: generated.candidates.length });
   } else if (target.dataset.action === "regenerate-gap") {
     const result = run(() => commands.regenerateGap());
     if (result) announce("generationRegenerated");
@@ -2818,6 +2992,10 @@ document.addEventListener("click", (event) => {
     run(() => commands.selectCandidate(target.dataset.candidateId));
   } else if (target.dataset.action === "audition-candidate") {
     runAsync(() => commands.auditionCandidate(target.dataset.candidateId), "generationAuditioned");
+  } else if (target.dataset.action === "candidate-nav") {
+    const list = byId("generation-candidates");
+    const direction = Math.sign(Number(target.dataset.direction));
+    if (list && direction) list.scrollBy({ left: direction * Math.max(96, list.clientWidth - 156), behavior: "smooth" });
   } else if (target.dataset.action === "accept-candidate") {
     const accepted = run(() => commands.acceptCandidate(target.dataset.candidateId));
     if (accepted) announce("generationAccepted");
@@ -3095,7 +3273,12 @@ window.addEventListener("pagehide", () => persistence.flush());
 document.querySelectorAll("details").forEach((details) => { details.open = false; });
 
 progressionView = createProgressionWorkspace(commands, () => language, reportError);
-studioView = createStudioWorkspace(commands, translate, reportError);
+studioView = createStudioWorkspace(commands, translate, reportError, {
+  onOpenPanel(panel) {
+    if (panel === "chords") prepareChordSuggestions();
+  }
+});
+if (commands.getSong().notes.length === 0 && commands.getState().editor.tool !== "draw") commands.setTool("draw");
 render();
 if (shareLoadStatus === "loaded") announce("shareLoaded");
 else if (shareLoadStatus !== "none") announce("shareInvalid", "error");
