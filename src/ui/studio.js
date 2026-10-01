@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.42';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.43';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -16,6 +16,10 @@ export function createStudioWorkspace(commands, translate, onError) {
   let overviewSong = null;
   const sidebar = document.querySelector('.workspace-sidebar');
   const settings = document.querySelector('.studio-settings');
+  const studioMenu = document.querySelector('.studio-menu');
+  const headerActions = document.querySelector('.header-actions');
+  const projectMenu = document.querySelector('.project-menu');
+  const studioMenuActions = studioMenu.querySelector('.studio-menu-actions');
   const mixer = byId('studio-mixer-channels');
   const expressionHome = byId('expression-panel')?.parentElement;
   const selectionBar = document.createElement('div');
@@ -53,36 +57,68 @@ export function createStudioWorkspace(commands, translate, onError) {
   const candidateDock = byId('candidate-dock');
   if (candidateDock) byId('generation-panel').append(candidateDock);
   document.querySelector('.brand-block').append(document.querySelector('.song-strip'));
-  const history = document.querySelector('.history-buttons');
-  const headerActions = document.querySelector('.header-actions');
   const transportSettings = document.querySelector('.playback-settings-group');
   const advanced = document.querySelector('.transport-advanced');
   const advancedBody = document.querySelector('.transport-advanced-grid');
   const tempo = document.querySelector('.tempo-control');
   const follow = document.querySelector('.follow-mode-control');
+  const transportMain = document.querySelector('.transport-main');
+  const moreMenu = document.querySelector('.studio-more');
+  const morePopover = document.querySelector('.studio-more-popover');
   const panelSwitches = document.querySelector('.studio-panel-switches');
+  const toolbarActions = document.querySelector('.studio-toolbar-actions');
+  const moreAppActions = document.createElement('div');
+  moreAppActions.className = 'studio-more-app-actions';
+  morePopover.append(moreAppActions);
+  const mixerTrigger = document.querySelector('button[data-studio-panel="mixer"]');
+  const chordTrigger = document.querySelector('button[data-studio-panel="chords"]');
+  const generateTrigger = document.querySelector('button[data-studio-panel="generate"]');
+  const guitarMode = morePopover.querySelector('[data-studio-view="guitar"]');
+  const modeNav = byId('studio-views');
   const modeToolbar = byId('view-controls');
   const overview = document.querySelector('.studio-overview');
-  const narrow = matchMedia('(max-width: 760px)');
+  transportMain.insertBefore(overview, transportSettings);
+  const compact = matchMedia('(max-width: 760px), (orientation: landscape) and (max-height: 500px)');
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 500px)');
   function arrangeControls() {
     const advancedSummary = advanced.querySelector('summary');
-    advancedSummary.dataset.ariaCopy = narrow.matches ? 'transportOptions' : 'transportAdvanced';
+    advancedSummary.dataset.ariaCopy = compact.matches ? 'transportOptions' : 'transportAdvanced';
     advancedSummary.setAttribute('aria-label', translate(advancedSummary.dataset.ariaCopy));
     const advancedLabel = advancedSummary.querySelector('[data-copy]');
     advancedLabel.dataset.copy = advancedSummary.dataset.ariaCopy;
     advancedLabel.textContent = translate(advancedLabel.dataset.copy);
-    if (narrow.matches) {
-      settings.querySelector('.studio-settings-popover').prepend(history);
-      advancedBody.prepend(tempo, follow);
-      overview.append(panelSwitches);
+    transportSettings.prepend(tempo);
+    moreMenu.open = false;
+    panelSwitches.append(generateTrigger);
+    if (compact.matches) {
+      settings.open = false;
+      moreAppActions.append(studioMenuActions);
+      studioMenu.hidden = true;
+      morePopover.prepend(guitarMode);
+      studioMenu.open = false;
+      advancedBody.append(follow);
+      panelSwitches.prepend(mixerTrigger);
+      if (shortLandscape.matches) {
+        transportSettings.append(projectMenu);
+        panelSwitches.append(chordTrigger);
+      } else toolbarActions.append(projectMenu, chordTrigger);
     } else {
-      headerActions.insertBefore(history, document.querySelector('.header-controls'));
-      transportSettings.prepend(tempo);
+      headerActions.prepend(projectMenu, studioMenu);
+      studioMenu.append(studioMenuActions);
+      studioMenu.hidden = false;
+      modeNav.insertBefore(guitarMode, moreMenu);
+      studioMenu.open = true;
       transportSettings.append(follow);
-      modeToolbar.append(panelSwitches);
+      transportSettings.insertBefore(mixerTrigger, advanced);
+      toolbarActions.append(chordTrigger);
     }
+    const moreLabel = moreMenu.querySelector('summary [data-copy]');
+    moreLabel.dataset.copy = 'studioMoreButton';
+    moreLabel.textContent = translate('studioMoreButton');
+    moreMenu.querySelector('summary').setAttribute('aria-label', translate('studioMoreLabel'));
   }
-  narrow.addEventListener('change', arrangeControls);
+  compact.addEventListener('change', arrangeControls);
+  shortLandscape.addEventListener('change', arrangeControls);
   arrangeControls();
   const utility = document.querySelector('.utility-card');
   if (utility) {
@@ -95,7 +131,7 @@ export function createStudioWorkspace(commands, translate, onError) {
     if (value) lastPanel = value;
     panel = value;
     render(commands.getSong(), commands.getState(), false);
-    if (panel && matchMedia('(max-width: 760px)').matches) sidebar.querySelector('[data-studio-close]').focus({preventScroll:true});
+    if (panel) sidebar.querySelector('[data-studio-close]').focus({preventScroll:true});
   }
   function restorePanelFocus() {
     const trigger = document.querySelector(`button[data-studio-panel="${lastPanel}"]`);
@@ -104,26 +140,41 @@ export function createStudioWorkspace(commands, translate, onError) {
   }
   document.addEventListener('click', event => {
     if (settings.open && !settings.contains(event.target)) settings.open = false;
+    if (compact.matches && studioMenu.open && !studioMenu.contains(event.target)) studioMenu.open = false;
+    if (moreMenu.open && !moreMenu.contains(event.target)) moreMenu.open = false;
+    if (compact.matches && studioMenu.open && studioMenu.contains(event.target) && !settings.contains(event.target) && event.target.closest?.('button[data-action]')) {
+      studioMenu.open = false;
+      studioMenu.querySelector('summary').focus({preventScroll:true});
+    }
     const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek], [data-studio-size]');
     if (!target) return;
     try {
       if (target.dataset.studioSize) { sheetSize = target.dataset.studioSize; render(commands.getSong(),commands.getState(),false); }
       else if (target.dataset.studioView) {
+        const cameFromMoreMenu = moreMenu.contains(target);
+        moreMenu.open = false;
         panel = null;
         commands.setViewMode(target.dataset.studioView);
-      } else if (target.dataset.studioPanel) openPanel(panel === target.dataset.studioPanel ? null : target.dataset.studioPanel);
+        if (cameFromMoreMenu) moreMenu.querySelector('summary').focus({preventScroll:true});
+      } else if (target.dataset.studioPanel) { moreMenu.open = false; openPanel(panel === target.dataset.studioPanel ? null : target.dataset.studioPanel); }
       else if (target.hasAttribute('data-studio-close')) { openPanel(null); restorePanelFocus(); }
       else commands.seek(Number(target.dataset.studioSeek));
     } catch (error) { onError(error); }
   });
   document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !event.defaultPrevented && moreMenu.open && moreMenu.contains(event.target)) {
+      moreMenu.open = false; moreMenu.querySelector('summary').focus(); event.preventDefault(); return;
+    }
     if (event.key === 'Escape' && !event.defaultPrevented && settings.open && settings.contains(event.target)) {
       settings.open = false; settings.querySelector('summary').focus(); event.preventDefault(); return;
     }
+    if (event.key === 'Escape' && !event.defaultPrevented && compact.matches && studioMenu.open && studioMenu.contains(event.target)) {
+      studioMenu.open = false; studioMenu.querySelector('summary').focus(); event.preventDefault(); return;
+    }
     if (event.key === 'Escape' && !event.defaultPrevented && sidebar.contains(event.target) && panel) { openPanel(null); restorePanelFocus(); }
-    const current = event.target.closest?.('[data-studio-view]');
+    const current = event.target.closest?.('#studio-views > [data-studio-view], #studio-views > .studio-more > summary');
     if (!current || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
-    const tabs = [...document.querySelectorAll('[data-studio-view]')];
+    const tabs = [...modeNav.querySelectorAll(':scope > [data-studio-view], :scope > .studio-more > summary')].filter(tab => tab.getClientRects().length);
     const index = tabs.indexOf(current);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
     event.preventDefault(); tabs[next].focus(); tabs[next].click();
@@ -197,7 +248,18 @@ export function createStudioWorkspace(commands, translate, onError) {
     byId('generation-panel').hidden = panel !== 'generate';
     byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',expression:'expressionHeading','drum-expression':'percussionExpressionHeading'})[panel] ?? 'studioPanels');
     document.querySelectorAll('button[data-studio-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioPanel===panel)));
-    document.querySelectorAll('[data-studio-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioView===state.view.mode)));
+    document.querySelectorAll('[data-studio-view]').forEach(button=>{
+      const mode = button.dataset.studioView;
+      button.setAttribute('aria-pressed',String(mode===state.view.mode || mode==='score' && state.view.mode==='combined'));
+    });
+    const moreSummary = moreMenu.querySelector('summary');
+    const guitarActive = compact.matches && state.view.mode === 'guitar';
+    moreSummary.dataset.activeView = guitarActive ? 'guitar' : '';
+    const moreLabel = moreSummary.querySelector('[data-copy]');
+    moreLabel.textContent = guitarActive ? translate('viewGuitarOption') : translate('studioMoreButton');
+    moreSummary.setAttribute('aria-label', guitarActive
+      ? `${translate('viewGuitarOption')}. ${translate('studioMoreLabel')}`
+      : translate('studioMoreLabel'));
     if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing,translate('studioSeekBar', {bar:1})])) renderOverview(song);
     updatePlayback(song,state.playback);
   }

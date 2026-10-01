@@ -1,6 +1,6 @@
 # Melodi Ronde 2 — Checkpoint 1
 
-**Status:** proposal for owner review; no product source changed. The design gallery is [wireframes/index.html](wireframes/index.html). Its four selectors cover all 120 combinations (five modes × three viewports × four states × two themes). The gallery is static; it is not an implemented or user-tested interface.
+**Status:** disetujui untuk implementasi bertahap di Checkpoint 2. Galeri desain ada di [wireframes/index.html](wireframes/index.html). Empat selector mencakup 120 kombinasi (lima mode × tiga viewport × empat keadaan × dua tema). Galeri tetap wireframe statis, bukan antarmuka terimplementasi atau hasil uji pengguna.
 
 **Bukti wireframe:** [desktop kosong](evidence/proposed/desktop-empty.png), [desktop pilihan J3](evidence/proposed/desktop-selected-j3.png), [desktop tema terang](evidence/proposed/desktop-selected-light.png), [ponsel kosong J1](evidence/proposed/mobile-empty-j1.png), [ponsel Drum kosong](evidence/proposed/mobile-drum-empty.png), [ponsel pilihan J3](evidence/proposed/mobile-selected-j3.png), [ponsel kandidat J2](evidence/proposed/mobile-candidate-j2.png), [sheet Chord](evidence/proposed/mobile-chord-panel.png), [landscape Drum kosong](evidence/proposed/landscape-empty-drum.png), dan [landscape kandidat J2](evidence/proposed/landscape-candidate-j2.png). Gambar memperlihatkan galeri statis beserta frame wireframe; semuanya bukti desain, bukan rekaman aplikasi hasil implementasi.
 

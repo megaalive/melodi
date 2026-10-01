@@ -1,8 +1,8 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261001.42";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261001.42";
-import { percussionVoiceSpec } from "./percussion.js?v=20261001.42";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20261001.42";
-import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261001.42";
+import { MelodiError, PPQ } from "../core/model.js?v=20261001.43";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261001.43";
+import { percussionVoiceSpec } from "./percussion.js?v=20261001.43";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20261001.43";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261001.43";
 
 const LOOK_AHEAD_SECONDS = 0.12;
 const SCHEDULER_INTERVAL_MS = 25;
