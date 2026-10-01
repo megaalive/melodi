@@ -98,6 +98,12 @@ test("entry assets GitHub Pages memakai build token yang sama", () => {
   assert.ok(app.includes("./io/share.js?v=" + build));
   assert.ok(app.includes("./core/serialization.js?v=" + build));
   assert.ok(app.includes("./audio/player.js?v=" + build));
+  assert.ok(app.includes("./ui/piano-roll.js?v=" + build));
+  assert.doesNotMatch(app, /from\s+["']\.\/ui\/piano-roll\.js["']/);
+
+  const expressionLane = readFileSync(resolve("src/ui/expression-lane.js"), "utf8");
+  assert.ok(expressionLane.includes("./piano-roll.js?v=" + build));
+  assert.doesNotMatch(expressionLane, /from\s+["']\.\/piano-roll\.js["']/);
 
   const commands = readFileSync(resolve("src/core/commands.js"), "utf8");
   const snapshot = readFileSync(resolve("src/core/snapshot.js"), "utf8");
