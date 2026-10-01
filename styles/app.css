@@ -4888,6 +4888,7 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
   .studio-more { flex: 0 0 44px; }
   .studio-more > summary { min-height: 44px; padding: 3px 2px; font-size: 9px; white-space: normal; }
   .studio-more[open] .studio-more-popover { position: fixed; top: auto; right: auto; bottom: 0; left: 52px; width: 240px; max-height: 65dvh; }
+  .studio-more-popover > button, .studio-panel-switches button { min-height: 44px; padding: 4px 7px; }
   .studio-more > summary[data-active-view="guitar"] { border-bottom-color: transparent; border-left: 3px solid var(--studio-accent); }
   .studio .studio-overview { height: 22px; }
   .studio .studio-overview-label { flex-basis: 56px; padding: 1px 4px; }
