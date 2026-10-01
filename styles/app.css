@@ -4712,3 +4712,55 @@ button.secondary:hover:not(:disabled),
 .progression-context-menu [aria-checked="true"] { background: var(--accent-soft); color: var(--accent-strong); }
 .drum-grid-ruler-surface:hover:not(:disabled) { background: transparent; color: var(--text); }
 button.danger-button:hover:not(:disabled) { background: var(--danger); color: var(--on-accent); }
+
+/* Alat chord tinggal satu toolbar; isi musik memakai ruang timeline. */
+.studio #piano-roll-section { padding-top: 6px; }
+.studio .compact-pane-heading { margin-bottom: 4px; min-height: 30px; }
+.studio #harmony-timeline-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 10px; padding: 2px 0 5px; }
+.studio .progression-workspace { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; border: 0; padding: 0; min-width: 0; }
+.studio .progression-toolbar { gap: 5px; }
+.studio .progression-toolbar > strong { font-size: 11px; white-space: nowrap; }
+.studio .progression-toolbar select { max-width: 140px; }
+.studio #harmony-range-form { margin: 0; flex: 0 1 auto; }
+.studio #harmony-range-form .harmony-actions { display: flex; align-items: center; flex-wrap: wrap; }
+.studio #harmony-range-form label { white-space: nowrap; }
+.studio #harmony-location { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; min-width: 0; }
+.studio .progression-hint { display: none; }
+.studio .harmony-timeline-tools #harmony-candidates { flex-basis: 100%; }
+.studio .instrument-mix-strip { margin-top: 0; }
+
+/* Menu konteks memakai baris netral, bukan tombol aksi besar. */
+#chord-context-menu { min-width: 150px; padding: 4px; border-radius: 5px; }
+#chord-context-menu:not([hidden]) { gap: 0; }
+#chord-context-menu button { min-height: 30px; padding: 6px 9px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font-size: 12px; font-weight: 500; line-height: 1.35; }
+#chord-context-menu button:hover:not(:disabled),
+#chord-context-menu button:focus-visible { background: var(--accent-soft); color: var(--accent-strong); }
+#chord-context-menu button[data-action="delete-chord"] { color: var(--danger); }
+#chord-context-menu button[data-action="delete-chord"]:hover:not(:disabled),
+#chord-context-menu button[data-action="delete-chord"]:focus-visible { background: var(--surface-subtle); color: var(--danger); }
+#chord-context-menu button:disabled { background: transparent; color: var(--text-muted); }
+@media (max-width: 760px) {
+  .studio #harmony-timeline-tools { gap: 5px; }
+  .studio .progression-toolbar > strong { width: auto; }
+  .studio .progression-toolbar select { flex: 0 1 auto; }
+  .studio #harmony-location { width: 1px; }
+  #chord-context-menu button { min-height: 38px; }
+}
+.studio .progression-workspace { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; border: 0; padding: 0; }
+.studio .progression-workspace > select { width: auto; max-width: 155px; }
+.studio .progression-status { color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+.progression-help { position: relative; }
+.progression-help > summary { list-style: none; cursor: pointer; padding: 3px 6px; color: var(--text-muted); }
+.progression-help p { position: absolute; z-index: 30; top: 24px; left: -100px; width: min(270px,75vw); padding: 10px; margin: 0; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); font-size: 12px; box-shadow: 0 5px 20px #0002; }
+.progression-timeline-block { cursor: pointer; }
+.progression-timeline-block rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 3; }
+.progression-timeline-block text { fill: var(--accent-strong); font-size: 13px; font-weight: 650; }
+.progression-timeline-block:hover rect, .progression-timeline-block:focus-visible rect { fill: var(--accent); }
+.progression-timeline-block:hover text, .progression-timeline-block:focus-visible text { fill: var(--on-accent); }
+.progression-menu-title { display: block; padding: 4px 8px; font-size: 12px; color: var(--text-muted); }
+.progression-context-menu { max-height: calc(100dvh - 16px); overflow-y: auto; padding: 4px; }
+.progression-context-menu button { display: block; width: 100%; min-height: 28px; padding: 4px 8px; font-size: 12px; border: 0; background: transparent; color: var(--text); text-align: left; }
+@media(max-width:760px) { .progression-context-menu button { min-height: 36px; } .studio .progression-workspace > select { max-width: 130px; } }
+.studio .pane-title-row .instrument-mix-strip { margin: 0 0 0 8px; padding: 0 4px; min-height: 26px; background: transparent; border: 0; }
+.studio .pane-title-row .instrument-mix-strip strong { display: none; }
+@media(max-width:760px) { .studio .pane-title-row .instrument-mix-strip { margin-left: 3px; } .studio .pane-title-row .instrument-mix-strip [data-channel-volume] { width: 65px; } }
