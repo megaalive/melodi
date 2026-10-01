@@ -4764,3 +4764,11 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
 .studio .pane-title-row .instrument-mix-strip { margin: 0 0 0 8px; padding: 0 4px; min-height: 26px; background: transparent; border: 0; }
 .studio .pane-title-row .instrument-mix-strip strong { display: none; }
 @media(max-width:760px) { .studio .pane-title-row .instrument-mix-strip { margin-left: 3px; } .studio .pane-title-row .instrument-mix-strip [data-channel-volume] { width: 65px; } }
+@media(max-width:760px) {
+  .studio #harmony-timeline-tools { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; min-width: 0; }
+  .studio .progression-workspace { flex-wrap: nowrap; flex-shrink: 0; }
+  .studio #harmony-range-form { flex: 0 0 auto; }
+  .studio #harmony-range-form .harmony-actions { flex-wrap: nowrap; }
+  .studio .progression-workspace > select { flex: 0 0 auto; }
+  .studio .progression-help[open] p { position: fixed; top: 15%; left: 8%; }
+}
