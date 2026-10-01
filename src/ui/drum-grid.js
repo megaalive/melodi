@@ -1,8 +1,8 @@
-import { PPQ } from "../core/model.js?v=20261001.54";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.54";
-import { SNAP_TICKS } from "../core/editor.js?v=20261001.54";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261001.54";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20261001.54";
+import { PPQ } from "../core/model.js?v=20261001.56";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.56";
+import { SNAP_TICKS } from "../core/editor.js?v=20261001.56";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261001.56";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20261001.56";
 
 const DEFAULT_VELOCITY = 100;
 
