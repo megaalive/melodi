@@ -4710,3 +4710,5 @@ button.secondary:hover:not(:disabled),
 .drum-cell[data-hit="true"]:hover:not(:disabled) { background: var(--accent-soft); }
 .progression-context-menu { position: fixed; z-index: 160; min-width: 180px; max-width: calc(100vw - 16px); }
 .progression-context-menu [aria-checked="true"] { background: var(--accent-soft); color: var(--accent-strong); }
+.drum-grid-ruler-surface:hover:not(:disabled) { background: transparent; color: var(--text); }
+button.danger-button:hover:not(:disabled) { background: var(--danger); color: var(--on-accent); }
