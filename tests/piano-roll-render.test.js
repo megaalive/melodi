@@ -461,7 +461,7 @@ test("full-song playback centers Piano Roll inside the timeline after the frozen
   assert.equal(svg.querySelector('[data-entity="pitch-label-layer"]').getAttribute("transform"), `translate(${scroll.scrollLeft} 0)`);
 });
 
-test("full-song Piano Roll stops at the maximum and custom range keeps bounded follow", () => {
+test("full-song Piano Roll clamps only at the content edge and custom ranges stay centered", () => {
   const { scroll, view, state } = setup();
   const longSong = song([note("n1", 60, 24000, 480)]);
   state.playback.loop = { enabled: false, startTick: 0, endTick: 24480 };
@@ -478,9 +478,39 @@ test("full-song Piano Roll stops at the maximum and custom range keeps bounded f
   customState.playback.status = "playing";
   customView.render(longSong, customState, null, 24480);
   customState.playback.currentTick = 6000;
-  customView.updatePlayback(customState.playback, { followMode: "nearest", songEndTick: 24480 });
-  const customX = tickToX(customState.playback.currentTick, customView.getGeometry());
-  assert.equal(customScroll.scrollLeft, customX - customScroll.clientWidth * 0.35);
+  customView.updatePlayback(customState.playback, { followMode: "center", songEndTick: 24480 });
+  const customGeometry = customView.getGeometry();
+  const customX = tickToX(customState.playback.currentTick, customGeometry);
+  const customMidpoint = customGeometry.labelWidth + (customScroll.clientWidth - customGeometry.labelWidth) / 2;
+  assert.equal(customScroll.scrollLeft, customX - customMidpoint);
+  assert.equal(customX - customScroll.scrollLeft, customMidpoint);
+});
+
+test("playback updates reuse one playhead and switch the current chord without cloning labels", () => {
+  const { svg, view, state } = setup();
+  const source = {
+    ...song([note("melody", 60, 0, 480)]),
+    chords: [
+      { id: "first", rootPitchClass: 0, quality: "major", startTick: 0, durationTicks: 1920, locked: false },
+      { id: "second", rootPitchClass: 7, quality: "major", startTick: 1920, durationTicks: 1920, locked: false }
+    ]
+  };
+  state.playback.status = "playing";
+  state.playback.loop = { enabled: true, startTick: 0, endTick: 3840 };
+  view.render(source, state, null, 3840);
+  const playhead = svg.querySelector('[data-entity="playhead"]');
+
+  for (const tick of [240, 960, 1680, 2160, 3000]) {
+    state.playback.currentTick = tick;
+    view.updatePlayback(state.playback, { followMode: "center", songEndTick: 3840 });
+    assert.equal(svg.querySelectorAll('[data-entity="playhead"]').length, 1);
+    assert.equal(svg.querySelector('[data-entity="playhead"]'), playhead);
+    const chords = svg.querySelectorAll('[data-entity="chord"]');
+    assert.equal(chords.filter(chord => chord.dataset.current === "true").length, 1);
+    assert.equal(chords.find(chord => chord.dataset.entityId === "first").dataset.current, String(tick < 1920));
+    assert.equal(chords.find(chord => chord.dataset.entityId === "second").dataset.current, String(tick >= 1920));
+    assert.equal(svg.all().filter(element => element.textContent === "Chords").length, 1);
+  }
 });
 
 test("follow off leaves the Piano Roll scroll position alone and uses canonical song end", () => {

@@ -38,12 +38,11 @@ test("small and invalid follow geometry stays finite and never scrolls negativel
   assert.ok(Number.isFinite(centeredScrollLeft({ playheadX: Number.POSITIVE_INFINITY, viewportWidth: 800, contentWidth: 0 })));
 });
 
-test("the app follow decision disables center lock for custom ranges without changing the range", () => {
+test("follow keeps the playhead centered for custom ranges without changing the range", () => {
   const loop = { enabled: true, startTick: 480, endTick: 1920 };
   const before = structuredClone(loop);
-  assert.equal(playbackFollowMode(true, false), "center");
-  assert.equal(playbackFollowMode(true, true), "nearest");
-  assert.equal(playbackFollowMode(false, false), "none");
+  assert.equal(playbackFollowMode(true), "center");
+  assert.equal(playbackFollowMode(false), "none");
   assert.deepEqual(loop, before);
 });
 
@@ -55,7 +54,7 @@ test("the app passes its canonical note-and-percussion range decision to both ro
   assert.match(timeline, /track\.kind !== "percussion"/);
   assert.match(timeline, /chord.startTick \+ chord.durationTicks/);
   assert.match(app, /const customPlaybackRange = playback\.loop\.startTick !== 0 \|\| playback\.loop\.endTick !== songEndTick/);
-  assert.match(app, /playbackFollowMode\(follow, customPlaybackRange\)/);
+  assert.match(app, /playbackFollowMode\(follow\)/);
   assert.match(app, /rollView\?\.updatePlayback\(playback, \{ followMode, songEndTick \}\)/);
   assert.match(app, /drumGridView\?\.updatePlayback\(playback, \{[\s\S]*?followMode: state\.view\.mode === "drums" \? followMode : "none"/);
 });
