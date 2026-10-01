@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261001.37';
-import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.37";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.37";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.37";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.37";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.37";
-import { createCommands } from "./core/commands.js?v=20261001.37";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261001.38';
+import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261001.38";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261001.38";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261001.38";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261001.38";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261001.38";
+import { createCommands } from "./core/commands.js?v=20261001.38";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.37";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.37";
-import { createAudioPlayer } from "./audio/player.js?v=20261001.37";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261001.38";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261001.38";
+import { createAudioPlayer } from "./audio/player.js?v=20261001.38";
 import { createPianoRollView } from "./ui/piano-roll.js";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.37";
-import { createScoreView } from "./ui/score.js?v=20261001.37";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261001.37";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.37";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.37";
-import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.37";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.37";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261001.38";
+import { createScoreView } from "./ui/score.js?v=20261001.38";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261001.38";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261001.38";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261001.38";
+import { playbackFollowMode } from "./ui/roll-follow.js?v=20261001.38";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261001.38";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261001.37";
-import { createGenerationContext } from "./generation/context.js?v=20261001.37";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261001.38";
+import { createGenerationContext } from "./generation/context.js?v=20261001.38";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261001.37";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.37";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.37";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.37";
-import { deserializeProject } from "./core/serialization.js?v=20261001.37";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.37";
+import { createDraftPersistence } from "./storage/draft.js?v=20261001.38";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261001.38";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261001.38";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261001.38";
+import { deserializeProject } from "./core/serialization.js?v=20261001.38";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261001.38";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1234,10 +1234,12 @@ function renderGeneration(state) {
     audition.setAttribute("aria-label", translate("candidateAuditionAction", { number: index + 1 }));
     audition.setAttribute("aria-pressed", String(generation.auditionCandidateId === candidate.id));
     audition.setAttribute("aria-keyshortcuts", String(index + 1));
+    audition.textContent += ` (${index + 1})`;
     audition.dataset.focusKey = `candidate-audition-${candidate.id}`;
     const accept = makeButton(translate("candidateAccept"), "accept-candidate", { candidateId: candidate.id });
     accept.setAttribute("aria-label", translate("candidateAcceptAction", { number: index + 1 }));
     accept.setAttribute("aria-keyshortcuts", "Enter");
+    accept.title = "Enter";
     accept.dataset.focusKey = `candidate-accept-${candidate.id}`;
     accept.dataset.focusFallback = "lock-accepted-notes";
     select.disabled = Boolean(generation.stale);
@@ -1953,6 +1955,9 @@ guitarTabView = createGuitarTabView(byId("guitar-tab"), byId("guitar-tab-scroll"
 });
 drumGridView = createDrumGridView(byId("drum-grid"), {
   translate,
+  getZoom:() => commands.getState().editor.zoom,
+  onSetZoom:value => run(() => commands.setZoom(value)),
+  onOpenExpression:() => studioView?.openPanel('drum-expression'),
   onAddHit(input) {
     return run(() => commands.addPercussionHit(input), "drumsHitAdded");
   },
@@ -2823,6 +2828,7 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.defaultPrevented) return;
   if (event.key === "Escape") {
     const opened = transientDetails.filter((details) => details.open);
     if (opened.length) {
@@ -2988,6 +2994,12 @@ document.addEventListener("keydown", (event) => {
       ? target.closest("button, a, summary, [role='button'], [role='link']")
       : null;
     if (nativeInteractive) return;
+    if (event.key === " ") {
+      event.preventDefault();
+      if (commands.getState().playback.status === "playing") run(() => commands.pause());
+      else runAsync(() => commands.play(), "playbackStarted", playback => playback.status === "playing");
+      return;
+    }
     const generation = commands.getGenerationState();
     if (generation.status !== "ready") return;
     if (/^[1-8]$/.test(event.key)) {
@@ -3011,6 +3023,7 @@ document.addEventListener("keydown", (event) => {
     return;
   }
   if (event.altKey) return;
+  if (commands.getState().view.mode === "drums") return;
   if (event.key.toLowerCase() === "c" && commands.getSelectedNoteIds().length > 0) {
     event.preventDefault();
     const count = commands.copySelection();

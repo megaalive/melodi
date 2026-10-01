@@ -1,7 +1,8 @@
-import { PPQ } from "../core/model.js?v=20261001.37";
-import { SNAP_TICKS } from "../core/editor.js?v=20261001.37";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261001.37";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20261001.37";
+import { PPQ } from "../core/model.js?v=20261001.38";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.38";
+import { SNAP_TICKS } from "../core/editor.js?v=20261001.38";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261001.38";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20261001.38";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -152,7 +153,8 @@ export function createDrumGridView(root, {
   onAddHit = () => {},
   onSelectHits = () => {},
   onSeek = () => {},
-  onSetPlaybackRange = () => {}
+  onSetPlaybackRange = () => {},
+  getZoom = () => 1, onSetZoom = () => {}, onOpenExpression = () => {}
 } = {}) {
   let currentProjection = null;
   let currentStep = null;
@@ -166,6 +168,17 @@ export function createDrumGridView(root, {
   let selectedHitIds = [];
   let primarySelectedHitId = null;
   let suppressNextClick = false;
+  bindCanvasNavigation(root, root.parentElement, {
+    getZoom:() => Math.max(1,getZoom()), setZoom:onSetZoom, minimumZoom:1,
+    contentInset:() => measureTimelineGeometry().gutterWidth,
+    cancelEdit:event => { finishRulerDrag(event.pointerId,true); finishSelectionDrag(event.pointerId,true); },
+    longPress:event => {
+      const cell = event.target.closest?.('[data-entity="drum-cell"][data-hit="true"]');
+      if (!cell) return null;
+      const hitIds = cell.dataset.hitIds.split(',');
+      return () => { onSelectHits(hitIds); onOpenExpression(); };
+    }
+  });
 
   function syncFrozenDrumGutter() {
     const offset = root.parentElement?.scrollLeft ?? 0;
@@ -484,6 +497,9 @@ export function createDrumGridView(root, {
   });
 
   function render(song, state = {}, songEndTick = drumGridEndTick(song)) {
+    const touchSized = typeof matchMedia === 'function' && matchMedia('(pointer: coarse), (max-width: 1024px)').matches;
+    const minimum = touchSized ? 44 : 28.8;
+    root.style.setProperty('--drum-step-width', `${Math.max(minimum,minimum*(state.editor?.zoom ?? 1))}px`);
     const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
     currentProjection = projection;
     currentTool = state.editor?.tool === "draw" ? "draw" : "select";

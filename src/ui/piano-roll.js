@@ -1,9 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261001.38";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261001.37";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.37";
-import { harmonyChordSymbol } from "./harmony.js?v=20261001.37";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261001.38";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.38";
+import { harmonyChordSymbol } from "./harmony.js?v=20261001.38";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -1284,6 +1285,21 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
 
   scrollContainer?.addEventListener("scroll", syncFrozenPitchLabels, { passive: true });
 
+  bindCanvasNavigation(svg, scrollContainer, {
+    getZoom: () => commands.getState().editor.zoom,
+    setZoom: value => commands.setZoom(value),
+    contentInset: () => geometry.labelWidth,
+    cancelEdit: event => finishDrag(event, true),
+    longPress: event => {
+      const group = event.target.closest?.('[data-entity="note"]');
+      if (!group) return null;
+      const noteId = group.dataset.entityId;
+      return () => {
+        if (!commands.getSelectedNoteIds().includes(noteId)) commands.selectNotes([noteId]);
+        onContextMenu({kind:"selection",source:"piano-roll",noteId,clientX:event.clientX,clientY:event.clientY});
+      };
+    }
+  });
   svg.addEventListener("pointerdown", beginDrag);
   svg.addEventListener("pointermove", previewDrag);
   svg.addEventListener("pointerup", (event) => finishDrag(event));
