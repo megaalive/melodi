@@ -1,9 +1,9 @@
 import { midiToPitch, PPQ } from "../core/model.js";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261001.33";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.33";
-import { harmonyChordSymbol } from "./harmony.js?v=20261001.33";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261001.34";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261001.34";
+import { harmonyChordSymbol } from "./harmony.js?v=20261001.34";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -295,7 +295,7 @@ function isBlackKey(midi) {
   return [1, 3, 6, 8, 10].includes(midi % 12);
 }
 
-export function createPianoRollView(svg, commands, { onAddNote = () => {}, onContextMenu = () => {}, onChordContextMenu = () => {}, getChordDrawDefaults = () => ({ rootPitchClass: 0, quality: "major" }), onError = () => {}, translate = () => "Chords" } = {}) {
+export function createPianoRollView(svg, commands, { onAddNote = () => {}, onContextMenu = () => {}, onChordContextMenu = () => {}, onHarmonyPreviewRender = () => {}, getChordDrawDefaults = () => ({ rootPitchClass: 0, quality: "major" }), onError = () => {}, translate = () => "Chords" } = {}) {
   const scrollContainer = svg.parentElement;
   let geometry = createRollGeometry();
   let activeDrag = null;
@@ -502,6 +502,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onCon
         "data-action": "resize-chord", "aria-hidden": "true", style: "cursor: ew-resize" }, group);
     }
 
+    onHarmonyPreviewRender(svg, geometry);
     const selected = new Set(state.selectedNoteIds);
     for (const note of song.notes) {
       const noteEnd = note.startTick + note.durationTicks;

@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.33';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261001.34';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -29,6 +29,8 @@ export function createStudioWorkspace(commands, translate, onError) {
     value.setAttribute('aria-hidden', 'true');
     slider.after(value);
   }
+  const melodyStrip = document.querySelector('#piano-roll-section .instrument-mix-strip');
+  document.querySelector('#piano-roll-section .pane-title-row')?.append(melodyStrip);
   const utility = document.querySelector('.utility-card');
   if (utility) {
     utility.classList.add('studio-advanced');

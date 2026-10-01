@@ -1,4 +1,4 @@
-import { findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20261001.33";
+import { findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20261001.34";
 
 export function resolvePercussionExpression(song, selection) {
   if (!selection?.trackId || !selection?.hitId) return null;
