@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderSketchControls } from '../src/ui/harmony.js';
 import { message } from '../src/i18n/messages.js';
+import { readAppStyles } from './helpers/read-app-styles.js';
 
 const read = path => readFileSync(new URL(path, import.meta.url),'utf8');
 
 test('sketch mute states have distinct neutral/active styles and preserve separate keyboard focus',()=>{
-  const css=read('../styles/app.css'), html=read('../index.html');
+  const css=readAppStyles(), html=read('../index.html');
   assert.match(css,/\.sketch-controls button\[aria-pressed="false"\] \{[^}]*border-color: var\(--border-strong\)[^}]*background: var\(--surface\)[^}]*color: var\(--text\)/);
   assert.match(css,/\.sketch-controls button\[aria-pressed="true"\] \{[^}]*border-color: var\(--accent\)[^}]*background: var\(--accent\)[^}]*color: var\(--on-accent\)/);
   assert.match(css,/:focus-visible \{\s*outline: 3px solid var\(--focus\);\s*outline-offset: 2px/);
@@ -55,7 +56,7 @@ test('sketch commands are public and UI events use canonical command pathways',(
 test('sketch copy is bilingual and mobile layout can shrink without fixed width',()=>{
   for (const language of ['id','en']) for (const key of ['sketchHarmony','sketchBass','sketchHarmonyMute','sketchBassMute','sketchHarmonyStyle','sketchBassStyle','sketchBlock','sketchArpeggio','sketchRoot','sketchRootFifth']) assert.notEqual(message(language,key),key);
   assert.doesNotMatch(message('en','harmonyHelp'),/not available/);
-  const css=read('../styles/app.css');
+  const css=readAppStyles();
   assert.match(css,/\.sketch-controls fieldset \{[^}]*minmax\(0, 1fr\)[^}]*min-width: 0/);
   assert.match(css,/\.sketch-controls fieldset label:last-child \{ grid-column: 1 \/ -1;/);
 });

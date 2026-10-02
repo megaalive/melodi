@@ -1,9 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readAppStyles } from "./helpers/read-app-styles.js";
 
-const css = readFileSync(resolve("styles/app.css"), "utf8");
+const css = readAppStyles();
 
 test("expression colors are semantic aliases of theme and note-state tokens", () => {
   assert.match(css, /--expression-ink:\s*var\(--accent-strong\)/);

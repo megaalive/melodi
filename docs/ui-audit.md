@@ -240,3 +240,45 @@ contents do not.
 | Portrait dark | [PR1 capture](ui-audit/after/pr1/portrait-dark-390x844.png) | [PR2 capture](ui-audit/after/pr2/portrait-dark-390x844.png) |
 | Landscape light | [PR1 capture](ui-audit/after/pr1/landscape-light-844x390.png) | [PR2 capture](ui-audit/after/pr2/landscape-light-844x390.png) |
 | Landscape dark | [PR1 capture](ui-audit/after/pr1/landscape-dark-844x390.png) | [PR2 capture](ui-audit/after/pr2/landscape-dark-844x390.png) |
+
+## Round 2 PR3 — contextual toolbars and responsive CSS
+
+The six after captures use the Piano Roll and “Melodi awal” in the same three
+viewports and themes. The before captures are the matching PR2 screenshots.
+Counts use the existing audit rule: rendered interactive or keyboard-focusable
+controls with visible geometry intersecting the viewport, including disabled
+controls and excluding content under closed disclosures. Primary controls are
+the visible header, transport, view/editor navigation, and mobile docks or
+rails.
+
+| Metric | Before PR3 (PR2) | After PR3 |
+|---|---:|---:|
+| Fixed chrome, desktop 1440×900 | 124 px / 13.8% | 128 px / 14.2% |
+| Fixed chrome, phone portrait 390×844 | 168 px / 19.9% | 168 px / 19.9% |
+| Fixed chrome, short landscape 844×390 | 112 px / 28.7% | 112 px / 28.7% |
+| Visible controls, desktop (all / primary) | 25 / 12 | 29 / 19 |
+| Visible controls, phone portrait (all / primary) | 22 / 14 | 21 / 15 |
+| Visible controls, short landscape (all / primary) | 23 / 15 | 22 / 16 |
+| Runtime `<details>` elements | 14 | 14 |
+| Active CSS bytes, uncompressed | 201,154 | 194,207 |
+| `@media` blocks | 61 | 10 |
+
+The active stylesheet tree is `app.css` importing `base.css`, `studio.css`,
+and `responsive.css` in that order. The ten media blocks use the consolidated
+`<=46rem`, `46–68rem`, and `>=68rem` width bands, with one short-landscape
+rule; the remaining queries cover coarse pointers, color scheme, reduced
+motion, and taller tablet/desktop layouts. The measured CSS reduction is 6,947
+bytes (3.45%). It does **not** meet the requested 30% reduction (the ceiling
+would be 140,807 bytes). CSSO/LightningCSS compression probes either failed to
+preserve the current range-query behavior or remained above that limit, and the
+source audit found no additional safe 8 KB of removable CSS. This target remains
+unmet; the PR description reports the shortfall explicitly.
+
+| Viewport and theme | Before | After |
+|---|---|---|
+| Desktop light | [PR2 capture](ui-audit/after/pr2/desktop-light-1440x900.png) | [PR3 capture](ui-audit/after/pr3/desktop__light__1440x900.png) |
+| Desktop dark | [PR2 capture](ui-audit/after/pr2/desktop-dark-1440x900.png) | [PR3 capture](ui-audit/after/pr3/desktop__dark__1440x900.png) |
+| Portrait light | [PR2 capture](ui-audit/after/pr2/portrait-light-390x844.png) | [PR3 capture](ui-audit/after/pr3/portrait__light__390x844.png) |
+| Portrait dark | [PR2 capture](ui-audit/after/pr2/portrait-dark-390x844.png) | [PR3 capture](ui-audit/after/pr3/portrait__dark__390x844.png) |
+| Landscape light | [PR2 capture](ui-audit/after/pr2/landscape-light-844x390.png) | [PR3 capture](ui-audit/after/pr3/landscape__light__844x390.png) |
+| Landscape dark | [PR2 capture](ui-audit/after/pr2/landscape-dark-844x390.png) | [PR3 capture](ui-audit/after/pr3/landscape__dark__844x390.png) |

@@ -1006,11 +1006,50 @@ function textForNote(song, noteId) {
   return translate('studioNotePosition', {pitch:midiToPitch(note.pitch), ...musicalPosition(song,note.startTick)});
 }
 
+let pianoRollHarmonyContextActive = false;
+
+function isHarmonyLaneTarget(target) {
+  return target instanceof Element
+    && Boolean(target.closest('[data-entity="harmony-bar"], [data-entity="chord"]'));
+}
+
+function syncHarmonyToolsVisibility() {
+  const harmonyTools = byId("harmony-timeline-tools");
+  if (!harmonyTools) return;
+  const rollSection = byId("piano-roll-section");
+  const rollContent = byId("piano-roll-content");
+  const rollHome = byId("harmony-tools-roll-home");
+  const chordPanel = byId("harmony-panel");
+  const panel = document.body.dataset.studioPanel;
+  const rollVisible = Boolean(rollSection && !rollSection.hidden && rollContent && !rollContent.hidden);
+  const chordPanelActive = panel === "chords";
+  const activeElement = document.activeElement;
+  const focusedOnLane = isHarmonyLaneTarget(activeElement);
+  const focusedInRollTools = Boolean(rollSection?.contains(activeElement) && harmonyTools.contains(activeElement));
+
+  if (!rollVisible || panel !== "none") pianoRollHarmonyContextActive = false;
+  if (focusedOnLane) pianoRollHarmonyContextActive = true;
+  const laneContextActive = rollVisible && panel === "none" && pianoRollHarmonyContextActive
+    && (activeElement === byId("piano-roll-scroll") || focusedOnLane || focusedInRollTools);
+
+  if (laneContextActive && rollHome) {
+    rollHome.after(harmonyTools);
+    harmonyTools.hidden = false;
+    return;
+  }
+  if (chordPanel) chordPanel.prepend(harmonyTools);
+  harmonyTools.hidden = !chordPanelActive;
+}
+
 function renderEditorControls() {
   if (!commands) return;
   const state = commands.getState();
   const song = commands.getSong();
   byId("snap-select").value = state.editor.snap;
+  const hasNoteSelection = state.selectedNoteIds.length > 0;
+  const selectionControls = byId("roll-selection-controls");
+  if (selectionControls) selectionControls.hidden = !hasNoteSelection && !state.selection;
+  syncHarmonyToolsVisibility();
   const drumsSnap = byId("drums-snap-select");
   if (drumsSnap && document.activeElement !== drumsSnap) drumsSnap.value = state.editor.snap;
   for (const button of document.querySelectorAll('[data-action="set-tool"]')) {
@@ -1022,8 +1061,8 @@ function renderEditorControls() {
   const drumGrid = byId("drum-grid");
   if (drumGrid) drumGrid.dataset.tool = state.editor.tool;
   byId("paste-notes").disabled = !state.editor.canPaste;
-  byId("copy-selection").disabled = state.selectedNoteIds.length === 0;
-  byId("clear-selection").disabled = state.selectedNoteIds.length === 0 && !state.selection;
+  byId("copy-selection").disabled = !hasNoteSelection;
+  byId("clear-selection").disabled = !hasNoteSelection && !state.selection;
   const zoomControl = byId("roll-zoom");
   if (document.activeElement !== zoomControl) zoomControl.value = String(state.editor.zoom);
   byId("roll-zoom-value").textContent = translate("zoomValue", { percent: Math.round(state.editor.zoom * 100) });
@@ -1053,6 +1092,11 @@ function renderEditorControls() {
   bendEditor?.load(selectedNotes[0] ?? null, selectedNotes.length);
   byId("piano-roll-scroll").setAttribute("aria-label", translate("pianoRollRegionLabel"));
   byId("editor-toolbar")?.setAttribute("aria-label", translate("pianoRollControlsLabel"));
+  const noteSelectionBar = byId("note-selection-bar");
+  if (noteSelectionBar) {
+    noteSelectionBar.setAttribute("role", "group");
+    noteSelectionBar.setAttribute("aria-label", translate("selectionHeading"));
+  }
   byId("roll-selection").textContent = state.selectedNoteIds.length
     ? translate("selectedNotesSummary", { count: state.selectedNoteIds.length, ids: state.selectedNoteIds.join(", ") })
     : state.selection
@@ -1372,15 +1416,17 @@ function renderPlayback() {
   byId("current-note").dataset.entityId = note?.id ?? "";
   byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
-  byId("play").disabled = playback.status === "playing";
-  byId("pause").disabled = playback.status !== "playing";
   const playing = playback.status === "playing";
-  const outgoing = byId(playing ? "play" : "pause");
-  const incoming = byId(playing ? "pause" : "play");
-  const restoreTransportFocus = document.activeElement === outgoing;
-  byId("play").hidden = playing;
-  byId("pause").hidden = !playing;
-  if (restoreTransportFocus) incoming.focus({ preventScroll: true });
+  const playToggle = byId("play");
+  playToggle.disabled = false;
+  playToggle.dataset.ariaCopy = playing ? "pauseButton" : "playButton";
+  const toggleLabel = translate(playToggle.dataset.ariaCopy);
+  playToggle.setAttribute("aria-label", toggleLabel);
+  playToggle.title = toggleLabel;
+  playToggle.querySelector('[data-playback-icon="play"]').hidden = playing;
+  playToggle.querySelector('[data-playback-icon="pause"]').hidden = !playing;
+  byId("pause").disabled = playback.status !== "playing";
+  byId("pause").hidden = true;
   byId("undo").disabled = !state.history.canUndo;
   byId("redo").disabled = !state.history.canRedo;
 
@@ -1502,6 +1548,7 @@ function render() {
   renderDrums(song, state);
   renderInstrumentMixControls(state.mix);
   studioView?.render(song, state);
+  syncHarmonyToolsVisibility();
   byId("roll-gesture-cue").hidden = song.notes.length > 0;
 
   for (const [key, value] of pendingFields) {
@@ -2885,7 +2932,8 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.action === "delete-note") {
     run(() => commands.deleteNote(target.dataset.noteId), "noteDeleted");
   } else if (target.dataset.action === "play") {
-    runAsync(() => commands.play(), "playbackStarted", (playback) => playback.status === "playing");
+    if (state.playback.status === "playing") run(() => commands.pause(), "playbackPaused");
+    else runAsync(() => commands.play(), "playbackStarted", (playback) => playback.status === "playing");
   } else if (target.dataset.action === "pause") {
     run(() => commands.pause(), "playbackPaused");
   } else if (target.dataset.action === "stop") {
@@ -3374,8 +3422,38 @@ document.querySelectorAll("details").forEach((details) => { details.open = false
 progressionView = createProgressionWorkspace(commands, () => language, reportError);
 studioView = createStudioWorkspace(commands, translate, reportError, {
   onOpenPanel(panel) {
+    renderEditorControls();
     if (panel === "chords") prepareChordSuggestions();
   }
+});
+document.addEventListener("click", (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const laneTarget = isHarmonyLaneTarget(target);
+  if (laneTarget) pianoRollHarmonyContextActive = true;
+  else if (!target?.closest("#harmony-timeline-tools")) pianoRollHarmonyContextActive = false;
+  if (target?.closest("[data-studio-panel], [data-studio-close]")) queueMicrotask(renderEditorControls);
+  else queueMicrotask(syncHarmonyToolsVisibility);
+});
+document.addEventListener("focusin", (event) => {
+  if (isHarmonyLaneTarget(event.target)) pianoRollHarmonyContextActive = true;
+  else if (event.target?.id !== "piano-roll-scroll" && !event.target?.closest?.("#harmony-timeline-tools")) {
+    pianoRollHarmonyContextActive = false;
+  }
+  queueMicrotask(syncHarmonyToolsVisibility);
+});
+document.addEventListener("focusout", () => {
+  queueMicrotask(() => {
+    const activeElement = document.activeElement;
+    const contextStillFocused = activeElement?.id === "piano-roll-scroll"
+      || isHarmonyLaneTarget(activeElement)
+      || Boolean(byId("harmony-timeline-tools")?.contains(activeElement)
+        && byId("piano-roll-section")?.contains(activeElement));
+    if (!contextStillFocused) pianoRollHarmonyContextActive = false;
+    syncHarmonyToolsVisibility();
+  });
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") queueMicrotask(renderEditorControls);
 });
 if (commands.getSong().notes.length === 0 && commands.getState().editor.tool !== "draw") commands.setTool("draw");
 render();
