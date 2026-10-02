@@ -334,3 +334,18 @@ runtime disclosure count remains 14.
 | Portrait dark | [PR3 capture](ui-audit/after/pr3/portrait__dark__390x844.png) | [PR4 capture](ui-audit/after/pr4/portrait__dark__390x844.png) |
 | Landscape light | [PR3 capture](ui-audit/after/pr3/landscape__light__844x390.png) | [PR4 capture](ui-audit/after/pr4/landscape__light__844x390.png) |
 | Landscape dark | [PR3 capture](ui-audit/after/pr3/landscape__dark__844x390.png) | [PR4 capture](ui-audit/after/pr4/landscape__dark__844x390.png) |
+
+## Putaran stabilisasi: matriks otomatis
+
+PR5 memperluas audit menjadi 60 sel: tiga viewport (1440×900, 390×844,
+844×390), tema light dan dark, serta sepuluh keadaan kerja. Setiap sel memuat
+screenshot dan angka chrome, kontrol terlihat, `<details>`, tumpang tindih,
+serta clipping. Runner memakai Chromium dan menyajikan aplikasi lewat
+`/melodi/` lokal untuk menjaga pemeriksaan path subpath.
+
+Jalankan `npm run ui-audit -- --out docs/ui-audit/round2/pr5-before` untuk
+mengulang baseline sebelum perubahan PR5. Hasil terstruktur JSON/CSV dan tabel
+tautan screenshot ada di [matriks baseline PR5](ui-audit/round2/pr5-before/matrix.md).
+Kontrol yang terpotong oleh viewport atau ancestor `overflow` dihitung sebagai
+clipped; pasangan induk-anak dan area yang sepenuhnya tertutup overlay tidak
+dihitung sebagai overlap.
