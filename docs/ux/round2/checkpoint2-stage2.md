@@ -1,15 +1,17 @@
 # Checkpoint 2 — Stage 2: task flows and canvas
 
-Tanggal: 1 Oktober 2026  
-Status: implementasi dan pemeriksaan kode selesai; UAT pemilik di perangkat fisik masih terbuka.
+Tanggal: 2 Oktober 2026
 
-Baseline adalah `origin/main` pada `a123a05` (Stage 1, build `20261001.43`). Build saat ini `20261001.53`. Perubahan mengikuti usulan Checkpoint 1: roll menjadi tempat utama untuk menangkap ide, aksi yang relevan muncul dekat kanvas, dan kontrol jarang tetap di Project/Lainnya/panel. Skema Song, format Share, command layer, dan jalur audio yang ada tetap dipakai.
+Status: implementasi Proposed dan pemeriksaan preview selesai; UAT pemilik di perangkat fisik masih terbuka.
+
+Baseline historis Stage 2 adalah `origin/main` pada `a123a05` (build `20261001.43`). Build UI saat ini `20261002.67`. Perubahan mengikuti usulan Checkpoint 1: roll menjadi tempat utama untuk menangkap ide, aksi yang relevan muncul dekat kanvas, dan kontrol jarang tetap di Project/Lainnya/panel. Skema Song, format Share, command layer, dan jalur audio yang ada tetap dipakai.
 
 ## Perubahan yang terlihat oleh pemusik
 
 - Lagu kosong langsung membuka alat Gambar dengan cue sapuan empat titik; titik pertama diaudisi saat disentuh. Satu sapuan menyimpan frasa sebagai nada pengguna.
 - Dua nada dapat dipilih bersama dan menjadi batas sementara untuk **Isi celah**. Kandidat hadir di dock dekat/di atas roll; scrub mengaudisi dan memilih kandidat saat dilepas. Kontrol prev/next tetap tersedia. Seed dan tick rinci tidak ditampilkan di jalur utama.
-- Bar seleksi satu baris menaruh transpose, panjang, duplikat, hapus, Anchor, Lock, dan Expression dekat roll.
+- Bar seleksi satu baris menampilkan Isi celah, pitch ±1, panjang 1/4, Duplikat, dan Hapus. Lainnya menampung pitch oktaf, panjang alternatif, Anchor, Lock, dan Expression.
+- Mixer desktop dibuka sebagai popover dari transport; pada ponsel, satu peek membuka sheet bertab Chord/Mixer.
 - Chord menyiapkan saran saat sheet dibuka; menerima saran menutup sheet. Drum menyediakan preset Pop yang mengisi groove sesuai meter/range loop. Lirik mendapat aksi pemetaan otomatis. Project menyediakan **Save song** langsung ke Browser.
 - Pada ponsel, header Project/Menu, transport, lima tujuan navigasi, kanvas, dan peek Chord/Mixer tetap berada di layar. Di landscape, mode/alat menjadi rail samping. Perbaikan terakhir membuat grid Drum memakai tinggi yang tersisa, sehingga empat baris instrumen tampak pada 844×390.
 
@@ -17,6 +19,7 @@ Baseline adalah `origin/main` pada `a123a05` (Stage 1, build `20261001.43`). Bui
 
 - [Roll kosong, ponsel 390×844](evidence/after/portrait-empty-390x844.png) dan [roll berisi lagu, ponsel 390×844](evidence/after/portrait-roll-390x844.png).
 - [Roll berisi lagu, desktop 1280×800](evidence/after/desktop-roll-1280x800.png).
+- Preview final diperiksa lagi pada 390×844 dan 1280×800: bar seleksi satu baris muat, Expression terbuka tanpa label peek pecah vertikal atau menu aksi menutupi roll, dan Mixer desktop tampil sebagai popover. Gambar di atas berasal dari pass visual terdahulu, bukan tangkapan layar pass final.
 - Aplikasi juga diperiksa di preview pada 844×390 landscape. Grid Drum kini menampilkan Crash, Ride, Open HH, dan Closed HH dalam area kanvas; ekspor screenshot landscape tidak berhasil karena capture browser habis waktu, jadi tidak ada gambar landscape yang diklaim sebagai bukti tersimpan.
 - Preview mengonfirmasi struktur responsif pada 390×844, 844×390, dan 1280×800. Ini inspeksi visual/otomasi browser, bukan tes pengguna. Audio benar-benar terdengar, waktu nada pertama, gesture satu tangan fisik, audit kontras AA menyeluruh, dan perjalanan kandidat scrub melewati tiga alternatif **NOT VERIFIED**.
 - `npm test -- --test-reporter=dot`: **491 lulus, 0 gagal**. `npm run check` dan `git diff --check` juga lulus pada build saat ini.

@@ -175,10 +175,15 @@ test('responsive panel triggers keep desktop, portrait, and landscape destinatio
         assert.equal(setup.nodes.get('.project-menu').parent, setup.nodes.get('.header-actions'));
         assert.equal(setup.mixerTrigger.parent, setup.nodes.get('.playback-settings-group'));
         assert.equal(setup.chordTrigger.parent, setup.nodes.get('.studio-toolbar-actions'));
+        assert.equal(setup.nodes.get('.transport-advanced').parent, setup.nodes.get('.studio-more-popover'));
+        assert.equal(setup.nodes.get('.follow-mode-control').parent, setup.nodes.get('.transport-advanced-grid'));
         assert.equal(setup.guitar.parent, setup.nodes.get('#studio-views'));
       } else {
-        assert.equal(setup.mixerTrigger.parent, setup.nodes.get('.mobile-panel-peek-actions'));
-        assert.equal(setup.chordTrigger.parent, setup.nodes.get('.mobile-panel-peek-actions'));
+        assert.equal(setup.mixerTrigger.parent, setup.nodes.get('.studio-panel-switches'));
+        assert.equal(setup.chordTrigger.parent, setup.nodes.get('.studio-panel-switches'));
+        assert.equal(setup.nodes.get('.mobile-panel-peek-actions').children.length, 1, 'one peek control keeps the mobile T0 budget at 14');
+        assert.equal(setup.nodes.get('.transport-advanced').parent, setup.nodes.get('.studio-more-popover'));
+        assert.equal(setup.nodes.get('.follow-mode-control').parent, setup.nodes.get('.transport-advanced-grid'));
         assert.equal(setup.nodes.get('.studio-menu').hidden, landscape);
         if (landscape) assert.equal(setup.nodes.get('.studio-menu-actions').parent.className, 'studio-more-app-actions');
         else assert.equal(setup.nodes.get('.studio-menu-actions').parent, setup.nodes.get('.studio-menu'));

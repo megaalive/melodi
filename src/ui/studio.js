@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261002.58';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261002.67';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -28,16 +28,65 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   selectionBar.className = 'note-selection-bar';
   selectionBar.hidden = true;
   const noteTools = document.querySelector('.expression-note-tools');
+  const fillGap = document.createElement('button');
+  fillGap.type = 'button';
+  fillGap.dataset.action = 'generate-selected-gap';
+  fillGap.dataset.copy = 'generationFillGap';
+  fillGap.dataset.focusKey = 'generate-selected-gap';
+  fillGap.hidden = true;
   if (noteTools) {
-    for (const group of [...noteTools.querySelectorAll('.editor-toolbar-group')]) selectionBar.append(group);
-    for (const [action, label] of [['context-duplicate','contextDuplicate'],['context-delete','contextDelete'],['context-toggle-anchor','contextAnchor'],['context-toggle-lock','contextLock']]) {
+    const groups = [...noteTools.querySelectorAll('.editor-toolbar-group')];
+    const transpose = groups.find(group => group.dataset.ariaCopy === 'transposeGroupLabel');
+    const duration = groups.find(group => group.dataset.ariaCopy === 'durationGroupLabel');
+    const more = document.createElement('details');
+    more.className = 'selection-more';
+    const moreSummary = document.createElement('summary');
+    moreSummary.dataset.copy = 'studioMoreButton';
+    moreSummary.dataset.ariaCopy = 'studioMoreLabel';
+    more.append(moreSummary);
+    const moreBody = document.createElement('div');
+    moreBody.className = 'selection-more-actions';
+    more.append(moreBody);
+    selectionBar.append(fillGap);
+    if (transpose) {
+      const octaveGroup = document.createElement('div');
+      octaveGroup.className = 'editor-toolbar-group selection-octave-group';
+      octaveGroup.setAttribute('role', 'group');
+      octaveGroup.dataset.ariaCopy = 'transposeGroupLabel';
+      for (const button of [...transpose.querySelectorAll('[data-delta]')]) {
+        if (button.dataset.delta === '-12' || button.dataset.delta === '12') octaveGroup.append(button);
+      }
+      selectionBar.append(transpose);
+      if (octaveGroup.children.length) moreBody.append(octaveGroup);
+    }
+    if (duration) {
+      const quickDuration = document.createElement('div');
+      quickDuration.className = 'editor-toolbar-group selection-duration-group';
+      quickDuration.setAttribute('role', 'group');
+      quickDuration.dataset.ariaCopy = 'durationGroupLabel';
+      for (const button of [...duration.querySelectorAll('[data-snap]')]) {
+        if (button.dataset.snap === '1/4') quickDuration.append(button);
+        else moreBody.append(button);
+      }
+      selectionBar.append(quickDuration);
+    }
+    for (const [action, label] of [['context-duplicate','contextDuplicate'],['context-delete','contextDelete']]) {
       const button = document.createElement('button');
       button.type = 'button'; button.dataset.action = action; button.dataset.copy = label;
       selectionBar.append(button);
     }
+    const advancedActions = document.createElement('div');
+    advancedActions.className = 'selection-advanced-actions';
+    for (const [action, label] of [['context-toggle-anchor','contextAnchor'],['context-toggle-lock','contextLock']]) {
+      const button = document.createElement('button');
+      button.type = 'button'; button.dataset.action = action; button.dataset.copy = label;
+      advancedActions.append(button);
+    }
     const expression = document.createElement('button');
     expression.type = 'button'; expression.dataset.studioPanel = 'expression'; expression.dataset.copy = 'expressionHeading';
-    selectionBar.append(expression);
+    advancedActions.append(expression);
+    moreBody.append(advancedActions);
+    if (moreBody.children.length) selectionBar.append(more);
     document.querySelector('.roll-surface').after(selectionBar);
   }
   const drumExpression = byId('studio-drum-expression');
@@ -58,18 +107,11 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   const candidateDock = byId('candidate-dock');
   if (candidateDock) {
     const rollSurface = document.querySelector('.roll-surface');
-    const selectionBar = byId('note-selection-bar');
     rollSurface?.before(candidateDock);
-    if (selectionBar) {
-      const fillGap = document.createElement('button');
-      fillGap.type = 'button';
-      fillGap.dataset.action = 'generate-selected-gap';
-      fillGap.dataset.copy = 'generationFillGap';
-      fillGap.dataset.focusKey = 'generate-selected-gap';
-      fillGap.hidden = true;
-      const lastGroup = [...selectionBar.querySelectorAll('.editor-toolbar-group')].at(-1);
-      selectionBar.insertBefore(fillGap, lastGroup?.nextSibling ?? selectionBar.firstChild);
-    }
+    const candidateActions = candidateDock.querySelector('.candidate-primary-actions');
+    candidateActions?.append(candidateDock.querySelector('.candidate-navigation'));
+    candidateActions?.append(byId('lock-accepted-notes'), byId('regenerate-gap'));
+    if (!noteTools) byId('note-selection-bar')?.append(fillGap);
   }
   document.querySelector('.brand-block').append(document.querySelector('.song-strip'));
   const transportSettings = document.querySelector('.playback-settings-group');
@@ -87,6 +129,28 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   }
   const panelSwitches = document.querySelector('.studio-panel-switches');
   const mobilePeek = sidebar.querySelector('.mobile-panel-peek-actions');
+  const mobilePanelPeek = document.createElement('button');
+  mobilePanelPeek.type = 'button';
+  mobilePanelPeek.dataset.studioPanel = 'chords';
+  mobilePanelPeek.dataset.copy = 'studioPanelPeek';
+  mobilePanelPeek.dataset.ariaCopy = 'studioPanels';
+  mobilePeek.append(mobilePanelPeek);
+  const inspectorHead = sidebar.querySelector('.studio-inspector-head');
+  const sheetSizes = sidebar.querySelector('.studio-sheet-sizes');
+  if (inspectorHead && sheetSizes) {
+    const sheetTabs = document.createElement('div');
+    sheetTabs.className = 'studio-sheet-panel-tabs';
+    sheetTabs.setAttribute('role', 'group');
+    sheetTabs.dataset.ariaCopy = 'studioPanels';
+    for (const [panelName, copyKey] of [['chords','harmonyLaneLabel'],['mixer','studioMixer']]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.studioPanel = panelName;
+      button.dataset.copy = copyKey;
+      sheetTabs.append(button);
+    }
+    inspectorHead.insertBefore(sheetTabs, sheetSizes);
+  }
   const sessionActions = byId('generation-session-actions');
   const toolbarActions = document.querySelector('.studio-toolbar-actions');
   const moreAppActions = document.createElement('div');
@@ -176,8 +240,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       if (shortLandscape.matches) {
         studioMenu.hidden = true;
         moreAppActions.append(studioMenuActions);
-        mobilePeek.append(mixerTrigger, chordTrigger);
-        panelSwitches.append(generateTrigger);
+        panelSwitches.append(mixerTrigger, chordTrigger, generateTrigger);
         modeNav.insertBefore(guitarMode, moreMenu);
         toolbarActions.append(editorTools);
         toolbarActions.append(moreMenu);
@@ -187,8 +250,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
         headerActions.prepend(projectMenu, studioMenu);
         studioMenu.append(studioMenuActions);
         modeNav.append(moreMenu);
-        mobilePeek.append(mixerTrigger, chordTrigger);
-        panelSwitches.append(generateTrigger);
+        panelSwitches.append(mixerTrigger, chordTrigger, generateTrigger);
         editorToolsHome.prepend(editorTools);
       }
       editorSettings.hidden = false;
@@ -201,13 +263,13 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       editorToolsHome.prepend(editorTools);
       modeNav.insertBefore(guitarMode, moreMenu);
       studioMenu.open = true;
-      transportSettings.append(advanced);
-      transportSettings.insertBefore(mixerTrigger, advanced);
-      transportSettings.append(follow);
+      advancedBody.append(follow);
+      morePopover.append(advanced);
+      transportSettings.append(mixerTrigger);
       toolbarActions.append(moreMenu, chordTrigger);
       editorToolbar.append(...editorExtras);
       editorSettings.hidden = true;
-      if (candidateDock && sessionActions) candidateDock.insertBefore(sessionActions, byId('generation-candidates'));
+      if (sessionActions) byId('generation-panel').append(sessionActions);
     }
     sidebar.hidden = !panel && !compact.matches;
     sidebar.dataset.sheetSize = panel ? sheetSize : 'peek';
@@ -234,6 +296,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     (trigger?.getClientRects().length ? trigger : fallback)?.focus({preventScroll:true});
   }
   document.addEventListener('click', event => {
+    if (panel === 'mixer' && !sidebar.contains(event.target) && !mixerTrigger.contains(event.target)) openPanel(null);
     if (settings.open && !settings.contains(event.target)) settings.open = false;
     if (compact.matches && studioMenu.open && !studioMenu.contains(event.target)) studioMenu.open = false;
     if (moreMenu.open && !moreMenu.contains(event.target)) moreMenu.open = false;
@@ -251,7 +314,11 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
         panel = null;
         commands.setViewMode(target.dataset.studioView);
         if (cameFromMoreMenu) moreMenu.querySelector('summary').focus({preventScroll:true});
-      } else if (target.dataset.studioPanel) { moreMenu.open = false; openPanel(panel === target.dataset.studioPanel ? null : target.dataset.studioPanel); }
+      } else if (target.dataset.studioPanel) {
+        moreMenu.open = false;
+        selectionBar.querySelector('.selection-more')?.removeAttribute('open');
+        openPanel(panel === target.dataset.studioPanel ? null : target.dataset.studioPanel);
+      }
       else if (target.hasAttribute('data-studio-close')) { openPanel(null); restorePanelFocus(); }
       else commands.seek(Number(target.dataset.studioSeek));
     } catch (error) { onError(error); }

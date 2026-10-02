@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261002.58">
+    <meta name="melodi-build" content="20261002.67">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261002.58">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261002.58"></script>
-    <script type="module" src="./src/app.js?v=20261002.58"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261002.67">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261002.67"></script>
+    <script type="module" src="./src/app.js?v=20261002.67"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -659,6 +659,12 @@
             <button type="button" class="secondary" data-action="candidate-nav" data-direction="1" data-aria-copy="candidateNext" aria-controls="generation-candidates" aria-label="Next candidate"><span aria-hidden="true">›</span></button>
           </div>
           <button type="button" class="secondary candidate-dock-close" data-action="clear-generation" data-copy="generationClear"></button>
+        </div>
+        <div class="candidate-primary-actions" role="group" data-aria-copy="candidateActionsGroup">
+          <button id="candidate-active-audition" type="button" class="secondary candidate-active-audition" data-action="audition-candidate" hidden></button>
+          <span id="candidate-compare-label" class="candidate-compare-label" hidden></span>
+          <span id="candidate-accepted-summary" class="candidate-accepted-summary" hidden></span>
+          <button id="candidate-active-accept" type="button" class="candidate-active-accept" data-action="accept-candidate" hidden></button>
         </div>
         <p class="candidate-scrub-help" data-copy="candidateScrubHelp"></p>
         <ol id="generation-candidates" class="generation-candidates" data-entity="melody-candidate-list" data-aria-copy="candidateListLabel"></ol>

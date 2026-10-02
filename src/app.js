@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261002.58';
-import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261002.58";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261002.58";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261002.58";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261002.58";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261002.58";
-import { createCommands } from "./core/commands.js?v=20261002.58";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261002.67';
+import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261002.67";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261002.67";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261002.67";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261002.67";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261002.67";
+import { createCommands } from "./core/commands.js?v=20261002.67";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261002.58";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261002.58";
-import { createAudioPlayer } from "./audio/player.js?v=20261002.58";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261002.58";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261002.58";
-import { createScoreView } from "./ui/score.js?v=20261002.58";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261002.58";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261002.58";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261002.58";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261002.58";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261002.58";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261002.67";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261002.67";
+import { createAudioPlayer } from "./audio/player.js?v=20261002.67";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261002.67";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261002.67";
+import { createScoreView } from "./ui/score.js?v=20261002.67";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261002.67";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261002.67";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261002.67";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261002.67";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261002.67";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261002.58";
-import { createGenerationContext } from "./generation/context.js?v=20261002.58";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261002.67";
+import { createGenerationContext } from "./generation/context.js?v=20261002.67";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261002.58";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261002.58";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261002.58";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261002.58";
-import { deserializeProject } from "./core/serialization.js?v=20261002.58";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261002.58";
+import { createDraftPersistence } from "./storage/draft.js?v=20261002.67";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261002.67";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261002.67";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261002.67";
+import { deserializeProject } from "./core/serialization.js?v=20261002.67";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261002.67";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1083,6 +1083,11 @@ function renderGeneration(state) {
   const regenerate = byId("regenerate-gap");
   const clear = byId("clear-generation");
   const lockAccepted = byId("lock-accepted-notes");
+  const candidateNavigation = dock?.querySelector(".candidate-navigation");
+  const activeAudition = byId("candidate-active-audition");
+  const compareLabel = byId("candidate-compare-label");
+  const acceptedSummary = byId("candidate-accepted-summary");
+  const activeAccept = byId("candidate-active-accept");
   const lockHelp = byId("generation-lock-help");
   const leftAnchorField = byId("generation-left-anchor");
   const rightAnchorField = byId("generation-right-anchor");
@@ -1162,11 +1167,53 @@ function renderGeneration(state) {
 
   useSelection.disabled = !state.selection || state.selection.endTick <= state.selection.startTick;
   regenerate.disabled = !sessionReady;
+  regenerate.hidden = !sessionReady;
   clear.disabled = !sessionReady && acceptedNoteIds.length === 0;
   sessionActions.hidden = !sessionReady && acceptedNoteIds.length === 0;
   if (shortcutHelp) shortcutHelp.hidden = !sessionReady;
   status.hidden = !sessionReady && acceptedNoteIds.length === 0;
   lockAccepted.hidden = acceptedNoteIds.length === 0;
+  if (candidateNavigation) candidateNavigation.hidden = !sessionReady;
+  list.hidden = !sessionReady;
+  if (acceptedSummary) {
+    acceptedSummary.hidden = sessionReady || acceptedNoteIds.length === 0;
+    acceptedSummary.textContent = acceptedSummary.hidden ? "" : translate("candidateAcceptedShort");
+  }
+  const candidates = sessionReady ? generation.candidates : [];
+  const activeCandidateId = generation.activeCandidateId ?? candidates[0]?.id;
+  const activeCandidateIndex = Math.max(0, candidates.findIndex((candidate) => candidate.id === activeCandidateId));
+  const activeCandidate = candidates[activeCandidateIndex];
+  if (activeAudition) {
+    activeAudition.hidden = !activeCandidate;
+    activeAudition.disabled = Boolean(generation.stale);
+    if (activeCandidate) {
+      activeAudition.dataset.candidateId = activeCandidate.id;
+      activeAudition.dataset.focusKey = `candidate-active-audition-${activeCandidate.id}`;
+      activeAudition.textContent = translate("candidatePlayCurrent");
+      activeAudition.setAttribute("aria-label", translate("candidateAuditionAction", { number: activeCandidateIndex + 1 }));
+      activeAudition.setAttribute("aria-pressed", String(generation.auditionCandidateId === activeCandidate.id));
+      activeAudition.setAttribute("aria-keyshortcuts", String(activeCandidateIndex + 1));
+    }
+  }
+  if (compareLabel) {
+    compareLabel.hidden = !activeCandidate;
+    compareLabel.textContent = activeCandidate
+      ? translate("candidateCompareCount", { count: Math.min(3, candidates.length) })
+      : "";
+    compareLabel.setAttribute("aria-describedby", "candidate-scrub-help");
+  }
+  if (activeAccept) {
+    activeAccept.hidden = !activeCandidate;
+    activeAccept.disabled = Boolean(generation.stale);
+    if (activeCandidate) {
+      activeAccept.dataset.candidateId = activeCandidate.id;
+      activeAccept.dataset.focusKey = `candidate-active-accept-${activeCandidate.id}`;
+      activeAccept.textContent = translate("candidateAcceptCurrent");
+      activeAccept.setAttribute("aria-label", translate("candidateAcceptAction", { number: activeCandidateIndex + 1 }));
+      activeAccept.setAttribute("aria-keyshortcuts", "Enter");
+      activeAccept.title = "Enter";
+    }
+  }
   lockHelp.hidden = acceptedNoteIds.length === 0;
   if (sessionReady && generation.gap && form.dataset.pending !== "true") {
     form.dataset.gapReady = "true";
@@ -1203,7 +1250,7 @@ function renderGeneration(state) {
     card.dataset.entity = "melody-candidate";
     card.dataset.entityId = candidate.id;
     card.dataset.candidateNumber = String(index + 1);
-    const isActive = generation.activeCandidateId === candidate.id;
+    const isActive = activeCandidateId === candidate.id;
     card.dataset.active = String(isActive);
     if (isActive) card.setAttribute("aria-current", "true");
 
@@ -1267,6 +1314,8 @@ function renderGeneration(state) {
     const select = makeButton(translate("candidateSelect"), "select-candidate", { candidateId: candidate.id });
     select.setAttribute("aria-pressed", String(isActive));
     select.setAttribute("aria-label", translate("candidateSelectAction", { number: index + 1 }));
+    select.dataset.candidateNumber = String(index + 1);
+    select.textContent = String(index + 1);
     select.dataset.focusKey = `candidate-select-${candidate.id}`;
     const audition = makeButton(translate(generation.auditionCandidateId === candidate.id ? "candidateAuditioning" : "candidateAudition"), "audition-candidate", { candidateId: candidate.id });
     audition.setAttribute("aria-label", translate("candidateAuditionAction", { number: index + 1 }));
@@ -2999,7 +3048,7 @@ document.addEventListener("click", (event) => {
   } else if (target.dataset.action === "candidate-nav") {
     const list = byId("generation-candidates");
     const direction = Math.sign(Number(target.dataset.direction));
-    if (list && direction) list.scrollBy({ left: direction * Math.max(96, list.clientWidth - 156), behavior: "smooth" });
+    if (list && direction) list.scrollBy({ left: direction * Math.max(96, list.clientWidth), behavior: "smooth" });
   } else if (target.dataset.action === "accept-candidate") {
     const accepted = run(() => commands.acceptCandidate(target.dataset.candidateId));
     if (accepted) announce("generationAccepted");
