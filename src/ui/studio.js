@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261002.68';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261002.70';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -26,6 +26,8 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   let lastChord = null;
   let overviewSong = null;
   const sidebar = document.querySelector('.workspace-sidebar');
+  const guitarSection = byId('guitar-section');
+  sidebar.append(guitarSection);
   const headerActions = document.querySelector('.header-actions');
   const projectMenu = document.querySelector('.project-menu');
   const mixer = byId('studio-mixer-channels');
@@ -155,21 +157,32 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   const transportMain = document.querySelector('.transport-main');
   const moreMenu = document.querySelector('.studio-more');
   const morePopover = document.querySelector('.studio-more-popover');
+  const historyButtons = document.querySelector('.history-buttons');
+  const loopToggle = document.querySelector('.loop-toggle');
+  const resetRange = byId('reset-playback-range');
   const utility = document.querySelector('.utility-card');
   if (utility) {
     utility.classList.add('studio-advanced');
     morePopover.append(utility);
   }
   const panelSwitches = document.querySelector('.studio-panel-switches');
-  const mobilePeek = sidebar.querySelector('.mobile-panel-peek-actions');
   const sessionActions = byId('generation-session-actions');
   const toolbarActions = document.querySelector('.studio-toolbar-actions');
   const mixerTrigger = document.querySelector('button[data-studio-panel="mixer"]');
   const chordTrigger = document.querySelector('button[data-studio-panel="chords"]');
   const generateTrigger = document.querySelector('button[data-studio-panel="generate"]');
   const guitarMode = morePopover.querySelector('[data-studio-view="guitar"]');
+  const lyricsMode = document.querySelector('#score-section [data-studio-view="lyrics"]');
   const modeNav = byId('studio-views');
   const modeToolbar = byId('view-controls');
+  const header = document.querySelector('.page-header');
+  const mobileDock = byId('mobile-workspace-dock');
+  const transportDock = document.querySelector('.transport-dock');
+  const transportHome = transportDock.parentElement;
+  const scoreLayoutGroup = document.querySelector('.score-layout-group');
+  const rollTitleRow = byId('piano-roll-section').querySelector('.pane-title-row');
+  const guitarToolbar = document.querySelector('#guitar-section .guitar-local-toolbar');
+  const lyricsHeading = document.querySelector('#lyrics-section .pane-heading');
   const editorToolbar = byId('editor-toolbar');
   const editorTools = editorToolbar.querySelector('.editor-tool-group');
   const editorToolsHome = editorToolbar;
@@ -183,7 +196,8 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   morePopover.append(editorSettings);
   const overview = document.querySelector('.studio-overview');
   transportMain.insertBefore(overview, transportSettings);
-  const compact = matchMedia('(max-width: 760px), (orientation: landscape) and (max-height: 500px)');
+  const phone = matchMedia('(width <= 46rem)');
+  const compact = matchMedia('(width <= 46rem), (orientation: landscape) and (max-height: 500px) and (width < 68rem)');
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 500px)');
   const overviewTrack = byId('studio-overview');
   let overviewPointerId = null;
@@ -239,43 +253,40 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     advancedLabel.textContent = translate(advancedLabel.dataset.copy);
     transportSettings.prepend(tempo);
     moreMenu.open = false;
+    transportSettings.append(moreMenu);
+    mobileDock.hidden = !compact.matches;
+    modeToolbar.hidden = !shortLandscape.matches;
     if (compact.matches) {
-      morePopover.prepend(guitarMode);
-      advancedBody.append(follow);
+      advancedBody.append(follow, loopToggle, resetRange, historyButtons);
       if (shortLandscape.matches) {
-        modeNav.insertBefore(guitarMode, moreMenu);
-        mobilePeek.append(panelSwitches);
         toolbarActions.append(editorTools);
-        toolbarActions.append(moreMenu);
         transportSettings.append(projectMenu);
       } else {
+        advancedBody.append(tempo);
         headerActions.prepend(projectMenu);
-        modeNav.append(moreMenu);
-        mobilePeek.append(panelSwitches);
         editorToolsHome.prepend(editorTools);
       }
+      mobileDock.append(transportDock, modeNav);
       editorSettings.hidden = false;
       editorSettings.setAttribute('aria-label', translate('editorSettingsHeading'));
       if (sessionActions) byId('generation-panel').append(sessionActions);
     } else {
+      transportHome.append(transportDock);
       headerActions.prepend(projectMenu);
+      header.insertBefore(modeNav, headerActions);
       editorToolsHome.prepend(editorTools);
-      modeNav.insertBefore(guitarMode, moreMenu);
+      transportSettings.append(tempo, loopToggle, resetRange, historyButtons);
       advancedBody.append(follow);
-      toolbarActions.append(panelSwitches, moreMenu);
       editorToolbar.append(...editorExtras);
       editorSettings.hidden = true;
       if (sessionActions) byId('generation-panel').append(sessionActions);
     }
-    sidebar.hidden = !panel && !compact.matches;
+    sidebar.hidden = !panel;
     sidebar.dataset.sheetSize = panel ? 'half' : 'peek';
-    const moreLabel = moreMenu.querySelector('summary [data-copy]');
-    moreLabel.dataset.copy = 'studioMoreButton';
-    moreLabel.textContent = translate('studioMoreButton');
-    moreMenu.querySelector('summary').setAttribute('aria-label', translate('studioMoreLabel'));
   }
   compact.addEventListener('change', arrangeControls);
   shortLandscape.addEventListener('change', arrangeControls);
+  phone.addEventListener('change', () => render(commands.getSong(), commands.getState(), false));
   arrangeControls();
   function openPanel(value) {
     if (value) lastPanel = value;
@@ -413,8 +424,10 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   function render(song,state,autoSelect=true) {
     if (autoSelect && state.selectedChordId && state.selectedChordId !== lastChord) { panel = 'chords'; lastPanel = panel; }
     lastChord = state.selectedChordId;
-    document.body.dataset.studioPanel = panel ?? 'none';
-    sidebar.dataset.sheetSize = panel ? 'half' : 'peek';
+    const mode = state.view.mode;
+    const guitarInspector = mode === 'guitar';
+    document.body.dataset.studioPanel = panel ?? (guitarInspector ? 'guitar' : 'none');
+    sidebar.dataset.sheetSize = panel || guitarInspector ? 'half' : 'peek';
     selectionBar.hidden = !state.selectedNoteIds.length || state.generation?.status === 'ready';
     const selectedNotes = song.notes.filter(note => state.selectedNoteIds.includes(note.id));
     const velocityInput = selectionBar.querySelector('[data-action="set-selected-velocity"]');
@@ -436,24 +449,34 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     if (drumExpression) drumExpression.hidden = panel !== 'drum-expression';
     if (expressionPanel) expressionPanel.hidden = panel !== 'expression';
     document.body.dataset.studioSelection = String(state.selectedNoteIds.length > 0);
-    sidebar.hidden = !panel && !compact.matches;
+    sidebar.hidden = !panel && !guitarInspector;
+    guitarSection.hidden = !guitarInspector || Boolean(panel);
     byId('studio-mixer').hidden = panel !== 'mixer';
     byId('harmony-panel').hidden = panel !== 'chords';
     byId('generation-panel').hidden = panel !== 'generate';
-    byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',expression:'expressionHeading','drum-expression':'percussionExpressionHeading'})[panel] ?? 'studioPanels');
+    byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',expression:'expressionHeading','drum-expression':'percussionExpressionHeading',guitar:'guitarHeading'})[panel ?? (guitarInspector ? 'guitar' : null)] ?? 'studioPanels');
     document.querySelectorAll('button[data-studio-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.studioPanel===panel)));
-    document.querySelectorAll('[data-studio-view]').forEach(button=>{
-      const mode = button.dataset.studioView;
-      button.setAttribute('aria-pressed',String(mode===state.view.mode || mode==='score' && state.view.mode==='combined'));
+    const activeWorkspace = mode === 'drums' ? 'rhythm'
+      : mode === 'score' || mode === 'lyrics' || mode === 'combined' && !phone.matches ? 'notation'
+        : 'edit';
+    document.body.dataset.studioWorkspace = activeWorkspace;
+    modeNav.querySelectorAll('[data-studio-workspace]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.studioWorkspace === activeWorkspace));
     });
+    document.querySelectorAll('[data-studio-view]').forEach(button => {
+      if (!modeNav.contains(button)) button.setAttribute('aria-pressed', String(button.dataset.studioView === mode));
+    });
+    if (mode === 'piano-roll' || mode === 'combined' && compact.matches) rollTitleRow.append(guitarMode);
+    else if (mode === 'guitar') guitarToolbar.prepend(guitarMode);
+    else morePopover.prepend(guitarMode);
+    guitarMode.setAttribute('aria-pressed', String(mode === 'guitar'));
+    if (mode === 'lyrics') lyricsHeading.append(lyricsMode);
+    else scoreLayoutGroup.append(lyricsMode);
     const moreSummary = moreMenu.querySelector('summary');
-    const guitarActive = compact.matches && state.view.mode === 'guitar';
-    moreSummary.dataset.activeView = guitarActive ? 'guitar' : '';
+    moreSummary.removeAttribute('data-active-view');
     const moreLabel = moreSummary.querySelector('[data-copy]');
-    moreLabel.textContent = guitarActive ? translate('viewGuitarOption') : translate('studioMoreButton');
-    moreSummary.setAttribute('aria-label', guitarActive
-      ? `${translate('viewGuitarOption')}. ${translate('studioMoreLabel')}`
-      : translate('studioMoreLabel'));
+    moreLabel.textContent = translate('studioMoreButton');
+    moreSummary.setAttribute('aria-label', translate('studioMoreLabel'));
     if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing,translate('studioSeekBar', {bar:1})])) renderOverview(song);
     updatePlayback(song,state.playback);
   }

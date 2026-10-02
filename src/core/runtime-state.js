@@ -5,7 +5,7 @@ const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar
 /** Region mana yang tampil pada mode tampilan apa. */
 export const VIEW_REGION_MODES = Object.freeze({
   score: ["score", "combined"],
-  "piano-roll": ["piano-roll", "combined"],
+  "piano-roll": ["piano-roll", "combined", "guitar"],
   expression: ["score", "piano-roll", "combined", "guitar"],
   lyrics: ["lyrics"],
   guitar: ["guitar"],

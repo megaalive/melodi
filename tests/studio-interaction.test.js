@@ -18,6 +18,7 @@ function fixture(narrow = false, landscape = false) {
       this.classList = { add() {} };
       this.attributes = new Map();
     }
+    get parentElement() { return this.parent; }
     append(...children) {
       for (const child of children) {
         if (child.parent) child.parent.children = child.parent.children.filter(item => item !== child);
@@ -35,7 +36,11 @@ function fixture(narrow = false, landscape = false) {
     focus() { document.activeElement = this; }
     contains(target) { return target === this || this.children.some(child => child.contains(target)); }
     querySelector(selector) { return nodes.get(selector); }
-    querySelectorAll() { return []; }
+    querySelectorAll(selector) {
+      if (selector === '[data-studio-workspace]') return this.children.filter(child => child.dataset.studioWorkspace);
+      if (selector === ':scope > [data-studio-view], :scope > .studio-more > summary') return this.children.filter(child => child.dataset.studioView);
+      return [];
+    }
     closest(selector) {
       for (let node = this; node; node = node.parent) {
         for (const part of selector.split(',').map(value => value.trim())) {
@@ -47,6 +52,7 @@ function fixture(narrow = false, landscape = false) {
       }
       return null;
     }
+    removeAttribute(key) { this.attributes.delete(key); }
   }
   const node = (selector, tag) => {
     const value = new Node(tag);
@@ -54,14 +60,30 @@ function fixture(narrow = false, landscape = false) {
     return value;
   };
   const body = node('body');
-  for (const selector of ['.workspace-sidebar', '.mobile-panel-peek-actions', '.studio-more', '.studio-more-popover', '.studio-toolbar-actions', '.project-menu', '.expression-panel-heading', '.expression-toolbar', '.sketch-controls', '.instrument-mix-strip', '.brand-block', '.song-strip', '.history-buttons', '.header-actions', '.header-controls', '.transport-main', '.playback-settings-group', '.transport-advanced', '.transport-advanced-grid', '.tempo-control', '.follow-mode-control', '.studio-panel-switches', '.studio-overview', '.editor-tool-group', '#piano-roll-section .pane-title-row', 'summary', 'summary [data-copy]', '[data-copy]']) node(selector);
-  for (const id of ['studio-mixer-channels', 'expression-collapse', 'harmony-panel', 'harmony-timeline-tools', 'studio-views', 'view-controls', 'editor-toolbar', 'studio-mixer', 'generation-panel', 'studio-panel-title', 'studio-overview', 'studio-position']) node(`#${id}`);
+  for (const selector of ['.workspace-sidebar', '.mobile-panel-peek-actions', '.studio-more', '.studio-more-popover', '.studio-toolbar-actions', '.project-menu', '.expression-panel-heading', '.expression-toolbar', '.sketch-controls', '.instrument-mix-strip', '.brand-block', '.song-strip', '.history-buttons', '.header-actions', '.header-controls', '.page-header', '.workspace-chrome', '.transport-dock', '.transport-main', '.playback-settings-group', '.transport-advanced', '.transport-advanced-grid', '.tempo-control', '.loop-toggle', '.follow-mode-control', '.studio-panel-switches', '.studio-overview', '.studio-editor-settings', '.editor-tool-group', '.guitar-local-toolbar', '#guitar-section .guitar-local-toolbar', '.pane-title-row', '#lyrics-section .pane-heading', '.score-layout-group', 'summary', 'summary [data-copy]', '[data-copy]']) node(selector);
+  for (const id of ['studio-mixer-channels', 'expression-collapse', 'harmony-panel', 'harmony-timeline-tools', 'studio-views', 'view-controls', 'mobile-workspace-dock', 'editor-toolbar', 'piano-roll-section', 'guitar-section', 'score-section', 'studio-mixer', 'generation-panel', 'studio-panel-title', 'studio-overview', 'studio-position', 'reset-playback-range']) node(`#${id}`);
+  nodes.get('#piano-roll-section').hidden = false;
+  nodes.get('.page-header').append(nodes.get('.brand-block'), nodes.get('.header-actions'));
+  nodes.get('.workspace-chrome').append(nodes.get('.transport-dock'), nodes.get('#view-controls'));
+  nodes.get('.transport-dock').append(nodes.get('.transport-main'));
+  nodes.get('#view-controls').append(nodes.get('#studio-views'), nodes.get('.studio-toolbar-actions'));
   const guitar = node('[data-studio-view="guitar"]', 'button'); guitar.dataset.studioView = 'guitar';
+  const edit = node('workspace-edit', 'button'); edit.dataset.studioView = 'piano-roll'; edit.dataset.studioWorkspace = 'edit';
+  const notation = node('workspace-notation', 'button'); notation.dataset.studioView = 'score'; notation.dataset.studioWorkspace = 'notation';
+  const rhythm = node('workspace-rhythm', 'button'); rhythm.dataset.studioView = 'drums'; rhythm.dataset.studioWorkspace = 'rhythm';
+  const lyrics = node('#score-section [data-studio-view="lyrics"]', 'button'); lyrics.dataset.studioView = 'lyrics';
   nodes.get('.studio-more-popover').append(guitar, nodes.get('.studio-panel-switches'));
-  nodes.get('.studio-more').append(nodes.get('.studio-more-popover'));
-  nodes.get('#studio-views').append(nodes.get('.studio-more'));
-  nodes.get('.playback-settings-group').append(nodes.get('.transport-advanced'));
+  nodes.get('.studio-more').append(nodes.get('summary'), nodes.get('.studio-more-popover'));
+  nodes.get('.studio-toolbar-actions').append(nodes.get('.studio-more'));
+  nodes.get('#studio-views').append(edit, notation, rhythm);
+  nodes.get('.playback-settings-group').append(nodes.get('.tempo-control'), nodes.get('.loop-toggle'), nodes.get('.transport-advanced'), nodes.get('.history-buttons'));
   nodes.get('.transport-advanced').append(nodes.get('.transport-advanced-grid'));
+  nodes.get('.score-layout-group').append(lyrics);
+  nodes.get('#piano-roll-section').append(nodes.get('.pane-title-row'));
+  nodes.get('.pane-title-row').append(nodes.get('#editor-toolbar'), node('#guitar-layer-slot'));
+  nodes.get('#editor-toolbar').append(nodes.get('.editor-tool-group'));
+  nodes.get('#guitar-section').append(nodes.get('.guitar-local-toolbar'));
+  nodes.get('#mobile-workspace-dock').hidden = false;
   const mixerTrigger = node('button[data-studio-panel="mixer"]', 'button'); mixerTrigger.dataset.studioPanel = 'mixer';
   const chordTrigger = node('button[data-studio-panel="chords"]', 'button'); chordTrigger.dataset.studioPanel = 'chords';
   const trigger = node('button[data-studio-panel="generate"]', 'button'); trigger.dataset.studioPanel = 'generate';
@@ -76,7 +98,7 @@ function fixture(narrow = false, landscape = false) {
     body,
     getElementById: id => nodes.get(`#${id}`),
     querySelector: selector => nodes.get(selector),
-    querySelectorAll: selector => selector === 'button[data-studio-panel]' ? [mixerTrigger, chordTrigger, trigger] : selector === '[data-studio-panel]' ? [body, mixerTrigger, chordTrigger, trigger] : selector === '[data-studio-view]' ? [guitar, split] : [],
+    querySelectorAll: selector => selector === 'button[data-studio-panel]' ? [mixerTrigger, chordTrigger, trigger] : selector === '[data-studio-panel]' ? [body, mixerTrigger, chordTrigger, trigger] : selector === '[data-studio-view]' ? [edit, notation, rhythm, guitar, split, lyrics] : [],
     createElement: tag => new Node(tag),
     createElementNS: (_, tag) => new Node(tag),
     addEventListener: (type, listener) => listeners.set(type, listener)
@@ -89,6 +111,7 @@ function fixture(narrow = false, landscape = false) {
       listeners.get('keydown')({ target, key, defaultPrevented: false, preventDefault() { prevented = true; } });
       return prevented;
     },
+    edit, notation, rhythm, lyrics,
     media: { matches: narrow, addEventListener() {} }, landscapeMedia: { matches: landscape, addEventListener() {} }
   };
 }
@@ -110,7 +133,10 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   assert.match(css, /@media \(width >= 68rem\)/);
   assert.ok((css.match(/@media\b/g) ?? []).length < 20);
   assert.equal((css.match(/@media[^\n]*orientation/g) ?? []).length, 1);
-  assert.match(css, /\.studio \.workspace-sidebar\[data-sheet-size="half"\]\s*\{\s*height: min\(39dvh, calc\(100dvh - 68px\)\)/);
+  assert.match(css, /\.studio \.mobile-workspace-dock:not\(\[hidden\]\)\s*\{[^}]*position: fixed/);
+  assert.match(css, /\.studio \.mobile-workspace-dock > \.studio-views > button[^}]*min-height: 44px/);
+  assert.match(css, /\.studio\[data-view-mode="combined"\] #score-section \{ display: none !important; \}/);
+  assert.match(css, /\.studio \.workspace-sidebar\[data-sheet-size="half"\] \{ height: min\(55dvh, calc\(100dvh - 88px\)\)/);
   assert.doesNotMatch(css, /^\.studio #piano-roll-content\s*\{\s*position: relative;/m);
 });
 
@@ -178,7 +204,7 @@ test('Score Split uses the existing view command without changing the song or se
   } finally { Object.assign(globalThis, previous); }
 });
 
-test('compact Guitar mode remains visible on the closed More control', () => {
+test('Guitar opens as an Edit inspector beside the Piano Roll', () => {
   const previous = { document: globalThis.document, matchMedia: globalThis.matchMedia };
   const setup = fixture(true);
   globalThis.document = setup.doc;
@@ -189,8 +215,12 @@ test('compact Guitar mode remains visible on the closed More control', () => {
     setup.click(setup.guitar);
     workspace.render(commands.getSong(), commands.getState());
     assert.equal(commands.getState().view.mode, 'guitar');
-    assert.equal(setup.nodes.get('summary').dataset.activeView, 'guitar');
-    assert.equal(setup.nodes.get('[data-copy]').textContent, 'viewGuitarOption');
+    assert.equal(setup.doc.body.dataset.studioWorkspace, 'edit');
+    assert.equal(setup.doc.body.dataset.studioPanel, 'guitar');
+    assert.equal(setup.nodes.get('#piano-roll-section').hidden, false);
+    assert.equal(setup.nodes.get('#guitar-section').hidden, false);
+    assert.equal(setup.guitar.parent, setup.nodes.get('#guitar-section .guitar-local-toolbar'));
+    assert.equal(setup.nodes.get('summary').dataset.activeView, undefined);
     assert.match(setup.nodes.get('summary').attributes.get('aria-label'), /studioMoreLabel/);
   } finally { Object.assign(globalThis, previous); }
 });
@@ -205,24 +235,29 @@ test('responsive panel triggers keep desktop, portrait, and landscape destinatio
       const commands = createCommands(createBlankSong());
       createStudioWorkspace(commands, key => key, error => { throw error; });
       if (!narrow) {
-        assert.equal(setup.nodes.get('.studio-more').parent, setup.nodes.get('.studio-toolbar-actions'));
+        assert.equal(setup.nodes.get('.studio-more').parent, setup.nodes.get('.playback-settings-group'));
         assert.equal(setup.nodes.get('.project-menu').parent, setup.nodes.get('.header-actions'));
-        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.studio-toolbar-actions'));
+        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.studio-more-popover'));
         assert.equal(setup.mixerTrigger.parent, setup.nodes.get('.studio-panel-switches'));
         assert.equal(setup.chordTrigger.parent, setup.nodes.get('.studio-panel-switches'));
         assert.equal(setup.nodes.get('.transport-advanced').parent, setup.nodes.get('.playback-settings-group'));
         assert.equal(setup.nodes.get('.follow-mode-control').parent, setup.nodes.get('.transport-advanced-grid'));
-        assert.equal(setup.guitar.parent, setup.nodes.get('#studio-views'));
+        assert.equal(setup.nodes.get('#studio-views').parent, setup.nodes.get('.page-header'));
+        assert.equal(setup.guitar.parent, setup.nodes.get('.studio-more-popover'));
       } else {
         assert.equal(setup.mixerTrigger.parent, setup.nodes.get('.studio-panel-switches'));
         assert.equal(setup.chordTrigger.parent, setup.nodes.get('.studio-panel-switches'));
-        assert.equal(setup.nodes.get('.mobile-panel-peek-actions').children[0], setup.nodes.get('.studio-panel-switches'));
+        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.studio-more-popover'));
         assert.equal(setup.nodes.get('.studio-panel-switches').children.length, 3);
         assert.equal(setup.nodes.get('.transport-advanced').parent, setup.nodes.get('.playback-settings-group'));
         assert.equal(setup.nodes.get('.follow-mode-control').parent, setup.nodes.get('.transport-advanced-grid'));
         assert.equal(setup.nodes.get('.project-menu').parent, landscape ? setup.nodes.get('.playback-settings-group') : setup.nodes.get('.header-actions'));
-        assert.equal(setup.guitar.parent, landscape ? setup.nodes.get('#studio-views') : setup.nodes.get('.studio-more-popover'));
-        assert.equal(setup.nodes.get('.studio-more').parent, landscape ? setup.nodes.get('.studio-toolbar-actions') : setup.nodes.get('#studio-views'));
+        assert.equal(setup.nodes.get('.loop-toggle').parent, setup.nodes.get('.transport-advanced-grid'));
+        assert.equal(setup.nodes.get('.history-buttons').parent, setup.nodes.get('.transport-advanced-grid'));
+        assert.equal(setup.nodes.get('.transport-dock').parent, setup.nodes.get('#mobile-workspace-dock'));
+        assert.equal(setup.nodes.get('#studio-views').parent, setup.nodes.get('#mobile-workspace-dock'));
+        assert.equal(setup.guitar.parent, setup.nodes.get('.studio-more-popover'));
+        assert.equal(setup.nodes.get('.studio-more').parent, setup.nodes.get('.playback-settings-group'));
       }
     } finally { Object.assign(globalThis, previous); }
   }
