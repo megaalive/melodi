@@ -208,3 +208,35 @@ constraints:
 - `VIEW_REGION_MODES` currently maps score/Piano Roll combined regions, Guitar
   and Lyrics individually, and Drum Roll individually. Preserve all stable
   `data-entity` hooks in the visual modules as containers move.
+
+## Round 2 PR2 — flat menus and mobile sheets
+
+The six after captures use the Piano Roll, the persisted “Melodi awal” sample,
+and the same light/dark and viewport dimensions as PR1. The before captures are
+the corresponding PR1 after captures.
+
+| Metric | Before PR2 (PR1) | After PR2 |
+|---|---:|---:|
+| Fixed chrome, desktop 1440×900 | 123 px / 13.7% | 124 px / 13.8% |
+| Fixed chrome, phone portrait 390×844 | 168 px / 19.9% | 168 px / 19.9% |
+| Visible controls, desktop (all / primary) | 25 / 12 | 25 / 12 |
+| Visible controls, phone portrait (all / primary) | 20 / 14 | 22 / 14 |
+| Runtime `<details>` elements | 18 | 14 |
+| `styles/app.css` bytes | 200,615 | 201,154 |
+| `@media` blocks | 59 | 61 |
+
+Additional after measurements: 844×390 landscape has 112 px / 28.7% fixed
+chrome and 23 / 15 visible controls (all / primary). The fixed-chrome measure
+uses the header, transport, view navigation, and phone docks/rails. Control
+counts include interactive or focusable elements with visible geometry that
+intersects the viewport; disabled controls count, and closed `<details>`
+contents do not.
+
+| Viewport and theme | Before | After |
+|---|---|---|
+| Desktop light | [PR1 capture](ui-audit/after/pr1/desktop-light-1440x900.png) | [PR2 capture](ui-audit/after/pr2/desktop-light-1440x900.png) |
+| Desktop dark | [PR1 capture](ui-audit/after/pr1/desktop-dark-1440x900.png) | [PR2 capture](ui-audit/after/pr2/desktop-dark-1440x900.png) |
+| Portrait light | [PR1 capture](ui-audit/after/pr1/portrait-light-390x844.png) | [PR2 capture](ui-audit/after/pr2/portrait-light-390x844.png) |
+| Portrait dark | [PR1 capture](ui-audit/after/pr1/portrait-dark-390x844.png) | [PR2 capture](ui-audit/after/pr2/portrait-dark-390x844.png) |
+| Landscape light | [PR1 capture](ui-audit/after/pr1/landscape-light-844x390.png) | [PR2 capture](ui-audit/after/pr2/landscape-light-844x390.png) |
+| Landscape dark | [PR1 capture](ui-audit/after/pr1/landscape-dark-844x390.png) | [PR2 capture](ui-audit/after/pr2/landscape-dark-844x390.png) |
