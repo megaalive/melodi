@@ -215,8 +215,10 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   }
   assert.equal(maximumDetailsDepth, 1, "details elements do not nest in the source DOM");
   assert.doesNotMatch(studio, /morePopover\.append\(advanced\)/);
-  assert.match(studio, /toolbarActions\.append\(panelSwitches, moreMenu\)/);
-  assert.match(studio, /mobilePeek\.append\(panelSwitches\)/);
+  assert.match(studio, /transportSettings\.append\(moreMenu\)/);
+  assert.match(studio, /mobileDock\.append\(transportDock, modeNav\)/);
+  assert.match(studio, /header\.insertBefore\(modeNav, headerActions\)/);
+  assert.match(html, /class="studio-more-popover"[\s\S]*?class="studio-panel-switches"/);
   assert.doesNotMatch(html, /<details class="pane-help"|class="pane-help-popover"/);
   assert.equal((html.match(/class="pane-help-trigger secondary"/g) ?? []).length, 2);
   assert.match(html, /<dialog id="context-help-dialog"[^>]*aria-labelledby="context-help-heading"/);
@@ -375,7 +377,7 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   const runtime = readFileSync(resolve("src/core/runtime-state.js"), "utf8");
   const grid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
 
-  assert.match(html, /data-action="set-view-mode" data-studio-view="drums" data-copy="studioDrumRoll"/);
+  assert.match(html, /data-action="set-view-mode" data-studio-workspace="rhythm" data-studio-view="drums" data-copy="studioWorkspaceRhythm"/);
   const start = html.indexOf('<section id="drums-section"');
   const end = html.indexOf("</section>", start);
   const section = html.slice(start, end);

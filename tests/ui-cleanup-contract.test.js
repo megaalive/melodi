@@ -33,6 +33,12 @@ test("view tabs replace the duplicate select and retain the old hooks", () => {
   assert.doesNotMatch(html, /<select\b[^>]*id="view-mode"/);
   assert.match(html, /<nav\b[^>]*id="studio-views"[^>]*data-entity="workspace-view"/);
 
+  const nav = html.match(/<nav\b[^>]*id="studio-views"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+  assert.ok(nav, "the main workspace navigation remains present");
+  const workspaceModes = [...nav.matchAll(/data-studio-view="([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(workspaceModes, ["piano-roll", "score", "drums"]);
+  assert.doesNotMatch(nav, /data-studio-view="guitar"/);
+
   const tabModes = [...html.matchAll(/data-studio-view="([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual([...new Set(tabModes)].sort(), [...legacyModes].sort());
   assert.equal((html.match(/data-action="set-view-mode"/g) ?? []).length, legacyModes.length);

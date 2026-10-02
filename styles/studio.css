@@ -3,6 +3,28 @@
 /* Studio: the editor owns the space; supporting controls are contextual. */
 body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--surface-subtle); }
 .studio .page-header { width: 100%; max-width: none; min-height: 40px; padding: 4px 16px; gap: 12px; background: var(--surface); color: var(--text); border-bottom: 1px solid var(--border); }
+.studio .page-header > #studio-views { margin-inline: auto; flex: 0 0 auto; }
+.studio .page-header > #studio-views > button { min-height: 36px; }
+.studio .mobile-workspace-dock, .studio .mobile-workspace-dock[hidden] { display: none; }
+.studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset: auto 0 0; z-index: 90; display: flex; flex-direction: column; width: 100%; height: calc(88px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 0; box-shadow: inset 0 1px 0 var(--border-strong); background: var(--surface); }
+.studio .mobile-workspace-dock > .transport-dock { flex: 0 0 44px; width: 100%; height: 44px; margin: 0; padding: 0 6px; border: 0; background: var(--surface); }
+.studio .mobile-workspace-dock .transport-main { display: flex; align-items: center; height: 44px; gap: 5px; }
+.studio .mobile-workspace-dock .transport-action-group { flex: 0 0 auto; gap: 0; }
+.studio .mobile-workspace-dock .transport-buttons { width: auto; gap: 2px; }
+.studio .mobile-workspace-dock .transport-buttons button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 7px; }
+.studio .mobile-workspace-dock .playback-readout { display: none; }
+.studio .mobile-workspace-dock .studio-overview { display: flex !important; flex: 1 1 auto; width: auto; min-width: 48px; height: 44px; border: 0; }
+.studio .mobile-workspace-dock .studio-overview-label { flex: 0 0 34px; padding: 0 2px; border: 0; }
+.studio .mobile-workspace-dock .studio-overview-label > span { display: none; }
+.studio .mobile-workspace-dock .studio-overview-label output { font-size: 10px; }
+.studio .mobile-workspace-dock .studio-overview-track { overflow: hidden; }
+.studio .mobile-workspace-dock .studio-overview-track svg { height: 18px; }
+.studio .mobile-workspace-dock .playback-settings-group { display: flex; flex: 0 0 auto; gap: 2px; padding: 0; border: 0; }
+.studio .mobile-workspace-dock .transport-advanced > summary, .studio .mobile-workspace-dock .studio-more > summary { display: flex; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; justify-content: center; border: 0; border-radius: 5px; background: var(--surface-subtle); }
+.studio .mobile-workspace-dock .studio-more > summary::after { margin-left: 2px; }
+.studio .mobile-workspace-dock > .studio-views { display: flex; flex: 0 0 44px; width: 100%; height: 44px; border-top: 1px solid var(--border); }
+.studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; min-width: 0; height: 44px; min-height: 44px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; font-size: 12px; }
+.studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-bottom-color: transparent; }
 .studio .brand-block h1 { font-size: 17px; letter-spacing: -.5px; }
 .studio .brand-block h1::after { content: ' / STUDIO'; font-size: 10px; letter-spacing: 2px; color: #8fa6aa; margin-left: 8px; font-weight: 500; }
 .studio .page-header button, .studio .page-header select, .studio .project-menu-trigger { min-height: 32px; background: var(--surface); color: var(--text); border-color: var(--border-strong); font-size: var(--text-xs); }

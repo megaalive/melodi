@@ -83,6 +83,8 @@ test("editor tool defaults safely to select and preserves known tools", () => {
 
 test("Expression tetap hanya tersedia di view pitched/fretted", () => {
   assert.deepEqual(VIEW_REGION_MODES.expression, ["score", "piano-roll", "combined", "guitar"]);
+  assert.deepEqual(VIEW_REGION_MODES.guitar, ["guitar"]);
+  assert.equal(VIEW_REGION_MODES["piano-roll"].includes("guitar"), true);
   assert.equal(VIEW_REGION_MODES.expression.includes("lyrics"), false);
   assert.equal(VIEW_REGION_MODES.expression.includes("drums"), false);
   assert.deepEqual(VIEW_REGION_MODES.drums, ["drums"]);

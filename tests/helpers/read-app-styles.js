@@ -8,7 +8,8 @@ function readStylesheet(path, visited) {
   const source = readFileSync(fullPath, "utf8");
   return source.replace(/@import\s*(?:url\()?['\"]([^'\"]+)['\"]\)?[^;]*;/g, (rule, importedPath) => {
     if (!importedPath.startsWith(".")) return rule;
-    return readStylesheet(resolve(dirname(fullPath), importedPath), visited);
+    const localPath = importedPath.split(/[?#]/, 1)[0];
+    return readStylesheet(resolve(dirname(fullPath), localPath), visited);
   });
 }
 

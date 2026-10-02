@@ -282,3 +282,55 @@ unmet; the PR description reports the shortfall explicitly.
 | Portrait dark | [PR2 capture](ui-audit/after/pr2/portrait-dark-390x844.png) | [PR3 capture](ui-audit/after/pr3/portrait__dark__390x844.png) |
 | Landscape light | [PR2 capture](ui-audit/after/pr2/landscape-light-844x390.png) | [PR3 capture](ui-audit/after/pr3/landscape__light__844x390.png) |
 | Landscape dark | [PR2 capture](ui-audit/after/pr2/landscape-dark-844x390.png) | [PR3 capture](ui-audit/after/pr3/landscape__dark__844x390.png) |
+
+## Round 2 PR4 — single workspace navigation and phone dock
+
+The six after captures use the Piano Roll and “Melodi awal” at the same three
+viewport sizes and in light and dark themes. The before captures are the
+matching PR3 screenshots. The desktop header now has three primary workspaces:
+Edit, Not, and Irama. Phone layouts move those tabs below the transport dock;
+short landscape hides the header and keeps the canvas visible above that dock.
+The timeline overview remains inside the transport, so it adds no separate
+band. Guitar stays available from the Edit workspace as an inspector layer
+over the Piano Roll. Mixer, Chords, and Generate remain inspector panels. The old six
+`setViewMode()` values remain supported; Combined uses the Not tab on desktop
+and falls back to Edit on phone.
+
+| Metric | Before PR4 (PR3) | After PR4 |
+|---|---:|---:|
+| Fixed chrome, desktop 1440×900 | 128 px / 14.2% | 134.25 px / 14.9% |
+| Fixed chrome, phone portrait 390×844 | 168 px / 19.9% | 128 px / 15.2% |
+| Fixed chrome, short landscape 844×390 | 112 px / 28.7% | 88 px / 22.6% |
+| Visible controls, desktop (all / primary) | 29 / 19 | 25 / 14 |
+| Visible controls, phone portrait (all / primary) | 21 / 15 | 15 / 8 |
+| Visible controls, short landscape (all / primary) | 22 / 16 | 15 / 9 |
+| Runtime `<details>` elements | 14 | 14 |
+| Active CSS bytes, uncompressed | 194,207 | 206,386 |
+| `@media` blocks | 10 | 10 |
+
+Fixed chrome is measured as the vertical distance from the top of the viewport
+to the editable canvas, plus any fixed bottom dock. Desktop top chrome includes
+the page header, workspace transport/navigation, and editor toolbar. Portrait
+uses a 40 px header plus an 88 px bottom dock containing 44 px transport and
+44 px workspace navigation. Short landscape hides the header and uses that
+same 88 px dock, leaving the canvas at the top of the screen. Both phone layouts
+stay below the 25% fixed-chrome limit. The CSS tree grew by 12,179 bytes
+(6.3%) from PR3 to fit the workspace tabs, compact transport, and responsive
+layout rules; it remains at ten media blocks. The PR3 30% CSS reduction target
+is still unmet as documented above.
+
+Control counts use the existing audit rule: interactive or keyboard-focusable
+elements with nonzero geometry that intersects the viewport, including
+disabled controls and excluding visually hidden elements and closed
+`<details>` contents. The primary count is the subset within the header,
+transport, workspace tabs, editor toolbar, and phone docks or rails. The
+runtime disclosure count remains 14.
+
+| Viewport and theme | Before | After |
+|---|---|---|
+| Desktop light | [PR3 capture](ui-audit/after/pr3/desktop__light__1440x900.png) | [PR4 capture](ui-audit/after/pr4/desktop__light__1440x900.png) |
+| Desktop dark | [PR3 capture](ui-audit/after/pr3/desktop__dark__1440x900.png) | [PR4 capture](ui-audit/after/pr4/desktop__dark__1440x900.png) |
+| Portrait light | [PR3 capture](ui-audit/after/pr3/portrait__light__390x844.png) | [PR4 capture](ui-audit/after/pr4/portrait__light__390x844.png) |
+| Portrait dark | [PR3 capture](ui-audit/after/pr3/portrait__dark__390x844.png) | [PR4 capture](ui-audit/after/pr4/portrait__dark__390x844.png) |
+| Landscape light | [PR3 capture](ui-audit/after/pr3/landscape__light__844x390.png) | [PR4 capture](ui-audit/after/pr4/landscape__light__844x390.png) |
+| Landscape dark | [PR3 capture](ui-audit/after/pr3/landscape__dark__844x390.png) | [PR4 capture](ui-audit/after/pr4/landscape__dark__844x390.png) |

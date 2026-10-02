@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261002.68">
+    <meta name="melodi-build" content="20261002.70">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261002.68">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261002.68"></script>
-    <script type="module" src="./src/app.js?v=20261002.68"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261002.70">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261002.70"></script>
+    <script type="module" src="./src/app.js?v=20261002.70"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -140,10 +140,11 @@
       <section id="view-controls" class="workspace-toolbar" aria-labelledby="view-heading">
         <h2 id="view-heading" class="visually-hidden" data-copy="viewHeading"></h2>
         <nav id="studio-views" class="studio-views" data-aria-copy="viewControlGroupLabel" data-entity="workspace-view">
-          <button type="button" data-action="set-view-mode" data-studio-view="piano-roll" data-copy="viewPianoRollOption" data-focus-key="view-piano-roll" aria-pressed="true"></button>
-          <button type="button" data-action="set-view-mode" data-studio-view="drums" data-copy="studioDrumRoll" aria-pressed="false"></button>
-          <button type="button" data-action="set-view-mode" data-studio-view="score" data-copy="viewScoreOption" aria-pressed="false"></button>
-          <button type="button" data-action="set-view-mode" data-studio-view="lyrics" data-copy="viewLyricsOption" aria-pressed="false"></button>
+          <button type="button" data-action="set-view-mode" data-studio-workspace="edit" data-studio-view="piano-roll" data-copy="studioWorkspaceEdit" data-focus-key="view-piano-roll" aria-pressed="true"></button>
+          <button type="button" data-action="set-view-mode" data-studio-workspace="notation" data-studio-view="score" data-copy="studioWorkspaceNotation" aria-pressed="false"></button>
+          <button type="button" data-action="set-view-mode" data-studio-workspace="rhythm" data-studio-view="drums" data-copy="studioWorkspaceRhythm" aria-pressed="false"></button>
+        </nav>
+        <div class="studio-toolbar-actions">
           <details class="studio-more">
             <summary data-aria-copy="studioMoreLabel"><span data-copy="studioMoreButton"></span></summary>
             <div class="studio-more-popover">
@@ -156,8 +157,7 @@
               <button type="button" class="menu-sheet-close" data-sheet-close data-copy="closeButton"></button>
             </div>
           </details>
-        </nav>
-        <div class="studio-toolbar-actions"></div>
+        </div>
       </section>
 
       </div>
@@ -267,6 +267,7 @@
                   <button id="score-layout-flow" type="button" data-action="set-score-layout" data-score-layout="flow" data-copy="scoreFlowButton" data-aria-copy="scoreFlowAria" aria-pressed="true"></button>
                   <button id="score-layout-page" type="button" data-action="set-score-layout" data-score-layout="page" data-copy="scorePageButton" data-aria-copy="scorePageAria" aria-pressed="false"></button>
                   <button type="button" data-action="set-view-mode" data-studio-view="combined" data-copy="scoreSplitButton" data-aria-copy="scoreSplitAria" aria-pressed="false"></button>
+                  <button type="button" data-action="set-view-mode" data-studio-view="lyrics" data-copy="viewLyricsOption" aria-pressed="false"></button>
                 </div>
                 <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
               </div>
@@ -762,6 +763,7 @@
 
       <p id="operation-status" class="status" role="status" aria-live="polite" aria-atomic="true" data-entity="operation-status"></p>
     </main>
+    <div id="mobile-workspace-dock" class="mobile-workspace-dock"></div>
       <dialog id="context-help-dialog" class="help-sheet" aria-labelledby="context-help-heading">
         <div class="help-sheet-card">
           <header class="help-sheet-header">
