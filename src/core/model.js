@@ -1,6 +1,6 @@
 export const SUPPORTED_CHORD_QUALITIES = Object.freeze(["major", "minor", "diminished", "augmented"]);
 
-import { findPercussionPiece } from "../instruments/percussion.js?v=20261002.57";
+import { findPercussionPiece } from "../instruments/percussion.js?v=20261002.58";
 
 export const PPQ = 480;
 

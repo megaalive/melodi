@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261002.57";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261002.58";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261002.57";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261002.57";
-import { harmonyChordSymbol } from "./harmony.js?v=20261002.57";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261002.58";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261002.58";
+import { harmonyChordSymbol } from "./harmony.js?v=20261002.58";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -1438,6 +1438,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   return Object.freeze({
     render,
     updatePlayback,
+    syncViewport: syncFrozenPitchLabels,
     getGeometry: () => ({ ...geometry })
   });
 }
