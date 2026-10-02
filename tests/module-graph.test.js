@@ -197,13 +197,15 @@ test("Project menu mengelompokkan alur project tanpa memenuhi header dengan tomb
 
   const transport = html.indexOf('class="transport-action-group" role="group" data-aria-copy="transportControlsGroupLabel"');
   const settings = html.indexOf('class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel"');
-  const view = html.indexOf('class="editor-view-controls" role="group" data-aria-copy="viewControlGroupLabel"');
+  const view = html.indexOf('<nav id="studio-views" class="studio-views"');
   assert.ok(transport >= 0 && settings > transport && view > settings);
   const settingsGroup = html.slice(settings, view);
   assert.match(settingsGroup, /id="tempo-input"/);
   assert.match(settingsGroup, /id="loop-enabled"/);
   assert.match(settingsGroup, /class="transport-advanced"/);
   assert.match(settingsGroup, /id="follow-mode"/);
+  assert.doesNotMatch(html, /<select id="view-mode"/);
+  assert.match(html, /id="studio-views"[^>]*data-entity="workspace-view"/);
 
   const editorToolbar = html.slice(html.indexOf('id="editor-toolbar"'), html.indexOf('id="piano-roll-content"'));
   for (const id of ["roll-tool-select", "roll-tool-draw", "snap-select", "roll-zoom"]) assert.ok(editorToolbar.includes(`id="${id}"`));
@@ -264,7 +266,7 @@ test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-ben
   assert.match(section, /data-score-layout="flow"/);
   assert.match(section, /data-action="set-score-layout" data-score-layout="flow"/);
   assert.match(section, /data-action="set-score-layout" data-score-layout="page"/);
-  assert.match(section, /id="score-sticky-context"/);
+  assert.doesNotMatch(section, /score-sticky-context|score-context-(key|meter)/);
 
   assert.match(preferences, /scoreLayout:\s*"flow"/);
   assert.match(app, /scoreView\?\.setLayout\(layout\)/);
@@ -280,7 +282,6 @@ test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-ben
   assert.doesNotMatch(score, /Control\+D|Meta\+D/);
 
   assert.match(css, /score-scroll\[data-layout="flow"\]/);
-  assert.match(css, /score-pane\[data-score-layout="page"\] \.score-sticky-context/);
   assert.match(css, /score-note\[data-selected="true"\]/);
 });
 
@@ -318,7 +319,7 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   const runtime = readFileSync(resolve("src/core/runtime-state.js"), "utf8");
   const grid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
 
-  assert.match(html, /<option value="drums" data-copy="viewDrumsOption"/);
+  assert.match(html, /data-action="set-view-mode" data-studio-view="drums" data-copy="studioDrumRoll"/);
   const start = html.indexOf('<section id="drums-section"');
   const end = html.indexOf("</section>", start);
   const section = html.slice(start, end);

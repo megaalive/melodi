@@ -84,9 +84,8 @@
           <p id="song-title" data-entity="song-title"></p>
         </div>
         <dl class="song-summary" data-entity="song-summary">
-          <div><dt data-copy="tempoLabel"></dt><dd id="tempo-value"></dd></div>
           <div><dt data-copy="keyLabel"></dt><dd id="key-value"></dd></div>
-          <div><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
+          <div data-entity="time-signature"><dt data-copy="timeSignatureLabel"></dt><dd id="time-signature-value"></dd></div>
         </dl>
         <div class="share-session-actions">
           <span id="shared-source" class="shared-source" data-copy="sharedSourceLabel" hidden></span>
@@ -106,7 +105,7 @@
 
             <dl id="playback-readout" class="playback-readout" aria-live="off">
               <div><dt data-copy="playbackStatusLabel"></dt><dd id="playback-status" data-entity="playback-status"></dd></div>
-              <div class="machine-detail"><dt data-copy="currentTickLabel"></dt><dd><output id="current-tick" data-entity="current-tick">0</output></dd></div>
+              <div class="machine-detail" hidden><dt data-copy="currentTickLabel"></dt><dd><output id="current-tick" data-entity="current-tick">0</output></dd></div>
               <div><dt data-copy="currentNoteLabel"></dt><dd><output id="current-note" data-entity="current-note"></output></dd></div>
               <div class="machine-detail"><dt data-copy="currentSectionLabel"></dt><dd><output id="current-section" data-entity="current-section"></output></dd></div>
             </dl>
@@ -115,7 +114,6 @@
           <div class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel">
             <form class="transport-form tempo-control" data-action="set-tempo">
               <label><span data-copy="tempoInputLabel"></span><input id="tempo-input" name="tempo" type="number" min="20" max="300" step="1" value="120" required data-action="set-tempo-direct"></label>
-              <button type="submit" class="visually-hidden" tabindex="-1" aria-hidden="true" data-action="set-tempo" data-copy="applyTempoButton"></button>
             </form>
 
             <label class="loop-toggle"><input id="loop-enabled" type="checkbox" data-action="set-loop-enabled"><span data-copy="loopEnabledLabel"></span></label>
@@ -146,15 +144,15 @@
 
       <section id="view-controls" class="workspace-toolbar" aria-labelledby="view-heading">
         <h2 id="view-heading" class="visually-hidden" data-copy="viewHeading"></h2>
-        <nav id="studio-views" class="studio-views" data-aria-copy="viewControlGroupLabel">
-          <button type="button" data-studio-view="piano-roll" data-copy="viewPianoRollOption" aria-pressed="true"></button>
-          <button type="button" data-studio-view="drums" data-copy="studioDrumRoll" aria-pressed="false"></button>
-          <button type="button" data-studio-view="score" data-copy="viewScoreOption" aria-pressed="false"></button>
-          <button type="button" data-studio-view="lyrics" data-copy="viewLyricsOption" aria-pressed="false"></button>
+        <nav id="studio-views" class="studio-views" data-aria-copy="viewControlGroupLabel" data-entity="workspace-view">
+          <button type="button" data-action="set-view-mode" data-studio-view="piano-roll" data-copy="viewPianoRollOption" data-focus-key="view-piano-roll" aria-pressed="true"></button>
+          <button type="button" data-action="set-view-mode" data-studio-view="drums" data-copy="studioDrumRoll" aria-pressed="false"></button>
+          <button type="button" data-action="set-view-mode" data-studio-view="score" data-copy="viewScoreOption" aria-pressed="false"></button>
+          <button type="button" data-action="set-view-mode" data-studio-view="lyrics" data-copy="viewLyricsOption" aria-pressed="false"></button>
           <details class="studio-more">
             <summary data-aria-copy="studioMoreLabel"><span data-copy="studioMoreButton"></span></summary>
             <div class="studio-more-popover">
-              <button type="button" data-studio-view="guitar" data-copy="viewGuitarOption" aria-pressed="false"></button>
+              <button type="button" data-action="set-view-mode" data-studio-view="guitar" data-copy="viewGuitarOption" aria-pressed="false"></button>
               <div class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
                 <button type="button" data-studio-panel="mixer" data-copy="studioMixer" aria-pressed="false" aria-controls="studio-mixer"></button>
                 <button type="button" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-pressed="false" aria-controls="harmony-panel"></button>
@@ -164,20 +162,6 @@
           </details>
         </nav>
         <div class="studio-toolbar-actions"></div>
-        <div class="editor-view-controls" role="group" data-aria-copy="viewControlGroupLabel">
-          <label class="compact-field">
-            <svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="2.5" y="3" width="6.5" height="5.5" rx=".7"></rect><rect x="11" y="3" width="6.5" height="5.5" rx=".7"></rect><rect x="2.5" y="10.5" width="15" height="6.5" rx=".7"></rect></svg>
-            <span class="visually-hidden" data-copy="viewModeLabel"></span>
-            <select id="view-mode" data-action="set-view-mode" data-entity="workspace-view" data-focus-key="view-mode" data-aria-copy="viewModeLabel">
-              <option value="score" data-copy="viewScoreOption"></option>
-              <option value="piano-roll" data-copy="viewPianoRollOption"></option>
-              <option value="combined" data-copy="viewCombinedOption"></option>
-              <option value="lyrics" data-copy="viewLyricsOption"></option>
-              <option value="guitar" data-copy="viewGuitarOption"></option>
-              <option value="drums" data-copy="viewDrumsOption"></option>
-            </select>
-          </label>
-        </div>
       </section>
 
       </div>
@@ -206,10 +190,6 @@
                   <span class="editor-toolbar-label" data-copy="toolGroupLabel"></span>
                   <button id="roll-tool-select" type="button" data-action="set-tool" data-tool="select" data-copy="toolSelectButton" data-aria-copy="toolSelectAria" aria-pressed="true"></button>
                   <button id="roll-tool-draw" type="button" data-action="set-tool" data-tool="draw" data-copy="toolDrawButton" data-aria-copy="toolDrawAria" aria-pressed="false"></button>
-                </div>
-                <div class="editor-meter" data-entity="time-signature">
-                  <span data-copy="meterLabel"></span>
-                  <output id="editor-meter">4/4</output>
                 </div>
                 <label>
                   <span data-copy="snapLabel"></span>
@@ -293,17 +273,12 @@
                 <div class="score-layout-group" role="group" data-aria-copy="scoreLayoutGroupLabel">
                   <button id="score-layout-flow" type="button" data-action="set-score-layout" data-score-layout="flow" data-copy="scoreFlowButton" data-aria-copy="scoreFlowAria" aria-pressed="true"></button>
                   <button id="score-layout-page" type="button" data-action="set-score-layout" data-score-layout="page" data-copy="scorePageButton" data-aria-copy="scorePageAria" aria-pressed="false"></button>
-                  <button type="button" data-studio-view="combined" data-copy="scoreSplitButton" data-aria-copy="scoreSplitAria" aria-pressed="false"></button>
+                  <button type="button" data-action="set-view-mode" data-studio-view="combined" data-copy="scoreSplitButton" data-aria-copy="scoreSplitAria" aria-pressed="false"></button>
                 </div>
                 <p id="score-status" class="muted" role="status" aria-live="polite" aria-atomic="true" data-entity="score-status"></p>
               </div>
             </div>
             <div id="score-scroll" class="score-scroll" role="region" tabindex="0" data-aria-copy="scoreRegionLabel">
-              <div id="score-sticky-context" class="score-sticky-context" aria-hidden="true">
-                <span class="score-context-clef">𝄞</span>
-                <span id="score-context-key"></span>
-                <span id="score-context-meter"></span>
-              </div>
               <div id="score" data-renderer="abcjs" data-layout="flow"></div>
             </div>
             <div id="score-fallback" class="score-fallback" hidden></div>

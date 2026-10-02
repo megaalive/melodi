@@ -25,7 +25,7 @@ import { createDraftPersistence } from "./storage/draft.js?v=20261002.68";
 import { createBrowserLibrary } from "./storage/browser-library.js?v=20261002.68";
 import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261002.68";
 import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261002.68";
-import { deserializeProject } from "./core/serialization.js?v=20261002.68";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261002.68";
 import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261002.68";
 
 let language = DEFAULT_LANGUAGE;
@@ -299,12 +299,6 @@ function renderScoreControls(song, state = normalizeRuntimeState(commands.getSta
     button.setAttribute("aria-pressed", String(button.dataset.scoreLayout === layout));
   }
 
-  const meter = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
-  const contextKey = byId("score-context-key");
-  const contextMeter = byId("score-context-meter");
-  if (contextKey) contextKey.textContent = song.key;
-  if (contextMeter) contextMeter.textContent = meter;
-
   const selected = new Set(state.selectedNoteIds ?? []);
   const notes = song.notes.filter((note) => selected.has(note.id));
   const summary = byId("score-selection-summary");
@@ -353,7 +347,7 @@ function getR3ViewMarkup() {
   if (isR3AMarkup) return { modeControl: null, followControl: null, regions };
 
   const regionNames = new Set(regions.map((region) => region.dataset.viewRegion));
-  const complete = modeControl && followControl
+  const complete = followControl
     && [...Object.keys(VIEW_REGION_MODES)].every((name) => regionNames.has(name));
   if (!complete) throw new Error("Incomplete R3 view markup.");
   return { modeControl, followControl, regions };
@@ -854,7 +848,7 @@ function renderNotes(song, state) {
   save.textContent = translate("saveNoteButton");
   const deleteButton = makeButton(translate("deleteNoteButton"), "delete-note", {
     noteId: note.id,
-    focusFallback: "view-mode"
+    focusFallback: "view-piano-roll"
   });
   deleteButton.className = "secondary";
   deleteButton.dataset.focusKey = `delete-${note.id}`;
@@ -1019,7 +1013,6 @@ function renderEditorControls() {
   byId("snap-select").value = state.editor.snap;
   const drumsSnap = byId("drums-snap-select");
   if (drumsSnap && document.activeElement !== drumsSnap) drumsSnap.value = state.editor.snap;
-  byId("editor-meter").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   for (const button of document.querySelectorAll('[data-action="set-tool"]')) {
     const active = button.dataset.tool === state.editor.tool;
     button.setAttribute("aria-pressed", String(active));
@@ -1377,7 +1370,7 @@ function renderPlayback() {
   byId("current-tick").textContent = String(playback.currentTick);
   byId("current-note").textContent = note ? midiToPitch(note.pitch) : translate("noCurrentNote");
   byId("current-note").dataset.entityId = note?.id ?? "";
-  byId("current-section").textContent = section ? `${section.name} (${section.id})` : translate("noCurrentSection");
+  byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
   byId("play").disabled = playback.status === "playing";
   byId("pause").disabled = playback.status !== "playing";
@@ -1468,7 +1461,6 @@ function render() {
     element.setAttribute("title", label);
   });
   languageSelect.value = language;
-  byId("tempo-value").textContent = `${song.timing.tempo} BPM`;
   byId("key-value").textContent = `${song.key} ${song.scale.name}`;
   byId("time-signature-value").textContent = `${song.timing.timeSignature.numerator}/${song.timing.timeSignature.denominator}`;
   byId("song-title").textContent = song.title;
@@ -2699,7 +2691,10 @@ document.addEventListener("click", (event) => {
   if (target.closest("#chord-context-menu")) closeChordContextMenu();
   if (target.closest("#project-menu")) closeProjectMenu();
   const state = commands.getState();
-  if (target.dataset.action === "select-harmony") {
+  if (target.dataset.action === "set-view-mode") {
+    const mode = target.dataset.studioView;
+    if (mode && state.view.mode !== mode) run(() => commands.setViewMode(mode));
+  } else if (target.dataset.action === "select-harmony") {
     run(() => commands.selectHarmonyCandidate(target.dataset.harmonyId));
   } else if (target.dataset.action === "accept-harmony") {
     const chord = run(() => commands.acceptHarmonyCandidate(target.dataset.harmonyId));

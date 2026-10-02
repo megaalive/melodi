@@ -4326,10 +4326,9 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .brand-block { flex: 1; min-width: 0; }
 .studio .brand-block > h1 { display: none; }
 .studio .song-strip { min-height: 32px; padding: 0; margin: 0; gap: 12px; flex-wrap: nowrap; }
-.studio .song-summary > div:has(#tempo-value) { display: none; }
 .studio .song-summary dt { display: none; }
 .studio .song-identity { min-width: 0; }
-.studio .brand-block #song-title { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.studio .song-identity #song-title { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .studio #song-title { font-size: 14px; font-weight: 650; }
 .studio .song-identity { flex: 0 1 auto; }
 .studio .song-summary { gap: 15px; font-size: 11px; }
@@ -5123,7 +5122,7 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
   .studio .brand-block { flex: 1 1 0; width: auto; min-width: 0; overflow: hidden; }
   .studio .song-strip { display: flex; flex: 1 1 auto; width: 100%; min-width: 0; flex-wrap: nowrap; gap: 7px; overflow: hidden; }
   .studio .song-identity { flex: 1 1 112px; min-width: 0; }
-  .studio #song-title { width: max-content; max-width: 100%; overflow: visible; text-overflow: clip; color: var(--text); }
+  .studio #song-title { width: 100%; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text); }
   .studio .header-actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 4px; width: auto; min-width: max-content; margin-left: auto; }
   .studio .header-actions > .project-menu,
   .studio .header-actions > .studio-menu { flex: 0 0 auto; }
@@ -5131,7 +5130,6 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
   .studio .header-actions .project-menu-trigger { margin-left: 0; }
   .studio .header-actions .project-menu-trigger,
   .studio .header-actions .studio-menu > summary { white-space: nowrap; }
-  .studio .song-summary { display: none; }
   .studio .transport-main > .studio-overview { display: none; }
   .studio .roll-gesture-cue { top: 39%; left: 13%; width: min(320px, 72%); }
 }
