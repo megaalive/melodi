@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261002.67';
-import { createStudioWorkspace, musicalPosition } from "./ui/studio.js?v=20261002.67";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261002.67";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261002.67";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261002.67";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261002.67";
-import { createCommands } from "./core/commands.js?v=20261002.67";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261002.68';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261002.68";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261002.68";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261002.68";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261002.68";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261002.68";
+import { createCommands } from "./core/commands.js?v=20261002.68";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261002.67";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261002.67";
-import { createAudioPlayer } from "./audio/player.js?v=20261002.67";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261002.67";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261002.67";
-import { createScoreView } from "./ui/score.js?v=20261002.67";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261002.67";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261002.67";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261002.67";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261002.67";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261002.67";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261002.68";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261002.68";
+import { createAudioPlayer } from "./audio/player.js?v=20261002.68";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261002.68";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261002.68";
+import { createScoreView } from "./ui/score.js?v=20261002.68";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261002.68";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261002.68";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261002.68";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261002.68";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261002.68";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261002.67";
-import { createGenerationContext } from "./generation/context.js?v=20261002.67";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261002.68";
+import { createGenerationContext } from "./generation/context.js?v=20261002.68";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261002.67";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261002.67";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261002.67";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261002.67";
-import { deserializeProject } from "./core/serialization.js?v=20261002.67";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261002.67";
+import { createDraftPersistence } from "./storage/draft.js?v=20261002.68";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261002.68";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261002.68";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261002.68";
+import { deserializeProject } from "./core/serialization.js?v=20261002.68";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261002.68";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -2294,6 +2294,11 @@ function updateVolumeLabel(slider) {
 
 document.addEventListener("input", (event) => {
   if (event.target instanceof Element && event.target.matches("[data-channel-volume]")) updateVolumeLabel(event.target);
+  if (event.target instanceof HTMLInputElement && event.target.dataset.action === "set-selected-velocity") {
+    const output = event.target.nextElementSibling;
+    if (output) { output.value = event.target.value; output.textContent = event.target.value; }
+    event.target.setAttribute("aria-valuetext", translate("studioNoteVelocityValue", { value: event.target.value }));
+  }
 });
 document.addEventListener("change", (event) => {
   if (event.target instanceof Element && event.target.dataset.action === "set-chord-draw") renderChordDrawControl(commands.getSong());
@@ -2577,6 +2582,12 @@ document.addEventListener("input", (event) => {
 document.addEventListener("change", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
+  if (target.dataset.action === "set-selected-velocity") {
+    const volume = noteVolumeForVelocity(target.value);
+    const updates = commands.getSelectedNoteIds().map(noteId => ({ noteId, patch: { volume } }));
+    if (updates.length) run(() => commands.updateNotes(updates, { actor: "user" }));
+    return;
+  }
   if (target.dataset.action === "language-switch") {
     setLanguage(target.value);
   } else if (target.dataset.action === "theme-switch") {

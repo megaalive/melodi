@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261002.67';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261002.68';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -6,11 +6,22 @@ export function musicalPosition(song, tick) {
   return { bar: Math.floor(tick / barTicks) + 1, beat: Math.floor((tick % barTicks) / beatTicks) + 1 };
 }
 
+export function noteVolumeForVelocity(value) {
+  const velocity = Number(value);
+  if (!Number.isFinite(velocity)) return 1;
+  return Math.max(0, Math.min(127, Math.round(velocity))) / 127;
+}
+
+export function selectedNoteVelocity(notes) {
+  if (!notes?.length) return 127;
+  const volume = notes.reduce((sum, note) => sum + (note.volume ?? 1), 0) / notes.length;
+  return Math.max(0, Math.min(127, Math.round(volume * 127)));
+}
+
 /** Presentation only: one workspace, existing canonical commands, no Song preferences. */
 export function createStudioWorkspace(commands, translate, onError, { onOpenPanel = () => {} } = {}) {
   const byId = id => document.getElementById(id);
   let panel = null;
-  let sheetSize = 'peek';
   let lastPanel = 'chords';
   let lastChord = null;
   let overviewSong = null;
@@ -70,6 +81,31 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       }
       selectionBar.append(quickDuration);
     }
+    const velocity = document.createElement('details');
+    velocity.className = 'selection-velocity';
+    const velocitySummary = document.createElement('summary');
+    velocitySummary.dataset.copy = 'studioNoteVelocity';
+    velocitySummary.dataset.ariaCopy = 'studioNoteVelocityHelp';
+    velocity.append(velocitySummary);
+    const velocityPopover = document.createElement('div');
+    velocityPopover.className = 'selection-velocity-popover';
+    const velocityLabel = document.createElement('label');
+    const velocityLabelText = document.createElement('span');
+    velocityLabelText.dataset.copy = 'studioNoteVelocity';
+    const velocityInput = document.createElement('input');
+    velocityInput.type = 'range';
+    velocityInput.min = '0';
+    velocityInput.max = '127';
+    velocityInput.step = '1';
+    velocityInput.dataset.action = 'set-selected-velocity';
+    velocityInput.dataset.ariaCopy = 'studioNoteVelocityHelp';
+    const velocityOutput = document.createElement('output');
+    velocityOutput.value = '127';
+    velocityOutput.textContent = '127';
+    velocityLabel.append(velocityLabelText, velocityInput, velocityOutput);
+    velocityPopover.append(velocityLabel);
+    velocity.append(velocityPopover);
+    selectionBar.append(velocity);
     for (const [action, label] of [['context-duplicate','contextDuplicate'],['context-delete','contextDelete']]) {
       const button = document.createElement('button');
       button.type = 'button'; button.dataset.action = action; button.dataset.copy = label;
@@ -135,22 +171,6 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   mobilePanelPeek.dataset.copy = 'studioPanelPeek';
   mobilePanelPeek.dataset.ariaCopy = 'studioPanels';
   mobilePeek.append(mobilePanelPeek);
-  const inspectorHead = sidebar.querySelector('.studio-inspector-head');
-  const sheetSizes = sidebar.querySelector('.studio-sheet-sizes');
-  if (inspectorHead && sheetSizes) {
-    const sheetTabs = document.createElement('div');
-    sheetTabs.className = 'studio-sheet-panel-tabs';
-    sheetTabs.setAttribute('role', 'group');
-    sheetTabs.dataset.ariaCopy = 'studioPanels';
-    for (const [panelName, copyKey] of [['chords','harmonyLaneLabel'],['mixer','studioMixer']]) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.dataset.studioPanel = panelName;
-      button.dataset.copy = copyKey;
-      sheetTabs.append(button);
-    }
-    inspectorHead.insertBefore(sheetTabs, sheetSizes);
-  }
   const sessionActions = byId('generation-session-actions');
   const toolbarActions = document.querySelector('.studio-toolbar-actions');
   const moreAppActions = document.createElement('div');
@@ -272,7 +292,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       if (sessionActions) byId('generation-panel').append(sessionActions);
     }
     sidebar.hidden = !panel && !compact.matches;
-    sidebar.dataset.sheetSize = panel ? sheetSize : 'peek';
+    sidebar.dataset.sheetSize = panel ? 'half' : 'peek';
     const moreLabel = moreMenu.querySelector('summary [data-copy]');
     moreLabel.dataset.copy = 'studioMoreButton';
     moreLabel.textContent = translate('studioMoreButton');
@@ -282,8 +302,6 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   shortLandscape.addEventListener('change', arrangeControls);
   arrangeControls();
   function openPanel(value) {
-    if (value && value !== panel) sheetSize = 'half';
-    else if (!value && compact.matches) sheetSize = 'peek';
     if (value) lastPanel = value;
     panel = value;
     render(commands.getSong(), commands.getState(), false);
@@ -304,11 +322,10 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       studioMenu.open = false;
       studioMenu.querySelector('summary').focus({preventScroll:true});
     }
-    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek], [data-studio-size]');
+    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek]');
     if (!target) return;
     try {
-      if (target.dataset.studioSize) { sheetSize = target.dataset.studioSize; render(commands.getSong(),commands.getState(),false); }
-      else if (target.dataset.studioView) {
+      if (target.dataset.studioView) {
         const cameFromMoreMenu = moreMenu.contains(target);
         moreMenu.open = false;
         panel = null;
@@ -413,8 +430,17 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     if (autoSelect && state.selectedChordId && state.selectedChordId !== lastChord) { panel = 'chords'; lastPanel = panel; }
     lastChord = state.selectedChordId;
     document.body.dataset.studioPanel = panel ?? 'none';
-    sidebar.dataset.sheetSize = sheetSize;
+    sidebar.dataset.sheetSize = panel ? 'half' : 'peek';
     selectionBar.hidden = !state.selectedNoteIds.length || state.generation?.status === 'ready';
+    const selectedNotes = song.notes.filter(note => state.selectedNoteIds.includes(note.id));
+    const velocityInput = selectionBar.querySelector('[data-action="set-selected-velocity"]');
+    if (velocityInput) {
+      velocityInput.value = String(selectedNoteVelocity(selectedNotes));
+      velocityInput.disabled = selectedNotes.length === 0;
+      velocityInput.setAttribute('aria-label', translate('studioNoteVelocityHelp'));
+      const output = velocityInput.nextElementSibling;
+      if (output) { output.value = velocityInput.value; output.textContent = velocityInput.value; }
+    }
     for (const button of selectionBar.querySelectorAll('button[data-copy]')) {
       button.textContent = translate(button.dataset.copy);
       button.title = button.textContent;

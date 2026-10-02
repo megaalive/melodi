@@ -2,7 +2,6 @@ export const DEFAULT_LANGUAGE = "id";
 
 export const MESSAGES = {
   id: {
-    sheetPeek: "Ringkas", sheetHalf: "Sedang", sheetFull: "Penuh",
     durationEighth: "Durasi note 1/8", durationQuarter: "Durasi note 1/4", durationHalf: "Durasi note 1/2",
     "harmonyHeading": "Harmoni",
     "harmonyHelp": "Harmoni dan Bass berbunyi hanya pada bagian yang memiliki chord.",
@@ -468,6 +467,9 @@ export const MESSAGES = {
     contextRemoveAnchor: "Lepas Anchor",
     contextLock: "Lock",
     contextUnlock: "Unlock",
+    studioNoteVelocity: "Velocity",
+    studioNoteVelocityHelp: "Atur level playback nada terpilih",
+    studioNoteVelocityValue: "Velocity {value} dari 127",
     contextTranspose: "Transpose",
     contextLength: "Durasi",
     contextAddNote: "Tambah note di sini",
@@ -697,7 +699,6 @@ export const MESSAGES = {
     themeChanged: "Tema diubah."
   },
   en: {
-    sheetPeek: "Peek", sheetHalf: "Half", sheetFull: "Full",
     durationEighth: "Note duration 1/8", durationQuarter: "Note duration 1/4", durationHalf: "Note duration 1/2",
     "harmonyHeading": "Harmony",
     "harmonyHelp": "Harmony and Bass play only where chord blocks exist.",
@@ -1163,6 +1164,9 @@ export const MESSAGES = {
     contextRemoveAnchor: "Remove Anchor",
     contextLock: "Lock",
     contextUnlock: "Unlock",
+    studioNoteVelocity: "Velocity",
+    studioNoteVelocityHelp: "Set playback level for selected notes",
+    studioNoteVelocityValue: "Velocity {value} of 127",
     contextTranspose: "Transpose",
     contextLength: "Length",
     contextAddNote: "Add note here",

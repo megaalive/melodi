@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStudioWorkspace } from '../src/ui/studio.js';
+import { readFileSync } from 'node:fs';
+import { createStudioWorkspace, noteVolumeForVelocity, selectedNoteVelocity } from '../src/ui/studio.js';
 import { createCommands } from '../src/core/commands.js';
 import { createBlankSong } from '../src/core/model.js';
 
@@ -78,6 +79,23 @@ function fixture(narrow = false, landscape = false) {
   };
   return { doc, nodes, trigger, child, split, guitar, mixerTrigger, chordTrigger, click: target => listeners.get('click')({ target }), media: { matches: narrow, addEventListener() {} }, landscapeMedia: { matches: landscape, addEventListener() {} } };
 }
+
+test('selected-note Velocity maps to the existing note volume field', () => {
+  assert.equal(noteVolumeForVelocity(64), 64 / 127);
+  assert.equal(noteVolumeForVelocity(0), 0);
+  assert.equal(noteVolumeForVelocity(200), 1);
+  assert.equal(selectedNoteVelocity([{ volume: 0.5 }, {}]), 95);
+  assert.equal(selectedNoteVelocity([]), 127);
+});
+
+test('responsive roll positioning keeps compact canvases full-height and bounds the mobile sheet', () => {
+  const css = readFileSync(new URL('../styles/app.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(min-width: 761px\) and \(min-height: 501px\)\s*\{\s*\.studio #piano-roll-content \{ position: relative; \}\s*\}/);
+  assert.match(css, /@media \(max-width: 760px\)\s*\{[\s\S]*?\.studio #piano-roll-content \{ position: absolute; inset: 0;/);
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\) and \(min-width: 761px\)\s*\{[\s\S]*?\.studio #piano-roll-content \{ position: absolute; inset: 0;/);
+  assert.match(css, /\.studio \.workspace-sidebar\[data-sheet-size="half"\]\s*\{\s*height: min\(39dvh, calc\(100dvh - 68px\)\)/);
+  assert.doesNotMatch(css, /^\.studio #piano-roll-content\s*\{\s*position: relative;/m);
+});
 
 for (const narrow of [false, true]) test(`panel action clicks preserve context on ${narrow ? 'mobile' : 'desktop'}`, () => {
   const previous = { document: globalThis.document, matchMedia: globalThis.matchMedia };
