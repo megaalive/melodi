@@ -242,3 +242,30 @@ test("expression and piano roll stay aligned when one viewport reaches its scrol
   const labels = f.svg.querySelector('[data-entity="expression-label-layer"]');
   assert.equal(labels.getAttribute("transform"), "translate(180 0)");
 });
+
+test("a hidden expression scrollport cannot pull Piano Roll playback back to zero", () => {
+  const f = fixture();
+  f.view.render(f.song, f.state, f.geometry);
+  f.scroll.clientWidth = 0;
+  f.scroll.clientHeight = 0;
+  f.scroll.maxScrollLeft = 0;
+
+  f.peer.scrollLeft = 320;
+  f.peer.dispatch("scroll");
+
+  assert.equal(f.peer.scrollLeft, 320, "the visible Piano Roll keeps its follow position");
+  assert.equal(f.scroll.scrollLeft, 0, "the hidden Expression lane remains at its clamped offset");
+
+  f.scroll.dispatch("scroll");
+  assert.equal(f.peer.scrollLeft, 320, "a hidden lane cannot send a stale offset back to the roll");
+
+  f.scroll.clientWidth = 300;
+  f.scroll.clientHeight = 126;
+  f.scroll.maxScrollLeft = 1000;
+  f.view.syncFromPeer();
+  assert.equal(f.scroll.scrollLeft, 320, "the expression lane catches up when it becomes visible");
+  assert.equal(f.svg.querySelector('[data-entity="expression-label-layer"]').getAttribute("transform"), "translate(320 0)");
+
+  f.scroll.dispatch("scroll");
+  assert.equal(f.peer.scrollLeft, 320, "the asynchronous peer-scroll echo does not reverse the source");
+});

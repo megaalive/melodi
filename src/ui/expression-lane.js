@@ -1,4 +1,4 @@
-import { tickToX } from "./piano-roll.js?v=20261002.57";
+import { tickToX } from "./piano-roll.js?v=20261002.58";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const MODES = new Set(["bend", "volume", "pan", "vibrato"]);
@@ -99,6 +99,7 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
   let drag = null;
   let suppressClick = false;
   let syncingScroll = false;
+  const synchronizedScrollOffsets = new WeakMap();
 
   function localPoint(event) {
     const bounds = svgRoot.getBoundingClientRect();
@@ -114,13 +115,51 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
     if (labelLayer) labelLayer.setAttribute("transform", `translate(${scrollContainer.scrollLeft} 0)`);
   }
 
+  function isVisibleScrollport(element) {
+    if (!element || element.clientWidth <= 0) return false;
+    const bounds = element.getBoundingClientRect?.();
+    if (bounds && (bounds.width <= 0 || bounds.height <= 0)) return false;
+    const visibility = element.ownerDocument?.defaultView?.getComputedStyle?.(element)?.visibility;
+    return visibility !== "hidden";
+  }
+
   function syncScroll(source, target) {
-    if (syncingScroll) return;
+    if (syncingScroll) {
+      synchronizedScrollOffsets.delete(source);
+      return;
+    }
+    const expectedLeft = synchronizedScrollOffsets.get(source);
+    if (expectedLeft !== undefined) {
+      synchronizedScrollOffsets.delete(source);
+      if (source.scrollLeft === expectedLeft) {
+        updateFrozenLabels();
+        return;
+      }
+    }
+    // The Piano Roll remains usable when the Expression pane is absent or
+    // collapsed. A hidden peer has no meaningful scroll range and must never
+    // pull the active editor back to zero.
+    if (!isVisibleScrollport(source) || !isVisibleScrollport(target)) {
+      updateFrozenLabels();
+      return;
+    }
+
     syncingScroll = true;
+    const previousTargetLeft = target.scrollLeft;
     target.scrollLeft = source.scrollLeft;
-    const alignedLeft = Math.min(source.scrollLeft, target.scrollLeft);
-    if (source.scrollLeft !== alignedLeft) source.scrollLeft = alignedLeft;
-    if (target.scrollLeft !== alignedLeft) target.scrollLeft = alignedLeft;
+    if (target.scrollLeft !== previousTargetLeft) {
+      synchronizedScrollOffsets.set(target, target.scrollLeft);
+    }
+    // Expression scrolling follows the Piano Roll's actual range. If the
+    // expression lane is the source, keep both panes aligned at the Piano
+    // Roll's reachable edge. A Piano Roll follow update remains authoritative.
+    if (source === scrollContainer && target.scrollLeft !== source.scrollLeft) {
+      const previousSourceLeft = source.scrollLeft;
+      source.scrollLeft = target.scrollLeft;
+      if (source.scrollLeft !== previousSourceLeft) {
+        synchronizedScrollOffsets.set(source, source.scrollLeft);
+      }
+    }
     updateFrozenLabels();
     syncingScroll = false;
   }
@@ -376,6 +415,7 @@ export function createExpressionLaneView(svgRoot, scrollContainer, peerScrollCon
     render,
     setMode,
     getMode: () => mode,
-    updatePlayback
+    updatePlayback,
+    syncFromPeer: () => syncScroll(peerScrollContainer, scrollContainer)
   });
 }

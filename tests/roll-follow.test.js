@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { centeredScrollLeft, nearestScrollLeft, playbackFollowMode } from "../src/ui/roll-follow.js";
+import { centeredScrollLeft, isTextEntryActiveElement, nearestScrollLeft, playbackFollowMode } from "../src/ui/roll-follow.js";
 
 test("center follow leaves the start at zero and locks the playhead to the visible timeline midpoint", () => {
   const geometry = { viewportWidth: 800, gutterWidth: 56, contentWidth: 2400 };
@@ -46,6 +46,20 @@ test("follow keeps the playhead centered for custom ranges without changing the 
   assert.deepEqual(loop, before);
 });
 
+test("focused transport fields do not suspend playback follow, while real text editing still does", () => {
+  const input = (type, inTransport = false) => ({
+    tagName: "INPUT",
+    type,
+    closest: (selector) => selector === ".transport-form" && inTransport ? {} : null
+  });
+
+  assert.equal(isTextEntryActiveElement(input("number", true)), false, "BPM, seek, and range controls live in transport forms");
+  assert.equal(isTextEntryActiveElement(input("number")), true, "numeric fields outside transport remain protected");
+  assert.equal(isTextEntryActiveElement({ tagName: "TEXTAREA", closest: () => null }), true);
+  assert.equal(isTextEntryActiveElement(input("checkbox", true)), false);
+  assert.equal(isTextEntryActiveElement(null), false);
+});
+
 test("the app passes its canonical note-and-percussion range decision to both rolls", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   assert.match(app, /function canonicalSongEndTick\(song\)/);
@@ -55,6 +69,7 @@ test("the app passes its canonical note-and-percussion range decision to both ro
   assert.match(timeline, /chord.startTick \+ chord.durationTicks/);
   assert.match(app, /const customPlaybackRange = playback\.loop\.startTick !== 0 \|\| playback\.loop\.endTick !== songEndTick/);
   assert.match(app, /playbackFollowMode\(follow\)/);
+  assert.match(app, /isTextEntryActiveElement\(document\.activeElement\)/);
   assert.match(app, /rollView\?\.updatePlayback\(playback, \{ followMode, songEndTick \}\)/);
   assert.match(app, /drumGridView\?\.updatePlayback\(playback, \{[\s\S]*?followMode: state\.view\.mode === "drums" \? followMode : "none"/);
 });

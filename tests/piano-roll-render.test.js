@@ -568,6 +568,23 @@ test("pitch label gutter stays frozen during horizontal scroll", () => {
   assert.equal(svg.byClass("roll-pitch-label-gutter").length, 1);
 });
 
+test("pitch label gutter resynchronizes after an external viewport restoration", () => {
+  const { svg, scroll, view, state } = setup();
+  view.render(song([note("n1", 60), note("n2", 64, 3840, 480)]), state);
+  svg.rectWidth = Number(svg.getAttribute("width"));
+  const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
+
+  scroll.scrollLeft = 240;
+  scroll.dispatch("scroll");
+  assert.equal(layer.getAttribute("transform"), "translate(240 0)");
+
+  // Panel layout code can restore scrollLeft outside the roll view; explicitly
+  // syncing afterward must move the frozen chord/pitch gutter with the grid.
+  scroll.scrollLeft = 0;
+  view.syncViewport();
+  assert.equal(layer.getAttribute("transform"), "translate(0 0)");
+});
+
 test("full-song playback centers Piano Roll inside the timeline after the frozen labels", () => {
   const { svg, scroll, view, state } = setup();
   const longSong = song([note("n1", 60, 12000, 480)]);

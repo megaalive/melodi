@@ -11,6 +11,15 @@ export function playbackFollowMode(follow) {
   return "center";
 }
 
+const nonTextEntryInputTypes = new Set(["button", "checkbox", "radio", "range", "reset", "submit"]);
+
+export function isTextEntryActiveElement(element) {
+  if (!element || element.closest?.(".transport-form")) return false;
+  const tagName = String(element.tagName ?? "").toUpperCase();
+  if (tagName === "TEXTAREA") return true;
+  return tagName === "INPUT" && !nonTextEntryInputTypes.has(String(element.type ?? "text").toLowerCase());
+}
+
 export function centeredScrollLeft({ playheadX, viewportWidth, gutterWidth, contentWidth } = {}) {
   const viewport = nonNegative(viewportWidth);
   if (viewport === 0) return 0;
