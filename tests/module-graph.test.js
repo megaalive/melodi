@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";
 import { pathToFileURL } from "node:url";
 import { test } from "node:test";
+import { readAppStyles } from "./helpers/read-app-styles.js";
 
 // Modul yang menyentuh DOM saat diimpor tidak bisa di-load di Node, jadi hanya
 // diperiksa sintaksnya lewat `npm run check`. Modul lain di bawah diimpor sungguhan
@@ -153,7 +154,7 @@ test("Piano Roll dan Expression punya disclosure independen yang dapat diakses",
 
 test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan detail editor", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
 
   for (const id of ["piano-roll-collapse", "expression-collapse"]) {
     const start = html.indexOf(`id="${id}"`);
@@ -176,8 +177,9 @@ test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan det
 test("menu app meratakan project dan settings tanpa disclosure bersarang", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
   const studio = readFileSync(resolve("src/ui/studio.js"), "utf8");
+  const roll = readFileSync(resolve("src/ui/piano-roll.js"), "utf8");
   const messages = readFileSync(resolve("src/i18n/messages.js"), "utf8");
 
   const headerStart = html.indexOf('<header class="page-header">');
@@ -239,6 +241,30 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
 
   const editorToolbar = html.slice(html.indexOf('id="editor-toolbar"'), html.indexOf('id="piano-roll-content"'));
   for (const id of ["roll-tool-select", "roll-tool-draw", "snap-select", "roll-zoom"]) assert.ok(editorToolbar.includes(`id="${id}"`));
+  assert.match(editorToolbar, /id="roll-selection-controls"[^>]*role="group"[^>]*hidden/);
+  for (const action of ["copy-selection", "paste-notes", "clear-selection"]) assert.match(editorToolbar, new RegExp(`data-action="${action}"`));
+  assert.match(editorToolbar, /data-focus-fallback="roll-tool-select"/);
+  assert.match(app, /selectionControls\.hidden = !hasNoteSelection && !state\.selection/);
+  assert.match(html, /id="harmony-timeline-tools"[^>]*contextual-roll-controls[^>]*hidden/);
+  assert.match(html, /id="progression-workspace"[^>]*data-aria-copy="harmonyLaneLabel"/);
+  assert.match(html, /id="harmony-tools-roll-home" hidden/);
+  assert.match(roll, /commands\.setHarmonyRange\(Number\(bar\.dataset\.startTick\), Number\(bar\.dataset\.endTick\)\);\s*focusChordEditor\(\)/);
+  assert.match(app, /function syncHarmonyToolsVisibility\(\)[\s\S]*?rollHome\.after\(harmonyTools\)[\s\S]*?harmonyTools\.hidden = !chordPanelActive/);
+  assert.match(app, /const laneContextActive = rollVisible && panel === "none" && pianoRollHarmonyContextActive/);
+  assert.match(app, /const chordPanelActive = panel === "chords"/);
+  assert.match(app, /const rollVisible = Boolean\(rollSection && !rollSection\.hidden && rollContent && !rollContent\.hidden\)/);
+  assert.match(app, /const focusedInRollTools = Boolean\(rollSection\?\.contains\(activeElement\) && harmonyTools\.contains\(activeElement\)\)/);
+  assert.match(app, /focusin", \(event\) => \{\s*if \(isHarmonyLaneTarget\(event\.target\)\)/);
+  assert.match(app, /if \(!contextStillFocused\) pianoRollHarmonyContextActive = false/);
+  assert.match(app, /studioView\?\.render\(song, state\);\s*syncHarmonyToolsVisibility\(\);/);
+  assert.match(app, /noteSelectionBar\.setAttribute\("role", "group"\)/);
+  assert.match(app, /target\?\.closest\("\[data-studio-panel\], \[data-studio-close\]"\)/);
+  assert.match(app, /queueMicrotask\(renderEditorControls\)/);
+  const transportButtons = html.slice(html.indexOf('class="transport-buttons"'), html.indexOf('</div>', html.indexOf('class="transport-buttons"')));
+  assert.match(transportButtons, /id="play"[^>]*data-action="play"[^>]*data-action-alias="pause"/);
+  assert.match(transportButtons, /id="pause"[^>]*data-action="pause"[^>]*hidden/);
+  assert.match(app, /if \(state\.playback\.status === "playing"\) run\(\(\) => commands\.pause\(\), "playbackPaused"\)/);
+  assert.match(app, /playToggle\.dataset\.ariaCopy = playing \? "pauseButton" : "playButton"/);
   assert.match(app, /element\.setAttribute\("aria-label", label\)/);
   assert.match(app, /element\.setAttribute\("title", label\)/);
 
@@ -262,7 +288,7 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
 test("editor note dikonsolidasikan ke Expression tanpa popup kanan atas", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
 
   assert.doesNotMatch(html, /editor-note-actions|note-actions-label|note-bend-status/);
   assert.doesNotMatch(app, /editor-note-actions|note-actions-label|note-bend-status/);
@@ -287,7 +313,7 @@ test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-ben
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
   const score = readFileSync(resolve("src/ui/score.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
   const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
 
   const sectionStart = html.indexOf('<section id="score-section"');
@@ -318,7 +344,7 @@ test("Score adalah editor canonical dengan Flow/Page dan shortcut yang benar-ben
 test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
   const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
 
   const start = html.indexOf('<section id="guitar-section"');
@@ -345,7 +371,7 @@ test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron
 test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
   const runtime = readFileSync(resolve("src/core/runtime-state.js"), "utf8");
   const grid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
 
@@ -384,7 +410,7 @@ test("Drums memakai Drum Grid canonical tanpa pitched Expression", () => {
 test("Hit Expression percussion capability-aware dan tidak meminjam Bend/Vibrato", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
   const grid = readFileSync(resolve("src/ui/drum-grid.js"), "utf8");
   const expression = readFileSync(resolve("src/ui/percussion-expression.js"), "utf8");
 
@@ -442,7 +468,7 @@ test("UI tidak memakai dialog blocking bawaan browser", () => {
 test("Score memakai abcjs lokal dan tidak lagi bergantung pada VexFlow", () => {
   const score = readFileSync(resolve("src/ui/score.js"), "utf8");
   const html = readFileSync(resolve("index.html"), "utf8");
-  const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const css = readAppStyles();
 
   assert.match(score, /ABCJS\.renderAbc\(/);
   assert.doesNotMatch(score, /VexFlow|\bVF\./);

@@ -88,7 +88,7 @@
         <div class="transport-main">
           <div class="transport-action-group" role="group" data-aria-copy="transportControlsGroupLabel">
             <div class="transport-buttons">
-              <button id="play" type="button" data-action="play" data-aria-copy="playButton"><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5.5 3.5 16 10 5.5 16.5z" fill="currentColor" stroke="none"></path></svg></button>
+              <button id="play" type="button" data-action="play" data-action-alias="pause" data-aria-copy="playButton"><svg class="toolbar-icon" data-playback-icon="play" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5.5 3.5 16 10 5.5 16.5z" fill="currentColor" stroke="none"></path></svg><svg class="toolbar-icon" data-playback-icon="pause" viewBox="0 0 20 20" aria-hidden="true" focusable="false" hidden><path d="M6 4v12M14 4v12" stroke-width="3"></path></svg></button>
               <button id="pause" type="button" data-action="pause" data-aria-copy="pauseButton" disabled hidden><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M6 4v12M14 4v12" stroke-width="3"></path></svg></button>
               <button id="stop" type="button" class="secondary" data-action="stop" data-aria-copy="stopButton"><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><rect x="5" y="5" width="10" height="10" rx="1" fill="currentColor" stroke="none"></rect></svg></button>
             </div>
@@ -176,7 +176,7 @@
                 <p id="piano-roll-collapse-summary" class="collapsed-panel-summary" hidden></p>
                 <button type="button" class="pane-help-trigger secondary" data-action="show-help" data-aria-copy="pianoRollHelpButton" aria-controls="context-help-dialog">?</button>
               </div>
-              <div id="editor-toolbar" class="editor-toolbar" aria-label="Piano Roll controls">
+              <div id="editor-toolbar" class="editor-toolbar" data-aria-copy="pianoRollControlsLabel">
                 <div class="editor-toolbar-group editor-tool-group" role="group" data-aria-copy="toolGroupLabel">
                   <span class="editor-toolbar-label" data-copy="toolGroupLabel"></span>
                   <button id="roll-tool-select" type="button" data-action="set-tool" data-tool="select" data-copy="toolSelectButton" data-aria-copy="toolSelectAria" aria-pressed="true"></button>
@@ -195,18 +195,20 @@
                   <input id="roll-zoom" type="range" min="0.5" max="4" step="0.25" value="1" data-action="set-zoom" data-focus-key="roll-zoom" data-aria-copy="zoomSliderLabel">
                   <output id="roll-zoom-value" data-entity="roll-zoom">100%</output>
                 </label>
-
-                <button id="copy-selection" type="button" class="secondary" data-action="copy-selection" data-copy="copyButton"></button>
-                <button id="paste-notes" type="button" class="secondary" data-action="paste-notes" data-copy="pasteButton" disabled></button>
-                <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-copy="clearSelectionButton"></button>
+                <div id="roll-selection-controls" class="editor-toolbar-group roll-selection-controls" role="group" data-aria-copy="selectionHeading" hidden>
+                  <button id="copy-selection" type="button" class="secondary" data-action="copy-selection" data-focus-key="copy-selection" data-focus-fallback="roll-tool-select" data-copy="copyButton"></button>
+                  <button id="paste-notes" type="button" class="secondary" data-action="paste-notes" data-focus-key="paste-notes" data-focus-fallback="roll-tool-select" data-copy="pasteButton" disabled></button>
+                  <button id="clear-selection" type="button" class="secondary" data-action="clear-selection" data-focus-key="clear-selection" data-focus-fallback="roll-tool-select" data-copy="clearSelectionButton"></button>
+                </div>
               </div>
               <button id="piano-roll-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="pianoRoll" aria-controls="piano-roll-content" aria-expanded="true">
                 <svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
               </button>
             </div>
             <div id="piano-roll-content" class="panel-disclosure-content">
-              <section id="harmony-timeline-tools" class="harmony-timeline-tools" aria-label="Chord tools">
-                <section id="progression-workspace" class="progression-workspace" aria-label="Chord progression"></section>
+              <div id="harmony-tools-roll-home" hidden></div>
+              <section id="harmony-timeline-tools" class="harmony-timeline-tools contextual-roll-controls" role="group" data-aria-copy="harmonyLaneLabel" hidden>
+                <section id="progression-workspace" class="progression-workspace" data-aria-copy="harmonyLaneLabel"></section>
                 <p id="harmony-location" class="harmony-location" aria-live="polite"></p>
                 <form id="harmony-range-form" data-action="suggest-harmony">
                   <input name="startTick" type="hidden" value="0"><input name="endTick" type="hidden">
