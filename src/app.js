@@ -1601,8 +1601,37 @@ function openShareDialog(url) {
 }
 
 function closeProjectMenu() {
-  byId("project-menu").open = false;
+  const menu = byId("project-menu");
+  if (!menu) return;
+  const restoreFocus = menu.contains(document.activeElement);
+  menu.open = false;
+  if (restoreFocus) menu.querySelector("summary")?.focus({ preventScroll: true });
 }
+
+let helpReturnFocus = null;
+function openHelpDialog(trigger) {
+  const dialog = byId("context-help-dialog");
+  const menu = byId("project-menu");
+  const menuSummary = menu?.querySelector("summary");
+  const openedFromMenu = Boolean(menu?.contains(trigger));
+  if (menu?.open) closeProjectMenu();
+  helpReturnFocus = openedFromMenu ? menuSummary : trigger;
+  if (dialog && !dialog.open) dialog.showModal();
+}
+
+function closeHelpDialog() {
+  const dialog = byId("context-help-dialog");
+  if (dialog?.open) dialog.close();
+}
+
+byId("context-help-dialog")?.addEventListener("close", () => {
+  const target = helpReturnFocus;
+  helpReturnFocus = null;
+  if (target?.isConnected) target.focus({ preventScroll: true });
+});
+byId("context-help-dialog")?.addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) closeHelpDialog();
+});
 
 function openProjectDialog(id) {
   const dialog = byId(id);
@@ -2582,9 +2611,11 @@ document.addEventListener("change", (event) => {
   }
   if (target.dataset.action === "language-switch") {
     setLanguage(target.value);
+    closeProjectMenu();
   } else if (target.dataset.action === "theme-switch") {
     setTheme(target.value);
     announce("themeChanged");
+    closeProjectMenu();
   } else if (target.dataset.action === "set-tempo-direct") {
     run(() => commands.setTempo(Number(target.value)), "tempoUpdated");
     if (target.form) target.form.dataset.pending = "false";
@@ -2689,7 +2720,7 @@ document.addEventListener("click", (event) => {
   const target = event.target instanceof Element ? event.target.closest("[data-action]") : null;
   if (!target) return;
   if (target.closest("#chord-context-menu")) closeChordContextMenu();
-  if (target.closest("#project-menu")) closeProjectMenu();
+  if (target.closest("#project-menu") && !(target instanceof HTMLSelectElement)) closeProjectMenu();
   const state = commands.getState();
   if (target.dataset.action === "set-view-mode") {
     const mode = target.dataset.studioView;
@@ -2861,6 +2892,10 @@ document.addEventListener("click", (event) => {
     run(() => commands.stop(), "playbackStoppedMessage");
   } else if (target.dataset.action === "command-palette") {
     openPalette();
+  } else if (target.dataset.action === "show-help") {
+    openHelpDialog(target);
+  } else if (target.dataset.action === "close-help-dialog") {
+    closeHelpDialog();
   } else if (target.dataset.action === "undo") {
     run(() => commands.undo(), "editUndone");
   } else if (target.dataset.action === "redo") {
@@ -3291,7 +3326,7 @@ confirmDialog?.addEventListener("click", (event) => {
 });
 
 const transientDetails = [...document.querySelectorAll(
-  ".transport-advanced, .pane-help, .generation-options"
+  ".transport-advanced, .generation-options"
 )];
 for (const details of transientDetails) {
   details.addEventListener("toggle", () => {

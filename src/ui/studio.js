@@ -26,11 +26,8 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   let lastChord = null;
   let overviewSong = null;
   const sidebar = document.querySelector('.workspace-sidebar');
-  const settings = document.querySelector('.studio-settings');
-  const studioMenu = document.querySelector('.studio-menu');
   const headerActions = document.querySelector('.header-actions');
   const projectMenu = document.querySelector('.project-menu');
-  const studioMenuActions = studioMenu.querySelector('.studio-menu-actions');
   const mixer = byId('studio-mixer-channels');
   const expressionPanel = byId('expression-panel');
   if (expressionPanel) sidebar.append(expressionPanel);
@@ -165,17 +162,8 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   }
   const panelSwitches = document.querySelector('.studio-panel-switches');
   const mobilePeek = sidebar.querySelector('.mobile-panel-peek-actions');
-  const mobilePanelPeek = document.createElement('button');
-  mobilePanelPeek.type = 'button';
-  mobilePanelPeek.dataset.studioPanel = 'chords';
-  mobilePanelPeek.dataset.copy = 'studioPanelPeek';
-  mobilePanelPeek.dataset.ariaCopy = 'studioPanels';
-  mobilePeek.append(mobilePanelPeek);
   const sessionActions = byId('generation-session-actions');
   const toolbarActions = document.querySelector('.studio-toolbar-actions');
-  const moreAppActions = document.createElement('div');
-  moreAppActions.className = 'studio-more-app-actions';
-  morePopover.append(moreAppActions);
   const mixerTrigger = document.querySelector('button[data-studio-panel="mixer"]');
   const chordTrigger = document.querySelector('button[data-studio-panel="chords"]');
   const generateTrigger = document.querySelector('button[data-studio-panel="generate"]');
@@ -252,41 +240,29 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     transportSettings.prepend(tempo);
     moreMenu.open = false;
     if (compact.matches) {
-      settings.open = false;
       morePopover.prepend(guitarMode);
-      studioMenu.open = false;
       advancedBody.append(follow);
-      morePopover.append(advanced);
       if (shortLandscape.matches) {
-        studioMenu.hidden = true;
-        moreAppActions.append(studioMenuActions);
-        panelSwitches.append(mixerTrigger, chordTrigger, generateTrigger);
         modeNav.insertBefore(guitarMode, moreMenu);
+        mobilePeek.append(panelSwitches);
         toolbarActions.append(editorTools);
         toolbarActions.append(moreMenu);
         transportSettings.append(projectMenu);
       } else {
-        studioMenu.hidden = false;
-        headerActions.prepend(projectMenu, studioMenu);
-        studioMenu.append(studioMenuActions);
+        headerActions.prepend(projectMenu);
         modeNav.append(moreMenu);
-        panelSwitches.append(mixerTrigger, chordTrigger, generateTrigger);
+        mobilePeek.append(panelSwitches);
         editorToolsHome.prepend(editorTools);
       }
       editorSettings.hidden = false;
       editorSettings.setAttribute('aria-label', translate('editorSettingsHeading'));
       if (sessionActions) byId('generation-panel').append(sessionActions);
     } else {
-      headerActions.prepend(projectMenu, studioMenu);
-      studioMenu.append(studioMenuActions);
-      studioMenu.hidden = false;
+      headerActions.prepend(projectMenu);
       editorToolsHome.prepend(editorTools);
       modeNav.insertBefore(guitarMode, moreMenu);
-      studioMenu.open = true;
       advancedBody.append(follow);
-      morePopover.append(advanced);
-      transportSettings.append(mixerTrigger);
-      toolbarActions.append(moreMenu, chordTrigger);
+      toolbarActions.append(panelSwitches, moreMenu);
       editorToolbar.append(...editorExtras);
       editorSettings.hidden = true;
       if (sessionActions) byId('generation-panel').append(sessionActions);
@@ -313,14 +289,23 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     const fallback = document.querySelector('[data-studio-view][aria-pressed="true"]');
     (trigger?.getClientRects().length ? trigger : fallback)?.focus({preventScroll:true});
   }
+  const popoverDetails = [projectMenu, moreMenu, advanced].filter(Boolean);
+  function closePopover(details, restoreFocus = true) {
+    if (!details?.open) return;
+    details.open = false;
+    if (restoreFocus) details.querySelector('summary')?.focus({preventScroll:true});
+  }
   document.addEventListener('click', event => {
+    const targetNode = event.target && typeof event.target === 'object' ? event.target : null;
+    for (const details of popoverDetails) {
+      if (details.open && targetNode && !details.contains(targetNode)) {
+        closePopover(details, !document.querySelector(':modal'));
+      }
+    }
     if (panel === 'mixer' && !sidebar.contains(event.target) && !mixerTrigger.contains(event.target)) openPanel(null);
-    if (settings.open && !settings.contains(event.target)) settings.open = false;
-    if (compact.matches && studioMenu.open && !studioMenu.contains(event.target)) studioMenu.open = false;
-    if (moreMenu.open && !moreMenu.contains(event.target)) moreMenu.open = false;
-    if (compact.matches && studioMenu.open && studioMenu.contains(event.target) && !settings.contains(event.target) && event.target.closest?.('button[data-action]')) {
-      studioMenu.open = false;
-      studioMenu.querySelector('summary').focus({preventScroll:true});
+    if (event.target.closest?.('[data-sheet-close]')) {
+      closePopover(event.target.closest('details'));
+      return;
     }
     const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-close], [data-studio-seek]');
     if (!target) return;
@@ -341,14 +326,13 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     } catch (error) { onError(error); }
   });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !event.defaultPrevented && moreMenu.open && moreMenu.contains(event.target)) {
-      moreMenu.open = false; moreMenu.querySelector('summary').focus(); event.preventDefault(); return;
-    }
-    if (event.key === 'Escape' && !event.defaultPrevented && settings.open && settings.contains(event.target)) {
-      settings.open = false; settings.querySelector('summary').focus(); event.preventDefault(); return;
-    }
-    if (event.key === 'Escape' && !event.defaultPrevented && compact.matches && studioMenu.open && studioMenu.contains(event.target)) {
-      studioMenu.open = false; studioMenu.querySelector('summary').focus(); event.preventDefault(); return;
+    if (event.key === 'Escape' && !event.defaultPrevented) {
+      const openPopover = popoverDetails.find(details => details.open && details.contains(event.target));
+      if (openPopover) {
+        closePopover(openPopover);
+        event.preventDefault();
+        return;
+      }
     }
     if (event.key === 'Escape' && !event.defaultPrevented && sidebar.contains(event.target) && panel) { openPanel(null); restorePanelFocus(); }
     const current = event.target.closest?.('#studio-views > [data-studio-view], #studio-views > .studio-more > summary');

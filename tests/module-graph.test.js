@@ -161,7 +161,7 @@ test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan det
     assert.match(button, /class="toolbar-icon disclosure-chevron"/);
   }
 
-  for (const detailClass of ["transport-advanced", "bend-curve-editor", "expression-vibrato-details", "generation-options", "sidebar-tools"]) {
+  for (const detailClass of ["transport-advanced", "bend-curve-editor", "expression-vibrato-details", "generation-options"]) {
     const start = html.indexOf(`class="${detailClass}"`);
     const fragment = html.slice(start, html.indexOf("</summary>", start));
     assert.match(fragment, /class="disclosure-summary"/);
@@ -173,27 +173,55 @@ test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan det
   assert.match(css, /panel-collapse-button\[aria-expanded="false"\] \.disclosure-chevron/);
 });
 
-test("Project menu mengelompokkan alur project tanpa memenuhi header dengan tombol file", () => {
+test("menu app meratakan project dan settings tanpa disclosure bersarang", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const app = readFileSync(resolve("src/app.js"), "utf8");
   const css = readFileSync(resolve("styles/app.css"), "utf8");
+  const studio = readFileSync(resolve("src/ui/studio.js"), "utf8");
+  const messages = readFileSync(resolve("src/i18n/messages.js"), "utf8");
 
   const headerStart = html.indexOf('<header class="page-header">');
   const headerEnd = html.indexOf("</header>", headerStart);
   const header = html.slice(headerStart, headerEnd);
   assert.match(header, /class="header-actions"/);
-  assert.match(header, /id="project-menu" class="project-menu"/);
+  assert.match(header, /id="project-menu" class="project-menu" data-aria-copy="appMenuLabel"/);
   assert.equal((header.match(/class="header-select-control"/g) ?? []).length, 2);
   assert.ok(header.indexOf('class="project-menu"') < header.indexOf('class="header-controls"'));
-  assert.doesNotMatch(header, /class="project-actions"/);
-  const menuStart = header.indexOf('class="project-menu-popover"');
-  const menuEnd = header.indexOf("</div>", menuStart);
+  assert.doesNotMatch(header, /<details class="studio-menu"|<details class="studio-settings"/);
+  const menuStart = header.indexOf('class="project-menu-popover');
+  const menuEnd = header.indexOf("</details>", menuStart);
   const projectMenu = header.slice(menuStart, menuEnd);
-  for (const action of ["new-song", "show-examples", "show-browser-library", "show-save-browser", "open-project-file", "save-project-file", "share-song"]) {
+  for (const action of ["new-song", "show-examples", "show-browser-library", "save-browser-direct", "show-save-browser", "open-project-file", "save-project-file", "share-song", "command-palette", "language-switch", "theme-switch"]) {
     assert.match(projectMenu, new RegExp(`data-action="${action}"`));
   }
+  assert.match(projectMenu, /aria-labelledby="app-settings-heading"/);
+  assert.match(projectMenu, /data-sheet-close/);
   assert.match(header, /id="project-file-input" type="file"[^>]+hidden/);
   assert.match(css, /#project-menu\[open\]\s*\{\s*z-index:\s*45;/);
+  assert.match(messages, /appMenuLabel:\s*"Menu"/);
+  assert.match(messages, /projectActionsHeading:\s*"Proyek"/);
+  assert.match(messages, /projectActionsHeading:\s*"Project"/);
+
+  let detailsDepth = 0;
+  let maximumDetailsDepth = 0;
+  for (const [tag] of html.matchAll(/<\/?details\b[^>]*>/gi)) {
+    if (tag.startsWith("</")) detailsDepth -= 1;
+    else {
+      detailsDepth += 1;
+      maximumDetailsDepth = Math.max(maximumDetailsDepth, detailsDepth);
+    }
+  }
+  assert.equal(maximumDetailsDepth, 1, "details elements do not nest in the source DOM");
+  assert.doesNotMatch(studio, /morePopover\.append\(advanced\)/);
+  assert.match(studio, /toolbarActions\.append\(panelSwitches, moreMenu\)/);
+  assert.match(studio, /mobilePeek\.append\(panelSwitches\)/);
+  assert.doesNotMatch(html, /<details class="pane-help"|class="pane-help-popover"/);
+  assert.equal((html.match(/class="pane-help-trigger secondary"/g) ?? []).length, 2);
+  assert.match(html, /<dialog id="context-help-dialog"[^>]*aria-labelledby="context-help-heading"/);
+  assert.match(html, /data-copy="pianoRollHelp"/);
+  assert.match(html, /data-copy="scoreHelp"/);
+  assert.match(app, /target\.dataset\.action === "show-help"/);
+  assert.match(app, /target\.dataset\.action === "close-help-dialog"/);
 
   const transport = html.indexOf('class="transport-action-group" role="group" data-aria-copy="transportControlsGroupLabel"');
   const settings = html.indexOf('class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel"');
@@ -203,6 +231,8 @@ test("Project menu mengelompokkan alur project tanpa memenuhi header dengan tomb
   assert.match(settingsGroup, /id="tempo-input"/);
   assert.match(settingsGroup, /id="loop-enabled"/);
   assert.match(settingsGroup, /class="transport-advanced"/);
+  assert.match(settingsGroup, /id="undo"[^>]*data-action="undo"/);
+  assert.match(settingsGroup, /id="redo"[^>]*data-action="redo"/);
   assert.match(settingsGroup, /id="follow-mode"/);
   assert.doesNotMatch(html, /<select id="view-mode"/);
   assert.match(html, /id="studio-views"[^>]*data-entity="workspace-view"/);
