@@ -103,13 +103,31 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .app-shell { display: flex; flex-direction: column; height: calc(100dvh - 40px); min-height: 0; padding-bottom: 0; }
 .studio .workspace-grid { display: grid; flex: 1 1 auto; min-height: 0; }
 .studio .workspace-canvas { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-width: 0; min-height: 0; }
-.studio-guitar-zone { flex: none; min-width: 0; }
-.studio-guitar-zone[data-open="true"] { display: flex; flex-direction: column; height: var(--studio-guitar-zone-height,220px); min-height: 0; }
-.studio-guitar-zone[hidden],.studio-guitar-zone #guitar-section[hidden],.studio-guitar-resizer[hidden] { display: none !important; }
-.studio-guitar-zone #guitar-section { flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; }
-.studio-guitar-resizer { height: 20px; touch-action: none; cursor: ns-resize; }
-.studio-guitar-resizer::after { content: ""; display: block; height: 2px; margin: 9px 0; background: var(--border-strong); }
-.studio-guitar-resizer:focus-visible { outline: 2px solid var(--focus); }
+.studio-guitar-zone{flex:none;min-width:0}
+.studio-guitar-zone[data-open="true"]{display:flex;flex-direction:column;height:var(--studio-guitar-zone-height,220px);min-height:0}
+.studio-guitar-zone[hidden]{display:none!important}
+.studio-guitar-zone #guitar-section{flex:1;min-height:0;overflow:auto;padding:0 8px 8px}
+.studio-guitar-resizer{height:20px;touch-action:none;cursor:ns-resize}
+.studio-guitar-resizer::after{content:"";display:block;height:2px;margin:9px 0;background:var(--border-strong)}
+.studio-guitar-resizer:focus-visible{outline:2px solid var(--focus)}
+.studio-core-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;padding:6px;border-bottom:1px solid var(--border);background:var(--surface-subtle)}
+.studio-core-controls[hidden]{display:none!important}
+.studio-core-controls>.editor-toolbar{flex:1 1 auto}
+.studio-core-controls>.transport-advanced-grid{display:contents}
+.studio-core-controls .transport-form{display:flex;align-items:end;gap:4px}
+.studio-core-controls>.transport-form{flex:0 1 17rem;max-width:20rem}
+.studio-core-controls>.generation-primary-actions button{width:auto}
+.studio-quick-chord{display:flex;align-items:center;gap:4px}
+.studio-quick-chord[hidden]{display:none!important}
+.studio .studio-core-controls>.instrument-mix-strip{width:auto;max-width:20rem;flex-wrap:nowrap;min-width:12rem;margin:0;padding:4px 6px}
+.studio-dock-slot{display:flex;flex:1 1 50%;flex-direction:column;min-height:0;border-top:1px solid var(--border)}
+.studio-dock-slot[hidden]{display:none!important}
+.studio-dock-slot[data-open="false"]{flex:0 0 auto}
+.studio-dock-slot-heading{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px;background:var(--surface)}
+.studio-dock-slot-heading strong{font-size:12px}
+.studio-dock-slot-toggle{width:32px;min-height:32px;padding:0}
+.studio-dock-slot-body{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.studio-dock-slot-body[hidden]{display:none!important}
 .guitar-zone-toggle,.mobile-guitar-trigger { min-height: 44px; }
 .studio .workspace-pane { border: 0; border-radius: 0; padding: 6px 8px; min-width: 0; }
 .studio #piano-roll-section, .studio #score-section, .studio #lyrics-section, .studio #drums-section { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
@@ -234,7 +252,7 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .syllable-actions button { min-height: 29px; font-size: 10px; }
 .studio .candidate-dock { border-radius: 4px; margin: 5px 0; }
 
-/* Gelombang vibrato dibaca terpisah dari handle depth yang tetap presisi. */
+
 .expression-vibrato-wave {
   fill: none;
   stroke: var(--expression-ink);
@@ -252,7 +270,7 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
   stroke-width: 2.8;
 }
 
-/* Ink follows its actual background: note bodies stay dark in both themes. */
+
 :root {
   --note-ink: #f5f8f7;
   --expression-note-ink: var(--note-ink);
@@ -270,7 +288,7 @@ button.danger-button { color: var(--on-accent); }
 #score .abcjs-bar path,
 #score .abcjs-staff path { fill: currentColor; }
 
-/* Keep explicit and system dark mode readable without light-dark(). */
+
 @supports not (color: light-dark(#fff, #000)) {
   :root[data-theme="dark"] {
     --paper: #14171a;
@@ -378,7 +396,7 @@ button.danger-button { color: var(--on-accent); }
   }
 }
 
-/* Preview progresi berupa blok musik, bukan tabel parameter. */
+
 .studio .progression-workspace { border-bottom: 1px solid var(--border); padding: .5rem 0; }
 .studio #harmony-timeline-tools { display: block; }
 
@@ -389,7 +407,7 @@ button.danger-button { color: var(--on-accent); }
 .studio .harmony-timeline-tools #harmony-candidates p { align-self: center; }
 .studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony] { white-space: nowrap; padding-inline: .6rem; color: var(--accent); }
 
-/* Hover harus selalu mengganti pasangan latar dan tinta bersama. */
+
 button:hover:not(:disabled) { color: var(--on-accent); }
 button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled) {
   background: var(--accent-soft); color: var(--accent-strong);
@@ -401,7 +419,7 @@ button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:d
 .drum-grid-ruler-surface:hover:not(:disabled) { background: transparent; color: var(--text); }
 button.danger-button:hover:not(:disabled) { background: var(--danger); color: var(--on-accent); }
 
-/* Alat chord tinggal satu toolbar; isi musik memakai ruang timeline. */
+
 .studio #piano-roll-section { padding-top: 3px; }
 .studio .compact-pane-heading { margin-bottom: 0; min-height: 30px; }
 .studio #harmony-timeline-tools { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 0 0 12px; }
@@ -413,7 +431,7 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
 .studio .harmony-timeline-tools #harmony-candidates { flex-basis: 100%; }
 .studio .instrument-mix-strip { margin-top: 0; }
 
-/* Menu konteks memakai baris netral, bukan tombol aksi besar. */
+
 #chord-context-menu { min-width: 150px; padding: 4px; border-radius: 5px; }
 #chord-context-menu:not([hidden]) { gap: 0; }
 #chord-context-menu button { min-height: 30px; padding: 6px 9px; border: 0; border-radius: 3px; background: transparent; color: var(--text); font-size: 12px; font-weight: 500; line-height: 1.35; }
@@ -438,15 +456,13 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
 .progression-context-menu { max-height: calc(100dvh - 16px); overflow-y: auto; padding: 4px; }
 .progression-context-menu button { display: block; width: 100%; min-height: 28px; padding: 4px 8px; font-size: 12px; border: 0; background: transparent; color: var(--text); text-align: left; }
 
-/* Ponsel landscape: toolbar menjadi rail, transport tetap di atas kanvas. */
 
-/* Ronde 2: portrait memakai satu rel chrome dan kanvas piano yang memenuhi
-   area tersisa. Judul/alat dan panel peek menumpang di tepi kanvas. */
 
-/* In landscape, the vertical mode/tool rail and transport leave the whole
-   remaining height to the piano roll; the panel peek occupies only its edge. */
 
-/* Round 2 finishing: utilities sit beside editor actions, not among the five modes. */
+
+
+
+
 .studio .mobile-panel-peek-actions { display: none; }
 .studio-toolbar-actions > .studio-more { position: relative; flex: 0 0 auto; }
 .studio-toolbar-actions > .studio-more > summary {
@@ -469,8 +485,7 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
 .studio .roll-gesture-point circle { fill: var(--surface-float); stroke: currentColor; stroke-width: 2; }
 .studio .roll-gesture-point text { fill: currentColor; font: 700 10px ui-monospace, monospace; text-anchor: middle; }
 
-/* Proposed T1: put the complete J2/J3 path on the first line, then disclose
-   octave, alternate lengths, anchor, lock, and expression as Lainnya. */
+
 .studio .note-selection-bar { gap: 3px; padding: 4px; }
 .studio .note-selection-bar > .editor-toolbar-group { display: flex; align-items: center; }
 .studio .note-selection-bar > .editor-toolbar-group > .editor-toolbar-label { display: none; }
@@ -516,13 +531,11 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
 .studio .selection-more-actions button { min-width: 44px; min-height: 44px; }
 .studio .selection-more-actions .editor-toolbar-label { display: none; }
 
-/* Desktop Mixer follows the proposal: a transport popover, not another
-   permanent workspace column. Short landscape keeps its compact sheet. */
 
-/* Candidate comparison follows the proposal's two-row rail: actions above,
-   numbered scrub targets below, with the notes themselves visible underneath. */
 
-/* PR2: one flat app menu and reusable, closable sheets. */
+
+
+
 .studio .app-menu-popover {
   width: min(25rem, calc(100vw - 1.5rem));
   max-height: min(78vh, 42rem);

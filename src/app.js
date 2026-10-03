@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.78';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.78";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.78";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.78";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.78";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.78";
-import { createCommands } from "./core/commands.js?v=20261003.78";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.79';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.79";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.79";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.79";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.79";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.79";
+import { createCommands } from "./core/commands.js?v=20261003.79";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.78";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.78";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.78";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.78";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.78";
-import { createScoreView } from "./ui/score.js?v=20261003.78";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.78";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.78";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.78";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.78";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.78";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.79";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.79";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.79";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.79";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.79";
+import { createScoreView } from "./ui/score.js?v=20261003.79";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.79";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.79";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.79";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.79";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.79";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.78";
-import { createGenerationContext } from "./generation/context.js?v=20261003.78";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.79";
+import { createGenerationContext } from "./generation/context.js?v=20261003.79";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.78";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.78";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.78";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.78";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.78";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.78";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.79";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.79";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.79";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.79";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.79";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.79";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1159,12 +1159,12 @@ function renderGeneration(state) {
   const anchorActions = byId("generation-anchor-actions");
   const sessionActions = byId("generation-session-actions");
   const shortcutHelp = panel.querySelector(".shortcut-help");
-  const generationOptions = panel.querySelector(".generation-options");
-  const widePanelContext = isWideWorkspace() && document.body.dataset.studioPanel === "generate"
+  const generationOptions = form?.querySelector(".generation-options");
+  const widePanelContext = isWideWorkspace() && (document.body.dataset.studioPanel === "generate" || panel.dataset.studioPinnedGenerate === "true")
     ? "generate-panel" : "";
   syncContextualWideDisclosure(generationOptions, widePanelContext);
   syncContextualWideDisclosure(shortcutHelp, widePanelContext);
-  const useSelection = panel.querySelector('[data-action="use-selection"]');
+  const useSelection = form?.querySelector('[data-action="use-selection"]');
   const generate = byId("generate-gap");
   const regenerate = byId("regenerate-gap");
   const clear = byId("clear-generation");
@@ -3484,6 +3484,9 @@ progressionView = createProgressionWorkspace(commands, () => language, reportErr
 studioView = createStudioWorkspace(commands, translate, reportError, {
   initialDockOpen: uiPreferences.dockOpen,
   initialDockWidth: uiPreferences.dockWidth,
+  initialDockSlots: uiPreferences.dockSlots,
+  initialDockVisibleCount: uiPreferences.dockVisibleCount,
+  initialDockPanelByWorkspace: uiPreferences.dockPanelByWorkspace,
   initialGuitarZoneOpen: uiPreferences.guitarZoneOpen,
   initialGuitarZoneHeight: uiPreferences.guitarZoneHeight,
   onDockPreferencesChange(patch) {

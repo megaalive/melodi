@@ -37,8 +37,7 @@
   .header-select-control { min-height: 2.75rem; }
   .header-select-control select { height: 2.65rem; }
   .drum-grid {
-    /* Shell memakai target touch 44px; samakan track grid agar tombol Drum dan
-       ruler tidak meluber ke baris atau kolom tetangga. */
+
     --drum-row-height: 44px;
     --drum-step-width: 44px;
     grid-template-columns: 13.5rem repeat(var(--drum-column-count), var(--drum-step-width));
@@ -58,8 +57,6 @@
     overflow: visible;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  #generation-panel { grid-column: 1 / -1; }
-  .transport-dock { position: static; box-shadow: none; }
   .tempo-control { margin-left: 0; }
   .workspace-sidebar {
     position: static;
@@ -92,14 +89,12 @@
   .utility-card {
     grid-column: auto;
   }
-  .workspace-chrome .transport-dock { flex-basis: 35rem; }
   .transport-action-group,
   .playback-settings-group { flex-wrap: wrap; }
   .workspace-chrome .transport-dock { flex-basis: 30rem; }
   .workspace-chrome .workspace-toolbar { align-self: flex-start; }
   .drum-grid {
-    /* Shell memakai target touch 44px; samakan track grid agar tombol Drum dan
-       ruler tidak meluber ke baris atau kolom tetangga. */
+
     --drum-row-height: 44px;
     --drum-step-width: 44px;
     grid-template-columns: 13.5rem repeat(var(--drum-column-count), var(--drum-step-width));
@@ -116,20 +111,16 @@
   .studio .header-actions .project-menu-trigger { min-height: 45px; padding: 3px 6px; font-size: var(--text-xs); }
   .studio .project-menu-popover button { min-height: 44px; }
   .studio .project-menu-popover .menu-sheet-close { height: 44px; min-height: 44px; flex: 0 0 44px; }
-  .studio .brand-block { flex: 1; }
   .studio .brand-block h1 { font-size: 15px; }
   .studio .brand-block h1::after { display: none; }
   .studio .song-strip { gap: 4px; min-height: 44px; padding: 0; display: block; }
   .studio .song-summary { gap: 8px; flex-wrap: nowrap; }
   .studio .song-summary dd { font-size: var(--text-2xs); }
-  .studio #song-title { font-size: var(--text-sm); }
   .studio .song-summary dt { display: none; }
   .studio .workspace-chrome { position: static; inset: auto; width: 100%; border-radius: 0; padding: 0; }
   .studio .workspace-chrome .transport-dock { width: 100%; padding: 0 7px; }
   .studio .transport-main { flex-wrap: nowrap; gap: 5px; }
-  .studio .transport-main > .studio-overview { flex: 0 1 104px; min-width: 58px; height: 44px; }
   .studio .transport-main > .studio-overview .studio-overview-label { display: none; }
-  .studio .transport-main > .studio-overview .studio-overview-track { min-height: 44px; }
   .studio .transport-action-group { gap: 5px; flex: 0 0 auto; min-width: 0; flex-wrap: nowrap; }
   .studio .playback-readout { display: none; }
   .studio #playback-readout > div:has(#current-note), .studio #playback-readout > div:has(#current-section) { display: none; }
@@ -138,16 +129,13 @@
   .studio .playback-settings-group input[type="checkbox"] { min-height: 0; height: 16px; }
   .studio .playback-settings-group .loop-toggle, .studio .follow-mode-control { min-height: 44px; }
   .studio .playback-settings-group .tempo-control label { width: auto; gap: 3px; }
-  .studio #tempo-input { width: 60px; flex-basis: 60px; height: 44px; min-height: 44px; padding: 3px 5px; }
   .studio .transport-advanced { order: 4; }
   .studio .transport-advanced > summary { font-size: var(--text-xs); }
-  .studio .transport-advanced[open] .transport-advanced-grid { bottom: calc(100% + 8px); }
   .studio .transport-advanced-grid { grid-template-columns: 1fr; }
   .studio .transport-advanced-grid input, .studio .transport-advanced-grid button { height: 44px; min-height: 44px; }
   .studio .workspace-chrome .workspace-toolbar { height: 44px; flex-wrap: nowrap; }
   .studio-views > button { flex: 1 1 44px; min-width: 44px; min-height: 44px; padding: 7px 4px; font-size: var(--text-xs); white-space: normal; line-height: 1.2; }
   .studio-more > summary { min-width: 44px; min-height: 44px; padding: 7px 4px; font-size: var(--text-xs); }
-  .studio-more[open] .studio-more-popover { bottom: calc(100% + 8px); width: min(280px,calc(100vw - 16px)); }
   .studio-toolbar-actions .project-menu[open] .project-menu-popover { top: auto; bottom: calc(100% + 8px); z-index: 90; }
   .studio-more-popover > button { min-height: 44px; text-align: center; }
   .studio-panel-switches button { font-size: var(--text-xs); }
@@ -156,16 +144,9 @@
   .studio-overview-label { flex-basis: 58px; padding: 3px 4px; }
   .studio-overview-label > span { display: none; }
   .studio-overview-track button { min-height: 24px; }
-  .studio .workspace-pane { padding: 7px; }
   .note-selection-bar { bottom: calc(44px + env(safe-area-inset-bottom)); }
   .studio:not([data-studio-panel="none"]) .note-selection-bar { position: static; }
-  .studio .studio-inspector-head { padding: 4px; min-height: 54px; gap: 3px; }
   .studio .studio-inspector-head button { width: auto; min-width: 44px; min-height: 44px; font-size: var(--text-xs); }
-  .studio .workspace-sidebar[data-sheet-size="peek"] { height: 54px; max-height: 54px; }
-  .studio .workspace-sidebar[data-sheet-size="half"] {
-    height: min(39dvh, calc(100dvh - 120px));
-    max-height: min(39dvh, calc(100dvh - 120px));
-  }
   .studio .compact-pane-heading { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px; }
   .studio .compact-pane-heading .editor-toolbar { grid-column: 1/-1; grid-row: 2; }
   .studio .compact-pane-heading > .panel-collapse-button { grid-column: 2; grid-row: 1; }
@@ -205,7 +186,6 @@
   .studio .percussion-range-control { min-height: 44px; }
   .studio .percussion-range-control input[type="range"] { height: 45px; }
   .studio #studio-overview { height: 44px; min-height: 44px; }
-  .studio #tempo-input { height: 45px; min-height: 45px; }
   .studio .piano-roll-scroll, .studio .score-scroll, .studio[data-view-mode="score"] .score-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll, .studio[data-view-mode="combined"] .score-scroll { min-height: 280px; height: max(280px,calc(100dvh - 310px)); }
   .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0,1fr); }
   .studio .workspace-sidebar { display: block; top: auto; bottom: calc(50px + env(safe-area-inset-bottom)); left: 0; right: 0; z-index: 60; max-height: min(55dvh,calc(100dvh - 110px)); box-shadow: 0 -10px 50px #0003; padding-bottom: 0; }
@@ -226,7 +206,6 @@
   .studio .page-header { position: fixed; inset: 0 0 auto; z-index: 100; height: 45px; min-height: 45px; padding: 0 7px; }
   .studio .header-actions .project-menu-trigger { height: 45px; min-height: 45px; flex-shrink: 0; }
   .studio .song-strip { align-items: center; min-height: 36px; }
-  .studio .song-identity { flex: 0 1 112px; }
   .studio #song-title { max-width: 112px; font-size: var(--text-xs); }
   .studio .song-summary { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; margin: 0; white-space: nowrap; }
   .studio .song-summary > div { display: flex; align-items: center; }
@@ -252,6 +231,7 @@
   .studio-more { flex: 1 1 44px; min-width: 44px; }
   .studio-more[open] .studio-more-popover { top: auto; bottom: calc(100% + 7px); right: 0; width: min(290px,calc(100vw - 14px)); max-height: 68dvh; }
 .studio-more-popover > button, .studio-panel-switches button, .studio-editor-settings button { min-height: 44px; }
+.studio .studio-panel-switches[hidden] { display: none !important; }
 .studio-panel-switches { display: grid; grid-template-columns: 1fr; gap: 3px; }
 .studio-panel-switches button { min-height: 44px; padding: 4px 7px; text-align: left; }
   .studio-editor-settings { display: grid; gap: 5px; padding-top: 7px; border-top: 1px solid var(--border); }
@@ -290,10 +270,9 @@
   .studio .workspace-sidebar[data-sheet-size="peek"] .studio-inspector-head > strong,
   .studio .workspace-sidebar[data-sheet-size="peek"] button[data-studio-close] { display: none; }
   .studio[data-studio-panel="none"] .workspace-sidebar[data-sheet-size="peek"] .mobile-panel-peek-actions { display: flex; flex: 1 1 auto; gap: 4px; }
-  .studio .mobile-panel-peek-actions button { flex: 1 1 0; min-width: 44px; }
   .studio .workspace-sidebar[data-sheet-size="half"] {
-    height: min(39dvh, calc(100dvh - 68px));
-    max-height: min(39dvh, calc(100dvh - 68px));
+    height: min(45dvh, calc(100dvh - 128px));
+    max-height: min(45dvh, calc(100dvh - 128px));
     overflow: auto;
   }
   .studio .workspace-sidebar button, .studio .workspace-sidebar input, .studio .workspace-sidebar select { min-height: 44px; }
@@ -319,7 +298,7 @@
   .studio .note-selection-bar > button[data-action="generate-selected-gap"] { flex: 0 0 auto; }
   .studio .note-selection-bar > .editor-toolbar-group { flex: 0 0 auto; gap: 1px; }
   .studio .selection-more > summary { min-width: 54px; min-height: 44px; padding: 3px 5px; }
-  /* Leave the selection bar itself clickable while More is open. */
+
   .studio .selection-more-actions { position: fixed; right: 6px; bottom: calc(144px + env(safe-area-inset-bottom)); }
   .studio[data-studio-panel="none"] .mobile-panel-peek-actions { display: flex; flex: 1 1 auto; }
   .studio .mobile-panel-peek-actions button {
@@ -344,7 +323,7 @@
   }
   .studio .studio-more[open] .studio-more-popover {
     position: fixed;
-    inset: auto 0 calc(44px + env(safe-area-inset-bottom));
+    inset: auto 0 calc(88px + env(safe-area-inset-bottom));
     z-index: 125;
     width: auto;
     max-height: min(72dvh, calc(100dvh - 7rem));
@@ -381,6 +360,11 @@
   .studio .mobile-panel-peek-actions { display: flex !important; flex: 1 1 auto; min-width: 0; }
   .studio .mobile-panel-peek-actions .studio-panel-switches { width: 100%; }
   .studio .mobile-panel-peek-actions button { flex: 1 1 0; min-width: 44px; min-height: 44px; padding-inline: 0.25rem; }
+  .studio .mobile-workspace-dock:not([hidden]) { display: flex; flex-direction: row; align-items: center; height: calc(44px + env(safe-area-inset-bottom, 0px)); }
+  .studio .mobile-workspace-dock > .transport-dock { position: static; flex: 1 1 auto; width: auto; min-width: 0; height: 44px; margin: 0; padding: 0; border: 0; }
+  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]) { flex: 0 0 auto; width: auto; max-width: 46vw; height: 44px; border: 0; overflow-x: auto; }
+  .studio .mobile-workspace-dock > .studio-panel-switches > button { flex: 0 0 auto; min-width: 44px; width: auto; height: 44px; min-height: 44px; }
+  .studio .app-shell, .studio .workspace-sidebar { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
   .studio .studio-inspector-head { height: auto; min-height: 44px; flex-wrap: wrap; }
   .studio .workspace-sidebar[data-sheet-size="half"] .mobile-panel-peek-actions { order: 3; flex-basis: 100%; }
   .studio .studio-more-popover > button { min-height: 44px; }
@@ -414,16 +398,11 @@
     gap: 0.55rem 0.8rem;
   }
   .song-identity { min-width: 0; flex: 1 1 10rem; }
-  .song-summary { order: 3; flex-basis: 100%; }
   .transport-main { align-items: center; }
 
-  .tempo-control { flex: 1 1 12rem; }
-  .tempo-control label { width: auto; flex: 1 1 auto; }
-  .loop-toggle { margin-left: auto; }
   .transport-advanced { margin-left: 0; }
   .transport-advanced-grid { grid-template-columns: 1fr; }
   .pane-heading { display: block; }
-  .editor-toolbar { margin-top: 0.5rem; }
   .piano-roll-scroll { height: 28rem; }
   #generation-panel { grid-column: auto; }
   .generation-fields { grid-template-columns: 1fr; }
@@ -432,13 +411,8 @@
   .generation-anchor-actions > *,
   .generation-session-actions > *,
   .candidate-actions > * { flex: 1 1 8rem; }
-  .transport-buttons { width: 100%; }
-  .transport-buttons button { flex: 1 1 0; min-width: 0; }
-  .tempo-control { width: 100%; }
-  .tempo-control label { width: 7rem; flex: 0 0 7rem; }
   .tempo-control button { flex: 1 1 8rem; }
 
-  .playback-readout { gap: 0.55rem; }
   .editor-toolbar button { flex: 1 1 7rem; }
   .song-strip { padding-inline: 0; }
   .transport-main { gap: 0.4rem; }
@@ -448,8 +422,7 @@
   .loop-toggle { margin-left: 0; }
   .transport-advanced[open] .transport-advanced-grid {
     position: fixed;
-    /* Bar transport ada di bawah pada mobile, jadi popovernya membuka ke atas
-       dari tombolnya, bukan melompat ke atas layar. */
+
     top: auto;
     bottom: calc(100% + 0.5rem);
     left: 0.7rem;
@@ -476,9 +449,7 @@
   .playback-readout { order: 3; flex-basis: 100%; }
   .tempo-control { width: auto; }
 
-  /* Di mobile chrome pindah ke bawah dan menempel. Transport jadi objek fisik
-     di jangkauan ibu jari, dan konten bisa mulai langsung di atas lipatan
-     tanpa menggulir melewati header + strip lagu + transport dulu. */
+
   .workspace-chrome {
     position: fixed;
     top: auto;
@@ -503,19 +474,16 @@
     border-top: 1px solid var(--border);
   }
 
-  /* Ruang supaya bar tetap tidak menutupi kanvas dan dock kandidat. Bar diukur
-     220px pada 390px, jadi 15rem memberi jarak aman tanpa menebak. */
+
   .app-shell { padding-bottom: 15rem; }
   .candidate-dock { bottom: 14.5rem; }
 
-  /* Readout bisa jadi satu baris ramping di mobile; label dan nilai tidak perlu
-     ditumpuk seperti di desktop. */
+
   .playback-readout { gap: 0.5rem; font-size: var(--text-xs); }
   .playback-readout dt { font-size: var(--text-2xs); }
   .playback-readout dd { font-size: var(--text-xs); }
 
-  /* Target sentuh: 44px adalah batas bawah yang masih bisa diulang di ruang
-     sempit tanpa membuat bar transport terlalu tinggi. */
+
   .workspace-chrome button,
   .workspace-chrome select,
   .workspace-chrome input { min-height: 2.75rem; }
@@ -734,8 +702,7 @@
   .studio #tempo-input { width: 56px; flex-basis: 56px; }
   .studio .transport-main > .studio-overview { flex: 0 0 48px; min-width: 48px; }
 
-  /* Compact studio: the song stays in the header; transport and the three
-     workspace choices share one fixed two-row dock at the bottom. */
+
   .studio .page-header { min-height: 44px; flex-wrap: nowrap; padding: 2px 8px; gap: 6px; }
   .studio .brand-block { flex: 1 1 auto; min-width: 0; }
   .studio .song-strip { min-height: 32px; flex-wrap: nowrap; align-items: center; gap: 6px; }
@@ -748,13 +715,13 @@
   .studio .header-select-control > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio .header-select-control select { width: 44px; min-width: 44px; max-width: 44px; height: 44px; min-height: 44px; padding: 2px; }
   .studio .workspace-chrome { display: none !important; }
-  .studio .app-shell { position: fixed; inset: 44px 0 calc(88px + env(safe-area-inset-bottom, 0px)); width: 100%; max-width: none; height: auto; overflow: hidden; padding: 0; }
+  .studio .app-shell { position: fixed; inset: 44px 0 calc(132px + env(safe-area-inset-bottom, 0px)); width: 100%; max-width: none; height: auto; overflow: hidden; padding: 0; }
   .studio .workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; min-height: 0; margin: 0; overflow: hidden; }
   .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0, 1fr); }
   .studio .workspace-canvas { min-height: 0; overflow: auto; overscroll-behavior: contain; }
   .studio[data-view-mode="combined"] #score-section { display: none !important; }
   .studio[data-view-mode="combined"] #piano-roll-section { display: flex !important; }
-  .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset: auto 0 0; z-index: 90; display: flex; flex-direction: column; width: 100%; height: calc(88px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 0; box-shadow: inset 0 1px 0 var(--border-strong); background: var(--surface); }
+  .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset: auto 0 0; z-index: 90; display: flex; flex-direction: column; width: 100%; height: calc(132px + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 0; box-shadow: inset 0 1px 0 var(--border-strong); background: var(--surface); }
   .studio .mobile-workspace-dock > .transport-dock { flex: 0 0 44px; width: 100%; height: 44px; margin: 0; padding: 0 6px; border: 0; background: var(--surface); }
   .studio .mobile-workspace-dock .transport-main { display: flex; align-items: center; height: 44px; gap: 5px; }
   .studio .mobile-workspace-dock .transport-action-group { flex: 0 0 auto; gap: 0; }
@@ -782,10 +749,13 @@
   .studio .mobile-workspace-dock > .studio-views { display: flex; flex: 0 0 44px; width: 100%; height: 44px; border-top: 1px solid var(--border); }
   .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; min-width: 0; height: 44px; min-height: 44px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; font-size: 12px; }
   .studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-bottom-color: transparent; }
-  .studio .studio-more[open] .studio-more-popover { position: fixed; inset: auto 6px calc(88px + env(safe-area-inset-bottom, 0px) + 6px); width: min(280px, calc(100vw - 12px)); max-height: 60dvh; }
+  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]) { display: flex; flex: 0 0 44px; width: 100%; min-width: 0; gap: 0; overflow-x: auto; overflow-y: hidden; border-top: 1px solid var(--border); }
+  .studio .mobile-workspace-dock > .studio-panel-switches > button { flex: 1 1 0; min-width: 0; height: 44px; min-height: 44px; padding: 0 2px; border: 0; border-top: 3px solid transparent; border-radius: 0; background: transparent; font-size: 11px; line-height: 1; white-space: normal; overflow-wrap: anywhere; }
+  .studio .mobile-workspace-dock > .studio-panel-switches > button[aria-selected="true"] { border-top-color: var(--studio-accent); background: var(--surface-subtle); }
+  .studio .studio-more[open] .studio-more-popover { position: fixed; inset: auto 6px calc(132px + env(safe-area-inset-bottom, 0px) + 6px); width: min(280px, calc(100vw - 12px)); max-height: 60dvh; }
   .studio .transport-advanced[open] .transport-advanced-grid { z-index: 100; }
-  .studio .workspace-sidebar { position: fixed; inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: 100%; max-height: min(55dvh, calc(100dvh - 128px)); overflow: auto; border: 1px solid var(--border-strong); border-radius: 9px 9px 0 0; }
-  .studio .workspace-sidebar[data-sheet-size="half"] { height: min(45dvh, calc(100dvh - 128px)); max-height: min(45dvh, calc(100dvh - 128px)); }
+  .studio .workspace-sidebar { position: fixed; inset: auto 0 calc(132px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: 100%; max-height: min(55dvh, calc(100dvh - 172px)); overflow: auto; border: 1px solid var(--border-strong); border-radius: 9px 9px 0 0; }
+  .studio .workspace-sidebar[data-sheet-size="half"] { height: min(45dvh, calc(100dvh - 172px)); max-height: min(45dvh, calc(100dvh - 172px)); }
   .studio .app-shell { display: flex; flex-direction: column; }
   .studio .studio-overview { flex: 0 0 22px; width: 100%; height: 22px; border-inline: 0; }
   .studio .studio-overview-label { flex-basis: 52px; }
@@ -800,7 +770,7 @@
   .studio .piano-roll-scroll { height: 100%; min-height: 0; }
   .studio #lyrics-section { overflow-y: auto; }
   .studio .app-menu-popover > .menu-sheet-close { position: static; }
-  .studio[data-studio-panel="none"] .note-selection-bar { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .studio[data-studio-panel="none"] .note-selection-bar { bottom: calc(132px + env(safe-area-inset-bottom, 0px)); }
   .studio .mobile-workspace-dock button,
   .studio .mobile-workspace-dock select,
   .studio .mobile-workspace-dock input { min-height: 44px; }
@@ -820,7 +790,6 @@
   .studio #lyrics-section .lyrics-form { margin: 0; }
   .studio #lyrics-section .lyrics-form label { gap: 0; }
   .studio #lyrics-section .lyrics-form label > span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .studio #drums-section > .drums-pane-heading { padding: 0 4px; }
   .studio #drums-status { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio #piano-roll-content { display: flex; flex-direction: column; min-height: 0; }
 
@@ -842,6 +811,20 @@
   .studio #piano-roll-section .editor-toolbar select,
   .studio #piano-roll-section .pane-help-trigger,
   .studio #piano-roll-section .panel-collapse-button { height: 45px; min-height: 45px; flex-shrink: 0; }
+  .studio .studio-core-controls:not([hidden]) { display: none !important; }
+  .studio .studio-core-controls > .editor-tool-group { display: flex; flex: 0 0 auto; flex-direction: row; align-items: center; gap: 2px; width: auto; border: 0; }
+  .studio .studio-core-controls .editor-toolbar-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .studio .studio-core-controls > .editor-tool-group button { flex: 0 0 46px; width: 46px; min-width: 46px; height: 40px; min-height: 40px; padding: 2px; }
+  .studio .studio-core-controls > label { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; white-space: nowrap; font-size: 11px; }
+  .studio .studio-core-controls #snap-select { min-width: 64px; min-height: 40px; }
+  .studio .studio-core-controls .zoom-control input[type="range"] { width: 58px; min-height: 40px; }
+  .studio .mobile-workspace-dock .mobile-transport-summary { flex: 0 1 clamp(3rem, 21vw, 7rem); min-width: 0; max-width: 7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .studio #piano-roll-collapse { position: relative; display: inline-grid; place-items: center; width: 44px; min-width: 44px; min-height: 44px; padding: 0; }
+  .studio #piano-roll-collapse .disclosure-chevron { display: none; }
+  .studio #piano-roll-collapse [data-copy] { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .studio #piano-roll-collapse::before { content: "−"; font-size: 19px; line-height: 1; }
+  .studio #piano-roll-collapse[aria-expanded="false"]::before { content: "+"; }
+  .studio #piano-roll-section > .pane-heading { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -854,6 +837,8 @@
   }
 }
 @media (width > 46rem) and (width < 68rem) {
+  .studio #view-controls > .studio-toolbar-actions { height: 44px; min-height: 44px; }
+  .studio #view-controls .studio-toolbar-actions > .pane-heading { margin: 0; transform: translateY(1px); }
   body[data-view-mode="score"] .score-scroll,
   body[data-view-mode="combined"] .score-scroll {
     min-height: 14rem;
@@ -867,9 +852,7 @@
   .studio .header-actions { display: none; }
   .studio .brand-block { flex: 1; min-width: 0; }
   .studio .song-strip { min-height: 24px; }
-  .studio .app-shell { position: fixed; inset: 68px 0 0 52px; overflow: hidden; width: auto; max-width: none; padding: 0; }
 
-  .studio .workspace-chrome .transport-dock { position: fixed; inset: 24px 0 auto 52px; z-index: 31; width: auto; padding: 0 8px; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
   .studio .transport-main { height: 44px; gap: 8px; }
   .studio .transport-action-group { gap: 10px; }
   .studio .transport-buttons button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
@@ -879,7 +862,6 @@
   .studio .playback-settings-group .tempo-control label { width: auto; min-height: 44px; gap: 4px; }
   .studio #tempo-input { width: 64px; flex-basis: 64px; height: 45px; min-height: 45px; }
   .studio .follow-mode-control { display: none; }
-  .studio .workspace-chrome .workspace-toolbar { position: fixed; inset: 24px auto 0 0; z-index: 32; display: flex; width: 52px; flex-direction: column; justify-content: flex-start; padding: 0; border: 0; border-right: 1px solid var(--border-strong); background: var(--surface-subtle); }
   .studio-toolbar-actions { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: 3px; width: 51px; padding: 3px; }
   .studio-toolbar-actions .editor-tool-group { display: flex; flex-direction: column; gap: 3px; width: 44px; border: 0; }
   .studio-toolbar-actions .editor-tool-group button { width: 44px; min-width: 44px; height: 45px; min-height: 45px; padding: 3px; font-size: 9px; }
@@ -893,48 +875,30 @@
   .studio .studio-overview { height: 22px; }
   .studio .studio-overview-label { flex-basis: 56px; padding: 1px 4px; }
   .studio .studio-overview-track { min-height: 22px; }
-  .studio .workspace-grid { overflow: hidden; }
   .studio .workspace-canvas { min-height: 0; overflow: hidden; }
-  .studio .workspace-pane { padding: 4px; }
   .studio .pane-heading { margin-bottom: 3px; gap: 4px; }
+  .studio #piano-roll-section > .pane-heading { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio .compact-pane-heading { min-height: 24px; }
   .studio .editor-toolbar { flex-wrap: nowrap; gap: 4px; overflow-x: auto; }
   .studio .editor-toolbar button, .studio .editor-toolbar select { min-height: 36px; padding: 3px 6px; }
   .studio .piano-roll-scroll, .studio .score-scroll { height: max(220px,calc(100dvh - 112px)); min-height: 220px; max-height: none; resize: none; }
-  .studio .note-selection-bar { position: fixed; inset: auto 0 0 52px; z-index: 60; flex-wrap: nowrap; overflow-x: auto; }
-  .studio .workspace-sidebar { inset: 68px 0 0 auto; z-index: 60; width: min(360px,45vw); max-height: none; overflow: auto; }
   .studio .page-header { height: 24px; min-height: 24px; }
-  .studio .workspace-chrome .transport-dock { height: 44px; }
   .studio .workspace-toolbar { overflow: visible; }
-  .studio .studio-views > button { flex: 0 0 44px; }
-  .studio .workspace-grid { height: 100%; min-height: 0; }
   .studio .workspace-canvas, .studio #piano-roll-section { height: 100%; min-height: 0; overflow: hidden; }
 
-  .studio #piano-roll-content { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; padding: 0; }
 
-.studio .workspace-pane { min-height: 0; padding: 0; overflow: hidden; }
   .studio .piano-roll-scroll, .studio .score-scroll,
   .studio[data-view-mode="score"] .score-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll,
   .studio[data-view-mode="combined"] .score-scroll { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; max-height: none; resize: none; }
-  .studio #roll-selection { display: none; }
-  .studio .workspace-sidebar { position: fixed; inset: auto 0 0 52px; z-index: 80; width: auto; max-height: min(55dvh,calc(100dvh - 68px)); border: 1px solid var(--border-strong); border-radius: 9px 9px 0 0; padding: 0; }
-  .studio .workspace-sidebar[data-sheet-size="half"] {
-    height: min(39dvh, calc(100dvh - 68px));
-    max-height: min(39dvh, calc(100dvh - 68px));
-    overflow: auto;
-  }
   .studio .workspace-sidebar[data-sheet-size="peek"] { height: 44px; max-height: 44px; overflow: hidden; }
   .studio .workspace-sidebar[data-sheet-size="peek"] > :not(.studio-inspector-head) { display: none; }
   .studio .studio-inspector-head { height: 44px; min-height: 44px; padding: 0 4px; }
   .studio .workspace-sidebar[data-sheet-size="peek"] .studio-inspector-head > strong,
   .studio .workspace-sidebar[data-sheet-size="peek"] button[data-studio-close] { display: none; }
   .studio[data-studio-panel="none"] .workspace-sidebar[data-sheet-size="peek"] .mobile-panel-peek-actions { display: flex; flex: 1 1 auto; gap: 4px; }
-  .studio .mobile-panel-peek-actions button { flex: 1 1 0; min-height: 44px; }
   .studio-toolbar-actions > .studio-more > summary { width: 44px; min-width: 44px; min-height: 44px; }
   .studio .roll-gesture-cue { top: 29%; left: 14%; width: min(390px, 42%); }
-  .studio[data-studio-panel="none"] .note-selection-bar { bottom: 44px; }
   .studio:not([data-studio-panel="none"]) .note-selection-bar { display: none; }
-  .studio .note-selection-bar > .selection-velocity { display: none; }
   .studio[data-view-mode="drums"] #drums-section {
     display: flex; flex: 1 1 auto; flex-direction: column; height: 100%; min-height: 0; overflow: hidden;
   }
@@ -997,7 +961,6 @@
   .studio .mobile-panel-peek-actions .studio-panel-switches { width: 100%; }
   .studio .mobile-panel-peek-actions button { flex: 1 1 0; min-width: 44px; min-height: 44px; padding-inline: 0.25rem; }
   .studio .studio-inspector-head { height: auto; min-height: 44px; flex-wrap: wrap; }
-  .studio .workspace-sidebar[data-sheet-size="half"] .mobile-panel-peek-actions { order: 3; flex-basis: 100%; }
   .studio .studio-more-popover > button { min-height: 44px; }
   .studio .help-sheet[open] {
     position: fixed;
@@ -1029,38 +992,32 @@
   .studio .page-header { display: none; }
   .studio .app-shell { position: fixed; inset: 0 0 calc(88px + env(safe-area-inset-bottom, 0px)); width: auto; max-width: none; height: auto; padding: 0; overflow: hidden; }
 
-  .studio .workspace-chrome .workspace-toolbar { inset: 0 auto calc(88px + env(safe-area-inset-bottom, 0px)) 0; width: 52px; min-height: 0; overflow: visible; }
-  .studio .studio-toolbar-actions { flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: 3px; width: 51px; padding: 3px; }
   .studio .studio-toolbar-actions .editor-tool-group { display: flex; flex-direction: column; gap: 3px; width: 44px; border: 0; }
   .studio .studio-toolbar-actions .editor-tool-group button { width: 44px; min-width: 44px; min-height: 44px; padding: 3px; font-size: 9px; }
   .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0, 1fr); }
   .studio .workspace-grid { height: 100%; min-height: 0; overflow: hidden; }
-  .studio .workspace-sidebar { position: fixed; inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: min(360px, 70vw); max-height: calc(100dvh - 88px); overflow: auto; }
-
-  .studio .mobile-workspace-dock:not([hidden]) { height: calc(89px + env(safe-area-inset-bottom, 0px)); }
   .studio .mobile-workspace-dock > .studio-views { width: 100%; height: 45px; flex: 0 0 45px; flex-direction: row; align-items: stretch; }
   .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; width: auto; min-width: 0; height: 45px; min-height: 45px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 12px; line-height: 1.1; white-space: nowrap; overflow-wrap: normal; }
   .studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-left-color: transparent; }
   .studio .mobile-workspace-dock .studio-views > .mobile-panel-trigger { flex: 0 0 68px; min-width: 68px; border-top: 0; border-left: 1px solid var(--border); font-weight: 650; }
-  .studio .mobile-workspace-dock .transport-main { height: 44px; gap: 8px; }
-  .studio .mobile-workspace-dock .studio-overview { display: flex !important; flex: 1 1 auto; min-width: 86px; height: 44px; }
-  .studio .mobile-workspace-dock .playback-settings-group { flex-wrap: nowrap; gap: 4px; padding: 0; }
   .studio .mobile-workspace-dock .transport-advanced > summary > span,
   .studio .mobile-workspace-dock .studio-more > summary > [data-copy],
   .studio .mobile-workspace-dock .project-menu-trigger > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .studio .mobile-workspace-dock .studio-more > summary::before { content: "⋯"; font-size: 20px; line-height: 1; }
   .studio .mobile-workspace-dock .project-menu-trigger { width: 44px; min-width: 44px; padding: 4px; }
-  .studio .studio-more[open] .studio-more-popover { position: fixed; inset: auto 6px calc(88px + env(safe-area-inset-bottom, 0px) + 6px); z-index: 125; width: min(280px, calc(100vw - 12px)); max-height: min(65dvh, calc(100dvh - 100px)); }
-  .studio .transport-advanced[open] .transport-advanced-grid { inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); max-height: min(70dvh, calc(100dvh - 88px)); }
-  .studio .note-selection-bar { position: fixed; inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 60; }
+  .studio .studio-more[open] .studio-more-popover { position: fixed; inset: auto 6px calc(44px + env(safe-area-inset-bottom, 0px) + 6px); z-index: 125; width: min(280px, calc(100vw - 12px)); max-height: min(65dvh, calc(100dvh - 56px)); }
+  .studio .transport-advanced[open] .transport-advanced-grid { inset: auto 0 calc(44px + env(safe-area-inset-bottom, 0px)); max-height: min(70dvh, calc(100dvh - 44px)); }
   .studio .app-menu-popover > .menu-sheet-close { position: static; }
   .studio .app-shell { position: fixed; inset: 44px 0 calc(44px + env(safe-area-inset-bottom, 0px)); height: auto; padding: 0; overflow: hidden; }
   .studio .workspace-chrome { display: contents; }
   .studio .workspace-chrome .workspace-toolbar { position: fixed; inset: 0 0 auto; display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 45px; min-height: 45px; padding: 0 max(6px, env(safe-area-inset-left, 0px)); border: 0; border-bottom: 1px solid var(--border-strong); background: var(--surface); gap: 6px; overflow: visible; }
   .studio .workspace-chrome .transport-dock { position: static; width: 100%; height: 44px; margin: 0; padding: 0 6px; border: 0; background: var(--surface); }
-  .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset: auto 0 0; z-index: 90; display: flex; flex-direction: row; width: 100%; height: calc(44px + env(safe-area-inset-bottom, 0px)); padding: 0 0 env(safe-area-inset-bottom, 0px); }
-  .studio .mobile-workspace-dock > .transport-dock { flex: 0 0 100%; width: 100%; height: 44px; }
+  .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset: auto 0 0; z-index: 90; display: flex; flex-direction: row; align-items: center; width: 100%; height: calc(44px + env(safe-area-inset-bottom, 0px)); padding: 0 0 env(safe-area-inset-bottom, 0px); }
+  .studio .mobile-workspace-dock > .transport-dock { flex: 1 1 auto; width: auto; min-width: 0; height: 44px; }
+  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]) { display: flex; flex: 0 0 auto; width: auto; max-width: 46vw; height: 44px; min-width: 0; gap: 0; overflow-x: auto; overflow-y: hidden; border-top: 0; border-left: 1px solid var(--border); }
+  .studio .mobile-workspace-dock > .studio-panel-switches > button { flex: 0 0 auto; min-width: 70px; height: 44px; min-height: 44px; padding: 0 8px; border: 0; border-top: 3px solid transparent; border-radius: 0; background: transparent; white-space: nowrap; }
+  .studio .mobile-workspace-dock > .studio-panel-switches > button[aria-selected="true"] { border-top-color: var(--studio-accent); background: var(--surface-subtle); }
   .studio .studio-views { width: auto; height: 45px; flex: 0 0 auto; flex-direction: row; align-items: stretch; }
   .studio .studio-views > button { flex: 0 0 45px; width: auto; min-width: 44px; height: 45px; min-height: 45px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 11px; white-space: nowrap; }
   .studio .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-left-color: transparent; }
@@ -1098,7 +1055,7 @@
   .studio #roll-selection { display: inline; }
   .studio .note-selection-bar { position: fixed; inset: auto 0 calc(44px + env(safe-area-inset-bottom, 0px)); z-index: 60; flex-wrap: nowrap; overflow-x: auto; }
   .studio .workspace-sidebar { position: fixed; inset: auto 0 calc(44px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: min(360px, 70vw); max-height: min(55dvh, calc(100dvh - 88px)); overflow: auto; }
-  .studio .workspace-sidebar[data-sheet-size="half"] { height: min(55dvh, calc(100dvh - 88px)); max-height: min(55dvh, calc(100dvh - 88px)); }
+  .studio .workspace-sidebar[data-sheet-size="half"] { height: min(70dvh, calc(100dvh - 68px)); max-height: min(70dvh, calc(100dvh - 68px)); }
   .studio[data-studio-panel="none"] .note-selection-bar { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
   .studio .transport-advanced-grid { display: grid; gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-subtle); }
   .studio .transport-advanced-grid .tempo-control { display: flex; }
@@ -1106,7 +1063,7 @@
   .studio .transport-advanced-grid label { display: grid; gap: 4px; }
   .studio #view-controls { flex-flow: row nowrap !important; align-items: center; justify-content: flex-start !important; }
   .studio #view-controls > .studio-views { flex: 0 0 auto; width: auto; margin: 0 !important; }
-  .studio #view-controls > .studio-toolbar-actions { flex: 1 1 0%; width: auto; min-width: 0; height: 44px; overflow-x: auto; }
+  .studio #view-controls > .studio-toolbar-actions { flex: 1 1 0%; width: auto; min-width: 0; height: 44px; min-height: 44px; overflow-x: auto; }
   .studio #view-controls .studio-toolbar-actions > .editor-toolbar { flex: 0 0 auto; min-width: max-content; height: 44px; min-height: 44px; }
   .studio #view-controls .studio-toolbar-actions .editor-tool-group { display: flex; flex: 0 0 auto; flex-flow: row nowrap; width: auto; min-width: max-content; }
   .studio #view-controls .studio-toolbar-actions .editor-tool-group button { flex: 0 0 auto; width: auto; min-width: 44px; min-height: 44px; font-size: 11px; }
@@ -1162,6 +1119,7 @@
 }
 
 @media (width >= 68rem) {
+  .studio[data-view-mode="lyrics"] #lyrics-section { padding-top: 14px; }
   .studio .generation-options[open] > .generation-advanced-popover { max-height: none; overflow: visible; }
   .studio #generation-panel .candidate-dock-close { display: none; }
   .studio .chord-draw-picker[open] .chord-draw-options {
@@ -1192,8 +1150,24 @@
   }
 }
 
-/* Keep viewport canvases inside the space left by the fixed mobile dock, and
-   let desktop canvases consume the whole remaining workspace. */
+
+.studio #view-controls .studio-toolbar-actions > .pane-title-row,
+.studio #view-controls .studio-toolbar-actions > .score-pane-heading,
+.studio #view-controls .studio-toolbar-actions > .drums-pane-heading,
+.studio #view-controls .studio-toolbar-actions > .lyrics-pane-heading,
+.studio #view-controls .studio-toolbar-actions .score-heading-copy > .pane-title-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 32px;
+  min-height: 0;
+  max-height: 32px;
+  margin: 0;
+  overflow: hidden;
+}
+.studio #view-controls .studio-toolbar-actions h2 { margin: 0; font-size: 12px; line-height: 1; white-space: nowrap; }
+.studio #view-controls .studio-toolbar-actions p { display: none !important; }
+.studio #view-controls .studio-toolbar-actions :is(.guitar-mode-toggle, .pane-help-trigger, .score-local-toolbar button, .drums-toolbar button, .drums-toolbar select) { min-height: 30px; height: 30px; padding: 2px 4px; font-size: 10px; }
 .studio .workspace-grid,
 .studio .workspace-canvas,
 .studio #piano-roll-section,
@@ -1218,7 +1192,7 @@
   .studio .mobile-workspace-dock .studio-more { flex: 0 0 44px; width: 44px; min-width: 44px; margin-left: -2px; }
 .studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; }
 
-/* PR9: one desktop header/transport band; routine project controls stay visible. */
+
 @media (width >= 68rem) {
   .studio .page-header {
     display: flex;
@@ -1244,7 +1218,7 @@
   .studio .page-header > #studio-views { order: 2; flex: 0 0 auto; gap: 2px; margin: 0; }
   .studio .page-header > #studio-views > button { min-width: 38px; min-height: 34px; padding: 3px 5px; font-size: 11px; }
   .studio .page-header > .transport-dock { order: 3; position: static; display: flex; flex: 1 1 28rem; width: auto; min-width: 0; height: 34px; margin: 0; padding: 0 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
-  .studio .page-header .transport-main { display: flex; flex: 1 1 auto; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; height: 34px; }
+  .studio .page-header .transport-main { display: flex; flex: 1 1 auto; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 4px; min-width: 0; height: 34px; }
   .studio .page-header .transport-action-group { flex: 0 0 auto; gap: 4px; }
   .studio .page-header .transport-buttons { gap: 2px; }
   .studio .page-header .transport-buttons button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 5px; }
@@ -1264,13 +1238,18 @@
   .studio .page-header .follow-mode-control { gap: 2px; white-space: nowrap; font-size: 10px; }
   .studio .page-header .studio-more > summary { min-height: 30px; padding: 4px 5px; font-size: 10px; }
   .studio .page-header > .header-actions { order: 4; display: flex; flex: 0 0 auto; align-items: center; flex-wrap: nowrap; gap: 3px; min-width: 0; margin-left: 0; }
-  .studio .header-actions .desktop-project-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
-  .studio .header-actions .desktop-project-actions button { display: inline-grid; place-items: center; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; overflow: hidden; font-size: 0; }
-  .studio .header-actions .desktop-project-actions button::before { font-size: 17px; line-height: 1; }
-  .studio .desktop-project-actions [data-action="new-song"]::before { content: "+"; }
-  .studio .desktop-project-actions [data-action="open-project-file"]::before { content: "↥"; }
-  .studio .desktop-project-actions [data-action="save-project-file"]::before { content: "▣"; }
-  .studio .desktop-project-actions [data-action="share-song"]::before { content: "↗"; }
+   .studio .header-actions .desktop-project-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; }
+   .studio .desktop-project-actions-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+   .studio .header-actions .desktop-project-actions button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 3px; width: auto; min-width: 0; height: 32px; min-height: 32px; padding: 2px 4px; white-space: nowrap; font-size: 10px; }
+   .studio .header-actions .desktop-project-actions button::before { font-size: 14px; line-height: 1; }
+   .studio .desktop-project-actions [data-action="new-song"]::before { content: "+"; }
+   .studio .desktop-project-actions [data-action="show-examples"]::before { content: "☆"; }
+   .studio .desktop-project-actions [data-action="show-browser-library"]::before { content: "▤"; }
+   .studio .desktop-project-actions [data-action="save-browser-direct"]::before { content: "⇩"; }
+   .studio .desktop-project-actions [data-action="show-save-browser"]::before { content: "▣+"; }
+   .studio .desktop-project-actions [data-action="open-project-file"]::before { content: "↥"; }
+   .studio .desktop-project-actions [data-action="save-project-file"]::before { content: "▣"; }
+   .studio .desktop-project-actions [data-action="share-song"]::before { content: "↗"; }
   .studio .header-actions .project-menu { display: block; flex: 0 0 auto; }
   .studio .header-actions .project-menu-trigger { display: inline-flex; min-height: 32px; gap: 3px; padding: 3px 5px; white-space: nowrap; }
   .studio .header-actions .project-menu-trigger > svg { display: none; }
@@ -1280,18 +1259,64 @@
   .studio .header-actions .header-select-control select { max-width: 75px; min-height: 28px; padding: 2px 15px 2px 4px; font-size: 10px; }
   .studio .header-actions .command-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
   .studio .workspace-chrome { position: static; display: block; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
-  .studio .workspace-chrome .workspace-toolbar { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 36px; margin: 0; padding: 0 10px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface); gap: 8px; }
-  .studio #view-controls { display: flex !important; align-items: center; min-height: 36px; }
+  .studio .workspace-chrome .workspace-toolbar { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 32px; min-height: 32px; margin: 0; padding: 0 6px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface); gap: 6px; }
+  .studio #view-controls { display: flex !important; align-items: center; height: 32px; min-height: 32px; }
   .studio .studio-toolbar-actions { flex: 1 1 auto; min-width: 0; gap: 8px; }
+  .studio .studio-toolbar-actions > .desktop-project-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; white-space: nowrap; }
+  .studio .studio-toolbar-actions .desktop-project-actions-label { position: static; width: auto; height: auto; overflow: visible; clip-path: none; color: var(--text-muted); font-size: 10px; font-weight: 650; }
+  .studio .studio-toolbar-actions .desktop-project-actions button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; width: auto; min-width: 0; height: 28px; min-height: 28px; padding: 1px 3px; white-space: nowrap; font-size: 9px; }
   .studio .studio-toolbar-actions > .studio-more { margin-left: auto; }
   .studio .page-header .mobile-panel-trigger { display: none; }
   .studio #project-menu .app-settings-section[hidden] { display: none !important; }
-  .studio #piano-roll-section #piano-roll-collapse { display: inline-flex; flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: center; width: auto; min-width: 104px; min-height: 34px; gap: 4px; padding: 3px 7px; white-space: nowrap; }
-  .studio #piano-roll-section #piano-roll-collapse .disclosure-chevron { position: static; inset: auto; flex: 0 0 16px; }
-  .studio #piano-roll-section #piano-roll-collapse [data-copy] { flex: 0 0 auto; font-size: 11px; white-space: nowrap; }
+  .studio #piano-roll-collapse { display: inline-flex; flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: center; width: auto; min-width: 104px; min-height: 34px; gap: 4px; padding: 3px 7px; white-space: nowrap; }
+  .studio #piano-roll-collapse .disclosure-chevron { position: static; inset: auto; flex: 0 0 16px; }
+  .studio #piano-roll-collapse [data-copy] { flex: 0 0 auto; font-size: 11px; white-space: nowrap; }
 }
 
-/* The in-between tier also gets one transport ribbon and an always-visible dock trigger. */
+@media (width > 46rem) and (min-height: 501px) {
+  .studio .studio-core-controls:not([hidden]) { display: flex; flex: 0 0 44px; flex-wrap: nowrap; align-items: center; gap: 1px; width: 100%; height: 44px; min-height: 44px; padding: 0 2px; overflow-x: auto; overflow-y: hidden; white-space: nowrap; }
+  .studio .studio-core-controls > * { flex: 0 0 auto; }
+  .studio .studio-core-controls .history-buttons button { width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 2px; }
+  .studio .studio-core-controls > .editor-toolbar { flex: 0 0 auto; gap: 2px; padding: 0; border: 0; background: transparent; }
+  .studio .studio-core-controls > .editor-toolbar .selection-readout { display: none; }
+  .studio .studio-core-controls .transport-form { flex: 0 0 auto; align-items: center; gap: 3px; width: auto; max-width: none; padding: 0; }
+  .studio .studio-core-controls .transport-form label { display: flex; align-items: center; gap: 2px; }
+  .studio .studio-core-controls .transport-form input { width: 3.25rem; min-width: 3.25rem; height: 27px; min-height: 27px; padding: 2px; }
+  .studio .studio-core-controls .transport-form button { width: auto; min-height: 27px; padding: 2px 5px; white-space: nowrap; font-size: 10px; }
+  .studio .studio-core-mixer { display: flex; flex: 0 0 auto; align-items: center; gap: 1px; }
+  .studio .studio-core-mix-channel { display: flex; flex: 0 0 auto; align-items: center; gap: 1px; padding: 0; }
+  .studio .studio-core-mix-channel strong { font-size: 10px; }
+  .studio .studio-core-mix-channel .instrument-mix-button { width: 24px; min-width: 24px; height: 26px; min-height: 26px; padding: 1px; }
+  .studio .studio-core-mix-channel input { width: 38px; min-width: 38px; height: 26px; min-height: 26px; }
+  .studio .studio-core-controls .generation-primary-actions,
+  .studio .studio-core-controls #generation-anchor-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 3px; }
+  .studio .studio-core-controls .generation-primary-actions,
+  .studio .studio-core-controls #generation-anchor-actions { flex-direction: row; flex-wrap: nowrap; }
+  .studio .studio-core-controls [hidden] { display: none !important; }
+  .studio .studio-core-controls .generation-primary-actions button,
+  .studio .studio-core-controls #generation-anchor-actions button { width: auto; min-height: 28px; padding: 2px 3px; white-space: nowrap; font-size: 10px; }
+  .studio .studio-core-controls .loop-toggle { display: flex; align-items: center; min-height: 28px; font-size: 10px; }
+  .studio .studio-core-controls .follow-mode-control { display: flex; align-items: center; min-height: 28px; font-size: 10px; white-space: nowrap; }
+  .studio .studio-core-controls .studio-quick-chord button { min-height: 28px; padding: 2px 3px; white-space: nowrap; }
+  .studio[data-view-mode="score"] .workspace-chrome .workspace-toolbar,
+  .studio[data-view-mode="lyrics"] .workspace-chrome .workspace-toolbar,
+  .studio[data-view-mode="drums"] .workspace-chrome .workspace-toolbar { min-height: 32px; padding-block: 0; border-bottom: 1px solid var(--border); }
+  .studio[data-view-mode="score"] #view-controls,
+  .studio[data-view-mode="lyrics"] #view-controls,
+  .studio[data-view-mode="drums"] #view-controls { height: 44px; min-height: 44px; }
+  .studio #piano-roll-section .pane-heading[hidden] { display: none !important; }
+  .studio #drums-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+@media (width >= 68rem) {
+  .studio .studio-core-controls:not([hidden]) { flex-basis: 38px; height: 38px; min-height: 38px; }
+}
+
+@media (width >= 90rem) {
+  .studio .header-actions .project-menu[hidden] { display: none !important; }
+}
+
+
 @media (width > 46rem) and (width < 68rem) and (min-height: 501px) {
   .studio .page-header { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; height: 50px; min-height: 50px; padding: 3px 8px; overflow: visible; }
   .studio .app-shell { inset: 50px 0 0; padding: 0 7px; }
@@ -1325,27 +1350,30 @@
   .studio .header-actions .project-menu-trigger { min-height: 32px; padding: 3px 5px; }
   .studio .workspace-chrome { position: static; display: block; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
   .studio .workspace-chrome .workspace-toolbar { position: static; inset: auto; z-index: auto; display: flex; flex: 0 0 40px; align-self: stretch; width: 100%; height: 40px; min-height: 40px; padding: 1px 8px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface); }
-  .studio #view-controls { position: static; inset: auto; width: 100%; height: 40px; min-height: 40px; }
+  .studio #view-controls { position: static; inset: auto; flex: 0 0 auto; width: 100%; height: 51px; min-height: 51px; }
   .studio .app-menu-popover > .menu-sheet-close { position: static; bottom: auto; }
   .studio .studio-toolbar-actions { flex: 1 1 auto; min-width: 0; }
   .studio .studio-toolbar-actions > .mobile-panel-trigger { display: inline-flex; min-height: 34px; }
   .studio .studio-more-popover { max-width: min(22rem, calc(100vw - 16px)); }
 }
 
-@media (width <= 46rem) {
-  .studio .mobile-workspace-dock .mobile-transport-summary {
-    flex: 0 1 clamp(3rem, 21vw, 7rem);
-    min-width: 0;
-    max-width: 7rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .studio #piano-roll-collapse { position: relative; display: inline-grid; place-items: center; width: 44px; min-width: 44px; min-height: 44px; padding: 0; }
-  .studio #piano-roll-collapse .disclosure-chevron { display: none; }
-  .studio #piano-roll-collapse [data-copy] { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .studio #piano-roll-collapse::before { content: "−"; font-size: 19px; line-height: 1; }
-  .studio #piano-roll-collapse[aria-expanded="false"]::before { content: "+"; }
+@media (width <= 46rem) and (orientation: portrait) {
+  .studio .workspace-chrome .workspace-toolbar { display: none !important; }
+  .studio .app-shell { inset: 45px 0 calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .studio .mobile-workspace-dock:not([hidden]) { height: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .studio .workspace-sidebar { inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); max-height: min(55dvh, calc(100dvh - 128px)); }
+  .studio .workspace-sidebar[data-sheet-size="half"] { height: min(45dvh, calc(100dvh - 128px)); max-height: min(45dvh, calc(100dvh - 128px)); }
+  .studio .studio-more[open] .studio-more-popover { bottom: calc(88px + env(safe-area-inset-bottom, 0px) + 6px); }
+  .studio .transport-advanced[open] .transport-advanced-grid { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .studio[data-studio-panel="none"] .note-selection-bar { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .studio .mobile-workspace-dock:not([hidden]) { flex-flow: row wrap; align-content: flex-start; height: calc(88px + env(safe-area-inset-bottom, 0px)); }
+  .studio .mobile-workspace-dock > .transport-dock { flex: 0 0 100%; }
+  .studio .mobile-workspace-dock > .studio-views,
+  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]) { flex: 1 1 50%; width: 50%; min-width: 0; max-width: none; height: 44px; overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; }
+  .studio .mobile-workspace-dock > .studio-views > button { flex: 0 0 auto; min-width: 44px; height: 44px; min-height: 44px; white-space: nowrap; }
+  .studio .mobile-workspace-dock > .studio-panel-switches > button { min-width: 44px; }
+  .studio #piano-roll-section .guitar-mode-toggle { display: none; }
+  .studio .header-actions > .mobile-guitar-trigger { min-height: 44px; }
 }
 
 @media (width >= 56rem) and (min-height: 501px) {
@@ -1436,8 +1464,17 @@
   .studio .workspace-sidebar .studio-tools-content > .transport-advanced-grid { grid-template-columns: 1fr; gap: 10px; }
 }
 
-@media (width >= 68rem) and (max-height: 500px) {
+@media (width >= 90rem) and (min-height: 800px) {
+  .studio .workspace-sidebar[data-dual-dock="true"] { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+  .studio .workspace-sidebar[data-dual-dock="true"] .studio-inspector-head { flex: 0 0 auto; }
+}
+
+@media (width >= 68rem) and (max-height: 800px) {
   .studio .page-header .mobile-panel-trigger:not([hidden]) { display: inline-flex; }
+  .studio .page-header { height: 40px; min-height: 40px; }
+  .studio #view-controls,
+  .studio[data-view-mode] #view-controls { height: 32px; min-height: 32px; }
+  .studio .studio-core-controls:not([hidden]) { flex-basis: 36px; height: 36px; min-height: 36px; }
 }
 
 @media (width > 46rem) {
@@ -1449,20 +1486,4 @@
   }
   .studio .workspace-sidebar .studio-panel-switches { display: flex; flex-wrap: nowrap; width: 100%; gap: 4px; }
   .studio .workspace-sidebar .studio-panel-switches button { flex: 1 1 0; min-width: 0; white-space: nowrap; }
-}
-
-@media (width >= 68rem) {
-  /* Not and Irama have no controls in the canvas toolbar; keep its heading
-     available to assistive tech while collapsing the otherwise empty band. */
-  .studio[data-view-mode="score"] .workspace-chrome .workspace-toolbar,
-  .studio[data-view-mode="lyrics"] .workspace-chrome .workspace-toolbar,
-  .studio[data-view-mode="drums"] .workspace-chrome .workspace-toolbar {
-    min-height: 0;
-    padding-block: 0;
-    border: 0;
-  }
-  .studio[data-view-mode="score"] #view-controls,
-  .studio[data-view-mode="lyrics"] #view-controls,
-  .studio[data-view-mode="drums"] #view-controls { height: auto; min-height: 0; }
-  .studio[data-view-mode="lyrics"] #lyrics-section { padding-top: 14px; }
 }

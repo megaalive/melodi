@@ -1,8 +1,8 @@
-import { PPQ } from "../core/model.js?v=20261003.78";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.78";
-import { SNAP_TICKS } from "../core/editor.js?v=20261003.78";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261003.78";
-import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20261003.78";
+import { PPQ } from "../core/model.js?v=20261003.79";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.79";
+import { SNAP_TICKS } from "../core/editor.js?v=20261003.79";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261003.79";
+import { centeredScrollLeft, nearestScrollLeft } from "./roll-follow.js?v=20261003.79";
 
 const DEFAULT_VELOCITY = 100;
 
@@ -25,13 +25,21 @@ export function drumGridEndTick(song) {
 
 export function projectDrumGrid(song, {
   kit = GM_STANDARD_KIT,
-  snap = "1/8"
+  snap = "1/8",
+  minimumVisibleBars = 1
 } = {}) {
   const snapTicks = SNAP_TICKS[snap] ?? SNAP_TICKS["1/8"];
   const endTick = drumGridEndTick(song);
   const track = (song?.tracks ?? []).find((candidate) => candidate.kind === "percussion") ?? null;
+  const { numerator = 4, denominator = 4 } = song?.timing?.timeSignature ?? {};
+  const beatTicks = PPQ * 4 / denominator;
+  const barTicks = beatTicks * numerator;
+  const visibleBars = Number.isFinite(minimumVisibleBars)
+    ? Math.max(1, Math.floor(minimumVisibleBars))
+    : 1;
+  const viewEndTick = Math.max(endTick, barTicks * visibleBars);
   const columns = [];
-  for (let tick = 0; tick < endTick; tick += snapTicks) columns.push(tick);
+  for (let tick = 0; tick < viewEndTick; tick += snapTicks) columns.push(tick);
 
   const cells = new Map();
   for (const hit of track?.events ?? []) {
@@ -58,15 +66,13 @@ export function projectDrumGrid(song, {
     cells.set(key, entries);
   }
 
-  const { numerator = 4, denominator = 4 } = song?.timing?.timeSignature ?? {};
-  const beatTicks = PPQ * 4 / denominator;
-  const barTicks = beatTicks * numerator;
   return {
     kit,
     track,
     snap,
     snapTicks,
     endTick,
+    viewEndTick,
     beatTicks,
     barTicks,
     columns,
@@ -162,6 +168,8 @@ export function createDrumGridView(root, {
   let currentSnap = "1/8";
   let currentSongEndTick = 0;
   let currentPlayback = {};
+  let currentTouchSized = false;
+  let currentZoom = 1;
   let lastRangeSignature = null;
   let rulerDrag = null;
   let selectionDrag = null;
@@ -297,6 +305,28 @@ export function createDrumGridView(root, {
       snapTicks: currentProjection?.snapTicks ?? 0,
       songEndTick: currentSongEndTick
     };
+  }
+
+  function syncStepWidth() {
+    const minimum = currentTouchSized ? 44 : 28.8;
+    let width = Math.max(minimum, minimum * currentZoom);
+    if (!currentTouchSized && currentZoom === 1 && currentProjection?.columns.length) {
+      const scrollportWidth = root.parentElement?.clientWidth ?? 0;
+      const corner = root.querySelector(".drum-grid-corner");
+      const measuredGutter = corner?.getBoundingClientRect?.().width
+        || corner?.offsetWidth
+        || 192;
+      if (scrollportWidth > measuredGutter) {
+        const timelineWidth = scrollportWidth - measuredGutter;
+        const fourBarColumns = Math.min(currentProjection.columns.length,
+          Math.ceil(currentProjection.barTicks * 4 / currentProjection.snapTicks));
+        // Fill short timelines and keep four complete bars visible while
+        // retaining every later column in the horizontal scroller.
+        width = clamp(width, timelineWidth / currentProjection.columns.length,
+          timelineWidth / fourBarColumns);
+      }
+    }
+    root.style.setProperty("--drum-step-width", `${width}px`);
   }
 
   function setOverlayBounds(element, left, width) {
@@ -497,10 +527,12 @@ export function createDrumGridView(root, {
   });
 
   function render(song, state = {}, songEndTick = drumGridEndTick(song)) {
-    const touchSized = typeof matchMedia === 'function' && matchMedia('(pointer: coarse), (max-width: 1024px)').matches;
-    const minimum = touchSized ? 44 : 28.8;
-    root.style.setProperty('--drum-step-width', `${Math.max(minimum,minimum*(state.editor?.zoom ?? 1))}px`);
-    const projection = projectDrumGrid(song, { snap: state.editor?.snap ?? "1/8" });
+    currentTouchSized = typeof matchMedia === 'function' && matchMedia('(pointer: coarse), (max-width: 1024px)').matches;
+    currentZoom = Number.isFinite(state.editor?.zoom) ? state.editor.zoom : 1;
+    const projection = projectDrumGrid(song, {
+      snap: state.editor?.snap ?? "1/8",
+      minimumVisibleBars: 4
+    });
     currentProjection = projection;
     currentTool = state.editor?.tool === "draw" ? "draw" : "select";
     currentSnap = state.editor?.snap ?? "1/8";
@@ -654,10 +686,15 @@ export function createDrumGridView(root, {
     selectionRect.setAttribute("aria-hidden", "true");
     selectionRect.hidden = true;
     root.append(bodyRange, playheadLine, selectionRect);
+    syncStepWidth();
     updatePlayback(currentPlayback, { songEndTick: currentSongEndTick });
     syncFrozenDrumGutter();
 
     return projection;
+  }
+
+  if (typeof ResizeObserver === "function" && root.parentElement) {
+    new ResizeObserver(syncStepWidth).observe(root.parentElement);
   }
 
   function updatePlayback(playback = {}, { followMode = "none", songEndTick = currentSongEndTick } = {}) {

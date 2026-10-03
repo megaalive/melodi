@@ -8,10 +8,20 @@ export const DEFAULT_UI_PREFERENCES = Object.freeze({
   guitarZoneOpen: null,
   guitarZoneHeight: 220,
   dockOpen: true,
-  dockWidth: null
+  dockWidth: null,
+  dockVisibleCount: 2,
+  dockSlots: Object.freeze({ generate: true, secondary: true }),
+  dockPanelByWorkspace: Object.freeze({ edit: "chords", notation: "mixer", rhythm: "drum-expression" })
 });
 
 export function normalizeUiPreferences(value) {
+  const requestedCount = Number.isFinite(value?.dockVisibleCount)
+    ? Math.max(0, Math.min(2, Math.trunc(value.dockVisibleCount)))
+    : DEFAULT_UI_PREFERENCES.dockVisibleCount;
+  const dockSlots = {
+    generate: typeof value?.dockSlots?.generate === "boolean" ? value.dockSlots.generate : requestedCount > 0,
+    secondary: typeof value?.dockSlots?.secondary === "boolean" ? value.dockSlots.secondary : requestedCount > 1
+  };
   return {
     pianoRollCollapsed: typeof value?.pianoRollCollapsed === "boolean"
       ? value.pianoRollCollapsed
@@ -28,7 +38,17 @@ export function normalizeUiPreferences(value) {
     dockOpen: typeof value?.dockOpen === "boolean" ? value.dockOpen : DEFAULT_UI_PREFERENCES.dockOpen,
     dockWidth: Number.isFinite(value?.dockWidth)
       ? Math.max(320, Math.min(480, Math.round(value.dockWidth)))
-      : DEFAULT_UI_PREFERENCES.dockWidth
+      : DEFAULT_UI_PREFERENCES.dockWidth,
+    dockVisibleCount: Number(dockSlots.generate) + Number(dockSlots.secondary),
+    dockSlots,
+    dockPanelByWorkspace: {
+      edit: ["generate", "chords", "mixer", "tools"].includes(value?.dockPanelByWorkspace?.edit)
+        ? value.dockPanelByWorkspace.edit : DEFAULT_UI_PREFERENCES.dockPanelByWorkspace.edit,
+      notation: ["mixer", "tools"].includes(value?.dockPanelByWorkspace?.notation)
+        ? value.dockPanelByWorkspace.notation : DEFAULT_UI_PREFERENCES.dockPanelByWorkspace.notation,
+      rhythm: ["drum-expression", "mixer", "tools"].includes(value?.dockPanelByWorkspace?.rhythm)
+        ? value.dockPanelByWorkspace.rhythm : DEFAULT_UI_PREFERENCES.dockPanelByWorkspace.rhythm
+    }
   };
 }
 

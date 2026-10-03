@@ -446,3 +446,126 @@ Matriks lengkap, JSON/CSV, dan 100 screenshot ada di
 30 pasangan default, Generate dengan kandidat, dan Mixer tersedia di
 [ringkasan PR12](ui-audit/round2/pr12-summary.md). Laporan itu juga mencatat
 `npm test`, `npm run check`, CI, dan bukti Pages untuk build `.78`.
+
+## Putaran 2 PR13–16 — Guitar dock dan kontrol yang terjangkau
+
+Build lokal `20261003.79` mencatat empat tahapan brief dalam satu hasil akhir.
+Peta fitur mempertahankan baseline `.78` dan menambahkan rumah kontrol serta
+cakupan operasi `.79`. Semua angka di bagian ini berasal dari verifikasi akhir
+yang sama; tidak ada rekaman ukuran CSS atau metrik tata letak antara tiap tahap.
+
+| Tahap brief | Perubahan yang diverifikasi pada `.79` | Bukti |
+|---|---|---|
+| PR13 | Inventaris fitur, tes 30 target operasi, dan sheet Guitar berisi TAB/Fretboard | [Peta fitur](feature-map.md), tes `core-reachability`, keadaan Guitar pada [matriks](ui-audit/round2/pr13-16-final-v79/matrix.md) |
+| PR14 | Zona Guitar di bawah Edit/Not, toggle sinkron, splitter keyboard, state/tinggi tersimpan, dock tetap dipilih | Keadaan Edit/Not + Guitar dan Fretboard pada matriks; tes interaksi Studio/preferensi |
+| PR15 | Tab sesuai workspace, dua slot dock pada layar lebar dan tinggi, ekspresi drum dengan hit terpilih, empat birama drum terlihat | Keadaan dual dock Edit/Not/Irama dan Irama + ekspresi pada matriks; tes Drum Grid |
+| PR16 | Aksi proyek berlabel, semua delapan langsung pada `>=90rem`, empat utama + Proyek pada 68–90rem, dokumentasi Snap/Zoom | Keadaan proyek dan medium desktop; tes kontrol desktop; [README](../README.md) |
+
+### Matriks dan cara pengukuran
+
+Audit UI selesai pada 2026-10-03 15:50:07 UTC: **200/200 sel**, seluruhnya build
+`.79`, nol kegagalan. Lima viewport wajib menjalankan 17 keadaan pada tema
+light/dark (170 sel). Tambahan 1280×900 menjalankan 10 keadaan pada dua tema
+(20 sel), dan 1440×799 menjalankan lima keadaan pada dua tema (10 sel) untuk
+memeriksa batas dua slot/tinggi Guitar. Terdapat 200 screenshot hasil matriks.
+Data lengkap: [matriks](ui-audit/round2/pr13-16-final-v79/matrix.md),
+[JSON](ui-audit/round2/pr13-16-final-v79/results.json), dan
+[CSV](ui-audit/round2/pr13-16-final-v79/results.csv).
+
+Semua field `pageErrors` kosong. Runner merekam event `pageerror`; console error
+tidak menjadi sumber pengukuran field tersebut, sehingga hasil ini tidak
+menyatakan seluruh pesan console telah diaudit.
+
+Chrome pada audit ini diukur dari puncak viewport ke **shell kanvas workspace**,
+ditambah dock bawah yang fixed. Alat khusus workspace di dalam shell dihitung
+sebagai kontrol konten. Ini memperjelas batas pengukuran terhadap laporan lama
+yang memakai awal area editor aktif; persentase historis tidak diperlakukan
+sebagai perbandingan langsung dengan angka baru. Runner kini memeriksa batas
+chrome 14% dari 68rem dan 25% pada phone/short landscape, serta menilai klip per
+arah terhadap ancestor yang benar-benar dapat digulir. Tablet 1024×768 dicatat
+tersendiri karena berada di bawah breakpoint desktop tersebut.
+
+| Viewport | Sel | Kontrol terlihat, Edit default | Klik-untuk-terlihat default (disclosure + tab lain) | Chrome maksimum | Klip mentah maksimum / tidak terjangkau | Overlap kontrol / label maksimum |
+|---|---:|---:|---:|---:|---:|---:|
+| 1920×1080 | 34 | 75 | 8 (1 + 7) | 126 px / 11.67% | 1 / 0 | 0 / 0 |
+| 1440×900 | 34 | 72 | 8 (1 + 7) | 126 px / 14.00% | 2 / 0 | 0 / 0 |
+| 1280×900 | 20 | 60 | 17 (10 + 7) | 126 px / 14.00% | 4 / 0 | 0 / 0 |
+| 1440×799 | 10 | 68 | 17 (10 + 7) | 108 px / 13.52% | 0 / 0 | 0 / 0 |
+| 1024×768 | 34 | 39 | 24 (17 + 7) | 145 px / 18.88% | 10 / 0 | 0 / 0 |
+| 390×844 | 34 | 19 | 36 (36 + 0) | 133 px / 15.76% | 10 / 0 | 0 / 0 |
+| 844×390 | 34 | 22 | 32 (32 + 0) | 88 px / 22.56% | 24 / 0 | 0 / 0 |
+
+Edit default mencatat 13 elemen `<details>` pada semua viewport. Seluruh sel
+memiliki nol overlap kontrol, overlap label kanvas, klip tidak terjangkau, dan
+pelanggaran batas chrome yang berlaku. Klip mentah tetap mencakup kanvas/panel
+yang bisa digulir; maksimum 24 terjadi pada short landscape dan tidak disamakan
+dengan kontrol yang hilang.
+
+### Cakupan operasi dan payload
+
+Tes reachability memeriksa **30 target operasi**, termasuk masing-masing kanal
+Melody/Harmony/Bass, exact Seek/Loop, dan delapan aksi proyek. Pada 1600×900 semua
+target memiliki nol aksi disclosure/menu. Pada 1200×900, 26 target memiliki nol
+aksi tersebut dan empat aksi proyek sekunder memakai satu menu Proyek. Ini
+mengikuti aturan header rinci pada brief dan tetap merupakan pengecualian terhadap
+kalimat umum semua inti nol langkah. Pada 390×844 seluruh target memenuhi batas
+maksimum satu reveal action. Tes menerima kontrol pada strip yang dapat digulir;
+hasil ini tidak menyatakan semua kontrol detail terlihat serentak. Hitungan
+klik-untuk-terlihat matriks adalah semua target umum pada panel/disclosure, sehingga
+tetap lebih besar dari nol meski jalur operasi utama sudah tersedia.
+
+Keadaan payload memeriksa isi yang benar, bukan hanya wrapper panel:
+
+- Guitar TAB/Fretboard dan Not + Guitar: 32/32 keadaan mempunyai enam string
+  dan representasi note melodi yang dipilih; mencakup phone dan short landscape.
+- Irama + ekspresi: 10/10 keadaan mempunyai hit terpilih, tiga kontrol utama
+  terlihat, serta ID hit, track, dan velocity form yang cocok dengan state.
+- Dual dock Edit/Not/Irama: 12/12 keadaan pada viewport yang mendukungnya
+  mempunyai dua body terlihat dan panel sekunder yang benar. Batas 1440×799
+  serta 1280×900 mempertahankan satu panel.
+- Irama 1440×900 light/dark: sel akhir birama keempat terlihat penuh pada 2/2
+  keadaan. Horizon tampilan empat birama tidak memperpanjang durasi Song.
+
+### CSS dan checks lokal
+
+Pohon CSS impor adalah **223,856 B** setelah normalisasi LF: naik 527 B dari
+223,329 B pada PR12 dan menyisakan 144 B di bawah guard 224,000 B. Target 165 KB
+dilepas untuk PR13–16. Angka ini adalah perubahan gabungan `.78` ke `.79`, bukan
+ukuran antara tiap tahap brief.
+
+Audit coverage CSS selesai pada 2026-10-03 15:51:19 UTC. Runner coverage mengukur
+seluruh kombinasi tujuh viewport × 17 keadaan × dua tema, sehingga laporannya
+memuat **238 sel + 6 state dinamis (244 skenario)**, berbeda dari subset 200 sel runner UI.
+Chromium mencatat 229,433 B aktif dan 166,710 B terpakai (72.66%); 1,461 dari
+1,933 aturan terpakai, 472 belum terpakai, dan nol kandidat aman untuk dihapus
+dari pemeriksaan referensi statis. Ukuran browser dan ukuran source yang
+dinormalisasi merupakan metrik berbeda. Aturan belum terpakai pada sampel tidak
+otomatis menjadi CSS mati. Lihat [laporan coverage](ui-audit/round2/pr13-16-final-v79/css-coverage/report.md)
+dan [JSON coverage](ui-audit/round2/pr13-16-final-v79/css-coverage/report.json).
+
+`npm test` lulus **549/549**, tanpa gagal, skip, atau todo. `npm run check` selesai
+dengan exit 0. Verifikasi ini menggunakan server lokal pada subpath `/melodi/`;
+meta build setiap sel dan URL stylesheet pada rekaman coverage memakai
+`20261003.79`.
+
+### Screenshot sebelum / sesudah
+
+Sebelum memakai arsip PR12 `.78`; sesudah memakai `.79`. Not sebelum belum
+mempunyai Guitar, sehingga pembandingnya adalah Score. Kolom Irama sesudah
+menampilkan ekspresi dengan hit terpilih. Keadaan Guitar sesudah memakai note
+terpilih untuk membuktikan payload; pada phone/short landscape kolom tersebut
+adalah sheet Guitar. Seluruh keadaan tambahan, termasuk Fretboard dan dual dock,
+tersedia pada matriks lengkap di atas.
+
+| Viewport | Tema | Edit default | Edit + Guitar / phone Guitar | Not + Guitar | Irama + ekspresi |
+|---|---|---|---|---|---|
+| 1920×1080 | light | [sebelum](ui-audit/round2/pr12-after/1920x1080-light-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-light-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/1920x1080-light-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-light-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1920x1080-light-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-light-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1920x1080-light-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-light-irama-drum-expression.png) |
+| 1920×1080 | dark | [sebelum](ui-audit/round2/pr12-after/1920x1080-dark-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-dark-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/1920x1080-dark-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-dark-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1920x1080-dark-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-dark-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1920x1080-dark-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1920x1080-dark-irama-drum-expression.png) |
+| 1440×900 | light | [sebelum](ui-audit/round2/pr12-after/1440x900-light-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-light-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/1440x900-light-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-light-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1440x900-light-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-light-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1440x900-light-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-light-irama-drum-expression.png) |
+| 1440×900 | dark | [sebelum](ui-audit/round2/pr12-after/1440x900-dark-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-dark-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/1440x900-dark-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-dark-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1440x900-dark-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-dark-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1440x900-dark-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1440x900-dark-irama-drum-expression.png) |
+| 1024×768 | light | [sebelum](ui-audit/round2/pr12-after/1024x768-light-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-light-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/1024x768-light-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-light-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1024x768-light-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-light-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1024x768-light-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-light-irama-drum-expression.png) |
+| 1024×768 | dark | [sebelum](ui-audit/round2/pr12-after/1024x768-dark-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-dark-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/1024x768-dark-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-dark-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1024x768-dark-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-dark-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/1024x768-dark-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/1024x768-dark-irama-drum-expression.png) |
+| 390×844 | light | [sebelum](ui-audit/round2/pr12-after/390x844-light-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-light-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/390x844-light-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-light-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/390x844-light-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-light-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/390x844-light-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-light-irama-drum-expression.png) |
+| 390×844 | dark | [sebelum](ui-audit/round2/pr12-after/390x844-dark-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-dark-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/390x844-dark-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-dark-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/390x844-dark-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-dark-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/390x844-dark-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/390x844-dark-irama-drum-expression.png) |
+| 844×390 | light | [sebelum](ui-audit/round2/pr12-after/844x390-light-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-light-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/844x390-light-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-light-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/844x390-light-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-light-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/844x390-light-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-light-irama-drum-expression.png) |
+| 844×390 | dark | [sebelum](ui-audit/round2/pr12-after/844x390-dark-edit-default.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-dark-edit-default.png) | [sebelum](ui-audit/round2/pr12-after/844x390-dark-edit-guitar.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-dark-edit-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/844x390-dark-not-score.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-dark-not-guitar-zone-open.png) | [sebelum](ui-audit/round2/pr12-after/844x390-dark-irama.png) / [sesudah](ui-audit/round2/pr13-16-final-v79/844x390-dark-irama-drum-expression.png) |

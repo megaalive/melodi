@@ -26,12 +26,14 @@ async function selectStudioTab(page, name) {
   await page.waitForFunction(panel => document.body.dataset.studioPanel === panel, name, { timeout: 3000 });
 }
 
-test("wide Generate tab opens routine generator details without hiding targets behind disclosures", async () => {
+test("wide pinned Generate slot exposes routine generator details without hiding targets behind disclosures", async () => {
   await withPage({ width: 1440, height: 900 }, async page => {
-    await selectStudioTab(page, "generate");
-
     const panel = page.locator("#generation-panel");
     assert.equal(await panel.isVisible(), true);
+    assert.equal(await page.locator(".studio-dock-slot-generate").isVisible(), true,
+      "Generate is pinned in the upper slot while the lower dock keeps its own selection");
+    assert.equal(await page.locator("#studio-panel-generate-tab").isVisible(), false,
+      "the pinned Generate panel does not duplicate a selectable lower tab");
     assert.equal(await page.locator(".generation-options").evaluate(details => details.open), true,
       "generator options are open by default at the wide tier");
     assert.equal(await page.locator(".shortcut-help").evaluate(details => details.open), true,
@@ -49,8 +51,8 @@ test("wide Generate tab opens routine generator details without hiding targets b
     assert.deepEqual(hiddenBehindClosedDetails, [], "routine generator targets do not sit behind closed details on wide screens");
 
     await selectStudioTab(page, "chords");
-    assert.equal(await page.locator("#generation-panel").isVisible(), false,
-      "switching dock tabs keeps the inactive Generate panel hidden");
+    assert.equal(await page.locator("#generation-panel").isVisible(), true,
+      "switching the lower dock panel leaves pinned Generate visible");
   });
 });
 

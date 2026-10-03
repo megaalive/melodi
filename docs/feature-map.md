@@ -1,6 +1,6 @@
-# Feature map — Putaran 2, baseline build 20261003.78
+# Feature map — Putaran 2, baseline and PR13–16 build 20261003.79
 
-This inventory records the default-state route to each implemented user feature before PR13. It is derived from `src/core/snapshot.js` (`AVAILABLE_ACTIONS`), UI `data-action` hooks, `README.md`, and `PLAN.md`. It is a baseline, so findings such as missing or misrouted controls are recorded rather than treated as the intended destination.
+The historical inventory below records the default-state route to each implemented user feature before PR13, at build 20261003.78. It is derived from `src/core/snapshot.js` (`AVAILABLE_ACTIONS`), UI `data-action` hooks, `README.md`, and `PLAN.md`. Missing or misrouted controls in that table are before-state findings. Current routes and verified operation budgets for build 20261003.79 follow the baseline; full local measurements are in the [PR13–16 audit](ui-audit.md#putaran-2-pr1316--guitar-dock-dan-kontrol-yang-terjangkau).
 
 ## Counting rules
 
@@ -11,7 +11,7 @@ This inventory records the default-state route to each implemented user feature 
 - **Core** means the actual operational control must be visible at 0 steps for `>=68rem` and at no more than 1 step for `<=46rem`. This is stricter than merely having a visible tab. PR13 onward must preserve this definition and expose compact controls outside the dock where the panel cap would otherwise hide them.
 - “Text” reports a visible text label on the control itself; an icon with only an accessible name is still “No” here.
 
-## Implemented user features
+## Historical baseline: implemented user features in `.78`
 
 `E / N / R` below indicates the workspace where the feature applies. Locations and counts describe build `.78`.
 
@@ -63,13 +63,13 @@ This inventory records the default-state route to each implemented user feature 
 | Project title; browser library save/open/delete | Global | Project header and project/library menus; 0–1 | Project header and menu; 0–1 | Project sheet/dialog; 1–2 | Project sheet/dialog; 1–2 | Yes | Non-core |
 | Help | Global | Header/menu; 0–1 | Header/menu; 0–1 | Menu; 1 | Project/settings sheet; 1 | Yes | Non-core |
 
-## Reachability baseline for core features
+## Historical baseline: reachability of core features
 
-The core inventory contains Guitar TAB/Fretboard, Chord (timeline, picker, progression), Generate (anchors through candidate acceptance), Mixer, Snap/Zoom, Select/Draw, Add Note, Seek/Range/Loop, Undo/Redo, and each of the eight project actions. In `.78`, the main known failures are inactive dock content, Alat-only controls, menu-only project actions, and the Guitar sheet route. The feature-step test in PR13 will produce exact per-workspace and per-breakpoint counts; those measured counts will be appended here rather than inferred from a raw hidden-element total.
+The core inventory contains Guitar TAB/Fretboard, Chord (timeline, picker, progression), Generate (anchors through candidate acceptance), Mixer, Snap/Zoom, Select/Draw, Add Note, Seek/Range/Loop, Undo/Redo, and each of the eight project actions. In `.78`, the main known failures were inactive dock content, Alat-only controls, menu-only project actions, and the Guitar sheet route. Build `.79` operation coverage and its remaining menu routes are recorded below; raw hidden-element totals are a separate audit measure.
 
-Conditional actions will be audited with seeded history for Undo/Redo, seeded anchors and a generation session for candidate controls, a selected note for expression, and a selected percussion hit for drum expression. On a fresh project those conditional actions do not exist yet; their parent feature access is what is counted in the default-state map.
+Conditional actions require history for Undo/Redo, anchors and a generation session for candidate controls, a selected note for expression, and a selected percussion hit for drum expression. On a fresh project those conditional actions do not exist yet; their parent feature access is what is counted in the default-state map.
 
-## Relevance and scope notes
+## Historical baseline: relevance and scope notes
 
 - Snap applies to note and chord editing in Edit and to percussion steps in Irama. Zoom is currently a horizontal Piano Roll control; Score uses Flow/Page layout and Irama has no drum-zoom command/control, so Score and Drum Zoom are not applicable in `.78` unless a corresponding existing control is found. Do not add new musical functionality to address that absence.
 - Guitar TAB and Fretboard both project the canonical melody. Their target is Edit and Not, never Irama; `setViewMode("guitar")` remains a supported command and maps to the Edit workspace.
@@ -77,6 +77,65 @@ Conditional actions will be audited with seeded history for Undo/Redo, seeded an
 - Meter and key are shown in the song strip but do not have UI setters in `.78`. Do not count a read-only display as an editing action.
 - Plan items for MIDI/MusicXML/WAV import, guitar-WAV transcription, and later PWA work are not current controls. They are not added by PR13–16. No Idea workspace, MIDI input, generator, Song/Share schema, or audio-engine feature is introduced.
 
-## Stage updates
+## Current implementation routes after PR13–16
 
-PR13–16 will append test/audit counts, screenshot references, desktop/mobile chrome, overlap/clipping findings, and released CSS size here or link the matching `docs/ui-audit/round2/` report. Existing `.78` observations above remain the before-state for comparison.
+The following table describes the implemented homes in the active workspace. It supplements the historical inventory rather than replacing its before-state measurements. A visible feature entry and every conditional operation within its panel are separate targets under the counting rules above. Local test coverage, layout measurements, and limits are recorded after the route table.
+
+| Feature | `>=90rem` | `68–90rem` | `46–68rem` | `<=46rem` and short landscape | Text / context |
+|---|---|---|---|---|---|
+| Piano Roll, Select/Draw, Add note, Select range | Edit canvas; Select/Draw in compact core strip; exact forms in Alat | Same | Edit canvas and core strip; exact forms in Alat panel | Edit canvas; editor settings and exact forms in sheets; short landscape exposes the editor toolbar | Select/Draw labelled; Draw adds notes and Select supports canvas range selection |
+| Edit Snap/Zoom | Core strip, using existing editor commands | Same | Core strip | Editor settings sheet; short landscape editor toolbar | Snap applies to note/chord editing; Zoom scales the roll |
+| Guitar TAB/Fretboard | Dedicated lower zone in Edit and Not; labelled heading/toggle | Same zone with open/close control | Lower zone unless compact landscape applies | Visible Guitar entry opens dedicated TAB/Fretboard sheet in Edit or Not | Layout buttons choose TAB/Fretboard; available only for melody workspaces |
+| Chord add/draw/timeline | Edit canvas lane and Add Chord in core strip; Chord panel in lower dock by default | Edit canvas and Add Chord strip control; Chord tab | Canvas and Add Chord strip control; Chord panel | Chord sheet from its visible panel entry | Chord inspector/picker follows selected chord context |
+| Chord picker/progression, harmony suggestions | Chord panel; detailed conditional controls remain there | Chord tab/panel | Chord panel | Chord sheet | Text labels; selection/range requirements still apply |
+| Generate anchors and gap generation | Direct actions in Edit core strip; full form in upper Generate slot | Direct actions in Edit core strip; full form in Generate tab | Direct actions in Edit core strip; Generate panel | Generate sheet from its visible entry in Edit | Anchor actions and Generate run the existing command path |
+| Generate options, candidates, compare, audition, accept, lock, regenerate | Upper Generate slot with its own scroll area | Generate tab/panel | Generate panel | Generate sheet | Candidate actions require an anchor-bounded generation session |
+| Melody/Harmony/Bass volume, mute, solo | Compact core mix group and full Mixer panel | Same | Same | Mixer sheet | Each channel has its own labelled control group |
+| Harmony/Bass style and pattern controls | Mixer panel | Mixer tab/panel | Mixer panel | Mixer sheet | Existing pattern/style choices |
+| Drum Roll and percussion editing | Irama canvas and drum toolbar | Same | Same | Irama canvas and toolbar/sheets | Four-bar display horizon; no change to canonical playback duration |
+| Drum mix controls | Per-piece controls on Irama grid rows; Mixer panel where applicable | Same | Same | Scrollable percussion rows and Mixer sheet | Controls depend on the percussion pieces present in the project |
+| Drum groove/presets and expression | Pop groove in Irama toolbar; drum expression in lower dock by default | Pop groove in toolbar; drum-expression tab | Pop groove in toolbar; drum-expression panel | Pop groove in toolbar; drum-expression sheet | Expression requires selected percussion hits |
+| Drum Snap/Zoom | Drum snap in Irama toolbar; Zoom uses shared editor multiplier | Same | Same | Drum toolbar/settings; short landscape toolbar | Drum Roll reads shared `editor.zoom` and `editor.snap`; its Snap control mirrors the same editor preference |
+| Score Flow/Page/Split, lyrics/mapping | Not canvas and its relevant view/layout controls | Same | Same | Not workspace and writing/layout controls | Detailed syllable mapping stays in each syllable chip |
+| Seek, loop range, loop enable, Follow | Exact Seek/Loop range forms in strip; loop/Follow in transport; reset/options in Alat | Exact Seek/Loop range forms, loop toggle, and Follow in core strip | Exact Seek/Loop range forms in core strip; reset/options in Alat | Transport controls and Seek/Loop range forms in Alat sheet; overview where shown | Existing seek and loop commands; exact tick forms retain labels/accessible names |
+| Undo/Redo, tempo, play/pause/stop | Header/transport controls | Header or core strip/transport controls | Transport controls | Fixed transport dock | History buttons can be disabled when no corresponding action exists |
+| New, Open file, Save file, Share | Labelled direct Proyek group buttons | Labelled direct header buttons | Proyek menu | Proyek sheet | Stable project `data-action` hooks retained |
+| Examples, Open browser library, Save, Save As | Labelled direct Proyek group buttons | Proyek menu | Proyek menu | Proyek sheet | Extra project popover removed at `>=90rem` |
+| Command Palette, shortcuts, language, theme, Help | Header controls or relevant panel/help entries | Header/menu controls | Existing menu/panel controls | Existing project/settings and panel sheets | Icon controls have accessible names; shortcut behavior is unchanged |
+| Note editing/expression, project title/library management, meter/key display | Existing canvas, contextual controls, Alat/Chord/project dialogs | Same homes with one dock tab at a time | Existing panel/dialog routes | Existing sheets/dialogs | Conditional selection controls and read-only meter/key retain their baseline meaning |
+
+### Dock availability and saved state
+
+| Active workspace | Single-panel tabs | Default secondary panel at `>=90rem`, height `>=800px` |
+|---|---|---|
+| Edit | Generate, Chord, Mixer, Alat | Chord |
+| Not | Mixer, Alat | Mixer |
+| Irama | Drum pattern/expression, Mixer, Alat | Drum pattern/expression |
+
+Wide tall layouts place Generate in the upper slot in every workspace and the selected relevant panel in the lower slot. The upper Generate tab is omitted from the secondary tablist. Each slot collapses and scrolls independently; open slot count, slot state, and selected panel per workspace use the existing UI preference storage. At other sizes the dock or sheet shows a single selected panel. Phone panel entries have selected-tab styling, and the Guitar sheet contains only Guitar content.
+
+The existing `data-studio-panel` values remain available as hooks. Requests to open a panel irrelevant to the active workspace are ignored by the UI router, preserving the current workspace and panel. Note expression continues to route through Alat. This routing policy does not add a public command or change `window.melodi.commands`.
+
+### Guitar state and relevance
+
+On desktop/tablet, Guitar is a separate zone below the Edit or Not canvas, with one open state shared by the toolbar toggle and zone control. Opening it retains the selected dock panel and the current Edit/Not workspace. Without a saved override it starts open at `>=90rem` and viewport height `>=800px`; its heading stays visible when collapsed on desktop/tablet. Open state and a height bounded to 120–480px persist in the existing preference store. The splitter supports pointer dragging, Arrow Up/Down, Shift for larger steps, and Home/End. Phone and short landscape layouts expose a Guitar trigger and move the same TAB/Fretboard content into a dedicated sheet. Irama has no Guitar entry.
+
+The compatibility command `setViewMode("guitar")` remains accepted and selects Edit with Guitar open. Opening Guitar through its Not control instead preserves Not. TAB/Fretboard continue to project canonical melody notes.
+
+Score has no independent scale/snap command: its notation uses Flow/Page/Split layout choices. Shared melody Snap/Zoom preferences remain relevant to the Piano Roll in Split. Drum Roll consumes the existing shared `editor.zoom` value through `setZoom()`, with 1x as its minimum displayed zoom; its Snap control also uses the shared `editor.snap` value through `setSnap()`. The four-bar view horizon extends only display space; no extra bars are added to the Song or transport duration.
+
+### Verified operation coverage in `.79`
+
+`tests/core-reachability.test.js` checks 30 operational targets: Guitar entry, Add Chord, two anchor actions and Generate, the three named mix channels, Snap/Zoom, Select/Draw and their Add Note/Select Range routes, exact Seek/Loop controls, Undo/Redo, and all eight project actions. These are operation targets, not a count of every feature row or every conditional action inside a panel.
+
+| Breakpoint sample | Verified reveal budget for these 30 targets | Remaining route |
+|---|---|---|
+| `>=90rem`, 1600×900 | 30 targets require no disclosure/menu action | Horizontal scrolling of the visible compact strip is accepted where needed |
+| `68–90rem`, 1200×900 | 26 targets require no disclosure/menu action; 4 project actions allow one | Examples, browser library, Save, and Save As use Proyek, as specified by the detailed header layout |
+| `<=46rem`, 390×844 | All 30 targets meet a maximum of one reveal action | Detailed controls use their directly reachable sheet or editor-settings entry |
+
+The test distinguishes operation controls from tabs, checks accessible labels and reachable reveal triggers, and requires compact controls outside the dock on desktop. It accepts a target reachable through an actually scrollable container. Therefore the zero-disclosure result is not a claim that every control is fully onscreen simultaneously. The detailed header rule's four medium-desktop menu actions remain an explicit exception to the brief's blanket zero-step wording. No separate per-target zero/one histogram is emitted for the phone sample.
+
+The broader UI matrix checks 200 cells across seven viewport sizes and both themes. Guitar content with six strings and the selected melody note is verified in 32/32 explicit TAB/Fretboard/Not states; selected drum-expression controls and matching hit/track/velocity are verified in 10/10 states. Supported dual-dock states pass 12/12 checks, and the fourth drum bar is fully visible in both 1440×900 Irama theme samples. All cells have zero control/label overlaps and zero unreachable clips. Detailed panel controls retain their routes, so the matrix's strict common-control reveal total remains nonzero: default Edit is 8 at 1920×1080 and 1440×900, 17 at 1280×900, 24 at 1024×768, 36 at 390×844, and 32 at 844×390.
+
+`npm test` passes 549/549 and `npm run check` passes. The CSS guard measures 223,856 normalized LF bytes, 527 B above PR12 and 144 B below the 224,000 B limit; the former 165 KB target is released. Evidence: [UI matrix](ui-audit/round2/pr13-16-final-v79/matrix.md), [JSON](ui-audit/round2/pr13-16-final-v79/results.json), [CSV](ui-audit/round2/pr13-16-final-v79/results.csv), [CSS coverage](ui-audit/round2/pr13-16-final-v79/css-coverage/report.md), and [full report with before/after screenshots](ui-audit.md#putaran-2-pr1316--guitar-dock-dan-kontrol-yang-terjangkau). These records describe local verification of `.79`.

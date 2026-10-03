@@ -220,7 +220,8 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   assert.match(studio, /header\.insertBefore\(modeNav, headerActions\)/);
   assert.match(studio, /const directProjectActions = \['new-song', 'open-project-file', 'save-project-file', 'share-song'\]/);
   assert.match(studio, /headerActions\.append\(projectMenu, headerControls\)/);
-  assert.match(studio, /projectSummaryLabel\.dataset\.copy = 'projectMoreLabel'/);
+  assert.match(studio, /const summaryKey = wide\.matches \? 'projectActionsHeading' : projectSummaryCopy/);
+  assert.match(studio, /projectSummaryLabel\.dataset\.copy = summaryKey/);
   assert.match(studio, /const wide = matchMedia\('\(width >= 68rem\)'\)/);
   const toolbarActionsStart = html.indexOf('class="studio-toolbar-actions"');
   const panelSwitchesStart = html.indexOf('id="studio-panel-switches"');
@@ -229,7 +230,9 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   assert.ok(toolbarActionsStart >= 0 && toolbarActionsStart < panelSwitchesStart && panelSwitchesStart < moreStart);
   assert.doesNotMatch(html.slice(moreStart, moreEnd), /data-studio-panel=/);
   assert.match(html, /id="guitar-mode-toggle"[^>]*data-studio-view="guitar"[^>]*aria-pressed="false"/);
-  assert.match(studio, /mobilePanelActions\.append\(panelSwitches\)/);
+  assert.match(studio, /toolbarActions\.append\(rollCollapse\)/);
+  assert.match(studio, /if \(compact\.matches\) mobileDock\.append\(panelSwitches\)/);
+  assert.match(studio, /if \(!compact\.matches \|\| shortLandscapeLayout\) inspectorActions\.append\(panelSwitches\)/);
   assert.doesNotMatch(html, /<details class="pane-help"|class="pane-help-popover"/);
   assert.equal((html.match(/class="pane-help-trigger secondary"/g) ?? []).length, 2);
   assert.match(html, /<dialog id="context-help-dialog"[^>]*aria-labelledby="context-help-heading"/);

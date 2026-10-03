@@ -184,7 +184,7 @@
   }
 }
 
-/* Tanpa atribut = ikuti preferensi sistem. Atribut ini hanya menimpa mode. */
+
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
 
@@ -296,8 +296,7 @@ p { margin: 0.45rem 0 0.8rem; }
   border-radius: var(--radius);
 }
 
-/* Strip lagu bukan panel, melainkan identitas halaman. Memberiinya kartu penuh
-  etus satu band ekstra; cukup baris tipis tanpa border. */
+
 .song-strip {
   min-height: 2.6rem;
   padding: 0.2rem 0.15rem;
@@ -413,13 +412,7 @@ p { margin: 0.45rem 0 0.8rem; }
   margin: 0;
 }
 
-/* Panel Lanjutan adalah popover, bukan isi bar. Dulu ia ikut mengalir di dalam
-   bar sticky, jadi membukanya menambah tinggi bar dan menutupi kanvas; itu juga
-   memaksa tiga aturan body:has(...) dengan tinggi tebakan (13rem / 7.2rem /
-   4.9rem) yang harus dicocokkan manual tiap layout berubah. Karena posisinya
-   absolute, tinggi bar tidak pernah berubah dan aturan tebakan itu dihapus.
-   Aturan ini sengaja diletakkan sebelum media query agar breakpoint bisa
-   menimpanya. */
+
 .transport-advanced {
   position: relative;
   align-self: center;
@@ -555,8 +548,7 @@ p { margin: 0.45rem 0 0.8rem; }
   font-size: var(--text-xs);
 }
 
-/* Selector harus mengalahkan `.editor-toolbar label` yang memakai display:grid
-   dan lebar tetap; tanpa itu label, slider, dan persen menjadi tiga baris. */
+
 .editor-toolbar label.zoom-control {
   display: flex;
   align-items: center;
@@ -1024,9 +1016,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
   font-weight: 650;
 }
 .status:empty { display: none; }
-/* Toast tidak lagi memakai isian hijau/merah pekat. Di tema gelap isian pekat
-   justru jadi elemen paling menyilaukan di layar, jadi isiannya jadi surface
-   redup dan sinyalnya dipindah ke garis sisi + warna teks. */
+
 .status { background: var(--toast-surface); color: var(--toast-ink); box-shadow: inset 0.16rem 0 0 var(--success), var(--shadow); }
 .status[data-kind="error"] {
   background: var(--toast-surface-error);
@@ -1090,9 +1080,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 }
 .syllable-add-form label { flex: 1 1 12rem; }
 
-/* Baris piano roll dibuat translusen supaya gradien pitch di belakang tetap
-   terlihat. Alternasi putih/hitam tetap terbaca, dan sumbu Y sekarang punya
-   warna: atas hangat, bawah dingin. */
+
 .roll-background { fill: url(#melodi-pitch-tint); }
 .pitch-tint-high { stop-color: var(--pitch-tint-high); }
 .pitch-tint-low { stop-color: var(--pitch-tint-low); }
@@ -1100,7 +1088,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 .roll-row-black { fill: var(--roll-key-dark); }
 .roll-row-line { stroke: var(--border); stroke-width: 0.5; }
 .roll-pitch-label, .roll-bar-label { fill: var(--text); font-family: system-ui, sans-serif; font-size: var(--text-xs); }
-/* Black key diredupkan supaya oktaf penuh (12 label) tetap ringan dibaca. */
+
 .roll-pitch-label-black { fill: var(--text-muted); }
 .roll-pitch-label-layer { isolation: isolate; }
 .roll-pitch-label-gutter {
@@ -1132,9 +1120,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 .roll-note { fill: var(--note-user); stroke: var(--note-user-stroke); stroke-width: 1.5; cursor: grab; touch-action: none; }
 .roll-note-generated { fill: var(--note-generated); stroke: var(--text-muted); stroke-dasharray: 4 2; }
 .roll-candidate-note { fill: var(--candidate-ghost); fill-opacity: 0.58; stroke: var(--candidate-ghost-active); stroke-width: 2; stroke-dasharray: 5 3; pointer-events: all; }
-/* Kandidat non-aktif: satu lapisan tipis tanpa stroke. `opacity` ada di lapisan
-   (`g`), bukan di tiap rect, supaya ghost yang menumpuk tidak saling menambah
-   alpha dan akhirnya menutupi kandidat aktif. */
+
 .roll-candidate-ghost-layer { opacity: 0.22; }
 .roll-candidate-ghost { fill: var(--candidate-ghost); }
 .roll-draw-preview {
@@ -1160,8 +1146,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 .roll-move-hit { fill: transparent; cursor: grab; touch-action: none; }
 .roll-playhead { stroke: var(--playhead); stroke-width: 2; }
 
-/* abcjs hanya menjadi backend engraving. Warna dan state interaktif tetap
-   dikendalikan CSS Melodi supaya renderer tidak menjadi sumber kebenaran UI. */
+
 #score svg { color: var(--score-ink); }
 #score .abcjs-note,
 #score .abcjs-rest,
@@ -1262,8 +1247,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 .neck-string[data-string="1"] { stroke-width: 1; }
 .neck-string-label { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); font-weight: 600; }
 .neck-string-number { fill: var(--text-muted); font-family: system-ui, sans-serif; font-size: var(--text-2xs); }
-/* Satu jalur fingering utama harus terbaca saat playback. Posisi alternatif
-   tetap terlihat, tetapi tidak bersaing dengan posisi yang disarankan. */
+
 .neck-hit {
   fill: var(--note-user);
   stroke: var(--note-user-stroke);
@@ -1301,7 +1285,7 @@ body[data-view-mode="combined"] #expression-panel { min-width: 0; }
 .score-warning-list { color: var(--warning-ink); }
 
 
-/* Workstation composition: satu canvas utama, inspector kontekstual, kandidat sebagai dock. */
+
 .song-strip {
   min-height: 3rem;
   padding: 0.35rem 0.15rem;
@@ -1472,9 +1456,7 @@ body[data-view-mode="combined"] .score-scroll {
 .candidate-dock .candidate-actions { margin-top: 0.35rem; }
 
 
-/* Workspace chrome: satu baris, bukan dua. Transport di kiri, kontrol tampilan
-   di kanan. Sebelumnya ini dua baris (transport di atas, view di bawah) yang
-   memakan satu band layar penuh sebelum user sampai kanvas. */
+
 .workspace-chrome {
   position: sticky;
   top: 0;
@@ -1529,7 +1511,7 @@ body[data-view-mode="combined"] .score-scroll {
 }
 
 
-/* Sidebar: hanya konteks aktif; utility dan advanced tetap tersedia tanpa membuat halaman memanjang. */
+
 .generation-options {
   position: relative;
 }
@@ -1565,9 +1547,7 @@ body[data-view-mode="combined"] .score-scroll {
 }
 
 
-/* Catatan: aturan popover untuk .transport-advanced[open] ada di blok base
-   paling atas, sebelum media query, supaya breakpoint di bawahnya bisa
-   menimpanya. Jangan diduplikasi di sini. */
+
 .generation-options[open] > .generation-advanced-popover {
   position: static;
   width: auto;
@@ -1583,7 +1563,7 @@ body[data-view-mode="combined"] .score-scroll {
 }
 
 
-/* Direct editing: kanvas adalah alat utama, bukan sidebar CRUD. */
+
 .roll-subdivision-line {
   stroke: var(--hairline);
   stroke-width: 1;
@@ -1700,8 +1680,7 @@ body[data-view-mode="combined"] .score-scroll {
   display: none !important;
 }
 
-/* R10: motion bisa dimatikan pengguna. Yang dibuang hanya gerak dan transisi,
-   bukan perubahan warna state, supaya feedback anchor/locked tetap terbaca. */
+
 
 /* Command palette. Native <dialog> memberi top layer, focus trap, dan Escape
    dari browser, jadi yang ditulis di sini hanya tampilan dan backdrop. */
@@ -1746,9 +1725,7 @@ body[data-view-mode="combined"] .score-scroll {
 .palette-row-label { font-size: var(--text-sm); font-weight: 600; }
 .palette-empty { margin: 0; padding: 0.9rem 0.8rem; text-align: center; }
 .palette-hint { margin: 0; padding: 0.45rem 0.7rem; border-top: 1px solid var(--border); font-size: var(--text-2xs); }
-/* Tombol pembuka palette. Wajib ada sebagai tombol, bukan hanya shortcut:
-   tanpa tombol, pintasan tidak bisa ditemukan, dan di perangkat sentuh tidak
-   ada tombol Ctrl sama sekali. */
+
 .command-button {
   align-self: flex-end;
   width: 2.35rem;
@@ -1766,8 +1743,7 @@ body[data-view-mode="combined"] .score-scroll {
   background: var(--surface-subtle);
   color: var(--text);
 }
-/* Empty state piano roll. Ditaruh di atas kanvas, bukan menggantikannya, supaya
-   grid tetap terlihat dan user belajar di mana harus mengklik. */
+
 .roll-empty {
   position: absolute;
   inset: auto auto 10px 10px;
@@ -1783,8 +1759,7 @@ body[data-view-mode="combined"] .score-scroll {
   box-shadow: var(--shadow);
 }
 .roll-empty-hint { margin: 0; color: var(--text); font-size: var(--text-xs); font-weight: 600; }
-/* Pembungkus kanvas + empty state, supaya empty state bisa absolute tanpa
-   ikut bergeser saat pane di-scroll. */
+
 .roll-surface { position: relative; }
 
 /* `hidden` dari UA stylesheet kalah spesifisitas dari `display: grid` di atas,
@@ -1792,7 +1767,7 @@ body[data-view-mode="combined"] .score-scroll {
 .roll-empty[hidden] { display: none; }
 
 
-/* Konfirmasi destruktif internal. Tidak memakai chrome dialog bawaan browser. */
+
 .confirm-dialog {
   width: min(28rem, calc(100vw - 1.5rem));
   margin: auto;
@@ -1884,7 +1859,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Meter dan pitch bend adalah bagian editor langsung, bukan detail mesin. */
+
 
 .bend-tool-group button[data-active="true"],
 .bend-tool-group button[aria-pressed="true"] {
@@ -1932,7 +1907,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Compact workstation pass: kanvas harus dominan, petunjuk dan edit sekunder jadi popover. */
+
 .page-header {
   padding-top: 0.32rem;
   padding-bottom: 0.25rem;
@@ -2041,14 +2016,14 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Workspace utama tetap memberi ruang untuk utilitas tanpa membuat editor note kedua. */
+
 .workspace-grid {
   grid-template-columns: minmax(0, 1fr) minmax(15rem, 17rem);
 }
 .workspace-sidebar {
   gap: 0.45rem;
 }
-/* Transport detail harus kecil dan lokal, bukan panel 40rem yang menutupi kanvas. */
+
 .transport-advanced[open] .transport-advanced-grid {
   width: min(24rem, calc(100vw - 1.5rem));
   grid-template-columns: 1fr;
@@ -2072,7 +2047,7 @@ button.danger-button:hover:not(:disabled) {
   min-height: 2rem;
 }
 
-/* Sidebar sekarang hanya untuk fungsi yang memang bukan edit note langsung. */
+
 #generation-panel {
   order: 1;
 }
@@ -2081,7 +2056,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Score: empat birama default harus terbaca sebagai score, bukan deretan glyph kecil. */
+
 .score-bend-label {
   fill: var(--expression-bend-label);
   stroke: none;
@@ -2100,7 +2075,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Share URL: aksi ringkas di song strip, detail hanya muncul saat perlu. */
+
 .shared-source {
   padding: 0.18rem 0.42rem;
   border: 1px solid var(--border);
@@ -2126,7 +2101,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Bend curve editor: preset tetap cepat, kombinasi kompleks diedit sebagai titik waktu/pitch. */
+
 .bend-curve-editor {
   border-top: 1px solid var(--border);
   padding-top: 0.35rem;
@@ -2240,7 +2215,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Direct manipulation untuk bend: kurva adalah editor utama, form hanya fallback presisi. */
+
 .bend-curve-preview {
   height: 7rem;
   touch-action: none;
@@ -2340,7 +2315,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Timeline range: klik ruler = seek, drag ruler = playback range. */
+
 .roll-timeline-selection {
   fill: var(--accent-soft);
   fill-opacity: 0.72;
@@ -2362,7 +2337,7 @@ button.danger-button:hover:not(:disabled) {
   white-space: nowrap;
 }
 
-/* Kontrol global dikelompokkan berdasarkan tugas; kontrol editor tetap lokal. */
+
 .toolbar-icon {
   display: block;
   width: 1rem;
@@ -2467,7 +2442,7 @@ button.danger-button:hover:not(:disabled) {
 .workspace-chrome .transport-main { align-items: center; gap: 0.42rem; }
 .workspace-chrome .transport-dock { flex-basis: 42rem; }
 
-/* Disclosure menyembunyikan tinggi panel sambil mempertahankan lebar geometry SVG. */
+
 .panel-collapse-button {
   display: inline-grid;
   place-items: center;
@@ -2540,8 +2515,7 @@ button.danger-button:hover:not(:disabled) {
 }
 
 
-/* Polish toolbar/disclosure: satu ritme visual untuk aksi global dan satu bahasa
-   chevron untuk semua panel yang dapat diciutkan. */
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -2626,7 +2600,7 @@ button.danger-button:hover:not(:disabled) {
   padding: 0.28rem 0.62rem;
 }
 
-/* Semua disclosure memakai chevron SVG yang sama: turun = terbuka, kanan = tertutup. */
+
 .disclosure-summary {
   display: inline-flex;
   align-items: center;
@@ -2674,7 +2648,7 @@ details[open] > .disclosure-summary .disclosure-chevron {
 }
 
 
-/* Score editor: Flow untuk composing horizontal, Page untuk engraving yang dibungkus. */
+
 .score-pane-heading {
   align-items: center;
 }
@@ -2753,7 +2727,7 @@ details[open] > .disclosure-summary .disclosure-chevron {
   height: auto;
 }
 
-/* Selection dan playback harus terbaca tanpa bergantung pada drop-shadow saja. */
+
 #score .score-note[data-selected="true"] {
   color: var(--highlight-selected-ink);
 }
@@ -2988,7 +2962,7 @@ body[data-view-mode="drums"] .workspace-grid {
   --drum-row-height: 1.8rem;
   --drum-step-width: 1.8rem;
   display: grid;
-  grid-template-columns: 12rem repeat(var(--drum-column-count), var(--drum-step-width));
+  grid-template-columns: 12rem repeat(var(--drum-column-count), minmax(0, var(--drum-step-width)));
   grid-auto-rows: var(--drum-row-height);
   width: max-content;
   min-width: 100%;
@@ -3189,8 +3163,8 @@ body[data-view-mode="drums"] .workspace-grid {
   position: relative;
   display: grid;
   place-items: center;
-  width: 1.8rem;
-  min-width: 1.8rem;
+  width: var(--drum-step-width);
+  min-width: 0;
   height: 1.8rem;
   min-height: 1.8rem;
   margin: 0;
@@ -3277,7 +3251,7 @@ body[data-view-mode="drums"] .workspace-grid {
   outline-offset: -2px;
 }
 
-/* Canvas owns pinch and two-finger pan; scrolling outside it stays native. */
+
 .drum-grid { touch-action: none; }
 
 .drum-hit-count {
@@ -3364,12 +3338,12 @@ body[data-view-mode="drums"] .workspace-grid {
 }
 .percussion-expression-primary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(12rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
 }
 .percussion-range-control {
   display: grid;
-  grid-template-columns: auto minmax(8rem, 1fr) minmax(2.7rem, auto);
+  grid-template-columns: auto minmax(0, 1fr) minmax(2.7rem, auto);
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
@@ -3415,7 +3389,7 @@ body[data-view-mode="drums"] .workspace-grid {
   margin-top: 0.55rem;
 }
 
-/* Inspector harmoni menggunakan kontrol eksplisit dan tetap ringkas di mobile. */
+
 .harmony-card { min-width: 0; }
 .harmony-timeline-tools { min-width: 0; padding: .5rem; border-bottom: 1px solid var(--border); background: var(--surface); }
 .harmony-timeline-tools form { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }

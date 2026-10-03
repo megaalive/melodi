@@ -33,6 +33,25 @@ test("Drum Grid mengikuti meter, Snap, dan panjang canonical song", () => {
   assert.equal(projection.kit.pieces.at(-1).id, "kick");
 });
 
+test("minimum empat bar hanya memperluas proyeksi visual dan tetap memakai batas lagu canonical", () => {
+  const song = songFixture();
+  song.notes = [];
+  song.tracks = [];
+  song.timing.timeSignature = { numerator: 4, denominator: 4 };
+
+  const projection = projectDrumGrid(song, { snap: "1/8", minimumVisibleBars: 4 });
+
+  assert.equal(projection.barTicks, 1920);
+  assert.equal(projection.endTick, 1920);
+  assert.equal(projection.viewEndTick, 7680);
+  assert.equal(drumGridEndTick(song), 1920);
+  assert.equal(projection.columns.length, 32);
+  assert.deepEqual(
+    projection.columns.filter((tick) => tick % projection.barTicks === 0),
+    [0, 1920, 3840, 5760]
+  );
+});
+
 test("Hit percussion diproyeksikan berdasarkan piece identity, bukan MIDI pitch", () => {
   const song = songFixture();
   song.tracks.push({
@@ -136,7 +155,11 @@ class GridElement {
     this.dataset = {};
     this.children = [];
     this.attributes = new Map();
-    this.style = { setProperty() {} };
+    this.style = {
+      properties: new Map(),
+      setProperty(name, value) { this.properties.set(name, String(value)); },
+      getPropertyValue(name) { return this.properties.get(name) ?? ""; }
+    };
     this.parentElement = null;
     this.textContent = "";
     this.listeners = new Map();
@@ -202,6 +225,29 @@ class GridElement {
   querySelector(selector) { return this.querySelectorAll(selector)[0] ?? null; }
 
   getBoundingClientRect() {
+    const grid = this.closest('[data-entity="drum-grid"]');
+    if (grid?.timelineGeometry) {
+      const { gutterWidth, snapTicks } = grid.timelineGeometry;
+      const stepWidth = Number.parseFloat(grid.style.getPropertyValue("--drum-step-width")) || 28.8;
+      const columns = Number(grid.style.getPropertyValue("--drum-column-count"));
+      const left = -(grid.parentElement?.scrollLeft ?? 0);
+      const width = Math.max(grid.parentElement?.clientWidth ?? 0, gutterWidth + columns * stepWidth);
+      if (this === grid) return { left, top: 40, right: left + width, bottom: 540, width, height: 500 };
+      if (this.className === "drum-grid-corner") {
+        const frozenLeft = left + Number(this.style.transform?.match(/translateX\(([-\d.]+)px\)/)?.[1] ?? 0);
+        return { left: frozenLeft, top: 40, right: frozenLeft + gutterWidth, bottom: 70, width: gutterWidth, height: 30 };
+      }
+      if (this.dataset.entity === "drum-ruler") {
+        return { left: left + gutterWidth, top: 40, right: left + width, bottom: 70, width: width - gutterWidth, height: 30 };
+      }
+      if (this.className === "drum-grid-step" || this.dataset.entity === "drum-cell") {
+        const stepLeft = left + gutterWidth + Number(this.dataset.tick) / snapTicks * stepWidth;
+        const labels = grid.children.filter((item) => item.className === "drum-row-label");
+        const row = labels.findIndex((item) => item.dataset.pieceId === this.dataset.pieceId);
+        const top = this.dataset.entity === "drum-cell" ? 70 + Math.max(0, row) * 30 : 40;
+        return { left: stepLeft, top, right: stepLeft + stepWidth, bottom: top + 30, width: stepWidth, height: 30 };
+      }
+    }
     const scroll = this.parentElement;
     const rootLeft = -(scroll?.scrollLeft ?? 0);
     if (this.dataset.entity === "drum-grid") return { left: rootLeft, top: 40, right: rootLeft + 1568, bottom: 540, width: 1568, height: 500 };
@@ -226,7 +272,7 @@ class GridElement {
   }
 }
 
-function drumViewFixture(options = {}) {
+function drumViewFixture(options = {}, timelineGeometry = null) {
   globalThis.document = { createElement: (tag) => new GridElement(tag) };
   globalThis.Element = GridElement;
   const scroll = Object.assign(new GridElement("div"), { clientWidth: 400, scrollWidth: 1568, scrollLeft: 0, scrollTop: 72 });
@@ -234,10 +280,164 @@ function drumViewFixture(options = {}) {
   root.dataset.entity = "drum-grid";
   root.scrollWidth = 1568;
   root.parentElement = scroll;
+  if (timelineGeometry) {
+    root.timelineGeometry = timelineGeometry;
+    scroll.clientWidth = timelineGeometry.clientWidth;
+    Object.defineProperty(scroll, "scrollWidth", {
+      get: () => Math.ceil(root.getBoundingClientRect().width), configurable: true
+    });
+    Object.defineProperty(root, "scrollWidth", {
+      get: () => scroll.scrollWidth, configurable: true
+    });
+  }
   const view = createDrumGridView(root, options);
   view.render(songFixture(), { editor: { snap: "1/8", tool: "select" } });
   return { root, scroll, view };
 }
+
+test("blank Drum Grid fits four complete 4/4 bars at a 1440px viewport and preserves canonical ruler duration", () => {
+  const previousMatchMedia = globalThis.matchMedia;
+  globalThis.matchMedia = () => ({ matches: false });
+  try {
+    const seeks = [];
+    const { root, scroll, view } = drumViewFixture({ onSeek: (tick) => seeks.push(tick) }, {
+      clientWidth: 1019, gutterWidth: 192, snapTicks: 240
+    });
+    const song = songFixture();
+    song.notes = [];
+    song.tracks = [];
+    song.timing.timeSignature = { numerator: 4, denominator: 4 };
+
+    const originalSong = structuredClone(song);
+    const projection = view.render(song, { editor: { snap: "1/8", tool: "select", zoom: 1 } }, 1);
+    const barStarts = root.querySelectorAll('.drum-grid-step[data-bar="true"]');
+    const stepWidth = Number.parseFloat(root.style.getPropertyValue("--drum-step-width"));
+
+    assert.equal(projection.endTick, 1920);
+    assert.equal(projection.viewEndTick, 7680);
+    assert.deepEqual(barStarts.map((step) => Number(step.dataset.tick)), [0, 1920, 3840, 5760]);
+    assert.ok(stepWidth * projection.columns.length + 192 <= scroll.clientWidth + 0.001,
+      "all four bars fit in the available timeline width after the measured gutter");
+    assert.ok(drumCell(root, "kick", 7440).getBoundingClientRect().right <= scroll.clientWidth + 0.001,
+      "the final cell of bar four fits, not just its bar-start label");
+    assert.equal(scroll.scrollWidth, scroll.clientWidth);
+    const ruler = root.querySelector('[data-entity="drum-ruler"]');
+    assert.equal(ruler.getAttribute("aria-valuemax"), "1");
+    ruler.dispatchEvent({ type: "keydown", key: "End", bubbles: true });
+    assert.deepEqual(seeks, [1]);
+    view.updatePlayback({ status: "playing", currentTick: 7680 }, { followMode: "center" });
+    assert.equal(ruler.getAttribute("aria-valuenow"), "1");
+    assert.equal(scroll.scrollLeft, 0, "view-only bars never extend canonical playback scrolling");
+    assert.deepEqual(song, originalSong);
+
+    view.render(song, { editor: { snap: "1/8", tool: "select", zoom: 2 } });
+    assert.equal(root.style.getPropertyValue("--drum-step-width"), "57.6px");
+    assert.equal(root.querySelectorAll('.drum-grid-step[data-bar="true"]').length, 4);
+
+    globalThis.matchMedia = () => ({ matches: true });
+    view.render(song, { editor: { snap: "1/8", tool: "select", zoom: 1 } });
+    assert.equal(root.style.getPropertyValue("--drum-step-width"), "44px");
+    assert.equal(root.querySelectorAll('.drum-grid-step[data-bar="true"]').length, 4);
+  } finally {
+    if (previousMatchMedia === undefined) delete globalThis.matchMedia;
+    else globalThis.matchMedia = previousMatchMedia;
+  }
+});
+
+for (const { meter, barTicks, bars } of [
+  { meter: { numerator: 4, denominator: 4 }, barTicks: 1920, bars: 4 },
+  { meter: { numerator: 4, denominator: 4 }, barTicks: 1920, bars: 5 },
+  { meter: { numerator: 4, denominator: 4 }, barTicks: 1920, bars: 8 },
+  { meter: { numerator: 6, denominator: 8 }, barTicks: 1440, bars: 8 }
+]) {
+  test(`${bars}-bar ${meter.numerator}/${meter.denominator} Drum Grid fits four complete bars at 1440px for every Snap`, () => {
+    const previousMatchMedia = globalThis.matchMedia;
+    globalThis.matchMedia = () => ({ matches: false });
+    try {
+      const seeks = [];
+      const timelineGeometry = { clientWidth: 1019, gutterWidth: 192, snapTicks: 240 };
+      const { root, scroll, view } = drumViewFixture({ onSeek: (tick) => seeks.push(tick) }, timelineGeometry);
+      const song = songFixture();
+      song.tracks = [];
+      song.timing.timeSignature = meter;
+      const note = song.notes[0];
+      for (const [snap, snapTicks] of [["1/4", 480], ["1/8", 240], ["1/16", 120]]) {
+        const canonicalEndTick = bars * barTicks - snapTicks / 2;
+        song.notes = [{ ...note, startTick: 0, durationTicks: canonicalEndTick }];
+        const originalSong = structuredClone(song);
+        timelineGeometry.snapTicks = snapTicks;
+        scroll.scrollLeft = 0;
+        const projection = view.render(song, { editor: { snap, tool: "select", zoom: 1 } }, canonicalEndTick);
+        const stepWidth = Number.parseFloat(root.style.getPropertyValue("--drum-step-width"));
+        const lastFourthBarTick = projection.columns.filter((tick) => tick < barTicks * 4).at(-1);
+        const lastFourthBarCell = drumCell(root, "kick", lastFourthBarTick);
+        assert.ok(lastFourthBarCell.getBoundingClientRect().right <= scroll.clientWidth + 0.001,
+          `${snap}: every cell through bar four fits inside the scrollport`);
+        assert.equal(projection.endTick, bars * barTicks);
+        assert.equal(projection.viewEndTick, bars * barTicks);
+        assert.equal(projection.columns.length, bars * barTicks / snapTicks);
+        assert.ok(drumCell(root, "kick", projection.columns.at(-1)), `${snap}: the entire later song remains rendered`);
+
+        const ruler = root.querySelector('[data-entity="drum-ruler"]');
+        assert.equal(ruler.getAttribute("aria-valuemax"), String(canonicalEndTick));
+        ruler.dispatchEvent({ type: "keydown", key: "End", bubbles: true });
+        assert.equal(seeks.at(-1), canonicalEndTick, `${snap}: ruler End stops at the canonical unrounded duration`);
+        const canonicalEndX = 192 + canonicalEndTick / snapTicks * stepWidth;
+        view.updatePlayback({ status: "playing", currentTick: canonicalEndTick }, { followMode: "center" });
+        assert.ok(Math.abs(scroll.scrollLeft - Math.max(0, canonicalEndX - scroll.clientWidth)) < 0.001,
+          `${snap}: playback scroll ends at the canonical duration using the fitted step width`);
+        assert.ok(Math.abs(Number.parseFloat(root.querySelector(".drum-playhead-line").style.left) - canonicalEndX) < 0.001);
+        assert.equal(ruler.getAttribute("aria-valuenow"), String(canonicalEndTick));
+        assert.equal(scroll.scrollTop, 72);
+        assert.deepEqual(song, originalSong);
+      }
+    } finally {
+      if (previousMatchMedia === undefined) delete globalThis.matchMedia;
+      else globalThis.matchMedia = previousMatchMedia;
+    }
+  });
+}
+
+test("desktop Drum Grid refits four bars on resize while wider canvases retain more bars", () => {
+  const previousMatchMedia = globalThis.matchMedia;
+  const previousResizeObserver = globalThis.ResizeObserver;
+  let resize;
+  let observed;
+  globalThis.matchMedia = () => ({ matches: false });
+  globalThis.ResizeObserver = class {
+    constructor(callback) { resize = callback; }
+    observe(element) { observed = element; }
+  };
+  try {
+    const { root, scroll, view } = drumViewFixture({}, { clientWidth: 1019, gutterWidth: 192, snapTicks: 240 });
+    const song = songFixture();
+    song.timing.timeSignature = { numerator: 4, denominator: 4 };
+    song.notes = [{ ...song.notes[0], startTick: 0, durationTicks: 15360 }];
+    song.tracks = [];
+    view.render(song, { editor: { snap: "1/8", tool: "select", zoom: 1 } }, 15360);
+    assert.equal(observed, scroll);
+    assert.equal(root.style.getPropertyValue("--drum-step-width"), "25.84375px");
+    assert.ok(drumCell(root, "kick", 7440).getBoundingClientRect().right <= scroll.clientWidth + 0.001);
+
+    scroll.clientWidth = 1519;
+    resize();
+    assert.equal(root.style.getPropertyValue("--drum-step-width"), "28.8px");
+    assert.ok(drumCell(root, "kick", 9360).getBoundingClientRect().right <= scroll.clientWidth + 0.001,
+      "a wider canvas keeps at least five full bars visible at the normal step width");
+    assert.equal(root.querySelector('[data-entity="drum-ruler"]').getAttribute("aria-valuemax"), "15360");
+
+    scroll.clientWidth = 1019;
+    resize();
+    assert.equal(root.style.getPropertyValue("--drum-step-width"), "25.84375px");
+    assert.ok(drumCell(root, "kick", 7440).getBoundingClientRect().right <= scroll.clientWidth + 0.001);
+    assert.equal(root.querySelectorAll(".drum-grid-step").length, 64);
+  } finally {
+    if (previousMatchMedia === undefined) delete globalThis.matchMedia;
+    else globalThis.matchMedia = previousMatchMedia;
+    if (previousResizeObserver === undefined) delete globalThis.ResizeObserver;
+    else globalThis.ResizeObserver = previousResizeObserver;
+  }
+});
 
 test("Drum Grid memusatkan step di area setelah kolom label dan mempertahankan posisi vertikal", () => {
   const { root, scroll, view } = drumViewFixture();
