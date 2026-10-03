@@ -368,3 +368,13 @@ Ringkasan metrik, batas klik karena disclosure/tab, anggaran CSS, dan hasil
 tes ada di [laporan PR10](ui-audit/round2/pr10-summary.md). Matriks 100 sel
 dan 30 screenshot sesudah perubahan ada di [hasil PR10](ui-audit/round2/pr10-after/matrix.md);
 [baseline sebelum PR10](ui-audit/round2/pr9-after/matrix.md) menjadi pembanding.
+
+## Putaran 2 PR11 — Generate dan editor ekspresi
+
+Build `.77` membuka opsi/pintasan Generate saat tab aktif pada desktop lebar,
+membuka editor ekspresi dan gambar chord saat konteksnya aktif, serta mengubah
+kartu kandidat menjadi grid pada dock mulai 68rem. Ringkasan metrik dan tautan
+before/after per viewport dan tema ada di [laporan PR11](ui-audit/round2/pr11-summary.md).
+Matriks 100 sel, data JSON/CSV, dan 30 screenshot sesudah perubahan ada di
+[hasil PR11](ui-audit/round2/pr11-after/matrix.md); pembandingnya adalah
+[hasil PR10](ui-audit/round2/pr10-after/matrix.md).

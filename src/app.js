@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.76';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.76";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.76";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.76";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.76";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.76";
-import { createCommands } from "./core/commands.js?v=20261003.76";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.77';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.77";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.77";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.77";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.77";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.77";
+import { createCommands } from "./core/commands.js?v=20261003.77";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.76";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.76";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.76";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.76";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.76";
-import { createScoreView } from "./ui/score.js?v=20261003.76";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.76";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.76";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.76";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.76";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.76";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.77";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.77";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.77";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.77";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.77";
+import { createScoreView } from "./ui/score.js?v=20261003.77";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.77";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.77";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.77";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.77";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.77";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.76";
-import { createGenerationContext } from "./generation/context.js?v=20261003.76";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.77";
+import { createGenerationContext } from "./generation/context.js?v=20261003.77";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.76";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.76";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.76";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.76";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.76";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.76";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.77";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.77";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.77";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.77";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.77";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.77";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -644,6 +644,34 @@ function resetSelectedExpression(mode) {
   return [];
 }
 
+function isWideWorkspace() {
+  const query = window.matchMedia?.("(min-width: 68rem)");
+  return query ? query.matches : window.innerWidth >= 1088;
+}
+
+function hasRoomForWideDisclosures() {
+  const query = window.matchMedia?.("(min-width: 68rem) and (min-height: 501px)");
+  return query ? query.matches : window.innerWidth >= 1088 && window.innerHeight >= 501;
+}
+
+function syncContextualWideDisclosure(details, contextKey) {
+  if (!details) return;
+  const nextKey = contextKey || "";
+  const previousKey = details.dataset.wideContextKey || "";
+  if (previousKey === nextKey) return;
+
+  if (details.dataset.wideAutoOpen === "true") {
+    details.open = false;
+    delete details.dataset.wideAutoOpen;
+  }
+  if (nextKey && !details.open) {
+    details.open = true;
+    details.dataset.wideAutoOpen = "true";
+  }
+  if (nextKey) details.dataset.wideContextKey = nextKey;
+  else delete details.dataset.wideContextKey;
+}
+
 function renderExpressionControls(state = normalizeRuntimeState(commands.getState())) {
   if (!expressionView) return;
   const mode = expressionView.getMode();
@@ -669,6 +697,9 @@ function renderExpressionControls(state = normalizeRuntimeState(commands.getStat
   const noteDetails = byId("expression-note-details");
   const noteSummary = byId("expression-note-summary");
   noteDetails.hidden = selectedCount === 0;
+  const roomyWide = hasRoomForWideDisclosures();
+  syncContextualWideDisclosure(noteDetails, roomyWide && selectedCount > 0
+    ? `notes:${selectedNotes.map((note) => note.id).join(",")}` : "");
   if (selectedCount === 1) {
     noteSummary.textContent = `${midiToPitch(selectedNotes[0].pitch)} · ${translate("expressionNoteDetailsSummary")}`;
   } else if (selectedCount > 1) {
@@ -677,6 +708,10 @@ function renderExpressionControls(state = normalizeRuntimeState(commands.getStat
     noteSummary.textContent = translate("expressionNoteDetailsSummary");
     if (noteDetails.open) noteDetails.removeAttribute("open");
   }
+  syncContextualWideDisclosure(byId("bend-editor-details"), roomyWide && mode === "bend" && selectedCount === 1
+    ? `bend:${selectedNotes[0].id}` : "");
+  syncContextualWideDisclosure(byId("expression-vibrato-details"), roomyWide && mode === "vibrato" && selectedCount === 1
+    ? `vibrato:${selectedNotes[0].id}` : "");
 
   const vibratoDepth = byId("expression-vibrato-depth");
   const vibratoRate = byId("expression-vibrato-rate");
@@ -1021,6 +1056,7 @@ function isHarmonyLaneTarget(target) {
 function syncHarmonyToolsVisibility() {
   const harmonyTools = byId("harmony-timeline-tools");
   if (!harmonyTools) return;
+  const chordDrawPicker = byId("chord-draw-picker");
   const rollSection = byId("piano-roll-section");
   const rollContent = byId("piano-roll-content");
   const rollHome = byId("harmony-tools-roll-home");
@@ -1040,10 +1076,13 @@ function syncHarmonyToolsVisibility() {
   if (laneContextActive && rollHome) {
     rollHome.after(harmonyTools);
     harmonyTools.hidden = false;
+    syncContextualWideDisclosure(chordDrawPicker, hasRoomForWideDisclosures() ? "harmony-roll" : "");
     return;
   }
   if (chordPanel) chordPanel.prepend(harmonyTools);
   harmonyTools.hidden = !chordPanelActive;
+  syncContextualWideDisclosure(chordDrawPicker, hasRoomForWideDisclosures() && chordPanelActive
+    ? "harmony-panel" : "");
 }
 
 function renderEditorControls() {
@@ -1120,6 +1159,11 @@ function renderGeneration(state) {
   const anchorActions = byId("generation-anchor-actions");
   const sessionActions = byId("generation-session-actions");
   const shortcutHelp = panel.querySelector(".shortcut-help");
+  const generationOptions = panel.querySelector(".generation-options");
+  const widePanelContext = isWideWorkspace() && document.body.dataset.studioPanel === "generate"
+    ? "generate-panel" : "";
+  syncContextualWideDisclosure(generationOptions, widePanelContext);
+  syncContextualWideDisclosure(shortcutHelp, widePanelContext);
   const useSelection = panel.querySelector('[data-action="use-selection"]');
   const generate = byId("generate-gap");
   const regenerate = byId("regenerate-gap");
@@ -1212,7 +1256,7 @@ function renderGeneration(state) {
   regenerate.hidden = !sessionReady;
   clear.disabled = !sessionReady && acceptedNoteIds.length === 0;
   sessionActions.hidden = !sessionReady && acceptedNoteIds.length === 0;
-  if (shortcutHelp) shortcutHelp.hidden = !sessionReady;
+  if (shortcutHelp) shortcutHelp.hidden = !sessionReady && !widePanelContext;
   status.hidden = !sessionReady && acceptedNoteIds.length === 0;
   lockAccepted.hidden = acceptedNoteIds.length === 0;
   if (candidateNavigation) candidateNavigation.hidden = !sessionReady;
@@ -1253,7 +1297,7 @@ function renderGeneration(state) {
       activeAccept.textContent = translate("candidateAcceptCurrent");
       activeAccept.setAttribute("aria-label", translate("candidateAcceptAction", { number: activeCandidateIndex + 1 }));
       activeAccept.setAttribute("aria-keyshortcuts", "Enter");
-      activeAccept.title = "Enter";
+      activeAccept.title = translate("candidateAcceptShortcutHint");
     }
   }
   lockHelp.hidden = acceptedNoteIds.length === 0;
@@ -1368,7 +1412,7 @@ function renderGeneration(state) {
     const accept = makeButton(translate("candidateAccept"), "accept-candidate", { candidateId: candidate.id });
     accept.setAttribute("aria-label", translate("candidateAcceptAction", { number: index + 1 }));
     accept.setAttribute("aria-keyshortcuts", "Enter");
-    accept.title = "Enter";
+    accept.title = translate("candidateAcceptShortcutHint");
     accept.dataset.focusKey = `candidate-accept-${candidate.id}`;
     accept.dataset.focusFallback = "lock-accepted-notes";
     select.disabled = Boolean(generation.stale);
@@ -3164,7 +3208,8 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.defaultPrevented) return;
   if (event.key === "Escape") {
-    const opened = transientDetails.filter((details) => details.open);
+    const opened = transientDetails.filter((details) => details.open
+      && !(isWideWorkspace() && details.matches(".generation-options")));
     if (opened.length) {
       event.preventDefault();
       const last = opened.at(-1);
@@ -3392,6 +3437,7 @@ const transientDetails = [...document.querySelectorAll(
 )];
 for (const details of transientDetails) {
   details.addEventListener("toggle", () => {
+    if (isWideWorkspace()) return;
     if (!details.open) return;
     for (const other of transientDetails) {
       if (other !== details && other.open) other.removeAttribute("open");
@@ -3403,7 +3449,8 @@ document.addEventListener("pointerdown", (event) => {
   const target = event.target;
   if (!(target instanceof Node)) return;
   for (const details of transientDetails) {
-    if (details.open && !details.contains(target)) details.removeAttribute("open");
+    if (details.open && !details.contains(target)
+      && !(isWideWorkspace() && details.matches(".generation-options"))) details.removeAttribute("open");
   }
 }, true);
 
@@ -3443,6 +3490,14 @@ studioView = createStudioWorkspace(commands, translate, reportError, {
   },
   onOpenPanel(panel) {
     renderEditorControls();
+    const state = normalizeRuntimeState(commands.getState());
+    renderExpressionControls(state);
+    if (panel === "generate") renderGeneration(state);
+    else {
+      const generationPanel = byId("generation-panel");
+      syncContextualWideDisclosure(generationPanel?.querySelector(".generation-options"), "");
+      syncContextualWideDisclosure(generationPanel?.querySelector(".shortcut-help"), "");
+    }
     if (panel === "chords") prepareChordSuggestions();
   }
 });
@@ -3476,6 +3531,8 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") queueMicrotask(renderEditorControls);
 });
 if (commands.getSong().notes.length === 0 && commands.getState().editor.tool !== "draw") commands.setTool("draw");
+const wideDisclosureLayout = window.matchMedia?.("(min-width: 68rem)");
+wideDisclosureLayout?.addEventListener?.("change", render);
 render();
 if (shareLoadStatus === "loaded") announce("shareLoaded");
 else if (shareLoadStatus !== "none") announce("shareInvalid", "error");

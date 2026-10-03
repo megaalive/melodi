@@ -1185,6 +1185,37 @@
   }
 }
 
+@media (width >= 68rem) {
+  .studio .generation-options[open] > .generation-advanced-popover { max-height: none; overflow: visible; }
+  .studio #generation-panel .candidate-dock-close { display: none; }
+  .studio .chord-draw-picker[open] .chord-draw-options {
+    position: static;
+    width: auto;
+    max-width: none;
+    margin-top: 0.4rem;
+    padding: 0.5rem 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  .studio #generation-panel .candidate-dock .generation-candidates {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.5rem), 1fr));
+    gap: 0.55rem;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .studio #generation-panel .candidate-dock .generation-candidate-card {
+    height: auto;
+    min-height: 0;
+    scroll-snap-align: none;
+  }
+}
+
 /* Keep viewport canvases inside the space left by the fixed mobile dock, and
    let desktop canvases consume the whole remaining workspace. */
 .studio .workspace-grid,

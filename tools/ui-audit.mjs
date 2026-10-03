@@ -49,7 +49,7 @@ export const COMMON_CONTROL_TARGETS = [
   { key: "chord-tab", selector: '[data-studio-panel="chords"]' },
   { key: "generate-tab", selector: '[data-studio-panel="generate"]' },
   { key: "tools-tab", selector: '[data-studio-panel="tools"]' },
-  { key: "generation-options", selector: ".generation-options input, .generation-options select, .generation-options button" },
+  { key: "generation-options", selector: ".generation-options input, .generation-options select, .generation-options button:not([data-sheet-close])" },
   { key: "generation-shortcuts", selector: ".shortcut-help > p" },
   { key: "snap", selector: "#snap-select" },
   { key: "zoom", selector: "#roll-zoom" },

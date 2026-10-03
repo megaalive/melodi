@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.76';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.77';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
