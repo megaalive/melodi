@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.75';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.76';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -19,13 +19,27 @@ export function selectedNoteVelocity(notes) {
 }
 
 /** Presentation only: one workspace, existing canonical commands, no Song preferences. */
-export function createStudioWorkspace(commands, translate, onError, { onOpenPanel = () => {} } = {}) {
+export function createStudioWorkspace(commands, translate, onError, {
+  initialDockOpen = true,
+  initialDockWidth = null,
+  onDockPreferencesChange = () => {},
+  onOpenPanel = () => {}
+} = {}) {
   const byId = id => document.getElementById(id);
   let panel = null;
   let lastPanel = 'chords';
+  let dockOpen = Boolean(initialDockOpen);
+  let dockWidth = Number.isFinite(initialDockWidth) ? Math.max(320, Math.min(480, Math.round(initialDockWidth))) : null;
+  let previousSideDock = false;
+  let previousViewMode = null;
   let lastChord = null;
   let overviewSong = null;
   const sidebar = document.querySelector('.workspace-sidebar');
+  const dockResizer = byId('workspace-sidebar-resizer');
+  const toolsPanel = byId('tools-panel');
+  const toolsContent = toolsPanel?.querySelector('.studio-tools-content');
+  const inspectorActions = sidebar.querySelector('.mobile-panel-peek-actions');
+  const followToolsControl = document.querySelector('.follow-mode-tools-control');
   const guitarSection = byId('guitar-section');
   sidebar.append(guitarSection);
   const headerActions = document.querySelector('.header-actions');
@@ -177,9 +191,12 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   const loopToggle = document.querySelector('.loop-toggle');
   const resetRange = byId('reset-playback-range');
   const utility = document.querySelector('.utility-card');
-  if (utility) {
-    utility.classList.add('studio-advanced');
-    morePopover.append(utility);
+  if (utility) utility.classList.add('studio-advanced');
+  if (toolsContent) {
+    toolsContent.append(...[utility, advancedBody, loopToggle, resetRange].filter(Boolean));
+    if (guitarSection) toolsContent.append(guitarSection);
+    if (expressionPanel) toolsContent.append(expressionPanel);
+    if (drumExpression) toolsContent.append(drumExpression);
   }
   const panelSwitches = document.querySelector('.studio-panel-switches');
   const mobilePanelActions = document.querySelector('.mobile-panel-peek-actions');
@@ -235,29 +252,44 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   transportMain.insertBefore(overview, transportSettings);
   editorToolbar.append(selectionSummary);
   transportButtons.append(tempo);
-  morePopover.insertBefore(advancedBody, morePopover.querySelector('[data-sheet-close]'));
   morePopover.append(morePopover.querySelector('[data-sheet-close]'));
   const phone = matchMedia('(width <= 46rem)');
   const wide = matchMedia('(width >= 68rem)');
   const compact = matchMedia('(width <= 46rem), (orientation: landscape) and (max-height: 500px) and (width < 68rem)');
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 500px)');
-  function syncPanelSwitches() {
-    panelSwitches.setAttribute('role', compact.matches ? 'tablist' : 'group');
+  const sideDock = matchMedia('(width >= 56rem) and (min-height: 501px)');
+  function dockTabFor(value) {
+    return ['mixer', 'chords', 'generate', 'tools'].includes(value) ? value : value ? 'tools' : null;
+  }
+  function setDockOpen(value, persist = true) {
+    const next = Boolean(value);
+    if (dockOpen === next) return;
+    dockOpen = next;
+    if (dockOpen && !panel) panel = lastPanel || 'mixer';
+    if (persist) onDockPreferencesChange({ dockOpen });
+    render(commands.getSong(), commands.getState(), false);
+  }
+  function setDockWidth(value, persist = false) {
+    dockWidth = value === null ? null : Math.max(320, Math.min(480, Math.round(Number(value) || 384)));
+    if (dockWidth === null) workspaceGrid?.style?.removeProperty('--studio-dock-width');
+    else workspaceGrid?.style?.setProperty('--studio-dock-width', `${dockWidth}px`);
+    const announcedWidth = dockWidth ?? Math.round(Number(sidebar.getBoundingClientRect().width) || 384);
+    dockResizer?.setAttribute('aria-valuenow', String(announcedWidth));
+    dockResizer?.setAttribute('aria-valuetext', translate('dockResizeValue', { width: announcedWidth }));
+    if (persist) onDockPreferencesChange({ dockWidth });
+  }
+  function syncPanelSwitches(activePanel = panel) {
+    panelSwitches.setAttribute('role', 'tablist');
+    panelSwitches.setAttribute('aria-orientation', 'horizontal');
     panelSwitches.setAttribute('aria-label', translate('studioPanels'));
+    const selectedTab = dockTabFor(activePanel);
     for (const button of panelSwitches.querySelectorAll('button[data-studio-panel]')) {
-      const active = button.dataset.studioPanel === panel;
+      const active = button.dataset.studioPanel === selectedTab;
       button.textContent = translate(button.dataset.copy);
-      if (compact.matches) {
-        button.setAttribute('role', 'tab');
-        button.setAttribute('aria-selected', String(active));
-        button.tabIndex = active ? 0 : -1;
-        button.removeAttribute('aria-pressed');
-      } else {
-        button.removeAttribute('role');
-        button.removeAttribute('aria-selected');
-        button.removeAttribute('tabindex');
-        button.setAttribute('aria-pressed', String(active));
-      }
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-selected', String(active));
+      button.tabIndex = active ? 0 : -1;
+      button.removeAttribute('aria-pressed');
     }
   }
   const overviewTrack = byId('studio-overview');
@@ -330,13 +362,19 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     const wideLayout = wide.matches;
     const mediumLayout = !wide.matches && !compact.matches && !shortLandscape.matches;
     const shortLandscapeLayout = shortLandscape.matches && !wide.matches;
+    const sideDockLayout = sideDock.matches && !shortLandscapeLayout;
+    moreMenu.hidden = wideLayout;
+    if (followToolsControl) followToolsControl.hidden = !(wideLayout && !shortLandscapeLayout);
+    if (sideDockLayout && !panel) panel = lastPanel = 'mixer';
+    if (!sideDockLayout && previousSideDock && !dockOpen) panel = null;
+    previousSideDock = sideDockLayout;
     syncProjectControls(wideLayout);
-    panelDockTrigger.hidden = !(compact.matches || mediumLayout);
+    panelDockTrigger.hidden = sideDockLayout ? dockOpen : !(compact.matches || mediumLayout || shortLandscape.matches);
     panelDockTrigger.textContent = translate('studioPanelsButton');
     panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
-    panelDockTrigger.setAttribute('aria-expanded', String(Boolean(panel)));
+    panelDockTrigger.setAttribute('aria-expanded', String(sideDockLayout ? dockOpen : Boolean(panel)));
     if (compact.matches) mobilePanelActions.append(panelSwitches);
-    else toolbarActions.prepend(panelSwitches);
+    else inspectorActions.append(panelSwitches);
     modeToolbar.hidden = phone.matches && !shortLandscape.matches;
     if (shortLandscapeLayout) {
       modeToolbar.append(modeNav);
@@ -365,14 +403,13 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       header.append(transportDock);
       transportMain.insertBefore(overview, transportSettings);
       transportButtons.append(tempo);
-      transportSettings.append(loopToggle, resetRange, historyButtons);
+      transportSettings.append(historyButtons);
       if (wideLayout) {
         headerActions.append(projectMenu, headerControls);
         transportSettings.append(follow);
       } else {
         headerActions.prepend(projectMenu);
         toolbarActions.prepend(panelDockTrigger);
-        advancedBody.append(follow);
       }
       editorToolbarHome.append(editorToolbar);
       editorToolsHome.prepend(editorTools);
@@ -389,39 +426,59 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       editorToolsHome.prepend(editorTools);
       transportMain.insertBefore(overview, transportSettings);
       transportButtons.append(tempo);
-      transportSettings.append(loopToggle, resetRange, historyButtons);
-      advancedBody.append(follow);
+      transportSettings.append(historyButtons);
       editorToolbar.append(...editorExtras);
       editorSettings.hidden = true;
       if (sessionActions) byId('generation-panel').append(sessionActions);
     }
-    sidebar.hidden = !panel;
+    sidebar.hidden = sideDockLayout ? !dockOpen : !panel;
+    if (dockResizer) dockResizer.hidden = !sideDockLayout || !dockOpen;
+    document.body.dataset.studioDockOpen = String(sideDockLayout && dockOpen);
     sidebar.dataset.sheetSize = panel ? 'half' : 'peek';
     syncPanelSwitches();
   }
   compact.addEventListener('change', arrangeControls);
   wide.addEventListener('change', arrangeControls);
+  sideDock.addEventListener('change', () => {
+    arrangeControls();
+    render(commands.getSong(), commands.getState(), false);
+  });
   shortLandscape.addEventListener('change', () => {
     arrangeControls();
     render(commands.getSong(), commands.getState(), false);
   });
   phone.addEventListener('change', () => render(commands.getSong(), commands.getState(), false));
+  if (dockWidth !== null) setDockWidth(dockWidth);
   arrangeControls();
+  dockResizer.setAttribute('aria-valuenow', String(dockWidth ?? Math.round(Number(sidebar.getBoundingClientRect().width) || 384)));
+  dockResizer.setAttribute('aria-valuetext', translate('dockResizeValue', { width: dockWidth ?? Math.round(Number(sidebar.getBoundingClientRect().width) || 384) }));
   function openPanel(value) {
-    const wasOpen = Boolean(panel);
-    if (value) lastPanel = value;
-    panel = value;
+    const wasOpen = sideDock.matches ? dockOpen : Boolean(panel);
+    if (value) {
+      const tab = dockTabFor(value);
+      if (tab) lastPanel = tab;
+      panel = value;
+      if (sideDock.matches && !dockOpen) {
+        dockOpen = true;
+        onDockPreferencesChange({ dockOpen });
+      }
+    } else if (sideDock.matches) {
+      dockOpen = false;
+      onDockPreferencesChange({ dockOpen });
+    } else panel = null;
     render(commands.getSong(), commands.getState(), false);
-    if (panel && !wasOpen) {
+    if (panel && !wasOpen && (sideDock.matches ? dockOpen : true)) {
       const initialFocus = compact.matches
-        ? panelSwitches.querySelector(`button[data-studio-panel="${panel}"]`)
-        : sidebar.querySelector('[data-studio-close]');
+        ? panelSwitches.querySelector(`button[data-studio-panel="${dockTabFor(panel)}"]`)
+        : sideDock.matches
+          ? panelSwitches.querySelector(`button[data-studio-panel="${dockTabFor(panel)}"]`)
+          : sidebar.querySelector('[data-studio-close]');
       initialFocus?.focus({preventScroll:true});
     }
-    if (panel) onOpenPanel(panel);
+    if (panel && (sideDock.matches ? dockOpen : true)) onOpenPanel(panel);
   }
   function restorePanelFocus() {
-    if (compact.matches) {
+    if (compact.matches || !sideDock.matches || !dockOpen) {
       panelDockTrigger.focus({preventScroll:true});
       return;
     }
@@ -444,15 +501,24 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     }
     const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-panel-toggle], [data-studio-close], [data-studio-seek]');
     if (target && 'studioPanelToggle' in target.dataset) {
-      if (panel) {
-        openPanel(null);
-        restorePanelFocus();
+      if (sideDock.matches) {
+        if (dockOpen) {
+          setDockOpen(false);
+          restorePanelFocus();
+        } else {
+          setDockOpen(true);
+          const tab = panelSwitches.querySelector(`button[data-studio-panel="${dockTabFor(panel)}"]`);
+          tab?.focus({ preventScroll: true });
+          onOpenPanel(panel);
+        }
+      } else if (panel) {
+        openPanel(null); restorePanelFocus();
       } else {
         openPanel(lastPanel || 'chords');
       }
       return;
     }
-    if (panel === 'mixer' && !sidebar.contains(event.target) && !mixerTrigger.contains(event.target)) openPanel(null);
+    if (!sideDock.matches && panel === 'mixer' && !sidebar.contains(event.target) && !mixerTrigger.contains(event.target)) openPanel(null);
     if (event.target.closest?.('[data-sheet-close]')) {
       closePopover(event.target.closest('details'));
       return;
@@ -462,7 +528,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       if (target.dataset.studioView) {
         moreMenu.open = false;
         const cameFromMoreMenu = moreMenu.contains(target);
-        panel = null;
+        if (!sideDock.matches) panel = null;
         const mode = target.dataset.studioView === 'guitar' && commands.getState().view.mode === 'guitar'
           ? 'piano-roll' : target.dataset.studioView;
         commands.setViewMode(mode);
@@ -470,7 +536,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       } else if (target.dataset.studioPanel) {
         moreMenu.open = false;
         selectionBar.querySelector('.selection-more')?.removeAttribute('open');
-        const nextPanel = panel === target.dataset.studioPanel && !compact.matches ? null : target.dataset.studioPanel;
+        const nextPanel = panel === target.dataset.studioPanel && !compact.matches && !sideDock.matches ? null : target.dataset.studioPanel;
         openPanel(nextPanel);
       }
       else if (target.hasAttribute('data-studio-close')) { openPanel(null); restorePanelFocus(); }
@@ -486,9 +552,9 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
         return;
       }
     }
-    if (event.key === 'Escape' && !event.defaultPrevented && sidebar.contains(event.target) && panel) { openPanel(null); restorePanelFocus(); }
+    if (event.key === 'Escape' && !event.defaultPrevented && sidebar.contains(event.target) && panel && !sideDock.matches) { openPanel(null); restorePanelFocus(); }
     const currentPanelTab = event.target.closest?.('.studio-panel-switches [role="tab"]');
-    if (currentPanelTab && compact.matches && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
+    if (currentPanelTab && ['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) {
       const tabs = [...panelSwitches.querySelectorAll('button[data-studio-panel]')].filter(tab => tab.getClientRects().length);
       const index = tabs.indexOf(currentPanelTab);
       const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
@@ -503,6 +569,42 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     const index = tabs.indexOf(current);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
     event.preventDefault(); tabs[next].focus(); tabs[next].click();
+  });
+
+  let dockResizePointer = null;
+  dockResizer.addEventListener('pointerdown', event => {
+    if (!sideDock.matches || dockResizer.hidden || event.button !== 0 || !event.isPrimary) return;
+    dockResizePointer = {
+      id: event.pointerId,
+      x: event.clientX,
+      width: Number(sidebar.getBoundingClientRect().width) || dockWidth || 384,
+      savedWidth: dockWidth
+    };
+    try { dockResizer.setPointerCapture(event.pointerId); } catch {}
+    event.preventDefault();
+  });
+  dockResizer.addEventListener('pointermove', event => {
+    if (dockResizePointer?.id === event.pointerId) setDockWidth(dockResizePointer.width + dockResizePointer.x - event.clientX);
+  });
+  dockResizer.addEventListener('pointerup', event => {
+    if (dockResizePointer?.id !== event.pointerId) return;
+    if (dockWidth !== null) setDockWidth(dockWidth, true);
+    dockResizePointer = null;
+    try { dockResizer.releasePointerCapture(event.pointerId); } catch {}
+  });
+  dockResizer.addEventListener('pointercancel', event => {
+    if (dockResizePointer?.id !== event.pointerId) return;
+    setDockWidth(dockResizePointer.savedWidth);
+    dockResizePointer = null;
+  });
+  dockResizer.addEventListener('keydown', event => {
+    if (!sideDock.matches || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+    const currentWidth = dockWidth ?? (Number(sidebar.getBoundingClientRect().width) || 384);
+    const step = event.shiftKey ? 32 : 16;
+    const nextWidth = event.key === 'Home' ? 320 : event.key === 'End' ? 480
+      : currentWidth + (event.key === 'ArrowLeft' ? step : -step);
+    event.preventDefault();
+    setDockWidth(nextWidth, true);
   });
 
   function renderOverview(song) {
@@ -573,10 +675,15 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     track.setAttribute('aria-valuetext', translate('studioSeekBar', {bar:position.bar, beat:position.beat}));
   }
   function render(song,state,autoSelect=true) {
-    if (autoSelect && state.selectedChordId && state.selectedChordId !== lastChord) { panel = 'chords'; lastPanel = panel; }
+    if (autoSelect && state.selectedChordId && state.selectedChordId !== lastChord) {
+      panel = 'chords'; lastPanel = panel;
+      if (sideDock.matches && !dockOpen) { dockOpen = true; onDockPreferencesChange({ dockOpen }); }
+    }
     lastChord = state.selectedChordId;
     const mode = state.view.mode;
     const guitarInspector = mode === 'guitar';
+    if (guitarInspector && previousViewMode !== 'guitar' && sideDock.matches && dockOpen) panel = lastPanel = 'tools';
+    previousViewMode = mode;
     document.body.dataset.studioPanel = panel ?? (guitarInspector ? 'guitar' : 'none');
     sidebar.dataset.sheetSize = panel || guitarInspector ? 'half' : 'peek';
     selectionBar.hidden = !state.selectedNoteIds.length || state.generation?.status === 'ready';
@@ -600,16 +707,27 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     if (drumExpression) drumExpression.hidden = panel !== 'drum-expression';
     if (expressionPanel) expressionPanel.hidden = panel !== 'expression';
     document.body.dataset.studioSelection = String(state.selectedNoteIds.length > 0);
-    sidebar.hidden = !panel && !guitarInspector;
-    guitarSection.hidden = !guitarInspector || Boolean(panel);
+    sidebar.hidden = sideDock.matches ? !dockOpen : !panel && !guitarInspector;
+    if (dockResizer) dockResizer.hidden = !sideDock.matches || !dockOpen;
+    document.body.dataset.studioDockOpen = String(sideDock.matches && dockOpen);
+    if (dockResizer && !dockResizer.hidden) {
+      const visibleWidth = dockWidth ?? Math.round(Number(sidebar.getBoundingClientRect().width) || 384);
+      dockResizer.setAttribute('aria-valuenow', String(visibleWidth));
+      dockResizer.setAttribute('aria-valuetext', translate('dockResizeValue', { width: visibleWidth }));
+    }
+    const tabValue = dockTabFor(panel ?? (guitarInspector ? 'guitar' : null));
+    guitarSection.hidden = !(guitarInspector || panel === 'guitar');
     byId('studio-mixer').hidden = panel !== 'mixer';
     byId('harmony-panel').hidden = panel !== 'chords';
     byId('generation-panel').hidden = panel !== 'generate';
-    byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',expression:'expressionHeading','drum-expression':'percussionExpressionHeading',guitar:'guitarHeading'})[panel ?? (guitarInspector ? 'guitar' : null)] ?? 'studioPanels');
+    toolsPanel.hidden = tabValue !== 'tools';
+    byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',tools:'toolsHeading',expression:'expressionHeading','drum-expression':'percussionExpressionHeading',guitar:'guitarHeading'})[panel ?? (guitarInspector ? 'guitar' : null)] ?? 'studioPanels');
     panelDockTrigger.textContent = translate('studioPanelsButton');
     panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
-    panelDockTrigger.setAttribute('aria-expanded', String(Boolean(panel)));
-    syncPanelSwitches();
+    const dockCapable = sideDock.matches && !shortLandscape.matches;
+    panelDockTrigger.hidden = dockCapable ? dockOpen : !(compact.matches || (!wide.matches && !shortLandscape.matches) || shortLandscape.matches);
+    panelDockTrigger.setAttribute('aria-expanded', String(dockCapable ? dockOpen : Boolean(panel)));
+    syncPanelSwitches(panel ?? (guitarInspector ? 'guitar' : null));
     const activeWorkspace = mode === 'drums' ? 'rhythm'
       : mode === 'score' || mode === 'lyrics' || mode === 'combined' && !phone.matches ? 'notation'
         : 'edit';

@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261003.75">
+    <meta name="melodi-build" content="20261003.76">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.75">
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.76">
     <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.74"></script>
-    <script type="module" src="./src/app.js?v=20261003.75"></script>
+    <script type="module" src="./src/app.js?v=20261003.76"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -142,10 +142,11 @@
           <button type="button" data-action="set-view-mode" data-studio-workspace="rhythm" data-studio-view="drums" data-copy="studioWorkspaceRhythm" aria-pressed="false"></button>
         </nav>
         <div class="studio-toolbar-actions">
-          <div id="studio-panel-switches" class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
-            <button id="studio-panel-mixer-tab" type="button" data-studio-panel="mixer" data-copy="studioMixer" aria-pressed="false" aria-controls="studio-mixer"></button>
-            <button id="studio-panel-chords-tab" type="button" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-pressed="false" aria-controls="harmony-panel"></button>
-            <button id="studio-panel-generate-tab" type="button" data-studio-panel="generate" data-copy="studioGenerate" aria-pressed="false" aria-controls="generation-panel"></button>
+          <div id="studio-panel-switches" class="studio-panel-switches" role="tablist" aria-orientation="horizontal" data-aria-copy="studioPanels">
+            <button id="studio-panel-mixer-tab" type="button" role="tab" tabindex="-1" data-studio-panel="mixer" data-copy="studioMixer" aria-selected="false" aria-controls="studio-mixer"></button>
+            <button id="studio-panel-chords-tab" type="button" role="tab" tabindex="-1" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-selected="false" aria-controls="harmony-panel"></button>
+            <button id="studio-panel-generate-tab" type="button" role="tab" tabindex="-1" data-studio-panel="generate" data-copy="studioGenerate" aria-selected="false" aria-controls="generation-panel"></button>
+            <button id="studio-panel-tools-tab" type="button" role="tab" tabindex="-1" data-studio-panel="tools" data-copy="toolsHeading" aria-selected="false" aria-controls="tools-panel"></button>
           </div>
           <details class="studio-more">
             <summary data-aria-copy="transportAdvanced"><span data-copy="transportAdvanced"></span></summary>
@@ -164,7 +165,7 @@
       </section>
 
       <div class="workspace-grid">
-        <div class="workspace-canvas">
+        <div id="workspace-canvas" class="workspace-canvas">
           <section id="piano-roll-section" class="workspace-pane" data-view-region="piano-roll" aria-labelledby="piano-roll-heading">
             <div class="pane-heading compact-pane-heading">
               <div class="pane-title-row">
@@ -506,6 +507,7 @@
           </section>
         </div>
 
+        <div id="workspace-sidebar-resizer" class="workspace-sidebar-resizer" role="separator" aria-orientation="vertical" data-aria-copy="dockResizeLabel" aria-controls="workspace-canvas workspace-sidebar" aria-valuemin="320" aria-valuemax="480" aria-valuenow="384" tabindex="0" hidden></div>
         <aside id="workspace-sidebar" class="workspace-sidebar" data-aria-copy="studioPanels">
           <div class="studio-inspector-head"><strong id="studio-panel-title"></strong><div class="mobile-panel-peek-actions" role="group" data-aria-copy="studioPanels"></div><button type="button" class="secondary" data-studio-close data-aria-copy="studioClose">×</button></div>
           <section id="studio-drum-expression" hidden></section>
@@ -580,6 +582,15 @@
               <summary data-copy="generationShortcutsHeading"></summary>
               <p class="muted" data-copy="generationShortcuts"></p>
             </details>
+          </section>
+
+          <section id="tools-panel" class="inspector-card tools-panel" role="tabpanel" aria-labelledby="studio-panel-tools-tab" hidden>
+            <div class="studio-tools-content">
+              <label class="follow-mode-control follow-mode-tools-control" hidden>
+                <input id="follow-mode-tools" type="checkbox" data-action="set-follow-mode" data-entity="follow-mode-tools">
+                <span data-copy="followModeLabel"></span>
+              </label>
+            </div>
           </section>
 
 

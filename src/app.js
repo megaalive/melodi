@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.75';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.75";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.75";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.75";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.75";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.75";
-import { createCommands } from "./core/commands.js?v=20261003.75";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.76';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.76";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.76";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.76";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.76";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.76";
+import { createCommands } from "./core/commands.js?v=20261003.76";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.75";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.75";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.75";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.75";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.75";
-import { createScoreView } from "./ui/score.js?v=20261003.75";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.75";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.75";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.75";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.75";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.75";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.76";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.76";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.76";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.76";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.76";
+import { createScoreView } from "./ui/score.js?v=20261003.76";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.76";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.76";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.76";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.76";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.76";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.75";
-import { createGenerationContext } from "./generation/context.js?v=20261003.75";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.76";
+import { createGenerationContext } from "./generation/context.js?v=20261003.76";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.75";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.75";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.75";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.75";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.75";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.75";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.76";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.76";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.76";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.76";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.76";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.76";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1526,7 +1526,9 @@ function render() {
   byId("shared-source").hidden = !shareSession;
   document.body.dataset.viewMode = state.view.mode;
   if (viewMarkup.modeControl) viewMarkup.modeControl.value = state.view.mode;
-  if (viewMarkup.followControl) viewMarkup.followControl.checked = state.view.follow;
+  document.querySelectorAll('[data-action="set-follow-mode"]').forEach((control) => {
+    control.checked = state.view.follow;
+  });
   for (const region of viewMarkup.regions) {
     const modes = VIEW_REGION_MODES[region.dataset.viewRegion];
     // Region dengan nama yang tidak dikenal disembunyikan, bukan ditampilkan.
@@ -3433,6 +3435,12 @@ document.querySelectorAll("details").forEach((details) => { details.open = false
 
 progressionView = createProgressionWorkspace(commands, () => language, reportError);
 studioView = createStudioWorkspace(commands, translate, reportError, {
+  initialDockOpen: uiPreferences.dockOpen,
+  initialDockWidth: uiPreferences.dockWidth,
+  onDockPreferencesChange(patch) {
+    uiPreferences = { ...uiPreferences, ...patch };
+    writeUiPreferences(safeStorage(), uiPreferences);
+  },
   onOpenPanel(panel) {
     renderEditorControls();
     if (panel === "chords") prepareChordSuggestions();

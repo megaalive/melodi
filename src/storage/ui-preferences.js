@@ -4,7 +4,9 @@ export const DEFAULT_UI_PREFERENCES = Object.freeze({
   pianoRollCollapsed: false,
   expressionCollapsed: false,
   scoreLayout: "flow",
-  guitarLayout: "tab"
+  guitarLayout: "tab",
+  dockOpen: true,
+  dockWidth: null
 });
 
 export function normalizeUiPreferences(value) {
@@ -16,7 +18,11 @@ export function normalizeUiPreferences(value) {
       ? value.expressionCollapsed
       : DEFAULT_UI_PREFERENCES.expressionCollapsed,
     scoreLayout: value?.scoreLayout === "page" ? "page" : DEFAULT_UI_PREFERENCES.scoreLayout,
-    guitarLayout: value?.guitarLayout === "fretboard" ? "fretboard" : DEFAULT_UI_PREFERENCES.guitarLayout
+    guitarLayout: value?.guitarLayout === "fretboard" ? "fretboard" : DEFAULT_UI_PREFERENCES.guitarLayout,
+    dockOpen: typeof value?.dockOpen === "boolean" ? value.dockOpen : DEFAULT_UI_PREFERENCES.dockOpen,
+    dockWidth: Number.isFinite(value?.dockWidth)
+      ? Math.max(320, Math.min(480, Math.round(value.dockWidth)))
+      : DEFAULT_UI_PREFERENCES.dockWidth
   };
 }
 

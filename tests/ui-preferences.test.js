@@ -22,7 +22,9 @@ test("panel disclosure preferences default expanded and normalize fields indepen
     pianoRollCollapsed: true,
     expressionCollapsed: false,
     scoreLayout: "page",
-    guitarLayout: "fretboard"
+    guitarLayout: "fretboard",
+    dockOpen: true,
+    dockWidth: null
   });
   assert.equal(normalizeUiPreferences({ scoreLayout: "unknown" }).scoreLayout, "flow");
   assert.equal(normalizeUiPreferences({ guitarLayout: "unknown" }).guitarLayout, "tab");
@@ -31,14 +33,27 @@ test("panel disclosure preferences default expanded and normalize fields indepen
 test("panel disclosure preferences persist independently without storing song data", () => {
   const storage = memoryStorage();
   assert.equal(writeUiPreferences(storage, { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard" }), true);
-  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard" });
+  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard", dockOpen: true, dockWidth: null });
   assert.equal(storage.values.size, 1);
   assert.deepEqual(JSON.parse(storage.values.get("melodi.ui-preferences")), {
     pianoRollCollapsed: true,
     expressionCollapsed: false,
     scoreLayout: "page",
-    guitarLayout: "fretboard"
+    guitarLayout: "fretboard",
+    dockOpen: true,
+    dockWidth: null
   });
+});
+
+test("dock preferences are bounded and legacy preference records keep safe defaults", () => {
+  assert.deepEqual(normalizeUiPreferences({ dockOpen: false, dockWidth: 512, unrelated: true }), {
+    ...DEFAULT_UI_PREFERENCES,
+    dockOpen: false,
+    dockWidth: 480
+  });
+  assert.equal(normalizeUiPreferences({ dockWidth: 319.5 }).dockWidth, 320);
+  assert.equal(normalizeUiPreferences({ dockWidth: "400", dockOpen: "false" }).dockWidth, null);
+  assert.equal(normalizeUiPreferences({}).dockOpen, true);
 });
 
 test("invalid or unavailable UI preference storage falls back safely", () => {

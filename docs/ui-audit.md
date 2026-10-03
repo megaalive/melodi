@@ -359,3 +359,12 @@ hasil tes, dan angka CSS ada di [laporan PR9](ui-audit/round2/pr9-summary.md).
 Matriks lengkap sebelum dan sesudah, termasuk screenshot default, Generate
 dengan kandidat, dan Mixer pada dua tema, ada di [baseline PR9](ui-audit/round2/pr9-before/matrix.md)
 dan [hasil PR9](ui-audit/round2/pr9-after/matrix.md).
+
+## Putaran 2 PR10 — dock kanan dan tab Alat
+
+Build `.76` menambahkan dock desktop yang terbuka default dengan tab Mixer,
+Chord, Generate, dan Alat serta memindahkan kontrol lanjutan ke tab Alat.
+Ringkasan metrik, batas klik karena disclosure/tab, anggaran CSS, dan hasil
+tes ada di [laporan PR10](ui-audit/round2/pr10-summary.md). Matriks 100 sel
+dan 30 screenshot sesudah perubahan ada di [hasil PR10](ui-audit/round2/pr10-after/matrix.md);
+[baseline sebelum PR10](ui-audit/round2/pr9-after/matrix.md) menjadi pembanding.

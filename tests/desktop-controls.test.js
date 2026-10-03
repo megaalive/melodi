@@ -25,9 +25,34 @@ test("wide default exposes routine project, language, palette, history, and foll
       [],
       "routine header controls must not sit inside a closed disclosure or hidden ancestor",
     );
+    assert.equal(audit.clickToRevealControls.some(control => control.key === "seek-tick"), true,
+      "the strict click-to-reveal metric includes common controls in inactive tabpanels");
+    assert.equal(audit.inactiveTabControls.some(control => control.key === "seek-tick"), true,
+      `inactive tab content also has a separate cause breakdown: ${JSON.stringify(audit.inactiveTabControls)}`);
+    assert.equal(audit.clickToRevealControls.some(control => control.key === "generation-options"), true,
+      "a closed disclosure still counts even when it is inside an inactive tab");
+    assert.equal(audit.matchedCommonControlKeys.includes("generation-shortcuts"), true,
+      "the audit targets shortcut help content rather than its visible disclosure summary");
+    assert.equal(audit.clickToRevealCount, audit.clickToRevealControls.length,
+      "the click-to-reveal total is the complete list of hidden common controls");
+    assert.equal(audit.clickToRevealCount, audit.closedRevealTargetCount + audit.inactiveTabTargetCount,
+      "closed disclosures and inactive tabs explain the complete strict click-to-reveal total");
+    const dockResize = page.locator("#workspace-sidebar-resizer");
+    assert.equal(await dockResize.getAttribute("aria-label"), "Ubah lebar panel studio");
+    await page.locator("#studio-panel-tools-tab").click();
+    const follow = page.locator("#follow-mode");
+    const toolsFollow = page.locator("#follow-mode-tools");
+    assert.equal(await follow.isVisible(), true, "Follow remains in the wide transport row");
+    assert.equal(await toolsFollow.isVisible(), true, "Alat also exposes Follow directly");
+    const wasFollowing = await follow.isChecked();
+    if (wasFollowing) await toolsFollow.uncheck(); else await toolsFollow.check();
+    assert.equal(await follow.isChecked(), !wasFollowing, "the two Follow controls mirror the same playback setting");
+    await page.selectOption("#language", "en");
+    assert.equal(await dockResize.getAttribute("aria-label"), "Resize studio panel", "the splitter label follows the active language");
     const summary = await page.locator("#project-menu > summary > span").getAttribute("data-copy");
     assert.equal(summary, "projectMoreLabel", "the wide project disclosure is reserved for rare actions, not labelled Menu");
-    assert.equal(COMMON_CONTROL_TARGETS.length, 28, "the audit allowlist stays complete and explicit");
+    assert.equal(await page.locator(".studio-more").isVisible(), false, "the empty Advanced popover is removed from wide workspaces");
+    assert.equal(COMMON_CONTROL_TARGETS.length, 29, "the audit allowlist includes all four dock tabs");
     const collapse = await page.locator("#piano-roll-collapse").evaluate(element => ({
       display: getComputedStyle(element).display,
       direction: getComputedStyle(element).flexDirection,

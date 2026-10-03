@@ -1,5 +1,5 @@
-import { MelodiError } from "../core/model.js?v=20261003.75";
-import { findPercussionKit, findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20261003.75";
+import { MelodiError } from "../core/model.js?v=20261003.76";
+import { findPercussionKit, findPercussionPiece, percussionChokeGroup } from "../instruments/percussion.js?v=20261003.76";
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));

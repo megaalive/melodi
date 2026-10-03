@@ -48,8 +48,9 @@ export const COMMON_CONTROL_TARGETS = [
   { key: "mixer-tab", selector: '[data-studio-panel="mixer"]' },
   { key: "chord-tab", selector: '[data-studio-panel="chords"]' },
   { key: "generate-tab", selector: '[data-studio-panel="generate"]' },
+  { key: "tools-tab", selector: '[data-studio-panel="tools"]' },
   { key: "generation-options", selector: ".generation-options input, .generation-options select, .generation-options button" },
-  { key: "generation-shortcuts", selector: ".shortcut-help > summary" },
+  { key: "generation-shortcuts", selector: ".shortcut-help > p" },
   { key: "snap", selector: "#snap-select" },
   { key: "zoom", selector: "#roll-zoom" },
   { key: "select-tool", selector: "#roll-tool-select" },
@@ -215,12 +216,20 @@ export async function measurePage(page) {
       || element.getAttribute("title") || element.getAttribute("placeholder")
       || element.id || element.textContent.trim().replace(/\s+/g, " ").slice(0, 70) || element.tagName.toLowerCase();
     const clickToRevealControls = [];
+    const closedRevealControls = [];
+    const inactiveTabControls = [];
     const visiblePrimaryControls = [];
     const matchedCommonControlKeys = [];
     const hiddenReason = element => {
       const closedDisclosure = element.closest("details:not([open])");
       if (closedDisclosure && !element.closest("summary")) {
         return { type: "closed-disclosure", revealBy: controlLabel(closedDisclosure.querySelector("summary") ?? closedDisclosure) };
+      }
+      const tabPanel = element.closest("[role='tabpanel'][hidden]");
+      if (tabPanel && !tabPanel.closest(".workspace-sidebar[hidden], .workspace-sidebar[inert], .workspace-sidebar[aria-hidden='true']")) {
+        const tab = [...document.querySelectorAll("[role='tab'][aria-controls]")]
+          .find(candidate => candidate.getAttribute("aria-controls") === tabPanel.id);
+        if (tab?.getClientRects().length) return { type: "inactive-tab", revealBy: controlLabel(tab) };
       }
       const hidden = element.closest("[hidden], [inert], [aria-hidden='true']");
       if (hidden) {
@@ -242,7 +251,12 @@ export async function measurePage(page) {
       seenTargets.add(element);
       matchedCommonControlKeys.push(key);
       const reason = hiddenReason(element);
-      if (reason) clickToRevealControls.push({ key, label: controlLabel(element), id: element.id || null, selector: targetSelector, ...reason });
+      if (reason) {
+        const control = { key, label: controlLabel(element), id: element.id || null, selector: targetSelector, ...reason };
+        clickToRevealControls.push(control);
+        if (reason.type === "inactive-tab") inactiveTabControls.push(control);
+        else closedRevealControls.push(control);
+      }
       else if (element.getClientRects().length) visiblePrimaryControls.push({ key, label: controlLabel(element), id: element.id || null });
     }
     const controls = [...document.querySelectorAll(selector)].filter(isUsable).map(element => {
@@ -332,6 +346,10 @@ export async function measurePage(page) {
       matchedCommonControlKeys,
       clickToRevealCount: clickToRevealControls.length,
       clickToRevealControls,
+      closedRevealTargetCount: closedRevealControls.length,
+      closedRevealControls,
+      inactiveTabTargetCount: inactiveTabControls.length,
+      inactiveTabControls,
       controls: controls.map(({ element, label, box }) => ({ label, tag: element.tagName.toLowerCase(), id: element.id || null, action: element.dataset.action || null, rect: [round(box.left), round(box.top), round(box.right - box.left), round(box.bottom - box.top)] })),
       openDetails: [...document.querySelectorAll("details[open]")].map(element => element.id || element.className || "details"),
       detailsCount: document.querySelectorAll("details").length,
@@ -403,19 +421,19 @@ export async function runUiAudit({ out = "docs/ui-audit/generated", basePath = "
     failures, cells,
   };
   await writeFile(path.join(outputDir, "results.json"), `${JSON.stringify(report, null, 2)}\n`);
-  const columns = ["viewport", "width", "height", "theme", "state", "build", "chromePx", "chromePercent", "visibleControls", "visiblePrimaryCount", "clickToRevealCount", "detailsCount", "nestedDetails", "overlapCount", "canvasLabelOverlapCount", "clippedCount", "unreachableClipCount", "rollBottomGapPx", "screenshot"];
-  const rows = cells.map(cell => [`${cell.width}x${cell.height}`, cell.width, cell.height, cell.theme, cell.state, cell.build, cell.chrome.totalPx, cell.chrome.percent, cell.visibleControls, cell.visiblePrimaryCount, cell.clickToRevealCount, cell.detailsCount, cell.nestedDetails, cell.overlapCount, cell.canvasLabelOverlapCount, cell.clippedCount, cell.unreachableClipCount, cell.rollBottomGapPx, cell.screenshot]);
+  const columns = ["viewport", "width", "height", "theme", "state", "build", "chromePx", "chromePercent", "visibleControls", "visiblePrimaryCount", "clickToRevealCount", "closedRevealTargetCount", "inactiveTabTargetCount", "detailsCount", "nestedDetails", "overlapCount", "canvasLabelOverlapCount", "clippedCount", "unreachableClipCount", "rollBottomGapPx", "screenshot"];
+  const rows = cells.map(cell => [`${cell.width}x${cell.height}`, cell.width, cell.height, cell.theme, cell.state, cell.build, cell.chrome.totalPx, cell.chrome.percent, cell.visibleControls, cell.visiblePrimaryCount, cell.clickToRevealCount, cell.closedRevealTargetCount, cell.inactiveTabTargetCount, cell.detailsCount, cell.nestedDetails, cell.overlapCount, cell.canvasLabelOverlapCount, cell.clippedCount, cell.unreachableClipCount, cell.rollBottomGapPx, cell.screenshot]);
   await writeFile(path.join(outputDir, "results.csv"), `${[columns, ...rows].map(row => row.map(csvEscape).join(",")).join("\n")}\n`);
   const matrix = [
     "# UI audit matrix",
     "",
     `Build: ${cells[0]?.build ?? "unknown"}; generated: ${report.generatedAt}; served from ${report.subpath}.`,
     "",
-    "Chrome is the distance from viewport top to the visible workspace plus any fixed bottom dock. Visible-control count excludes hidden and fully clipped controls, and includes disabled controls. Click-to-reveal counts matching common controls hidden by closed disclosures, panels, hidden ancestors, or CSS visibility rules. Control overlaps exclude parent/child controls and intersections across intentional overlay layers. Canvas-label overlaps compare visible controls against Piano Roll bar/pitch labels, excluding controls inside an open panel or menu overlay. Clipping includes viewport and overflow-ancestor clipping; unreachable clips are targets without a scrollable ancestor.",
+    "Chrome is the distance from viewport top to the visible workspace plus any fixed bottom dock. Visible-control count excludes hidden and fully clipped controls, and includes disabled controls. Click-to-reveal is the strict total of matching common controls hidden behind closed disclosures, panels, hidden ancestors, CSS visibility rules, or inactive tabpanels. Closed disclosure/panel and inactive-tab columns explain the total; inactive tab content is included even though its tab remains visible. Control overlaps exclude parent/child controls and intersections across intentional overlay layers. Canvas-label overlaps compare visible controls against Piano Roll bar/pitch labels, excluding controls inside an open panel or menu overlay. Clipping includes viewport and overflow-ancestor clipping; unreachable clips are targets without a scrollable ancestor.",
     "",
-    "| Viewport | Theme | State | Screenshot | Chrome px (%) | Visible controls | Visible primary | Click-to-reveal | `<details>` | Control overlaps | Canvas label overlaps | Clipped controls | Unreachable clips |",
-    "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
-    ...cells.map(cell => `| ${cell.width}×${cell.height} | ${cell.theme} | ${cell.stateLabel} | ${cell.screenshot ? `[Screenshot](${path.basename(cell.screenshot)})` : "—"} | ${cell.chrome.totalPx} (${cell.chrome.percent}%) | ${cell.visibleControls} | ${cell.visiblePrimaryCount} | ${cell.clickToRevealCount} | ${cell.detailsCount} | ${cell.overlapCount} | ${cell.canvasLabelOverlapCount} | ${cell.clippedCount} | ${cell.unreachableClipCount} |`),
+    "| Viewport | Theme | State | Screenshot | Chrome px (%) | Visible controls | Visible primary | Click-to-reveal | Closed disclosure/panel | Inactive tab targets | `<details>` | Control overlaps | Canvas label overlaps | Clipped controls | Unreachable clips |",
+    "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ...cells.map(cell => `| ${cell.width}×${cell.height} | ${cell.theme} | ${cell.stateLabel} | ${cell.screenshot ? `[Screenshot](${path.basename(cell.screenshot)})` : "—"} | ${cell.chrome.totalPx} (${cell.chrome.percent}%) | ${cell.visibleControls} | ${cell.visiblePrimaryCount} | ${cell.clickToRevealCount} | ${cell.closedRevealTargetCount} | ${cell.inactiveTabTargetCount} | ${cell.detailsCount} | ${cell.overlapCount} | ${cell.canvasLabelOverlapCount} | ${cell.clippedCount} | ${cell.unreachableClipCount} |`),
     "",
     `Cell count: ${cells.length}/${report.expectedCellCount}. Failures: ${failures.length}.`,
     "",
