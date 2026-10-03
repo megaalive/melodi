@@ -213,6 +213,7 @@ export async function measurePage(page) {
     }
     const canvasLabels = [...document.querySelectorAll("#piano-roll-section .roll-bar-label, #piano-roll-section .roll-pitch-label")];
     const canvasLabelOverlaps = [];
+    const pianoViewport = document.querySelector("#piano-roll-section .piano-roll-scroll")?.getBoundingClientRect();
     for (const control of controls) {
       if (control.element.closest("#piano-roll-section")) continue;
       if (control.element.closest(overlaySelector)) continue;
@@ -224,8 +225,10 @@ export async function measurePage(page) {
         if (!matrix) continue;
         const topLeft = new DOMPoint(bounds.x, bounds.y).matrixTransform(matrix);
         const bottomRight = new DOMPoint(bounds.x + bounds.width, bounds.y + bounds.height).matrixTransform(matrix);
-        const left = Math.max(control.box.left, topLeft.x); const top = Math.max(control.box.top, topLeft.y);
-        const right = Math.min(control.box.right, bottomRight.x); const bottom = Math.min(control.box.bottom, bottomRight.y);
+        const left = Math.max(control.box.left, topLeft.x, pianoViewport?.left ?? 0);
+        const top = Math.max(control.box.top, topLeft.y, pianoViewport?.top ?? 0);
+        const right = Math.min(control.box.right, bottomRight.x, pianoViewport?.right ?? viewport.width);
+        const bottom = Math.min(control.box.bottom, bottomRight.y, pianoViewport?.bottom ?? viewport.height);
         if (right - left <= 1 || bottom - top <= 1) continue;
         canvasLabelOverlaps.push({ control: control.label, canvasLabel: label.textContent.trim(), intersection: [round(left), round(top), round(right - left), round(bottom - top)] });
       }

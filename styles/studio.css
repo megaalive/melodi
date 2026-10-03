@@ -99,8 +99,17 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio-overview-drum { fill: #8c789f; }
 .studio .workspace-grid { grid-template-columns: minmax(0,1fr); gap: 0; margin-top: 0; border: 1px solid var(--border-strong); border-top: 0; background: var(--surface); }
 .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0,1fr) 280px; }
-.studio .workspace-canvas { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+.studio .app-shell { display: flex; flex-direction: column; height: calc(100dvh - 40px); min-height: 0; padding-bottom: 0; }
+.studio .workspace-grid { display: grid; flex: 1 1 auto; min-height: 0; }
+.studio .workspace-canvas { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-width: 0; min-height: 0; }
 .studio .workspace-pane { border: 0; border-radius: 0; padding: 6px 8px; min-width: 0; }
+.studio #piano-roll-section, .studio #score-section, .studio #lyrics-section, .studio #drums-section { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.studio #piano-roll-content { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.studio .roll-surface { display: flex; flex: 1 1 auto; min-height: 0; }
+.studio .piano-roll-scroll, .studio .score-scroll { flex: 1 1 auto; height: auto; min-height: 0; max-height: none; resize: none; }
+.studio #piano-roll-content > .candidate-dock { position: relative; inset: auto; z-index: 1; flex: 0 0 auto; max-height: 96px; overflow-x: auto; overflow-y: hidden; }
+.studio .selection-readout { flex: 0 1 auto; max-width: 24rem; margin: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.studio .playback-readout { display: none; }
 .studio .workspace-pane h2 { font-size: 16px; }
 .studio .pane-heading { margin-bottom: 7px; gap: 8px; }
 .studio .panel-collapse-button { min-height: 26px; width: 26px; padding: 3px; }
@@ -673,3 +682,9 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
 .studio .help-sheet section h3 { margin: 0; font-size: var(--text-sm); }
 .studio .help-sheet section { display: grid; gap: 0.35rem; }
 .studio .help-sheet section p { margin: 0; color: var(--text-muted); }
+.studio .mobile-transport-summary { display: none; }
+.studio .transport-buttons > .tempo-control { display: flex; align-items: center; }
+.studio .transport-buttons > .tempo-control label { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.studio-views button[aria-pressed="false"] { border-bottom-color: transparent; }
+.studio .panel-collapse-button [data-copy] { font-size: 10px; white-space: nowrap; }
+.studio .drum-grid-ruler-surface { min-height: var(--drum-row-height); }

@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261002.70">
+    <meta name="melodi-build" content="20261003.71">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261002.70">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261002.70"></script>
-    <script type="module" src="./src/app.js?v=20261002.70"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.71">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.71"></script>
+    <script type="module" src="./src/app.js?v=20261003.71"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -99,6 +99,7 @@
               <div><dt data-copy="currentNoteLabel"></dt><dd><output id="current-note" data-entity="current-note"></output></dd></div>
               <div class="machine-detail"><dt data-copy="currentSectionLabel"></dt><dd><output id="current-section" data-entity="current-section"></output></dd></div>
             </dl>
+            <span id="mobile-transport-summary" class="mobile-transport-summary" data-entity="transport-summary"></span>
           </div>
 
           <div class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel">
@@ -109,8 +110,6 @@
             <label class="loop-toggle"><input id="loop-enabled" type="checkbox" data-action="set-loop-enabled"><span data-copy="loopEnabledLabel"></span></label>
             <button id="reset-playback-range" type="button" class="secondary range-reset" data-action="reset-loop-range" data-copy="allTimelineButton" data-aria-copy="allTimelineAria" hidden></button>
 
-            <details class="transport-advanced">
-              <summary class="disclosure-summary" data-aria-copy="transportAdvanced"><svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg><span data-copy="transportAdvanced"></span></summary>
               <div class="transport-advanced-grid">
                 <form class="transport-form" data-action="seek">
                   <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
@@ -121,9 +120,7 @@
                   <label><span data-copy="loopEndLabel"></span><input id="loop-end" name="endTick" type="number" min="1" step="1" value="1920" required></label>
                   <button type="submit" data-action="set-loop" data-copy="applyLoopButton"></button>
                 </form>
-                <button type="button" class="menu-sheet-close" data-sheet-close data-copy="closeButton"></button>
               </div>
-            </details>
             <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
               <button id="undo" type="button" class="secondary" data-action="undo" data-aria-copy="undoLabel" data-focus-key="undo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 6 3 9l4 3M3.5 9H11a5 5 0 0 1 5 5"></path></svg></button>
               <button id="redo" type="button" class="secondary" data-action="redo" data-aria-copy="redoLabel" data-focus-key="redo" disabled><svg class="toolbar-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m13 6 4 3-4 3M16.5 9H9a5 5 0 0 0-5 5"></path></svg></button>
@@ -146,7 +143,7 @@
         </nav>
         <div class="studio-toolbar-actions">
           <details class="studio-more">
-            <summary data-aria-copy="studioMoreLabel"><span data-copy="studioMoreButton"></span></summary>
+            <summary data-aria-copy="transportAdvanced"><span data-copy="transportAdvanced"></span></summary>
             <div class="studio-more-popover">
               <button type="button" data-action="set-view-mode" data-studio-view="guitar" data-copy="viewGuitarOption" aria-pressed="false"></button>
               <div class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
@@ -203,6 +200,7 @@
               </div>
               <button id="piano-roll-collapse" type="button" class="panel-collapse-button" data-action="toggle-panel" data-panel-collapse="pianoRoll" aria-controls="piano-roll-content" aria-expanded="true">
                 <svg class="toolbar-icon disclosure-chevron" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4 7 6 6 6-6"></path></svg>
+                <span data-copy="collapsePianoRoll"></span>
               </button>
             </div>
             <div id="piano-roll-content" class="panel-disclosure-content">

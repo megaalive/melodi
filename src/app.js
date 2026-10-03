@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261002.70';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261002.70";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261002.70";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261002.70";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261002.70";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261002.70";
-import { createCommands } from "./core/commands.js?v=20261002.70";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.71';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.71";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.71";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.71";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.71";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.71";
+import { createCommands } from "./core/commands.js?v=20261003.71";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261002.70";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261002.70";
-import { createAudioPlayer } from "./audio/player.js?v=20261002.70";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261002.70";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261002.70";
-import { createScoreView } from "./ui/score.js?v=20261002.70";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261002.70";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261002.70";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261002.70";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261002.70";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261002.70";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.71";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.71";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.71";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.71";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.71";
+import { createScoreView } from "./ui/score.js?v=20261003.71";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.71";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.71";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.71";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.71";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.71";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261002.70";
-import { createGenerationContext } from "./generation/context.js?v=20261002.70";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.71";
+import { createGenerationContext } from "./generation/context.js?v=20261003.71";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261002.70";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261002.70";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261002.70";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261002.70";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261002.70";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261002.70";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.71";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.71";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.71";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.71";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.71";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.71";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -272,6 +272,11 @@ function renderPanelDisclosures(song, state) {
     button.setAttribute("aria-expanded", String(!collapsed));
     button.setAttribute("aria-label", label);
     button.title = label;
+    const visibleLabel = button.querySelector("[data-copy]");
+    if (visibleLabel) {
+      visibleLabel.dataset.copy = collapsed ? "expandPianoRollShort" : "collapsePianoRollShort";
+      visibleLabel.textContent = translate(visibleLabel.dataset.copy);
+    }
     summary.hidden = !collapsed;
 
     if (name === "pianoRoll") {
@@ -1416,6 +1421,10 @@ function renderPlayback() {
   byId("current-note").dataset.entityId = note?.id ?? "";
   byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
+  byId("mobile-transport-summary").textContent = translate("transportDockSummary", {
+    bpm: playback.tempo,
+    loop: translate(playback.loop.enabled ? "loopStateOn" : "loopStateOff")
+  });
   const playing = playback.status === "playing";
   const playToggle = byId("play");
   playToggle.disabled = false;

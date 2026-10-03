@@ -162,7 +162,7 @@ test("disclosure memakai chevron yang sama untuk Piano Roll, Expression, dan det
     assert.match(button, /class="toolbar-icon disclosure-chevron"/);
   }
 
-  for (const detailClass of ["transport-advanced", "bend-curve-editor", "expression-vibrato-details", "generation-options"]) {
+  for (const detailClass of ["bend-curve-editor", "expression-vibrato-details", "expression-note-details", "generation-options"]) {
     const start = html.indexOf(`class="${detailClass}"`);
     const fragment = html.slice(start, html.indexOf("</summary>", start));
     assert.match(fragment, /class="disclosure-summary"/);
@@ -234,7 +234,7 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   const settingsGroup = html.slice(settings, view);
   assert.match(settingsGroup, /id="tempo-input"/);
   assert.match(settingsGroup, /id="loop-enabled"/);
-  assert.match(settingsGroup, /class="transport-advanced"/);
+  assert.match(settingsGroup, /class="transport-advanced-grid"/);
   assert.match(settingsGroup, /id="undo"[^>]*data-action="undo"/);
   assert.match(settingsGroup, /id="redo"[^>]*data-action="redo"/);
   assert.match(settingsGroup, /id="follow-mode"/);
