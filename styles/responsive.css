@@ -1210,3 +1210,133 @@
 .studio .studio-more-popover > .menu-sheet-close { position: static; bottom: auto; grid-column: 1 / -1; align-self: stretch; width: 100%; }
   .studio .mobile-workspace-dock .studio-more { flex: 0 0 44px; width: 44px; min-width: 44px; margin-left: -2px; }
 .studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; }
+
+/* PR9: one desktop header/transport band; routine project controls stay visible. */
+@media (width >= 68rem) {
+  .studio .page-header {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: clamp(3px, 0.45vw, 8px);
+    min-height: 44px;
+    padding: 2px clamp(8px, 0.9vw, 14px);
+    overflow: visible;
+  }
+  .studio .brand-block { display: flex; flex: 0 1 13.5rem; align-items: center; gap: 6px; min-width: 5.2rem; margin: 0; }
+  .studio .brand-block h1 { flex: 0 0 auto; font-size: 15px; }
+  .studio .brand-block h1::after { display: none; }
+  .studio .brand-block > p { display: none; }
+  .studio .brand-block > .song-strip { flex: 1 1 auto; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .studio .brand-block .song-identity { display: block; flex: 1 1 4rem; min-width: 0; max-width: 7rem; }
+  .studio .brand-block .song-identity h2 { display: none; }
+  .studio .brand-block .song-identity p { overflow: hidden; margin: 0; font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  .studio .brand-block .song-summary { display: flex; flex: 1 1 auto; justify-content: flex-end; gap: 4px; min-width: 0; margin: 0; }
+  .studio .brand-block .song-summary > div { gap: 2px; padding: 0 3px; }
+  .studio .brand-block .song-summary dt { font-size: 9px; }
+  .studio .brand-block .song-summary dd { font-size: 11px; }
+  .studio .page-header > #studio-views { order: 2; flex: 0 0 auto; gap: 2px; margin: 0; }
+  .studio .page-header > #studio-views > button { min-width: 38px; min-height: 34px; padding: 3px 5px; font-size: 11px; }
+  .studio .page-header > .transport-dock { order: 3; position: static; display: flex; flex: 1 1 28rem; width: auto; min-width: 0; height: 34px; margin: 0; padding: 0 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .studio .page-header .transport-main { display: flex; flex: 1 1 auto; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; height: 34px; }
+  .studio .page-header .transport-action-group { flex: 0 0 auto; gap: 4px; }
+  .studio .page-header .transport-buttons { gap: 2px; }
+  .studio .page-header .transport-buttons button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 5px; }
+  .studio .page-header .playback-readout { display: none; }
+  .studio .page-header .studio-overview { flex: 1 1 7rem; min-width: 3.4rem; max-width: 12rem; height: 32px; border: 0; background: transparent; }
+  .studio .page-header .studio-overview-label { flex: 0 0 30px; justify-content: center; padding: 0 2px; border: 0; }
+  .studio .page-header .studio-overview-label > span { display: none; }
+  .studio .page-header .studio-overview-label output { font-size: 10px; }
+  .studio .page-header .studio-overview-track button { min-height: 32px; }
+  .studio .page-header .playback-settings-group { flex: 0 0 auto; flex-wrap: nowrap; gap: 3px; padding: 0 0 0 5px; border-left: 1px solid var(--border); font-size: 11px; }
+  .studio .page-header .tempo-control label { gap: 3px; }
+  .studio .page-header #tempo-input { width: 44px; min-width: 44px; height: 29px; min-height: 29px; padding: 2px 4px; font-size: 11px; }
+  .studio .page-header .loop-toggle { gap: 2px; white-space: nowrap; font-size: 10px; }
+  .studio .page-header .loop-toggle input { margin: 0; }
+  .studio .page-header .history-buttons { gap: 1px; }
+  .studio .page-header .history-buttons button { width: 27px; min-width: 27px; height: 28px; min-height: 28px; padding: 3px; }
+  .studio .page-header .follow-mode-control { gap: 2px; white-space: nowrap; font-size: 10px; }
+  .studio .page-header .studio-more > summary { min-height: 30px; padding: 4px 5px; font-size: 10px; }
+  .studio .page-header > .header-actions { order: 4; display: flex; flex: 0 0 auto; align-items: center; flex-wrap: nowrap; gap: 3px; min-width: 0; margin-left: 0; }
+  .studio .header-actions .desktop-project-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
+  .studio .header-actions .desktop-project-actions button { display: inline-grid; place-items: center; width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; overflow: hidden; font-size: 0; }
+  .studio .header-actions .desktop-project-actions button::before { font-size: 17px; line-height: 1; }
+  .studio .desktop-project-actions [data-action="new-song"]::before { content: "+"; }
+  .studio .desktop-project-actions [data-action="open-project-file"]::before { content: "↥"; }
+  .studio .desktop-project-actions [data-action="save-project-file"]::before { content: "▣"; }
+  .studio .desktop-project-actions [data-action="share-song"]::before { content: "↗"; }
+  .studio .header-actions .project-menu { display: block; flex: 0 0 auto; }
+  .studio .header-actions .project-menu-trigger { display: inline-flex; min-height: 32px; gap: 3px; padding: 3px 5px; white-space: nowrap; }
+  .studio .header-actions .project-menu-trigger > svg { display: none; }
+  .studio .header-actions .project-menu-trigger::before { content: "⋯"; font-size: 18px; line-height: 1; }
+  .studio .header-actions .header-controls { display: flex; flex: 0 0 auto; gap: 2px; padding-left: 3px; }
+  .studio .header-actions .header-controls .header-select-control { gap: 2px; min-height: 32px; padding: 0 2px; font-size: 10px; }
+  .studio .header-actions .header-select-control select { max-width: 75px; min-height: 28px; padding: 2px 15px 2px 4px; font-size: 10px; }
+  .studio .header-actions .command-button { width: 32px; min-width: 32px; height: 32px; min-height: 32px; }
+  .studio .workspace-chrome { position: static; display: block; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+  .studio .workspace-chrome .workspace-toolbar { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 36px; margin: 0; padding: 0 10px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface); gap: 8px; }
+  .studio #view-controls { display: flex !important; align-items: center; min-height: 36px; }
+  .studio .studio-toolbar-actions { flex: 1 1 auto; min-width: 0; gap: 8px; }
+  .studio .studio-toolbar-actions > .studio-more { margin-left: auto; }
+  .studio .page-header .mobile-panel-trigger { display: none; }
+  .studio #project-menu .app-settings-section[hidden] { display: none !important; }
+  .studio #piano-roll-section #piano-roll-collapse { display: inline-flex; flex: 0 0 auto; flex-direction: row; align-items: center; justify-content: center; width: auto; min-width: 104px; min-height: 34px; gap: 4px; padding: 3px 7px; white-space: nowrap; }
+  .studio #piano-roll-section #piano-roll-collapse .disclosure-chevron { position: static; inset: auto; flex: 0 0 16px; }
+  .studio #piano-roll-section #piano-roll-collapse [data-copy] { flex: 0 0 auto; font-size: 11px; white-space: nowrap; }
+}
+
+/* The in-between tier also gets one transport ribbon and an always-visible dock trigger. */
+@media (width > 46rem) and (width < 68rem) and (min-height: 501px) {
+  .studio .page-header { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; height: 50px; min-height: 50px; padding: 3px 8px; overflow: visible; }
+  .studio .app-shell { inset: 50px 0 0; padding: 0 7px; }
+  .studio .brand-block { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; min-width: 0; margin: 0; }
+  .studio .brand-block h1 { font-size: 14px; }
+  .studio .brand-block h1::after, .studio .brand-block > p, .studio .brand-block .song-identity h2 { display: none; }
+  .studio .brand-block .song-identity { display: block; flex: 0 1 4rem; min-width: 0; }
+  .studio .brand-block .song-identity p { overflow: hidden; margin: 0; font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  .studio .brand-block > .song-strip { flex: 0 0 auto; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .studio .brand-block .song-summary { display: flex; gap: 3px; margin: 0; }
+  .studio .brand-block .song-summary > div { gap: 1px; padding: 0 2px; }
+  .studio .brand-block .song-summary dt { font-size: 8px; }
+  .studio .brand-block .song-summary dd { font-size: 10px; }
+  .studio .page-header > #studio-views { flex: 0 0 auto; gap: 1px; margin: 0; }
+  .studio .page-header > #studio-views > button { min-width: 35px; min-height: 32px; padding: 2px 4px; font-size: 10px; }
+  .studio .page-header > .transport-dock { position: static; display: flex; flex: 1 1 auto; width: auto; min-width: 0; height: 40px; margin: 0; padding: 0 2px; border: 0; background: transparent; box-shadow: none; }
+  .studio .page-header .transport-main { display: flex; align-items: center; justify-content: space-between; gap: 3px; min-width: 0; }
+  .studio .page-header .transport-action-group { flex: 0 0 auto; gap: 2px; }
+  .studio .page-header .transport-buttons { gap: 1px; }
+  .studio .page-header .transport-buttons button { width: 30px; min-width: 30px; height: 30px; min-height: 30px; padding: 4px; }
+  .studio .page-header .playback-readout { display: none; }
+  .studio .page-header .studio-overview { flex: 1 1 5rem; min-width: 32px; max-width: 7rem; height: 30px; border: 0; }
+  .studio .page-header .studio-overview-label { flex: 0 0 24px; justify-content: center; padding: 0; border: 0; }
+  .studio .page-header .studio-overview-label > span { display: none; }
+  .studio .page-header .studio-overview-label output { font-size: 9px; }
+  .studio .page-header .playback-settings-group { flex: 0 0 auto; flex-wrap: nowrap; gap: 2px; padding: 0 0 0 3px; border-left: 1px solid var(--border); font-size: 10px; }
+  .studio .page-header #tempo-input { flex: 0 0 40px; width: 40px; min-width: 40px; height: 28px; min-height: 28px; padding: 2px; font-size: 10px; }
+  .studio .page-header .loop-toggle, .studio .page-header .follow-mode-control { gap: 1px; white-space: nowrap; font-size: 9px; }
+  .studio .page-header .history-buttons button { width: 25px; min-width: 25px; height: 27px; min-height: 27px; padding: 2px; }
+  .studio .page-header > .header-actions { flex: 0 0 auto; flex-wrap: nowrap; min-width: 0; margin-left: 0; }
+  .studio .header-actions .project-menu-trigger { min-height: 32px; padding: 3px 5px; }
+  .studio .workspace-chrome { position: static; display: block; margin: 0; padding: 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+  .studio .workspace-chrome .workspace-toolbar { position: static; inset: auto; z-index: auto; display: flex; flex: 0 0 40px; align-self: stretch; width: 100%; height: 40px; min-height: 40px; padding: 1px 8px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface); }
+  .studio #view-controls { position: static; inset: auto; width: 100%; height: 40px; min-height: 40px; }
+  .studio .app-menu-popover > .menu-sheet-close { position: static; bottom: auto; }
+  .studio .studio-toolbar-actions { flex: 1 1 auto; min-width: 0; }
+  .studio .studio-toolbar-actions > .mobile-panel-trigger { display: inline-flex; min-height: 34px; }
+  .studio .studio-more-popover { max-width: min(22rem, calc(100vw - 16px)); }
+}
+
+@media (width <= 46rem) {
+  .studio .mobile-workspace-dock .mobile-transport-summary {
+    flex: 0 1 clamp(3rem, 21vw, 7rem);
+    min-width: 0;
+    max-width: 7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .studio #piano-roll-collapse { position: relative; display: inline-grid; place-items: center; width: 44px; min-width: 44px; min-height: 44px; padding: 0; }
+  .studio #piano-roll-collapse .disclosure-chevron { display: none; }
+  .studio #piano-roll-collapse [data-copy] { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .studio #piano-roll-collapse::before { content: "−"; font-size: 19px; line-height: 1; }
+  .studio #piano-roll-collapse[aria-expanded="false"]::before { content: "+"; }
+}

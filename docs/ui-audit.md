@@ -349,3 +349,13 @@ tautan screenshot ada di [matriks baseline PR5](ui-audit/round2/pr5-before/matri
 Kontrol yang terpotong oleh viewport atau ancestor `overflow` dihitung sebagai
 clipped; pasangan induk-anak dan area yang sepenuhnya tertutup overlay tidak
 dihitung sebagai overlap.
+
+## Putaran 2 PR9 — kontrol rutin di header desktop
+
+Build `.75` menampilkan tindakan proyek, bahasa, tema, Command Palette, Undo,
+dan Redo langsung di header desktop serta merapatkan chrome desktop dan tablet.
+Ringkasan metrik lima viewport, keterbatasan klik-untuk-terlihat yang tersisa,
+hasil tes, dan angka CSS ada di [laporan PR9](ui-audit/round2/pr9-summary.md).
+Matriks lengkap sebelum dan sesudah, termasuk screenshot default, Generate
+dengan kandidat, dan Mixer pada dua tema, ada di [baseline PR9](ui-audit/round2/pr9-before/matrix.md)
+dan [hasil PR9](ui-audit/round2/pr9-after/matrix.md).

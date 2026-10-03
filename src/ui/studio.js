@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.74';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.75';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -30,6 +30,24 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   sidebar.append(guitarSection);
   const headerActions = document.querySelector('.header-actions');
   const projectMenu = document.querySelector('.project-menu');
+  const projectSummary = projectMenu.querySelector('summary');
+  const projectSummaryLabel = projectSummary.querySelector('[data-copy]');
+  const projectSection = projectMenu.querySelector('.project-menu-section');
+  const appSettingsSection = projectMenu.querySelector('.app-settings-section');
+  const headerControls = projectMenu.querySelector('.header-controls');
+  const projectActionOrder = [...projectSection.querySelectorAll(':scope > button[data-action]')];
+  const desktopProjectActions = document.createElement('div');
+  desktopProjectActions.className = 'desktop-project-actions';
+  desktopProjectActions.setAttribute('role', 'group');
+  desktopProjectActions.dataset.ariaCopy = 'projectActionsHeading';
+  const directProjectActions = ['new-song', 'open-project-file', 'save-project-file', 'share-song'];
+  const directProjectButtons = directProjectActions.map(action => projectActionOrder.find(button => button.dataset.action === action));
+  for (const button of directProjectButtons) {
+    if (!button) continue;
+    button.classList.add('desktop-project-action');
+    button.dataset.ariaCopy = button.dataset.copy;
+    desktopProjectActions.append(button);
+  }
   const mixer = byId('studio-mixer-channels');
   const expressionPanel = byId('expression-panel');
   if (expressionPanel) sidebar.append(expressionPanel);
@@ -203,6 +221,8 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   const selectionSummary = byId('roll-selection');
   const appShell = document.querySelector('.app-shell');
   const workspaceGrid = document.querySelector('.workspace-grid');
+  const projectSummaryCopy = projectSummaryLabel.dataset.copy;
+  const headerControlsHome = headerControls.parentElement;
   const editorExtras = [...editorToolbar.children].filter(child => child !== editorTools);
   const editorSettings = document.createElement('section');
   editorSettings.className = 'studio-editor-settings';
@@ -218,6 +238,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
   morePopover.insertBefore(advancedBody, morePopover.querySelector('[data-sheet-close]'));
   morePopover.append(morePopover.querySelector('[data-sheet-close]'));
   const phone = matchMedia('(width <= 46rem)');
+  const wide = matchMedia('(width >= 68rem)');
   const compact = matchMedia('(width <= 46rem), (orientation: landscape) and (max-height: 500px) and (width < 68rem)');
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 500px)');
   function syncPanelSwitches() {
@@ -284,18 +305,40 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     event.preventDefault();
     try { commands.seek(next); } catch (error) { onError(error); }
   });
+  function syncProjectControls(wideLayout) {
+    if (wideLayout) {
+      if (!desktopProjectActions.parentElement) headerActions.prepend(desktopProjectActions);
+      headerActions.append(projectMenu, headerControls);
+      appSettingsSection.hidden = true;
+      projectSummaryLabel.dataset.copy = 'projectMoreLabel';
+      projectSummaryLabel.textContent = translate('projectMoreLabel');
+      projectMenu.dataset.ariaCopy = 'projectMoreLabel';
+      return;
+    }
+    desktopProjectActions.remove();
+    projectSection.append(...projectActionOrder);
+    headerControlsHome.append(headerControls);
+    appSettingsSection.hidden = false;
+    projectSummaryLabel.dataset.copy = projectSummaryCopy;
+    projectSummaryLabel.textContent = translate(projectSummaryCopy);
+    projectMenu.dataset.ariaCopy = 'appMenuLabel';
+  }
   function arrangeControls() {
     moreMenu.open = false;
     transportSettings.append(moreMenu);
     mobileDock.hidden = !compact.matches;
-    panelDockTrigger.hidden = !compact.matches;
+    const wideLayout = wide.matches;
+    const mediumLayout = !wide.matches && !compact.matches && !shortLandscape.matches;
+    const shortLandscapeLayout = shortLandscape.matches && !wide.matches;
+    syncProjectControls(wideLayout);
+    panelDockTrigger.hidden = !(compact.matches || mediumLayout);
     panelDockTrigger.textContent = translate('studioPanelsButton');
     panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
     panelDockTrigger.setAttribute('aria-expanded', String(Boolean(panel)));
     if (compact.matches) mobilePanelActions.append(panelSwitches);
     else toolbarActions.prepend(panelSwitches);
     modeToolbar.hidden = phone.matches && !shortLandscape.matches;
-    if (shortLandscape.matches) {
+    if (shortLandscapeLayout) {
       modeToolbar.append(modeNav);
       if (overview.parentElement !== transportMain) transportMain.insertBefore(overview, transportSettings);
       transportMain.insertBefore(historyButtons, overview);
@@ -315,6 +358,26 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       advancedBody.append(tempo, loopToggle, resetRange, follow);
       editorSettings.hidden = false;
       editorSettings.setAttribute('aria-label', translate('editorSettingsHeading'));
+      if (sessionActions) byId('generation-panel').append(sessionActions);
+    } else if (wideLayout || mediumLayout) {
+      modeNav.append(panelDockTrigger);
+      header.insertBefore(modeNav, headerActions);
+      header.append(transportDock);
+      transportMain.insertBefore(overview, transportSettings);
+      transportButtons.append(tempo);
+      transportSettings.append(loopToggle, resetRange, historyButtons);
+      if (wideLayout) {
+        headerActions.append(projectMenu, headerControls);
+        transportSettings.append(follow);
+      } else {
+        headerActions.prepend(projectMenu);
+        toolbarActions.prepend(panelDockTrigger);
+        advancedBody.append(follow);
+      }
+      editorToolbarHome.append(editorToolbar);
+      editorToolsHome.prepend(editorTools);
+      editorToolbar.append(...editorExtras);
+      editorSettings.hidden = true;
       if (sessionActions) byId('generation-panel').append(sessionActions);
     } else {
       modeNav.append(panelDockTrigger);
@@ -337,6 +400,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
     syncPanelSwitches();
   }
   compact.addEventListener('change', arrangeControls);
+  wide.addEventListener('change', arrangeControls);
   shortLandscape.addEventListener('change', () => {
     arrangeControls();
     render(commands.getSong(), commands.getState(), false);

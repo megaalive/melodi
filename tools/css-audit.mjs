@@ -247,7 +247,7 @@ export async function runCssAudit({ out = "docs/ui-audit/round2/css-coverage", p
       const { viewport, theme, state } = scenario;
       const viewportConfig = readViewport(viewport);
       captures.push(await captureScenario(browser, url, { viewport, theme, state }, true));
-      process.stdout.write(`CSS coverage ${captures.length}/${smoke ? 1 : 60}: ${viewportConfig.width}x${viewportConfig.height} ${theme} ${state}\n`);
+      process.stdout.write(`CSS coverage ${captures.length}/${smoke ? 1 : VIEWPORTS.length * THEMES.length * STATES.length}: ${viewportConfig.width}x${viewportConfig.height} ${theme} ${state}\n`);
     }
     for (const scenario of DYNAMIC_SCENARIOS) {
       captures.push(await captureScenario(browser, url, scenario));

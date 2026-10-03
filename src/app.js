@@ -1,32 +1,32 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.74';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.74";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.74";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.74";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.74";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.74";
-import { createCommands } from "./core/commands.js?v=20261003.74";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.75';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.75";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.75";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.75";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.75";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.75";
+import { createCommands } from "./core/commands.js?v=20261003.75";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.74";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.74";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.74";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.74";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.74";
-import { createScoreView } from "./ui/score.js?v=20261003.74";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.74";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.74";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.74";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.74";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.74";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.75";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.75";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.75";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.75";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.75";
+import { createScoreView } from "./ui/score.js?v=20261003.75";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.75";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.75";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.75";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.75";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.75";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.74";
-import { createGenerationContext } from "./generation/context.js?v=20261003.74";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.75";
+import { createGenerationContext } from "./generation/context.js?v=20261003.75";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.74";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.74";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.74";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.74";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.74";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.74";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.75";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.75";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.75";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.75";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.75";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.75";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -1421,10 +1421,13 @@ function renderPlayback() {
   byId("current-note").dataset.entityId = note?.id ?? "";
   byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
-  byId("mobile-transport-summary").textContent = translate("transportDockSummary", {
+  const mobileTransportSummary = byId("mobile-transport-summary");
+  mobileTransportSummary.textContent = translate("transportDockSummary", {
     bpm: playback.tempo,
     loop: translate(playback.loop.enabled ? "loopStateOn" : "loopStateOff")
   });
+  mobileTransportSummary.setAttribute("aria-label", mobileTransportSummary.textContent);
+  mobileTransportSummary.title = mobileTransportSummary.textContent;
   const playing = playback.status === "playing";
   const playToggle = byId("play");
   playToggle.disabled = false;

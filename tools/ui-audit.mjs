@@ -6,7 +6,9 @@ import { chromium } from "playwright";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const VIEWPORTS = [
+  { name: "large-desktop", width: 1920, height: 1080, mobile: false },
   { name: "desktop", width: 1440, height: 900, mobile: false },
+  { name: "tablet", width: 1024, height: 768, mobile: false },
   { name: "portrait", width: 390, height: 844, mobile: true },
   { name: "landscape", width: 844, height: 390, mobile: true },
 ];
@@ -24,6 +26,37 @@ export const STATES = [
   { id: "more-open", label: "Lainnya popover/sheet open" },
 ];
 
+export const COMMON_CONTROL_TARGETS = [
+  { key: "project-new", selector: '[data-action="new-song"]' },
+  { key: "project-open", selector: '[data-action="open-project-file"]' },
+  { key: "project-save", selector: '[data-action="save-project-file"]' },
+  { key: "project-share", selector: '[data-action="share-song"]' },
+  { key: "language", selector: "#language" },
+  { key: "theme", selector: "#theme" },
+  { key: "command-palette", selector: 'button[data-action="command-palette"]' },
+  { key: "undo", selector: "#undo" },
+  { key: "redo", selector: "#redo" },
+  { key: "seek-tick", selector: "#seek-tick" },
+  { key: "seek-submit", selector: 'form[data-action="seek"] button[type="submit"]' },
+  { key: "loop-enabled", selector: "#loop-enabled" },
+  { key: "loop-start", selector: "#loop-start" },
+  { key: "loop-end", selector: "#loop-end" },
+  { key: "loop-apply", selector: 'form.loop-range button[type="submit"]' },
+  { key: "follow-playback", selector: "#follow-mode" },
+  { key: "add-note", selector: "#add-note-form input, #add-note-form button" },
+  { key: "select-range", selector: "#selection-form input, #selection-form button" },
+  { key: "mixer-tab", selector: '[data-studio-panel="mixer"]' },
+  { key: "chord-tab", selector: '[data-studio-panel="chords"]' },
+  { key: "generate-tab", selector: '[data-studio-panel="generate"]' },
+  { key: "generation-options", selector: ".generation-options input, .generation-options select, .generation-options button" },
+  { key: "generation-shortcuts", selector: ".shortcut-help > summary" },
+  { key: "snap", selector: "#snap-select" },
+  { key: "zoom", selector: "#roll-zoom" },
+  { key: "select-tool", selector: "#roll-tool-select" },
+  { key: "draw-tool", selector: "#roll-tool-draw" },
+  { key: "guitar", selector: "#guitar-mode-toggle" },
+];
+
 const MIME = new Map([
   [".css", "text/css; charset=utf-8"], [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"], [".mjs", "text/javascript; charset=utf-8"],
@@ -33,11 +66,12 @@ const MIME = new Map([
 ]);
 
 function parseArgs(argv) {
-  const args = { out: "docs/ui-audit/generated", basePath: "/melodi/", port: 4173 };
+  const args = { out: "docs/ui-audit/generated", basePath: "/melodi/", port: 4173, screenshots: null };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === "--out") args.out = argv[++i];
     else if (argv[i] === "--base-path") args.basePath = argv[++i];
     else if (argv[i] === "--port") args.port = Number(argv[++i]);
+    else if (argv[i] === "--screenshots") args.screenshots = argv[++i].split(",").filter(Boolean);
     else if (argv[i] === "--help") args.help = true;
     else throw new Error(`Unknown argument: ${argv[i]}`);
   }
@@ -76,7 +110,7 @@ export async function startAuditServer({ basePath = "/melodi/", port = 4173 } = 
     server.once("error", reject);
     server.listen(port, "127.0.0.1", resolve);
   });
-  return { server, url: `http://127.0.0.1:${port}${prefix}` };
+  return { server, url: `http://127.0.0.1:${server.address().port}${prefix}` };
 }
 
 async function settle(page) {
@@ -133,7 +167,7 @@ export async function configureState(page, stateId) {
 }
 
 export async function measurePage(page) {
-  return page.evaluate(() => {
+  return page.evaluate(commonTargets => {
     const selector = "button, input:not([type=hidden]), select, textarea, summary, a[href], [role=button], [role=slider], [role=checkbox], [role=tab], [role=menuitem]";
     const viewport = { width: innerWidth, height: innerHeight };
     const round = value => Math.round(value * 10) / 10;
@@ -180,6 +214,37 @@ export async function measurePage(page) {
       || element.getAttribute("data-aria-copy") || element.getAttribute("data-copy")
       || element.getAttribute("title") || element.getAttribute("placeholder")
       || element.id || element.textContent.trim().replace(/\s+/g, " ").slice(0, 70) || element.tagName.toLowerCase();
+    const clickToRevealControls = [];
+    const visiblePrimaryControls = [];
+    const matchedCommonControlKeys = [];
+    const hiddenReason = element => {
+      const closedDisclosure = element.closest("details:not([open])");
+      if (closedDisclosure && !element.closest("summary")) {
+        return { type: "closed-disclosure", revealBy: controlLabel(closedDisclosure.querySelector("summary") ?? closedDisclosure) };
+      }
+      const hidden = element.closest("[hidden], [inert], [aria-hidden='true']");
+      if (hidden) {
+        const panel = hidden.closest(".workspace-sidebar, [data-studio-panel], .studio-panel-content");
+        return { type: panel ? "closed-panel" : "hidden-ancestor", revealBy: panel?.id || panel?.dataset.studioPanel || hidden.id || hidden.className || hidden.tagName.toLowerCase() };
+      }
+      for (let node = element; node; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) {
+          const panel = node.closest(".workspace-sidebar, [data-studio-panel], .studio-panel-content");
+          return { type: panel ? "closed-panel" : "css-hidden", revealBy: panel?.id || panel?.dataset.studioPanel || node.id || node.className || node.tagName.toLowerCase() };
+        }
+      }
+      return null;
+    };
+    const seenTargets = new Set();
+    for (const { key, selector: targetSelector } of commonTargets) for (const element of document.querySelectorAll(targetSelector)) {
+      if (seenTargets.has(element)) continue;
+      seenTargets.add(element);
+      matchedCommonControlKeys.push(key);
+      const reason = hiddenReason(element);
+      if (reason) clickToRevealControls.push({ key, label: controlLabel(element), id: element.id || null, selector: targetSelector, ...reason });
+      else if (element.getClientRects().length) visiblePrimaryControls.push({ key, label: controlLabel(element), id: element.id || null });
+    }
     const controls = [...document.querySelectorAll(selector)].filter(isUsable).map(element => {
       const box = effectiveRect(element);
       return { element, label: controlLabel(element), box, width: Math.max(0, box.right - box.left), height: Math.max(0, box.bottom - box.top) };
@@ -262,6 +327,11 @@ export async function measurePage(page) {
       viewport,
       chrome: { topPx: round(chromeTop), bottomPx: round(chromeBottom), totalPx: round(chromeTop + chromeBottom), percent: round((chromeTop + chromeBottom) / viewport.height * 100) },
       visibleControls: controls.length,
+      visiblePrimaryCount: visiblePrimaryControls.length,
+      visiblePrimaryControls,
+      matchedCommonControlKeys,
+      clickToRevealCount: clickToRevealControls.length,
+      clickToRevealControls,
       controls: controls.map(({ element, label, box }) => ({ label, tag: element.tagName.toLowerCase(), id: element.id || null, action: element.dataset.action || null, rect: [round(box.left), round(box.top), round(box.right - box.left), round(box.bottom - box.top)] })),
       openDetails: [...document.querySelectorAll("details[open]")].map(element => element.id || element.className || "details"),
       detailsCount: document.querySelectorAll("details").length,
@@ -277,12 +347,12 @@ export async function measurePage(page) {
       pageOverflowX: document.documentElement.scrollWidth > viewport.width,
       pageOverflowXPx: Math.max(0, document.documentElement.scrollWidth - viewport.width),
     };
-  });
+  }, COMMON_CONTROL_TARGETS);
 }
 
 const csvEscape = value => `"${String(value ?? "").replaceAll('"', '""')}"`;
 
-export async function runUiAudit({ out = "docs/ui-audit/generated", basePath = "/melodi/", port = 4173 } = {}) {
+export async function runUiAudit({ out = "docs/ui-audit/generated", basePath = "/melodi/", port = 4173, screenshots = null } = {}) {
   const outputDir = path.resolve(ROOT, out);
   await mkdir(outputDir, { recursive: true });
   const { server, url } = await startAuditServer({ basePath, port });
@@ -297,22 +367,26 @@ export async function runUiAudit({ out = "docs/ui-audit/generated", basePath = "
           const page = await context.newPage(); const pageErrors = [];
           page.on("pageerror", error => pageErrors.push(error.message));
       const key = `${viewport.width}x${viewport.height}-${theme}-${state.id}`;
-      const screenshot = `${key}.png`;
+      const shouldCapture = !screenshots || screenshots.includes(state.id);
+      const screenshot = shouldCapture ? `${key}.png` : null;
       try {
         await page.addInitScript(themeName => localStorage.setItem("melodi.theme", themeName), theme);
         await page.goto(url, { waitUntil: "networkidle", timeout: 15000 });
         await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 10000 });
         await configureState(page, state.id);
         const metrics = await measurePage(page);
-        await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: "disabled" });
+        if (screenshot) await page.screenshot({ path: path.join(outputDir, screenshot), fullPage: false, animations: "disabled" });
         const cell = {
           viewport: viewport.name, width: viewport.width, height: viewport.height,
           theme, state: state.id, stateLabel: state.label,
-          screenshot: path.relative(ROOT, path.join(outputDir, screenshot)).replaceAll(path.sep, "/"),
+          screenshot: screenshot ? path.relative(ROOT, path.join(outputDir, screenshot)).replaceAll(path.sep, "/") : null,
           ...metrics, pageErrors,
         };
         cells.push(cell);
         if (pageErrors.length) failures.push({ key, reason: "pageerror", errors: pageErrors });
+        if (cell.overlapCount || cell.canvasLabelOverlapCount || cell.unreachableClipCount) {
+          failures.push({ key, reason: "layout", overlaps: cell.overlapCount, canvasLabelOverlaps: cell.canvasLabelOverlapCount, unreachableClips: cell.unreachableClipCount });
+        }
         process.stdout.write(`${key}: ${metrics.visibleControls} controls, ${metrics.overlapCount} control overlaps, ${metrics.canvasLabelOverlapCount} canvas-label overlaps, ${metrics.clippedCount} clipped, chrome ${metrics.chrome.totalPx}px (${metrics.chrome.percent}%)\n`);
       } catch (error) {
         failures.push({ key, reason: error.message });
@@ -329,19 +403,19 @@ export async function runUiAudit({ out = "docs/ui-audit/generated", basePath = "
     failures, cells,
   };
   await writeFile(path.join(outputDir, "results.json"), `${JSON.stringify(report, null, 2)}\n`);
-  const columns = ["viewport", "width", "height", "theme", "state", "build", "chromePx", "chromePercent", "visibleControls", "detailsCount", "nestedDetails", "overlapCount", "canvasLabelOverlapCount", "clippedCount", "unreachableClipCount", "rollBottomGapPx", "screenshot"];
-  const rows = cells.map(cell => [cell.viewport, cell.width, cell.height, cell.theme, cell.state, cell.build, cell.chrome.totalPx, cell.chrome.percent, cell.visibleControls, cell.detailsCount, cell.nestedDetails, cell.overlapCount, cell.canvasLabelOverlapCount, cell.clippedCount, cell.unreachableClipCount, cell.rollBottomGapPx, cell.screenshot]);
+  const columns = ["viewport", "width", "height", "theme", "state", "build", "chromePx", "chromePercent", "visibleControls", "visiblePrimaryCount", "clickToRevealCount", "detailsCount", "nestedDetails", "overlapCount", "canvasLabelOverlapCount", "clippedCount", "unreachableClipCount", "rollBottomGapPx", "screenshot"];
+  const rows = cells.map(cell => [`${cell.width}x${cell.height}`, cell.width, cell.height, cell.theme, cell.state, cell.build, cell.chrome.totalPx, cell.chrome.percent, cell.visibleControls, cell.visiblePrimaryCount, cell.clickToRevealCount, cell.detailsCount, cell.nestedDetails, cell.overlapCount, cell.canvasLabelOverlapCount, cell.clippedCount, cell.unreachableClipCount, cell.rollBottomGapPx, cell.screenshot]);
   await writeFile(path.join(outputDir, "results.csv"), `${[columns, ...rows].map(row => row.map(csvEscape).join(",")).join("\n")}\n`);
   const matrix = [
     "# UI audit matrix",
     "",
     `Build: ${cells[0]?.build ?? "unknown"}; generated: ${report.generatedAt}; served from ${report.subpath}.`,
     "",
-    "Chrome is the distance from viewport top to the visible workspace plus any fixed bottom dock. Visible-control count excludes hidden and fully clipped controls, and includes disabled controls. Control overlaps exclude parent/child controls and intersections across intentional overlay layers. Canvas-label overlaps compare visible controls against Piano Roll bar/pitch labels, excluding controls inside an open panel or menu overlay. Clipping includes viewport and overflow-ancestor clipping; unreachable clips are targets without a scrollable ancestor.",
+    "Chrome is the distance from viewport top to the visible workspace plus any fixed bottom dock. Visible-control count excludes hidden and fully clipped controls, and includes disabled controls. Click-to-reveal counts matching common controls hidden by closed disclosures, panels, hidden ancestors, or CSS visibility rules. Control overlaps exclude parent/child controls and intersections across intentional overlay layers. Canvas-label overlaps compare visible controls against Piano Roll bar/pitch labels, excluding controls inside an open panel or menu overlay. Clipping includes viewport and overflow-ancestor clipping; unreachable clips are targets without a scrollable ancestor.",
     "",
-    "| Viewport | Theme | State | Screenshot | Chrome px (%) | Visible controls | `<details>` | Control overlaps | Canvas label overlaps | Clipped controls | Unreachable clips |",
-    "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
-    ...cells.map(cell => `| ${cell.width}×${cell.height} | ${cell.theme} | ${cell.stateLabel} | [Screenshot](${path.basename(cell.screenshot)}) | ${cell.chrome.totalPx} (${cell.chrome.percent}%) | ${cell.visibleControls} | ${cell.detailsCount} | ${cell.overlapCount} | ${cell.canvasLabelOverlapCount} | ${cell.clippedCount} | ${cell.unreachableClipCount} |`),
+    "| Viewport | Theme | State | Screenshot | Chrome px (%) | Visible controls | Visible primary | Click-to-reveal | `<details>` | Control overlaps | Canvas label overlaps | Clipped controls | Unreachable clips |",
+    "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ...cells.map(cell => `| ${cell.width}×${cell.height} | ${cell.theme} | ${cell.stateLabel} | ${cell.screenshot ? `[Screenshot](${path.basename(cell.screenshot)})` : "—"} | ${cell.chrome.totalPx} (${cell.chrome.percent}%) | ${cell.visibleControls} | ${cell.visiblePrimaryCount} | ${cell.clickToRevealCount} | ${cell.detailsCount} | ${cell.overlapCount} | ${cell.canvasLabelOverlapCount} | ${cell.clippedCount} | ${cell.unreachableClipCount} |`),
     "",
     `Cell count: ${cells.length}/${report.expectedCellCount}. Failures: ${failures.length}.`,
     "",
@@ -353,7 +427,7 @@ export async function runUiAudit({ out = "docs/ui-audit/generated", basePath = "
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const options = parseArgs(process.argv.slice(2));
-  if (options.help) process.stdout.write("Usage: npm run ui-audit -- [--out PATH] [--base-path /melodi/] [--port 4173]\n");
+  if (options.help) process.stdout.write("Usage: npm run ui-audit -- [--out PATH] [--base-path /melodi/] [--port 4173] [--screenshots state,state,...]\n");
   else runUiAudit(options).then(report => {
     process.stdout.write(`Saved ${report.cellCount} cells to ${path.resolve(ROOT, options.out)}\n`);
   }).catch(error => {

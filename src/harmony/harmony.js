@@ -1,4 +1,4 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261003.74";
+import { MelodiError, PPQ } from "../core/model.js?v=20261003.75";
 
 const MAJOR = "0,2,4,5,7,9,11";
 const MINOR = "0,2,3,5,7,8,10";

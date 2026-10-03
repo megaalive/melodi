@@ -75,12 +75,12 @@ test("modul DOM di daftar pengecualian memang ada dan tetap ada di sana", () => 
   }
 });
 
-test("entry assets GitHub Pages memakai build token yang sama", () => {
+test("entry app and styles use the build token while the vendored script remains versioned", () => {
   const html = readFileSync(resolve("index.html"), "utf8");
   const build = /<meta name="melodi-build" content="([^"]+)">/.exec(html)?.[1];
   assert.ok(build, "melodi-build harus ada");
   assert.ok(html.includes("styles/app.css?v=" + build));
-  assert.ok(html.includes("vendor/abcjs/abcjs-basic-min.js?v=" + build));
+  assert.match(html, /vendor\/abcjs\/abcjs-basic-min\.js\?v=[\w.-]+/);
   assert.ok(html.includes("src/app.js?v=" + build));
 
   const app = readFileSync(resolve("src/app.js"), "utf8");
@@ -218,6 +218,10 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   assert.match(studio, /transportSettings\.append\(moreMenu\)/);
   assert.match(studio, /mobileDock\.append\(transportDock, modeNav\)/);
   assert.match(studio, /header\.insertBefore\(modeNav, headerActions\)/);
+  assert.match(studio, /const directProjectActions = \['new-song', 'open-project-file', 'save-project-file', 'share-song'\]/);
+  assert.match(studio, /headerActions\.append\(projectMenu, headerControls\)/);
+  assert.match(studio, /projectSummaryLabel\.dataset\.copy = 'projectMoreLabel'/);
+  assert.match(studio, /const wide = matchMedia\('\(width >= 68rem\)'\)/);
   const toolbarActionsStart = html.indexOf('class="studio-toolbar-actions"');
   const panelSwitchesStart = html.indexOf('id="studio-panel-switches"');
   const moreStart = html.indexOf('<details class="studio-more"', toolbarActionsStart);
@@ -278,7 +282,7 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   assert.match(app, /element\.setAttribute\("title", label\)/);
 
   const iconButtons = [...html.matchAll(/<button\b[^>]*class="[^"]*\bicon-button\b[^"]*"[^>]*>([\s\S]*?)<\/button>/g)];
-  assert.equal(iconButtons.length, 1, "header keeps only the command-palette icon; project actions live in one menu");
+  assert.equal(iconButtons.length, 1, "header keeps one explicit icon button for the command palette; project actions use the direct desktop action group");
   for (const [, button] of iconButtons) {
     assert.match(button, /<svg[^>]*aria-hidden="true"/);
   }
