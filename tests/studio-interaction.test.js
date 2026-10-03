@@ -146,6 +146,11 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
   nodes.get('.pane-title-row').append(nodes.get('#editor-toolbar'), node('#guitar-layer-slot'));
   nodes.get('#editor-toolbar').append(nodes.get('.editor-tool-group'));
   nodes.get('#guitar-section').append(nodes.get('.guitar-local-toolbar'));
+  const guitarTabScroll = node('#guitar-tab-scroll');
+  const guitarFretboardScroll = node('#guitar-scroll');
+  guitarTabScroll.hidden = false;
+  guitarFretboardScroll.hidden = true;
+  nodes.get('#guitar-section').append(guitarTabScroll, guitarFretboardScroll);
   nodes.get('#mobile-workspace-dock').hidden = false;
   const mixerTrigger = node('button[data-studio-panel="mixer"]', 'button'); mixerTrigger.dataset.studioPanel = 'mixer';
   const chordTrigger = node('button[data-studio-panel="chords"]', 'button'); chordTrigger.dataset.studioPanel = 'chords';
@@ -182,6 +187,7 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
       return prevented;
     },
     edit, notation, rhythm, lyrics,
+    guitarTabScroll, guitarFretboardScroll,
   media: media(narrow), landscapeMedia: media(landscape),
     wideMedia: media(wide),
     dockMedia: media(dockCapable)
@@ -192,6 +198,11 @@ const matchFixtureMedia = (setup, query) => query.includes('width >= 68rem')
   ? setup.wideMedia
   : query.includes('width >= 56rem') ? setup.dockMedia
     : query.startsWith('(orientation') ? setup.landscapeMedia : setup.media;
+
+const isVisibleInTree = element => {
+  for (let current = element; current; current = current.parent) if (current.hidden) return false;
+  return true;
+};
 
 test('selected-note Velocity maps to the existing note volume field', () => {
   assert.equal(noteVolumeForVelocity(64), 64 / 127);
@@ -315,6 +326,13 @@ test('Guitar is a direct, reversible toggle in the Edit toolbar', () => {
     assert.equal(setup.guitar.parent, setup.nodes.get('.pane-title-row'));
     assert.equal(setup.guitar.attributes.get('aria-pressed'), 'true');
     assert.equal(setup.guitar.dataset.entity, 'guitar-layer-toggle');
+    const guitarSection = setup.nodes.get('#guitar-section');
+    assert.equal(guitarSection.parent, setup.nodes.get('.workspace-sidebar'), 'phone Guitar content is a sheet body, not Alat content');
+    assert.equal(setup.nodes.get('#tools-panel').hidden, true, 'the phone Guitar sheet does not expose Alat');
+    assert.equal(setup.nodes.get('.studio-panel-switches').hidden, true, 'the Guitar sheet hides the unrelated Alat tab row');
+    assert.equal(setup.guitarTabScroll.parent, guitarSection);
+    assert.equal(setup.guitarTabScroll.hidden, false);
+    assert.equal(isVisibleInTree(setup.guitarTabScroll), true, 'TAB is visible through every sheet ancestor');
     setup.click(setup.guitar);
     workspace.render(commands.getSong(), commands.getState());
     assert.equal(commands.getState().view.mode, 'piano-roll');
@@ -347,6 +365,26 @@ test('mobile Panel opens a four-tab sheet and restores focus to its dock trigger
     assert.equal(setup.doc.body.dataset.studioPanel, 'none');
     assert.equal(panelButton.attributes.get('aria-expanded'), 'false');
     assert.equal(setup.doc.activeElement, panelButton);
+  } finally { Object.assign(globalThis, previous); }
+});
+
+test('mobile Guitar API mode shows its guitar payload without exposing the Alat panel', () => {
+  const previous = { document: globalThis.document, matchMedia: globalThis.matchMedia };
+  const setup = fixture(true);
+  globalThis.document = setup.doc;
+  globalThis.matchMedia = query => matchFixtureMedia(setup, query);
+  try {
+    const commands = createCommands(createBlankSong());
+    const workspace = createStudioWorkspace(commands, key => key, error => { throw error; });
+    commands.setViewMode('guitar');
+    workspace.render(commands.getSong(), commands.getState(), false);
+    const guitarSection = setup.nodes.get('#guitar-section');
+    assert.equal(commands.getState().view.mode, 'guitar', 'the public setViewMode contract is preserved');
+    assert.equal(setup.doc.body.dataset.studioWorkspace, 'edit');
+    assert.equal(guitarSection.parent, setup.nodes.get('.workspace-sidebar'));
+    assert.equal(setup.nodes.get('#tools-panel').hidden, true);
+    assert.equal(isVisibleInTree(setup.guitarTabScroll) || isVisibleInTree(setup.guitarFretboardScroll), true);
+    assert.equal(setup.nodes.get('#studio-panel-title').textContent, 'guitarHeading');
   } finally { Object.assign(globalThis, previous); }
 });
 
@@ -486,6 +524,28 @@ test('wide dock tabs stay open, expose their selected panels, and persist close/
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, false);
     assert.equal(setup.doc.body.dataset.studioPanel, 'tools');
     assert.equal(changes.at(-1).dockOpen, true);
+  } finally { Object.assign(globalThis, previous); }
+});
+
+test('mobile setViewMode("guitar") opens a true Guitar sheet with TAB or Fretboard', () => {
+  const previous = { document: globalThis.document, matchMedia: globalThis.matchMedia };
+  const setup = fixture(true);
+  globalThis.document = setup.doc;
+  globalThis.matchMedia = query => matchFixtureMedia(setup, query);
+  try {
+    const commands = createCommands(createBlankSong());
+    const workspace = createStudioWorkspace(commands, key => key, error => { throw error; });
+    commands.setViewMode('guitar');
+    workspace.render(commands.getSong(), commands.getState(), false);
+    const guitarSection = setup.nodes.get('#guitar-section');
+    assert.equal(commands.getState().view.mode, 'guitar', 'the public view command remains accepted');
+    assert.equal(setup.doc.body.dataset.studioWorkspace, 'edit');
+    assert.equal(setup.doc.body.dataset.studioPanel, 'guitar');
+    assert.equal(guitarSection.parent, setup.nodes.get('.workspace-sidebar'));
+    assert.equal(guitarSection.hidden, false);
+    assert.equal(setup.nodes.get('#tools-panel').hidden, true);
+    assert.equal(isVisibleInTree(setup.guitarTabScroll) || isVisibleInTree(setup.guitarFretboardScroll), true);
+    assert.equal(setup.nodes.get('#studio-panel-title').textContent, 'guitarHeading');
   } finally { Object.assign(globalThis, previous); }
 });
 

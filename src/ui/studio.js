@@ -682,6 +682,11 @@ export function createStudioWorkspace(commands, translate, onError, {
     lastChord = state.selectedChordId;
     const mode = state.view.mode;
     const guitarInspector = mode === 'guitar';
+    const guitarPhoneSheet = phone.matches && guitarInspector;
+    if (guitarSection) {
+      if (guitarPhoneSheet) sidebar.append(guitarSection);
+      else if (toolsContent && guitarSection.parentElement !== toolsContent) toolsContent.append(guitarSection);
+    }
     if (guitarInspector && previousViewMode !== 'guitar' && sideDock.matches && dockOpen) panel = lastPanel = 'tools';
     previousViewMode = mode;
     document.body.dataset.studioPanel = panel ?? (guitarInspector ? 'guitar' : 'none');
@@ -720,7 +725,8 @@ export function createStudioWorkspace(commands, translate, onError, {
     byId('studio-mixer').hidden = panel !== 'mixer';
     byId('harmony-panel').hidden = panel !== 'chords';
     byId('generation-panel').hidden = panel !== 'generate';
-    toolsPanel.hidden = tabValue !== 'tools';
+    toolsPanel.hidden = tabValue !== 'tools' || guitarPhoneSheet;
+    panelSwitches.hidden = guitarPhoneSheet;
     byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',tools:'toolsHeading',expression:'expressionHeading','drum-expression':'percussionExpressionHeading',guitar:'guitarHeading'})[panel ?? (guitarInspector ? 'guitar' : null)] ?? 'studioPanels');
     panelDockTrigger.textContent = translate('studioPanelsButton');
     panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
