@@ -88,7 +88,12 @@ kandidat, dan Mixer untuk lima viewport serta dua tema tercakup di tabel ini.
 
 ## Verifikasi dan deploy
 
-- `npm test`: lulus, 521/521.
-- `npm run check`: lulus.
-- CI dan GitHub Pages: menunggu push build `.78`; bukti URL/run akan ditambahkan
-  setelah deploy terverifikasi.
+- `npm test`: lulus, 521/521; `npm run check`: lulus.
+- [CI run 37107301439](https://github.com/megaalive/melodi/actions/runs/37107301439)
+  dan [Pages deployment 37107300886](https://github.com/megaalive/melodi/actions/runs/37107300886)
+  selesai sukses untuk commit `cb6876f`.
+- GET tanpa cache ke [GitHub Pages](https://megaalive.github.io/melodi/?codexverify=20261003.78)
+  pada 2026-10-03 07:44 UTC merespons HTTP 200. Meta build dan URL `app.css`/
+  `src/app.js` memakai `.78`; stylesheet tersebut mengimpor `base.css`,
+  `studio.css`, dan `responsive.css` dengan token `.78`. HTML/CSS tidak memuat
+  token `.77`.
