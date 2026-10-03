@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261003.71">
+    <meta name="melodi-build" content="20261003.72">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.71">
-    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.71"></script>
-    <script type="module" src="./src/app.js?v=20261003.71"></script>
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.72">
+    <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.72"></script>
+    <script type="module" src="./src/app.js?v=20261003.72"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -142,15 +142,14 @@
           <button type="button" data-action="set-view-mode" data-studio-workspace="rhythm" data-studio-view="drums" data-copy="studioWorkspaceRhythm" aria-pressed="false"></button>
         </nav>
         <div class="studio-toolbar-actions">
+          <div id="studio-panel-switches" class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
+            <button id="studio-panel-mixer-tab" type="button" data-studio-panel="mixer" data-copy="studioMixer" aria-pressed="false" aria-controls="studio-mixer"></button>
+            <button id="studio-panel-chords-tab" type="button" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-pressed="false" aria-controls="harmony-panel"></button>
+            <button id="studio-panel-generate-tab" type="button" data-studio-panel="generate" data-copy="studioGenerate" aria-pressed="false" aria-controls="generation-panel"></button>
+          </div>
           <details class="studio-more">
             <summary data-aria-copy="transportAdvanced"><span data-copy="transportAdvanced"></span></summary>
             <div class="studio-more-popover">
-              <button type="button" data-action="set-view-mode" data-studio-view="guitar" data-copy="viewGuitarOption" aria-pressed="false"></button>
-              <div class="studio-panel-switches" role="group" data-aria-copy="studioPanels">
-                <button type="button" data-studio-panel="mixer" data-copy="studioMixer" aria-pressed="false" aria-controls="studio-mixer"></button>
-                <button type="button" data-studio-panel="chords" data-copy="harmonyLaneLabel" aria-pressed="false" aria-controls="harmony-panel"></button>
-                <button type="button" data-studio-panel="generate" data-copy="studioGenerate" aria-pressed="false" aria-controls="generation-panel"></button>
-              </div>
               <button type="button" class="menu-sheet-close" data-sheet-close data-copy="closeButton"></button>
             </div>
           </details>
@@ -171,6 +170,7 @@
               <div class="pane-title-row">
                 <h2 id="piano-roll-heading" data-copy="pianoRollHeading"></h2>
                 <p id="piano-roll-collapse-summary" class="collapsed-panel-summary" hidden></p>
+                <button id="guitar-mode-toggle" type="button" class="secondary guitar-mode-toggle" data-studio-view="guitar" data-entity="guitar-layer-toggle" data-copy="viewGuitarOption" data-aria-copy="viewGuitarOption" aria-pressed="false"></button>
                 <button type="button" class="pane-help-trigger secondary" data-action="show-help" data-aria-copy="pianoRollHelpButton" aria-controls="context-help-dialog">?</button>
               </div>
               <div id="editor-toolbar" class="editor-toolbar" data-aria-copy="pianoRollControlsLabel">
@@ -506,11 +506,11 @@
           </section>
         </div>
 
-        <aside class="workspace-sidebar" aria-label="Editor tools">
+        <aside id="workspace-sidebar" class="workspace-sidebar" data-aria-copy="studioPanels">
           <div class="studio-inspector-head"><strong id="studio-panel-title"></strong><div class="mobile-panel-peek-actions" role="group" data-aria-copy="studioPanels"></div><button type="button" class="secondary" data-studio-close data-aria-copy="studioClose">×</button></div>
           <section id="studio-drum-expression" hidden></section>
-          <section id="studio-mixer" class="inspector-card" hidden><h2 data-copy="studioMixer"></h2><p class="muted" data-copy="studioMixerHelp"></p><div id="studio-mixer-channels"></div></section>
-          <section id="harmony-panel" class="inspector-card harmony-card" aria-labelledby="harmony-heading">
+          <section id="studio-mixer" class="inspector-card" role="tabpanel" aria-labelledby="studio-mixer-heading" hidden><h2 id="studio-mixer-heading" data-copy="studioMixer"></h2><p class="muted" data-copy="studioMixerHelp"></p><div id="studio-mixer-channels"></div></section>
+          <section id="harmony-panel" class="inspector-card harmony-card" role="tabpanel" aria-labelledby="harmony-heading">
             <h2 id="harmony-heading" data-copy="harmonyHeading"></h2><p class="muted" data-copy="harmonyHelp"></p>
             <div class="sketch-controls" data-entity="sketch-controls">
               <fieldset data-entity="sketch-channel" data-channel-id="harmony"><legend data-copy="sketchHarmony"></legend>
@@ -532,7 +532,7 @@
               <div class="harmony-actions"><button type="submit" data-copy="harmonySave"></button><button type="button" class="secondary" data-action="new-chord" data-copy="harmonyNew"></button></div></form></details>
           </section>
 
-          <section id="generation-panel" class="inspector-card" aria-labelledby="generation-heading" hidden>
+          <section id="generation-panel" class="inspector-card" role="tabpanel" aria-labelledby="generation-heading" hidden>
             <div class="inspector-heading">
               <h2 id="generation-heading" data-copy="generationHeading"></h2>
               <p data-copy="generationHelp"></p>

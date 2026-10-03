@@ -41,7 +41,8 @@ test("view tabs replace the duplicate select and retain the old hooks", () => {
 
   const tabModes = [...html.matchAll(/data-studio-view="([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual([...new Set(tabModes)].sort(), [...legacyModes].sort());
-  assert.equal((html.match(/data-action="set-view-mode"/g) ?? []).length, legacyModes.length);
+  assert.equal((html.match(/data-action="set-view-mode"/g) ?? []).length, legacyModes.length - 1);
+  assert.match(html, /id="guitar-mode-toggle"[^>]*data-studio-view="guitar"/);
   assert.match(html, /data-studio-view="piano-roll"[^>]*data-focus-key="view-piano-roll"/);
   assert.match(app, /target\.dataset\.action === "set-view-mode"[\s\S]*?target\.dataset\.studioView/);
   assert.match(app, /focusFallback: "view-piano-roll"/);

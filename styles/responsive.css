@@ -190,6 +190,7 @@
   .studio .zoom-control { flex: 0 0 auto; }
   .studio .zoom-control output { width: auto; }
   .studio .editor-toolbar button, .studio .editor-toolbar select { min-height: 44px; font-size: var(--text-xs); }
+  .studio .pane-title-row > .guitar-mode-toggle { min-height: 44px; padding: 3px 7px; font-size: var(--text-xs); }
   .studio .panel-collapse-button { min-height: 44px; width: 44px; }
   .studio #roll-zoom { width: 50px; min-height: 44px; }
   .studio .editor-toolbar label:has(#snap-select) > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
@@ -1056,13 +1057,14 @@
   .studio .mobile-workspace-dock > .studio-views { width: 100%; height: 44px; flex: 0 0 44px; flex-direction: row; align-items: stretch; }
   .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; width: auto; min-width: 0; min-height: 44px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 12px; line-height: 1.1; white-space: nowrap; overflow-wrap: normal; }
   .studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-left-color: transparent; }
+  .studio .mobile-workspace-dock .studio-views > .mobile-panel-trigger { flex: 0 0 68px; min-width: 68px; border-top: 0; border-left: 1px solid var(--border); font-weight: 650; }
   .studio .mobile-workspace-dock .transport-main { height: 44px; gap: 8px; }
   .studio .mobile-workspace-dock .studio-overview { display: flex !important; flex: 1 1 auto; min-width: 90px; height: 44px; }
   .studio .mobile-workspace-dock .playback-settings-group { flex-wrap: nowrap; gap: 4px; padding: 0; }
   .studio .mobile-workspace-dock .transport-advanced > summary > span,
   .studio .mobile-workspace-dock .studio-more > summary > [data-copy],
   .studio .mobile-workspace-dock .project-menu-trigger > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .studio .mobile-workspace-dock .studio-more > summary::after { content: "⌄"; margin-left: 3px; font-size: 12px; }
+  .studio .mobile-workspace-dock .studio-more > summary::after { content: none; margin-left: 0; }
   .studio .mobile-workspace-dock .studio-more > summary { width: auto; min-width: 76px; padding-inline: 7px; }
   .studio .mobile-workspace-dock .studio-more > summary > [data-copy] { position: static; width: auto; height: auto; padding: 0; margin: 0; overflow: visible; clip-path: none; }
   .studio .mobile-workspace-dock .project-menu-trigger { width: 44px; min-width: 44px; padding: 4px; }
@@ -1083,6 +1085,8 @@
   .studio .studio-toolbar-actions .editor-toolbar { display: flex; flex: 0 0 auto; align-items: center; flex-flow: row nowrap; min-width: max-content; min-height: 44px; gap: 6px; overflow: visible; }
   .studio .editor-tool-group { display: flex; flex: 0 0 auto; flex-direction: row; gap: 2px; width: auto; border: 0; }
   .studio .editor-tool-group button, .studio .editor-toolbar button, .studio .editor-toolbar select { min-height: 44px; }
+  .studio .studio-toolbar-actions .guitar-mode-toggle { min-height: 44px; padding: 3px 7px; }
+  .studio .mobile-workspace-dock .transport-main > .mobile-panel-trigger { flex: 0 0 68px; min-width: 68px; min-height: 44px; padding-inline: 5px; }
   .studio .editor-tool-group button { min-width: 44px; padding: 3px 6px; }
   .studio .editor-toolbar label { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; white-space: nowrap; }
   .studio .editor-toolbar .zoom-control { gap: 3px; }
@@ -1100,7 +1104,7 @@
   .studio .mobile-workspace-dock .playback-settings-group { flex: 0 0 auto; flex-wrap: nowrap; gap: 5px; padding: 0; }
   .studio .mobile-workspace-dock .studio-more > summary { width: auto; min-width: 76px; min-height: 44px; padding: 3px 7px; }
   .studio .mobile-workspace-dock .studio-more > summary > [data-copy] { position: static; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; clip-path: none; }
-  .studio .mobile-workspace-dock .studio-more > summary::after { content: "⌄"; margin-left: 3px; }
+  .studio .mobile-workspace-dock .studio-more > summary::after { content: none; margin-left: 0; }
   .studio .workspace-grid, .studio .workspace-canvas, .studio #piano-roll-section { height: 100%; min-height: 0; overflow: hidden; }
   .studio .workspace-canvas { flex: 1 1 auto; }
   .studio .workspace-pane { flex: 1 1 auto; min-height: 0; padding: 0; overflow: hidden; }

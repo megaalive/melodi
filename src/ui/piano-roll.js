@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.71";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.72";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261003.71";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261003.71";
-import { harmonyChordSymbol } from "./harmony.js?v=20261003.71";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261003.72";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261003.72";
+import { harmonyChordSymbol } from "./harmony.js?v=20261003.72";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -555,9 +555,22 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       svgElement("rect", { x, y: PIANO_RULER_HEIGHT, width: geometry.barTicks * geometry.pixelsPerQuarter / geometry.ppq,
         height: HARMONY_LANE_HEIGHT, class: "roll-row", stroke: "var(--border)", "stroke-width": 1 }, bar);
     }
-    for (const chord of song.chords ?? []) {
+    const visibleChords = (song.chords ?? []).filter(chord => chord.startTick < geometry.endTick
+      && chord.startTick + chord.durationTicks > geometry.startTick);
+    if (!visibleChords.length) {
+      svgElement("text", {
+        x: geometry.labelWidth + 12,
+        y: PIANO_RULER_HEIGHT + 27,
+        class: "roll-chord-lane-hint",
+        fill: "var(--text-muted)",
+        "font-size": 12,
+        "pointer-events": "none",
+        "data-entity": "chord-lane-empty-hint",
+        role: "note"
+      }, chordLane, translate("harmonyLaneEmptyHint"));
+    }
+    for (const chord of visibleChords) {
       const end = chord.startTick + chord.durationTicks;
-      if (end <= geometry.startTick || chord.startTick >= geometry.endTick) continue;
       const x = tickToX(Math.max(chord.startTick, geometry.startTick), geometry);
       const width = (Math.min(end, geometry.endTick) - Math.max(chord.startTick, geometry.startTick)) * geometry.pixelsPerQuarter / geometry.ppq;
       const selectedChord = state.selectedChordId === chord.id;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createPianoRollView, tickToX, chordSnapTicks, chordGesturePatch, chordDrawRange, PIANO_RULER_HEIGHT } from '../src/ui/piano-roll.js';
 import { createBlankSong } from '../src/core/model.js';
 import { createCommands } from '../src/core/commands.js';
+import { MESSAGES } from '../src/i18n/messages.js';
 
 class Element {
   constructor(tag) { this.tagName=tag; this.children=[]; this.dataset={}; this.attrs={}; this.listeners={}; this.scrollLeft=0; this.scrollTop=0; this.clientWidth=900; this.clientHeight=600; }
@@ -26,12 +27,12 @@ class Element {
 }
 globalThis.document={createElementNS:(_ns,tag)=>new Element(tag)};
 
-function setup({chords=[],tool='select',zoom=1,numerator=6,denominator=8}={}) {
+function setup({chords=[],tool='select',zoom=1,numerator=6,denominator=8,translate=key=>key}={}) {
   const song={key:'Am',notes:[{id:'n',pitch:69,startTick:0,durationTicks:2880}],chords,tracks:[],timing:{ppq:480,timeSignature:{numerator,denominator}}};
   const state={selectedNoteIds:[],selectedChordId:null,editor:{tool,snap:'1/8',chordSnap:'bar',zoom},playback:{currentTick:0,status:'stopped'}};
   const calls=[]; const scroll=new Element('div'); const svg=new Element('svg'); scroll.append(svg);
   const commands={getSong:()=>song,getState:()=>state,getSelectedNoteIds:()=>[],selectChord:id=>{state.selectedChordId=id;calls.push(['select',id]);},setHarmonyRange:(start,end)=>{state.harmonyRange={startTick:start,endTick:end};calls.push(['range',start,end]);},addChord:input=>{const chord={...input,id:'new',locked:false};song.chords.push(chord);calls.push(['add',input]);return chord;},updateChord:(id,patch)=>{Object.assign(song.chords.find(chord=>chord.id===id),patch);calls.push(['update',id,patch]);}};
-  const view=createPianoRollView(svg,commands,{onChordContextMenu:(chord,event)=>calls.push(['context',chord.id,event.clientX])}); view.render(song,state);
+  const view=createPianoRollView(svg,commands,{onChordContextMenu:(chord,event)=>calls.push(['context',chord.id,event.clientX]),translate}); view.render(song,state);
   const dispatch=(type,target,x)=>svg.dispatch(type,{target,clientX:x,clientY:50});
   return {song,state,svg,scroll,view,calls,dispatch};
 }
@@ -78,14 +79,22 @@ test('Adjacent move resize and visible draw defaults succeed through real canoni
   assert.deepEqual(s.errors,[]);
 });
 
-test('empty chord lane remains visible and shares meter bar geometry above pitches',()=>{
-  const {svg,view}=setup(); const g=view.getGeometry();
-  assert.ok(svg.querySelector('[data-entity="harmony-lane"]'));
-  const bars=svg.querySelectorAll('[data-entity="harmony-bar"]');
-  assert.equal(bars[0].dataset.endTick,'1440');
-  assert.equal(Number(bars[1].children[0].getAttribute('x')),tickToX(1440,g));
-  assert.equal(g.top,78);
-  assert.equal(Number(svg.querySelector('[data-entity="timeline-ruler"]').getAttribute('height')),PIANO_RULER_HEIGHT);
+test('empty chord lane shows localized hint and keeps meter bar geometry above pitches',()=>{
+  for (const language of ['id','en']) {
+    const {svg,view}=setup({translate:key=>MESSAGES[language][key]??key}); const g=view.getGeometry();
+    assert.ok(svg.querySelector('[data-entity="harmony-lane"]'));
+    const hint=svg.querySelector('[data-entity="chord-lane-empty-hint"]');
+    assert.ok(hint);
+    assert.equal(hint.textContent,MESSAGES[language].harmonyLaneEmptyHint);
+    assert.equal(Number(hint.getAttribute('y')),PIANO_RULER_HEIGHT+27);
+    const bars=svg.querySelectorAll('[data-entity="harmony-bar"]');
+    assert.equal(bars[0].dataset.endTick,'1440');
+    assert.equal(Number(bars[1].children[0].getAttribute('x')),tickToX(1440,g));
+    assert.equal(g.top,78);
+    assert.equal(Number(svg.querySelector('[data-entity="timeline-ruler"]').getAttribute('height')),PIANO_RULER_HEIGHT);
+  }
+  const populated=setup({chords:[chord()]});
+  assert.equal(populated.svg.querySelector('[data-entity="chord-lane-empty-hint"]'),null);
 });
 
 test('chord geometry, zoom, locked and selected hooks remain aligned during scroll',()=>{
