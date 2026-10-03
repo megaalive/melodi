@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "check": "node tools/check.mjs",
-    "ui-audit": "node tools/ui-audit.mjs"
+    "ui-audit": "node tools/ui-audit.mjs",
+    "css-audit": "node tools/css-audit.mjs"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

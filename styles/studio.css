@@ -73,14 +73,13 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio-views button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 550; min-height: 36px; padding: 7px 14px 5px; white-space: nowrap; }
 .studio-views button[aria-pressed="true"] { background: var(--surface); color: var(--text); border-bottom-color: var(--studio-accent); }
 .studio-toolbar-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
-.studio-toolbar-actions button, .studio .playback-settings-group > button[data-studio-panel] { min-height: 36px; padding: 5px 9px; border: 1px solid transparent; background: transparent; color: var(--text-muted); font-weight: 550; white-space: nowrap; }
-.studio-toolbar-actions button:hover, .studio .playback-settings-group > button[data-studio-panel]:hover { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
-.studio-toolbar-actions button[aria-pressed="true"], .studio .playback-settings-group > button[data-studio-panel][aria-pressed="true"] { border-color: var(--studio-accent); background: var(--surface); color: var(--studio-accent); }
+.studio-toolbar-actions button { min-height: 36px; padding: 5px 9px; border: 1px solid transparent; background: transparent; color: var(--text-muted); font-weight: 550; white-space: nowrap; }
+.studio-toolbar-actions button:hover { background: var(--surface); border-color: var(--border-strong); color: var(--text); }
+.studio-toolbar-actions button[aria-pressed="true"] { border-color: var(--studio-accent); background: var(--surface); color: var(--studio-accent); }
 .studio-toolbar-actions .project-menu-trigger { min-height: 44px; padding: 4px 7px; }
 .studio-more { position: relative; flex: 0 0 auto; }
 .studio-more > summary { display: flex; align-items: center; justify-content: center; min-height: 36px; padding: 7px 14px 5px; border-bottom: 3px solid transparent; color: var(--text-muted); cursor: pointer; font-size: 13px; font-weight: 550; list-style: none; white-space: nowrap; }
 .studio-more > summary::after { content: none; }
-.studio-more > summary[data-active-view="guitar"] { color: var(--text); border-bottom-color: var(--studio-accent); background: var(--accent-soft); }
 .studio-more > summary::-webkit-details-marker { display: none; }
 .studio-more-popover { position: absolute; top: calc(100% + 8px); right: 0; z-index: 80; width: 240px; max-height: 65dvh; overflow-y: auto; display: grid; gap: 8px; padding: 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface); box-shadow: 0 8px 30px #0003; }
 .studio-more-popover > button { width: 100%; min-height: 40px; text-align: left; }
@@ -99,8 +98,6 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio-overview-current { fill: var(--accent-soft); opacity: .85; }
 .studio-overview-barline { stroke: var(--border); stroke-width: .24; }
 .studio-overview-note { fill: var(--accent); opacity: .7; }
-.studio-overview-chord { fill: #bd8845; }
-.studio-overview-drum { fill: #8c789f; }
 .studio .workspace-grid { grid-template-columns: minmax(0,1fr); gap: 0; margin-top: 0; border: 1px solid var(--border-strong); border-top: 0; background: var(--surface); }
 .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0,1fr) 280px; }
 .studio .app-shell { display: flex; flex-direction: column; height: calc(100dvh - 40px); min-height: 0; padding-bottom: 0; }
@@ -582,7 +579,6 @@ button.danger-button:hover:not(:disabled) { background: var(--danger); color: va
   overflow: hidden; color: var(--text-muted); font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap;
 }
 .studio #piano-roll-content > .candidate-dock #lock-accepted-notes { order: 1; }
-.studio #piano-roll-content > .candidate-dock #regenerate-gap { }
 .studio #piano-roll-content > .candidate-dock .candidate-navigation button[data-direction="1"] { order: 3; }
 .studio #piano-roll-content > .candidate-dock .candidate-active-accept { order: 4; }
 .studio #piano-roll-content > .candidate-dock #lock-accepted-notes { order: 5; }

@@ -53,7 +53,6 @@
   .drum-row-mix-button { min-width: 44px; min-height: 44px; }
 }
 @media (width < 68rem) {
-  .workspace-grid { }
   .workspace-sidebar {
     max-height: none;
     overflow: visible;
@@ -62,7 +61,6 @@
   #generation-panel { grid-column: 1 / -1; }
   .transport-dock { position: static; box-shadow: none; }
   .tempo-control { margin-left: 0; }
-  .workspace-grid { }
   .workspace-sidebar {
     position: static;
     display: grid;
@@ -115,17 +113,13 @@
   }
   .drum-row-mix-button { min-width: 44px; min-height: 44px; }
   .studio .page-header { gap: 6px; overflow: visible; }
-  .studio .header-actions { }
   .studio .header-actions .project-menu-trigger { min-height: 34px; padding: 3px 6px; font-size: var(--text-xs); }
   .studio .brand-block { flex: 1; }
   .studio .brand-block h1 { font-size: 15px; }
   .studio .brand-block h1::after { display: none; }
-  .studio .song-strip { }
-  .studio .app-shell { }
   .studio .song-strip { gap: 4px; min-height: 44px; padding: 0; display: block; }
   .studio .song-summary { gap: 8px; flex-wrap: nowrap; }
   .studio .song-summary dd { font-size: var(--text-2xs); }
-  .studio .song-summary { }
   .studio #song-title { font-size: var(--text-sm); }
   .studio .song-summary dt { display: none; }
   .studio .workspace-chrome { position: static; inset: auto; width: 100%; border-radius: 0; padding: 0; }
@@ -135,8 +129,6 @@
   .studio .transport-main > .studio-overview .studio-overview-label { display: none; }
   .studio .transport-main > .studio-overview .studio-overview-track { min-height: 44px; }
   .studio .transport-action-group { gap: 5px; flex: 0 0 auto; min-width: 0; flex-wrap: nowrap; }
-  .studio .transport-buttons button { }
-  .studio .history-buttons button { }
   .studio .playback-readout { display: none; }
   .studio #playback-readout > div:has(#current-note), .studio #playback-readout > div:has(#current-section) { display: none; }
   .studio .playback-readout dt { display: none; }
@@ -151,14 +143,11 @@
   .studio .transport-advanced-grid { grid-template-columns: 1fr; }
   .studio .transport-advanced-grid input, .studio .transport-advanced-grid button { min-height: 44px; }
   .studio .workspace-chrome .workspace-toolbar { height: 44px; flex-wrap: nowrap; }
-  .studio-views { }
   .studio-views > button { flex: 1 1 44px; min-width: 44px; min-height: 44px; padding: 7px 4px; font-size: var(--text-xs); white-space: normal; line-height: 1.2; }
-  .studio-more { }
   .studio-more > summary { min-width: 44px; min-height: 44px; padding: 7px 4px; font-size: var(--text-xs); }
   .studio-more[open] .studio-more-popover { bottom: calc(100% + 8px); width: min(280px,calc(100vw - 16px)); }
   .studio-toolbar-actions .project-menu[open] .project-menu-popover { top: auto; bottom: calc(100% + 8px); z-index: 90; }
   .studio-more-popover > button { min-height: 44px; text-align: center; }
-  .studio-panel-switches { }
   .studio-panel-switches button { font-size: var(--text-xs); }
   .studio-toolbar-actions button { min-height: 44px; padding: 4px 7px; }
   .studio-overview { height: 24px; }
@@ -171,19 +160,16 @@
   .studio .studio-inspector-head { padding: 4px; min-height: 54px; gap: 3px; }
   .studio .studio-inspector-head button { width: auto; min-width: 44px; min-height: 44px; font-size: var(--text-xs); }
   .studio .workspace-sidebar[data-sheet-size="peek"] { height: 54px; max-height: 54px; }
-  .studio .workspace-sidebar[data-sheet-size="peek"] > :not(.studio-inspector-head) { }
   .studio .workspace-sidebar[data-sheet-size="half"] {
     height: min(39dvh, calc(100dvh - 120px));
     max-height: min(39dvh, calc(100dvh - 120px));
   }
-  .studio .workspace-sidebar button, .studio .workspace-sidebar input, .studio .workspace-sidebar select { }
   .studio .compact-pane-heading { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 5px; }
   .studio .compact-pane-heading .editor-toolbar { grid-column: 1/-1; grid-row: 2; }
   .studio .compact-pane-heading > .panel-collapse-button { grid-column: 2; grid-row: 1; }
   .studio .drums-toolbar { grid-column: 1/-1; grid-row: 2; justify-content: flex-start; }
   .studio .pane-heading { gap: 5px; }
   .studio .pane-title-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
-  .studio .pane-title-row > button[data-studio-panel="chords"] { flex: 0 0 auto; min-height: 36px; padding: 4px 8px; }
   .studio .editor-toolbar { gap: 6px; flex-wrap: wrap; width: 100%; overflow: visible; justify-content: flex-start; }
   .studio .editor-toolbar-group { flex: 0 0 auto; }
   .studio #snap-select { width: 60px; flex: 0 0 60px; }
@@ -207,7 +193,6 @@
   .studio-inspector-head { position: sticky; top: 0; z-index: 1; }
   .studio-inspector-head button { min-height: 44px; width: 44px; }
   .studio .workspace-sidebar button, .studio .workspace-sidebar select { min-height: 44px; }
-  .studio #lyrics-section { }
   .studio .lyrics-form textarea { padding: 12px; }
   .studio #harmony-timeline-tools { gap: 5px; }
   .studio #harmony-location { width: 1px; }
@@ -237,7 +222,6 @@
   .studio .transport-buttons button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
   .studio .history-buttons button { width: 30px; min-width: 30px; height: 30px; min-height: 30px; }
   .studio .playback-settings-group { gap: 3px; padding-left: 3px; }
-  .studio .playback-settings-group > .project-menu { display: none; }
   .studio .playback-settings-group .tempo-control label { min-height: 44px; gap: 2px; }
   .studio #tempo-input { width: 54px; flex-basis: 54px; height: 40px; min-height: 40px; padding: 2px 4px; }
   .studio .loop-toggle { gap: 3px; white-space: nowrap; }
@@ -444,7 +428,6 @@
   .pane-heading { display: block; }
   .editor-toolbar { margin-top: 0.5rem; }
   .piano-roll-scroll { height: 28rem; }
-  .workspace-sidebar { }
   #generation-panel { grid-column: auto; }
   .generation-fields { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
@@ -462,7 +445,6 @@
   .editor-toolbar button { flex: 1 1 7rem; }
   .song-strip { padding-inline: 0; }
   .transport-main { gap: 0.4rem; }
-  .transport-buttons { }
   .transport-buttons button { flex: 0 0 2.45rem; min-width: 2.45rem; }
   .tempo-control { width: auto; flex: 1 1 8rem; }
   .tempo-control label { width: 4.4rem; flex: 0 0 4.4rem; }
@@ -586,9 +568,6 @@
   .song-summary {
     order: 2;
     flex-basis: auto;
-  }
-  .song-strip > button {
-    margin-left: auto;
   }
   .compact-pane-heading {
     display: flex;
@@ -888,7 +867,6 @@
   .studio .playback-readout { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
   .studio #playback-readout > div:has(#current-note), .studio #playback-readout > div:has(#current-section) { display: none; }
   .studio .playback-settings-group { flex-wrap: nowrap; gap: 8px; padding-left: 8px; }
-  .studio .playback-settings-group > .project-menu .project-menu-trigger { min-height: 44px; padding: 4px 6px; }
   .studio .playback-settings-group .tempo-control label { width: auto; min-height: 44px; gap: 4px; }
   .studio #tempo-input { width: 64px; flex-basis: 64px; height: 40px; min-height: 40px; }
   .studio .follow-mode-control { display: none; }
@@ -903,7 +881,6 @@
   .studio-more > summary { min-height: 44px; padding: 3px 2px; font-size: 9px; white-space: normal; }
   .studio-more[open] .studio-more-popover { position: fixed; top: auto; right: auto; bottom: 0; left: 52px; width: 240px; max-height: 65dvh; }
   .studio-more-popover > button, .studio-panel-switches button { min-height: 44px; padding: 4px 7px; }
-  .studio-more > summary[data-active-view="guitar"] { border-bottom-color: transparent; border-left: 3px solid var(--studio-accent); }
   .studio .studio-overview { height: 22px; }
   .studio .studio-overview-label { flex-basis: 56px; padding: 1px 4px; }
   .studio .studio-overview-track { min-height: 22px; }
@@ -1025,7 +1002,6 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
   .studio .help-sheet-card { padding: 1rem; }
-  .studio .playback-settings-group > .project-menu { display: block; }
   .studio #project-menu[open] > .project-menu-popover {
     inset: auto 0 0 52px;
     max-height: 100dvh;
