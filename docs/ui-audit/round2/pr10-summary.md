@@ -26,4 +26,4 @@ Hasil lengkap dan screenshot:
 - [Matriks sesudah PR10](pr10-after/matrix.md)
 - [Data JSON](pr10-after/results.json) · [CSV](pr10-after/results.csv)
 
-Verifikasi: `npm test` lulus (516/516); `npm run check` lulus. Matriks lokal `/melodi/`: 100/100 sel, tanpa kegagalan. Build yang diaudit: `20261003.76`. Bukti GitHub Pages akan dicatat setelah push tahap ini.
+Verifikasi: `npm test` lulus (516/516); `npm run check` lulus. Matriks lokal `/melodi/`: 100/100 sel, tanpa kegagalan. Build yang diaudit: `20261003.76`. CI push `main` [berhasil](https://github.com/megaalive/melodi/actions/runs/37101922649), dan deployment [GitHub Pages selesai](https://github.com/megaalive/melodi/actions/runs/37101921983). Pemeriksaan live pada [megaalive.github.io/melodi](https://megaalive.github.io/melodi/) menghasilkan HTTP 200, meta build `20261003.76`, serta token app/CSS `.76` (abcjs tetap `.74`).
