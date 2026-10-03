@@ -113,7 +113,9 @@
   }
   .drum-row-mix-button { min-width: 44px; min-height: 44px; }
   .studio .page-header { gap: 6px; overflow: visible; }
-  .studio .header-actions .project-menu-trigger { min-height: 34px; padding: 3px 6px; font-size: var(--text-xs); }
+  .studio .header-actions .project-menu-trigger { min-height: 45px; padding: 3px 6px; font-size: var(--text-xs); }
+  .studio .project-menu-popover button { min-height: 44px; }
+  .studio .project-menu-popover .menu-sheet-close { height: 44px; min-height: 44px; flex: 0 0 44px; }
   .studio .brand-block { flex: 1; }
   .studio .brand-block h1 { font-size: 15px; }
   .studio .brand-block h1::after { display: none; }
@@ -141,7 +143,7 @@
   .studio .transport-advanced > summary { font-size: var(--text-xs); }
   .studio .transport-advanced[open] .transport-advanced-grid { bottom: calc(100% + 8px); }
   .studio .transport-advanced-grid { grid-template-columns: 1fr; }
-  .studio .transport-advanced-grid input, .studio .transport-advanced-grid button { min-height: 44px; }
+  .studio .transport-advanced-grid input, .studio .transport-advanced-grid button { height: 44px; min-height: 44px; }
   .studio .workspace-chrome .workspace-toolbar { height: 44px; flex-wrap: nowrap; }
   .studio-views > button { flex: 1 1 44px; min-width: 44px; min-height: 44px; padding: 7px 4px; font-size: var(--text-xs); white-space: normal; line-height: 1.2; }
   .studio-more > summary { min-width: 44px; min-height: 44px; padding: 7px 4px; font-size: var(--text-xs); }
@@ -176,17 +178,34 @@
   .studio .zoom-control { flex: 0 0 auto; }
   .studio .zoom-control output { width: auto; }
   .studio .editor-toolbar button, .studio .editor-toolbar select { min-height: 44px; font-size: var(--text-xs); }
-  .studio .pane-title-row > .guitar-mode-toggle { min-height: 44px; padding: 3px 7px; font-size: var(--text-xs); }
+  .studio .pane-title-row > .guitar-mode-toggle { height: 45px; min-height: 45px; padding: 3px 7px; font-size: var(--text-xs); }
   .studio .panel-collapse-button { min-height: 44px; width: 44px; }
-  .studio #roll-zoom { width: 50px; min-height: 44px; }
+  .studio #roll-zoom { width: 50px; height: 45px; min-height: 45px; }
   .studio .editor-toolbar label:has(#snap-select) > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .studio .editor-toolbar label.zoom-control { gap: 4px; }
   .studio .editor-toolbar .zoom-control > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .studio .zoom-control output { min-width: 2rem; }
-  .studio .harmony-timeline-tools button, .studio .harmony-timeline-tools select, .studio .chord-draw-picker summary { min-height: 36px; }
+  .studio .harmony-timeline-tools button, .studio .harmony-timeline-tools select, .studio .chord-draw-picker summary { min-height: 45px; height: 45px; flex-shrink: 0; }
+  .studio #harmony-editor > summary,
+  .studio .shortcut-help > summary,
+  .studio .generation-options > summary { min-height: 44px; flex-shrink: 0; }
+  .studio #harmony-style,
+  .studio .progression-workspace > select,
+  .studio .drums-toolbar select { min-height: 45px; height: 45px; flex-shrink: 0; }
+  .studio .instrument-mix-button, .studio .drum-row-mix-button { min-width: 44px; height: 45px; min-height: 45px; flex-shrink: 0; }
+  .studio #drums-section .drum-row-volume { height: 45px; min-height: 45px; }
+  .studio #lyrics-section .lyrics-form button,
+  .studio #lyrics-section .syllable-add-form button,
+  .studio #lyrics-section .syllable-add-form input { min-height: 44px; }
   .studio #harmony-range-form { gap: 5px; }
   .studio #harmony-location { min-width: 0; width: 100%; }
-  .studio .harmony-timeline-tools .harmony-actions { gap: 4px; }
+  .studio .harmony-timeline-tools .harmony-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: stretch; gap: 4px; }
+  .studio #harmony-range-form .harmony-actions > label { display: grid; min-width: 0; white-space: normal; }
+  .studio #harmony-range-form .harmony-actions > label > select { width: 100%; min-width: 0; max-width: 100%; }
+  .studio .percussion-range-control { min-height: 44px; }
+  .studio .percussion-range-control input[type="range"] { height: 45px; }
+  .studio #studio-overview { height: 44px; min-height: 44px; }
+  .studio #tempo-input { height: 45px; min-height: 45px; }
   .studio .piano-roll-scroll, .studio .score-scroll, .studio[data-view-mode="score"] .score-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll, .studio[data-view-mode="combined"] .score-scroll { min-height: 280px; height: max(280px,calc(100dvh - 310px)); }
   .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0,1fr); }
   .studio .workspace-sidebar { display: block; top: auto; bottom: calc(50px + env(safe-area-inset-bottom)); left: 0; right: 0; z-index: 60; max-height: min(55dvh,calc(100dvh - 110px)); box-shadow: 0 -10px 50px #0003; padding-bottom: 0; }
@@ -204,8 +223,8 @@
   .studio .progression-workspace > select { flex: 0 0 auto; }
   .studio .progression-help[open] p { position: fixed; top: 15%; left: 8%; }
   body.studio { height: 100dvh; overflow: hidden; }
-  .studio .page-header { position: fixed; inset: 0 0 auto; z-index: 100; height: 36px; min-height: 36px; padding: 0 7px; }
-  .studio .header-actions .project-menu-trigger { min-height: 36px; }
+  .studio .page-header { position: fixed; inset: 0 0 auto; z-index: 100; height: 45px; min-height: 45px; padding: 0 7px; }
+  .studio .header-actions .project-menu-trigger { height: 45px; min-height: 45px; flex-shrink: 0; }
   .studio .song-strip { align-items: center; min-height: 36px; }
   .studio .song-identity { flex: 0 1 112px; }
   .studio #song-title { max-width: 112px; font-size: var(--text-xs); }
@@ -223,7 +242,7 @@
   .studio .history-buttons button { width: 30px; min-width: 30px; height: 30px; min-height: 30px; }
   .studio .playback-settings-group { gap: 3px; padding-left: 3px; }
   .studio .playback-settings-group .tempo-control label { min-height: 44px; gap: 2px; }
-  .studio #tempo-input { width: 54px; flex-basis: 54px; height: 40px; min-height: 40px; padding: 2px 4px; }
+  .studio #tempo-input { width: 54px; flex-basis: 54px; height: 45px; min-height: 45px; padding: 2px 4px; }
   .studio .loop-toggle { gap: 3px; white-space: nowrap; }
   .studio .transport-advanced > summary { min-height: 44px; padding: 4px; }
   .studio .transport-advanced[open] .transport-advanced-grid { top: auto; bottom: calc(100% + 6px); width: min(350px,calc(100vw - 16px)); max-height: 65dvh; }
@@ -739,19 +758,19 @@
 
   /* Compact studio: the song stays in the header; transport and the three
      workspace choices share one fixed two-row dock at the bottom. */
-  .studio .page-header { min-height: 40px; flex-wrap: nowrap; padding: 2px 8px; gap: 6px; }
+  .studio .page-header { min-height: 44px; flex-wrap: nowrap; padding: 2px 8px; gap: 6px; }
   .studio .brand-block { flex: 1 1 auto; min-width: 0; }
   .studio .song-strip { min-height: 32px; flex-wrap: nowrap; align-items: center; gap: 6px; }
   .studio .song-summary, .studio .share-session-actions { display: none; }
   .studio .header-actions { width: auto; flex: 0 0 auto; flex-wrap: nowrap; align-items: center; gap: 4px; }
   .studio .header-actions .project-menu { order: 0; width: auto; }
   .studio .header-actions .header-controls { order: 0; width: auto; flex: 0 0 auto; gap: 4px; padding: 0; border: 0; }
-  .studio .header-controls > .command-button { width: 32px; min-width: 32px; min-height: 32px; }
-  .studio .header-select-control { flex: 0 0 auto; width: 40px; min-width: 40px; }
+  .studio .header-controls > .command-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .studio .header-select-control { flex: 0 0 auto; width: 44px; min-width: 44px; min-height: 44px; }
   .studio .header-select-control > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .studio .header-select-control select { width: 40px; min-width: 40px; max-width: 40px; height: 32px; min-height: 32px; padding: 2px; }
+  .studio .header-select-control select { width: 44px; min-width: 44px; max-width: 44px; height: 44px; min-height: 44px; padding: 2px; }
   .studio .workspace-chrome { display: none !important; }
-  .studio .app-shell { position: fixed; inset: 40px 0 calc(88px + env(safe-area-inset-bottom, 0px)); width: 100%; max-width: none; height: auto; overflow: hidden; padding: 0; }
+  .studio .app-shell { position: fixed; inset: 44px 0 calc(88px + env(safe-area-inset-bottom, 0px)); width: 100%; max-width: none; height: auto; overflow: hidden; padding: 0; }
   .studio .workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; min-height: 0; margin: 0; overflow: hidden; }
   .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0, 1fr); }
   .studio .workspace-canvas { min-height: 0; overflow: auto; overscroll-behavior: contain; }
@@ -764,7 +783,7 @@
   .studio .mobile-workspace-dock .transport-buttons { width: auto; gap: 2px; }
   .studio .mobile-workspace-dock .transport-buttons button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 7px; }
   .studio .mobile-workspace-dock .playback-readout { display: none; }
-  .studio .mobile-workspace-dock .mobile-transport-summary { display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 0; max-width: 9rem; overflow: hidden; color: var(--text-muted); font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  .studio .mobile-workspace-dock .mobile-transport-summary { display: inline-flex; align-items: center; flex: 0 1 auto; min-width: 0; max-width: 6.5rem; overflow: hidden; color: var(--text-muted); font-size: 11px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
   .studio .mobile-workspace-dock .transport-main { justify-content: flex-start; gap: 4px; }
   .studio .mobile-workspace-dock .history-buttons { flex: 0 0 auto; gap: 0; }
   .studio .mobile-workspace-dock .history-buttons button { flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 7px; }
@@ -780,7 +799,7 @@
   .studio .mobile-workspace-dock .playback-settings-group > .range-reset,
   .studio .mobile-workspace-dock .playback-settings-group > .history-buttons { display: none; }
   .studio .mobile-workspace-dock .transport-advanced > summary,
-  .studio .mobile-workspace-dock .studio-more > summary { display: flex; width: 42px; min-width: 42px; height: 42px; min-height: 42px; padding: 4px; justify-content: center; border: 0; border-radius: 5px; background: var(--surface-subtle); }
+  .studio .mobile-workspace-dock .studio-more > summary { display: flex; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; justify-content: center; border: 0; border-radius: 5px; background: var(--surface-subtle); }
   .studio .mobile-workspace-dock .studio-more > summary::after { margin-left: 2px; }
   .studio .mobile-workspace-dock > .studio-views { display: flex; flex: 0 0 44px; width: 100%; height: 44px; border-top: 1px solid var(--border); }
   .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; min-width: 0; height: 44px; min-height: 44px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; font-size: 12px; }
@@ -797,7 +816,9 @@
   .studio #piano-roll-section { overflow: hidden; }
   .studio #piano-roll-content { flex: 1 1 auto; overflow: hidden; }
   .studio .editor-toolbar { flex-wrap: nowrap; min-width: 0; gap: 5px; overflow-x: auto; }
-  .studio .editor-toolbar button, .studio .editor-toolbar select, .studio .editor-tool-group button { min-height: 40px; }
+  .studio .editor-toolbar button, .studio .editor-toolbar select, .studio .editor-tool-group button,
+  .studio .editor-toolbar input[type="range"] { min-height: 44px; }
+  .studio .pane-help-trigger { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
   .studio .piano-roll-scroll { height: 100%; min-height: 0; }
   .studio #lyrics-section { overflow-y: auto; }
   .studio .app-menu-popover > .menu-sheet-close { position: static; }
@@ -815,6 +836,7 @@
   .studio #score-section .score-layout-group button { min-height: 44px; }
   .studio #lyrics-section > .pane-heading { display: flex; align-items: center; min-height: 44px; margin: 0; padding: 0 8px; }
   .studio #lyrics-section > .pane-heading h2,
+  .studio #piano-roll-section .pane-title-row h2,
   .studio #lyrics-section > .pane-heading #syllable-summary { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio #lyrics-section > .pane-heading [data-studio-view="lyrics"] { min-height: 44px; }
   .studio #lyrics-section .lyrics-form { margin: 0; }
@@ -833,6 +855,15 @@
   .studio #drums-section > .drums-pane-heading > div:first-child { display: none; }
   .studio #drums-section .drums-toolbar { flex-wrap: nowrap; gap: 3px; min-height: 44px; overflow-x: auto; }
   .studio #drums-section .drums-status:empty { display: none; }
+  .studio .mobile-workspace-dock .studio-more > summary > [data-copy] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .studio .mobile-workspace-dock .studio-more > summary::before { content: "⋯"; font-size: 20px; line-height: 1; }
+  .studio .mobile-workspace-dock .studio-more > summary::after { content: none; }
+  .studio .mobile-workspace-dock > .studio-views > button,
+  .studio .studio-toolbar-actions .guitar-mode-toggle,
+  .studio #piano-roll-section .editor-toolbar button,
+  .studio #piano-roll-section .editor-toolbar select,
+  .studio #piano-roll-section .pane-help-trigger,
+  .studio #piano-roll-section .panel-collapse-button { height: 45px; min-height: 45px; flex-shrink: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -868,17 +899,17 @@
   .studio #playback-readout > div:has(#current-note), .studio #playback-readout > div:has(#current-section) { display: none; }
   .studio .playback-settings-group { flex-wrap: nowrap; gap: 8px; padding-left: 8px; }
   .studio .playback-settings-group .tempo-control label { width: auto; min-height: 44px; gap: 4px; }
-  .studio #tempo-input { width: 64px; flex-basis: 64px; height: 40px; min-height: 40px; }
+  .studio #tempo-input { width: 64px; flex-basis: 64px; height: 45px; min-height: 45px; }
   .studio .follow-mode-control { display: none; }
   .studio .workspace-chrome .workspace-toolbar { position: fixed; inset: 24px auto 0 0; z-index: 32; display: flex; width: 52px; flex-direction: column; justify-content: flex-start; padding: 0; border: 0; border-right: 1px solid var(--border-strong); background: var(--surface-subtle); }
   .studio-toolbar-actions { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: 3px; width: 51px; padding: 3px; }
   .studio-toolbar-actions .editor-tool-group { display: flex; flex-direction: column; gap: 3px; width: 44px; border: 0; }
-  .studio-toolbar-actions .editor-tool-group button { width: 44px; min-width: 44px; min-height: 44px; padding: 3px; font-size: 9px; }
+  .studio-toolbar-actions .editor-tool-group button { width: 44px; min-width: 44px; height: 45px; min-height: 45px; padding: 3px; font-size: 9px; }
   .studio-views { width: 100%; height: auto; flex: 0 0 auto; flex-direction: column; align-items: stretch; overflow: visible; }
-  .studio-views > button { flex: 0 0 44px; width: 51px; min-width: 51px; min-height: 44px; padding: 4px 2px; border: 0; border-left: 3px solid transparent; font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: anywhere; }
+  .studio-views > button { flex: 0 0 45px; width: 51px; min-width: 51px; height: 45px; min-height: 45px; padding: 4px 2px; border: 0; border-left: 3px solid transparent; font-size: 9px; line-height: 1.1; white-space: normal; overflow-wrap: anywhere; }
   .studio-views > button[aria-pressed="true"] { border-left-color: var(--studio-accent); border-bottom-color: transparent; }
   .studio-more { flex: 0 0 44px; }
-  .studio-more > summary { min-height: 44px; padding: 3px 2px; font-size: 9px; white-space: normal; }
+  .studio-more > summary { min-height: 45px; height: 45px; padding: 3px 2px; font-size: 9px; white-space: normal; }
   .studio-more[open] .studio-more-popover { position: fixed; top: auto; right: auto; bottom: 0; left: 52px; width: 240px; max-height: 65dvh; }
   .studio-more-popover > button, .studio-panel-switches button { min-height: 44px; padding: 4px 7px; }
   .studio .studio-overview { height: 22px; }
@@ -1029,20 +1060,20 @@
   .studio .workspace-grid { height: 100%; min-height: 0; overflow: hidden; }
   .studio .workspace-sidebar { position: fixed; inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: min(360px, 70vw); max-height: calc(100dvh - 88px); overflow: auto; }
   .studio .workspace-sidebar[data-sheet-size="half"] { height: min(55dvh, calc(100dvh - 88px)); max-height: min(55dvh, calc(100dvh - 88px)); }
-  .studio .mobile-workspace-dock:not([hidden]) { height: calc(88px + env(safe-area-inset-bottom, 0px)); }
-  .studio .mobile-workspace-dock > .studio-views { width: 100%; height: 44px; flex: 0 0 44px; flex-direction: row; align-items: stretch; }
-  .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; width: auto; min-width: 0; min-height: 44px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 12px; line-height: 1.1; white-space: nowrap; overflow-wrap: normal; }
+  .studio .mobile-workspace-dock:not([hidden]) { height: calc(89px + env(safe-area-inset-bottom, 0px)); }
+  .studio .mobile-workspace-dock > .studio-views { width: 100%; height: 45px; flex: 0 0 45px; flex-direction: row; align-items: stretch; }
+  .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; width: auto; min-width: 0; height: 45px; min-height: 45px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 12px; line-height: 1.1; white-space: nowrap; overflow-wrap: normal; }
   .studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-left-color: transparent; }
   .studio .mobile-workspace-dock .studio-views > .mobile-panel-trigger { flex: 0 0 68px; min-width: 68px; border-top: 0; border-left: 1px solid var(--border); font-weight: 650; }
   .studio .mobile-workspace-dock .transport-main { height: 44px; gap: 8px; }
-  .studio .mobile-workspace-dock .studio-overview { display: flex !important; flex: 1 1 auto; min-width: 90px; height: 44px; }
+  .studio .mobile-workspace-dock .studio-overview { display: flex !important; flex: 1 1 auto; min-width: 86px; height: 44px; }
   .studio .mobile-workspace-dock .playback-settings-group { flex-wrap: nowrap; gap: 4px; padding: 0; }
   .studio .mobile-workspace-dock .transport-advanced > summary > span,
   .studio .mobile-workspace-dock .studio-more > summary > [data-copy],
   .studio .mobile-workspace-dock .project-menu-trigger > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio .mobile-workspace-dock .studio-more > summary::after { content: none; margin-left: 0; }
-  .studio .mobile-workspace-dock .studio-more > summary { width: auto; min-width: 76px; padding-inline: 7px; }
-  .studio .mobile-workspace-dock .studio-more > summary > [data-copy] { position: static; width: auto; height: auto; padding: 0; margin: 0; overflow: visible; clip-path: none; }
+  .studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; height: 45px; min-height: 45px; padding: 4px; }
+  .studio .mobile-workspace-dock .studio-more > summary::before { content: "⋯"; font-size: 20px; line-height: 1; }
   .studio .mobile-workspace-dock .project-menu-trigger { width: 44px; min-width: 44px; padding: 4px; }
   .studio .studio-more[open] .studio-more-popover { position: fixed; inset: auto 6px calc(88px + env(safe-area-inset-bottom, 0px) + 6px); z-index: 125; width: min(280px, calc(100vw - 12px)); max-height: min(65dvh, calc(100dvh - 100px)); }
   .studio .transport-advanced[open] .transport-advanced-grid { inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); max-height: min(70dvh, calc(100dvh - 88px)); }
@@ -1050,18 +1081,18 @@
   .studio .app-menu-popover > .menu-sheet-close { position: static; }
   .studio .app-shell { position: fixed; inset: 44px 0 calc(44px + env(safe-area-inset-bottom, 0px)); height: auto; padding: 0; overflow: hidden; }
   .studio .workspace-chrome { display: contents; }
-  .studio .workspace-chrome .workspace-toolbar { position: fixed; inset: 0 0 auto; display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 44px; min-height: 44px; padding: 0 max(6px, env(safe-area-inset-left, 0px)); border: 0; border-bottom: 1px solid var(--border-strong); background: var(--surface); gap: 6px; overflow: hidden; }
+  .studio .workspace-chrome .workspace-toolbar { position: fixed; inset: 0 0 auto; display: flex; align-items: center; justify-content: flex-start; width: 100%; height: 45px; min-height: 45px; padding: 0 max(6px, env(safe-area-inset-left, 0px)); border: 0; border-bottom: 1px solid var(--border-strong); background: var(--surface); gap: 6px; overflow: visible; }
   .studio .workspace-chrome .transport-dock { position: static; width: 100%; height: 44px; margin: 0; padding: 0 6px; border: 0; background: var(--surface); }
   .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset: auto 0 0; z-index: 90; display: flex; flex-direction: row; width: 100%; height: calc(44px + env(safe-area-inset-bottom, 0px)); padding: 0 0 env(safe-area-inset-bottom, 0px); }
   .studio .mobile-workspace-dock > .transport-dock { flex: 0 0 100%; width: 100%; height: 44px; }
-  .studio .studio-views { width: auto; height: 44px; flex: 0 0 auto; flex-direction: row; align-items: stretch; }
-  .studio .studio-views > button { flex: 0 0 44px; width: auto; min-width: 44px; min-height: 44px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 11px; white-space: nowrap; }
+  .studio .studio-views { width: auto; height: 45px; flex: 0 0 auto; flex-direction: row; align-items: stretch; }
+  .studio .studio-views > button { flex: 0 0 45px; width: auto; min-width: 44px; height: 45px; min-height: 45px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 11px; white-space: nowrap; }
   .studio .studio-views > button[aria-pressed="true"] { border-top-color: var(--studio-accent); border-left-color: transparent; }
   .studio .studio-toolbar-actions { flex: 1 1 auto; flex-direction: row; align-items: center; gap: 5px; width: auto; min-width: 0; padding: 0; overflow-x: auto; overflow-y: hidden; }
   .studio .studio-toolbar-actions .editor-toolbar { display: flex; flex: 0 0 auto; align-items: center; flex-flow: row nowrap; min-width: max-content; min-height: 44px; gap: 6px; overflow: visible; }
   .studio .editor-tool-group { display: flex; flex: 0 0 auto; flex-direction: row; gap: 2px; width: auto; border: 0; }
   .studio .editor-tool-group button, .studio .editor-toolbar button, .studio .editor-toolbar select { min-height: 44px; }
-  .studio .studio-toolbar-actions .guitar-mode-toggle { min-height: 44px; padding: 3px 7px; }
+  .studio .studio-toolbar-actions .guitar-mode-toggle { height: 45px; min-height: 45px; padding: 3px 7px; }
   .studio .mobile-workspace-dock .transport-main > .mobile-panel-trigger { flex: 0 0 68px; min-width: 68px; min-height: 44px; padding-inline: 5px; }
   .studio .editor-tool-group button { min-width: 44px; padding: 3px 6px; }
   .studio .editor-toolbar label { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 3px; white-space: nowrap; }
@@ -1078,8 +1109,7 @@
   .studio .mobile-workspace-dock .mobile-transport-summary { display: inline-flex; align-items: center; flex: 0 0 auto; color: var(--text-muted); font-size: 11px; font-weight: 650; white-space: nowrap; }
   .studio .mobile-workspace-dock .studio-overview { display: flex !important; flex: 1 1 auto; min-width: 90px; height: 44px; }
   .studio .mobile-workspace-dock .playback-settings-group { flex: 0 0 auto; flex-wrap: nowrap; gap: 5px; padding: 0; }
-  .studio .mobile-workspace-dock .studio-more > summary { width: auto; min-width: 76px; min-height: 44px; padding: 3px 7px; }
-  .studio .mobile-workspace-dock .studio-more > summary > [data-copy] { position: static; width: auto; height: auto; margin: 0; padding: 0; overflow: visible; clip-path: none; }
+  .studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; height: 45px; min-height: 45px; padding: 4px; }
   .studio .mobile-workspace-dock .studio-more > summary::after { content: none; margin-left: 0; }
   .studio .workspace-grid, .studio .workspace-canvas, .studio #piano-roll-section { height: 100%; min-height: 0; overflow: hidden; }
   .studio .workspace-canvas { flex: 1 1 auto; }
@@ -1178,5 +1208,5 @@
 .studio #score-section .score-scroll { flex: 1 1 auto; width: 100%; height: auto; min-height: 0; max-height: none; resize: none; }
 .studio #drums-section #drum-grid-scroll { flex: 1 1 auto; min-height: 0; height: auto; max-height: none; }
 .studio .studio-more-popover > .menu-sheet-close { position: static; bottom: auto; grid-column: 1 / -1; align-self: stretch; width: 100%; }
-.studio .mobile-workspace-dock .studio-more { flex: 0 0 auto; width: auto; min-width: 76px; }
-.studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 auto; width: auto; min-width: 76px; }
+  .studio .mobile-workspace-dock .studio-more { flex: 0 0 44px; width: 44px; min-width: 44px; margin-left: -2px; }
+.studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; }

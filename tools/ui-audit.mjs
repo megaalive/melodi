@@ -147,8 +147,16 @@ export async function measurePage(page) {
     const effectiveRect = element => {
       const rect = element.getBoundingClientRect();
       const clip = { left: 0, top: 0, right: viewport.width, bottom: viewport.height };
+      let outsideFixedAncestors = getComputedStyle(element).position === "fixed";
       for (let parent = element.parentElement; parent; parent = parent.parentElement) {
         const style = getComputedStyle(parent);
+        const backdropFilter = style.backdropFilter || style.getPropertyValue("backdrop-filter") || "none";
+        const generatesBox = style.display !== "contents" && style.display !== "none";
+        const establishesFixedContainingBlock = generatesBox && (style.transform !== "none" || style.perspective !== "none"
+          || style.filter !== "none" || backdropFilter !== "none"
+          || /\b(layout|paint|strict|content)\b/.test(style.contain)
+          || /\b(transform|perspective|filter)\b/.test(style.willChange));
+        if (outsideFixedAncestors && !establishesFixedContainingBlock) continue;
         const parentRect = parent.getBoundingClientRect();
         const clipX = ["hidden", "clip", "auto", "scroll"].includes(style.overflowX);
         const clipY = ["hidden", "clip", "auto", "scroll"].includes(style.overflowY);
@@ -160,6 +168,8 @@ export async function measurePage(page) {
           clip.top = Math.max(clip.top, parentRect.top + parent.clientTop);
           clip.bottom = Math.min(clip.bottom, parentRect.top + parent.clientTop + parent.clientHeight);
         }
+        if (outsideFixedAncestors && establishesFixedContainingBlock) outsideFixedAncestors = false;
+        if (style.position === "fixed") outsideFixedAncestors = true;
       }
       return {
         left: Math.max(rect.left, clip.left), top: Math.max(rect.top, clip.top),

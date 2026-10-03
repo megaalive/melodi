@@ -156,9 +156,9 @@
     --candidate-ghost-active: light-dark(#1a5f6b, #8acfdd);
     --candidate-ghost-idle: light-dark(#b9c6cb, #3a444b);
     --highlight-current: light-dark(#a7d8a8, #3d7a4d);
-    --highlight-current-ink: light-dark(#174a25, #b6e3c0);
+    --highlight-current-ink: light-dark(#174a25, #f4fff5);
     --highlight-selected: light-dark(#f3c879, #7a5a1e);
-    --highlight-selected-ink: light-dark(#7c3a05, #f0cf9a);
+    --highlight-selected-ink: light-dark(#7c3a05, #fff1d0);
     --on-accent: light-dark(#ffffff, #0f1417);
     --chip-surface: light-dark(#1f2d38, #e7e4de);
     --chip-ink: light-dark(#ffffff, #14171a);

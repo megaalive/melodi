@@ -13,13 +13,17 @@ npm run check
 
 Serve this directory with any static HTTP server and open its `index.html`. For example, `python -m http.server 8000` serves the local root at `http://localhost:8000/`.
 
+## GitHub Pages
+
+GitHub Pages publishes the repository root from the `main` branch at [megaalive.github.io/melodi](https://megaalive.github.io/melodi/). This static site has no build step or custom Pages workflow; GitHub's built-in branch deployment publishes `main` after a merge. To verify a deployment, compare the live page's `meta[name="melodi-build"]` value and asset `?v=` tokens with `index.html` and the stylesheet imports.
+
 ## Studio workspace
 
-The transport stays above a visible mode bar: Piano Roll, Drum Roll, Score, Lyrics, Guitar, and Split. The song overview uses real note/chord/hit data; clicking a bar seeks to its start. Its readout shows bar and beat in the current meter.
+Studio has three workspaces: Edit, Not, and Irama. Edit opens the Piano Roll; Not contains Score and Lyrics, with a split Score/Piano Roll layout available; Irama opens Drum Roll. Guitar is a secondary, reversible layer in Edit, controlled by a labelled outline toggle with a clear pressed state. The song overview uses real note/chord/hit data; clicking or dragging across it seeks through the song, and its readout shows bar and beat in the current meter.
 
-The editor uses the full canvas until a supporting panel is needed. Mixer contains Melody, Harmony, and Bass monitoring and patterns; Drum Roll retains its per-piece controls in the frozen gutter. Chord and Gap Melody open contextual panels. On narrow screens these panels become dismissible bottom sheets. Selecting a chord opens its inspector; closing it restores focus to its panel button.
+Mixer, Chord, and Generate each have a visible panel control in Edit. Mixer contains Melody, Harmony, and Bass channel levels, mute, and pattern controls; Chord contains the chord timeline and inspector; Generate contains gap-generation controls and candidate actions. Drum Roll retains its per-piece controls in the frozen gutter. On compact screens, the fixed dock includes a Panel button that opens a dismissible sheet with Mixer, Chord, and Generate tabs. Closing a panel or sheet restores focus to its opener. Selecting a chord opens its inspector.
 
-Lyrics are a writing sheet with expandable syllable chips. Detailed mapping remains available inside each chip, using bar/beat labels. Numeric utilities remain in the collapsed Tools disclosure. All controls continue to use the existing command layer; this workspace introduces no Song schema, Share format, or audio-engine changes.
+Lyrics are a writing sheet with expandable syllable chips. Detailed mapping remains available inside each chip, using bar/beat labels. Advanced consolidates range/seek, technical transport settings, and numeric utilities in one popover or sheet. The Mixer, Chord, and Generate switches stay directly available beside workspace navigation. All controls continue to use the existing command layer; the workspace introduces no Song schema, Share format, or audio-engine changes.
 
 ## Canonical model
 
@@ -137,16 +141,16 @@ All typography comes from six steps, `--text-2xs` through `--text-xl`. This repl
 
 ## Layout
 
-The header contains song title, key, meter, Project, history, palette, and labelled Settings. Transport and mode tabs are the primary workspace controls. At widths up to 760px, transport and mode navigation form a fixed bottom dock with 44px targets; history moves to Settings, while tempo and Follow move to Playback.
+The header contains song title, key, meter, Project, history, palette, and labelled Settings. The three workspace tabs—Edit, Not, and Irama—are the primary navigation. At widths up to 760px, the fixed bottom dock combines transport and workspace navigation; Play/Pause, Stop, Undo, Redo, and Panel remain directly reachable, with touch targets of at least 44px. The Panel button opens the three-tab sheet. Tempo and Loop remain available from transport controls, with their current values/status surfaced in the dock.
 
-The Advanced panel is an absolutely positioned popover rather than inline content. That keeps the sticky bar a constant height, which is why no rule needs to guess how tall the bar is when the panel is open. Regions are shown from `VIEW_REGION_MODES` in `core/runtime-state.js`; an unknown region name is hidden rather than shown.
+Advanced opens one anchored popover on desktop or sheet on compact screens for range/seek and technical transport settings. This keeps the navigation and transport height stable while it is open. Regions are shown from `VIEW_REGION_MODES` in `core/runtime-state.js`; an unknown region name is hidden rather than shown.
 
-Build 20261001.36 measured a 99.2px fixed dock at 390×844 and 360×740. The original song-strip nodes now sit in the header. Chord timeline tools live in Chords and the original Melody monitoring strip lives in Mixer. These moves retain their hooks and canonical command paths. See `docs/ux-stage1-20261001.md` for measurements and verification limits.
+Styles are split by responsibility: `styles/base.css` contains shared foundations, `styles/studio.css` contains Studio layout and controls, and `styles/responsive.css` contains viewport-specific rules. `styles/app.css` imports all three with matching cache-busting tokens.
 
 
 ## Views
 
-`score`, `piano-roll`, `combined`, `lyrics`, and `guitar` are set with `setViewMode`. The piano roll draws the active generation candidate in the gap between the anchors, so auditioning happens where the music already is rather than in a separate panel.
+`setViewMode` supports the internal view values `score`, `piano-roll`, `combined`, `lyrics`, `guitar`, and `drums`. The navigation groups these into three workspaces: Edit (Piano Roll, with Guitar as a layer), Not (Score and Lyrics), and Irama (Drum Roll). The piano roll draws the active generation candidate in the gap between the anchors, so auditioning happens where the music already is rather than in a separate panel.
 
 Every row of the roll is labelled with its pitch, not just the C rows. With only the C rows labelled, reading a melody means counting semitones upwards from the nearest C, which is exactly the arithmetic a piano roll is supposed to remove. Black key labels use `--text-muted` so a full octave of twelve labels stays quiet and the white keys stay findable. The gutter is fixed at 56px, so `C#4` at `--text-xs` fits without clipping.
 

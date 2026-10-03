@@ -17,7 +17,7 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .mobile-workspace-dock .studio-overview-label { flex: 0 0 34px; padding: 0 2px; border: 0; }
 .studio .mobile-workspace-dock .studio-overview-label > span { display: none; }
 .studio .mobile-workspace-dock .studio-overview-label output { font-size: 10px; }
-.studio .mobile-workspace-dock .studio-overview-track { overflow: hidden; }
+.studio .mobile-workspace-dock .studio-overview-track { min-height: 44px; overflow: hidden; }
 .studio .mobile-workspace-dock .studio-overview-track svg { height: 18px; }
 .studio .mobile-workspace-dock .playback-settings-group { display: flex; flex: 0 0 auto; gap: 2px; padding: 0; border: 0; }
 .studio .mobile-workspace-dock .transport-advanced > summary, .studio .mobile-workspace-dock .studio-more > summary { display: flex; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 4px; justify-content: center; border: 0; border-radius: 5px; background: var(--surface-subtle); }
@@ -318,9 +318,9 @@ button.danger-button { color: var(--on-accent); }
     --candidate-ghost-active: #8acfdd;
     --candidate-ghost-idle: #3a444b;
     --highlight-current: #3d7a4d;
-    --highlight-current-ink: #b6e3c0;
+    --highlight-current-ink: #f4fff5;
     --highlight-selected: #7a5a1e;
-    --highlight-selected-ink: #f0cf9a;
+    --highlight-selected-ink: #fff1d0;
     --on-accent: #0f1417;
     --chip-surface: #e7e4de;
     --chip-ink: #14171a;
@@ -370,9 +370,9 @@ button.danger-button { color: var(--on-accent); }
     --candidate-ghost-active: #8acfdd;
     --candidate-ghost-idle: #3a444b;
     --highlight-current: #3d7a4d;
-    --highlight-current-ink: #b6e3c0;
+    --highlight-current-ink: #f4fff5;
     --highlight-selected: #7a5a1e;
-    --highlight-selected-ink: #f0cf9a;
+    --highlight-selected-ink: #fff1d0;
     --on-accent: #0f1417;
     --chip-surface: #e7e4de;
     --chip-ink: #14171a;

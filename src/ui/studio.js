@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.73';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.74';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -304,7 +304,7 @@ export function createStudioWorkspace(commands, translate, onError, { onOpenPane
       mobileDock.append(transportDock);
       advancedBody.append(tempo, loopToggle, resetRange, follow);
     } else if (compact.matches) {
-      appShell.insertBefore(overview, workspaceGrid);
+      transportMain.insertBefore(overview, transportSettings);
       header.insertBefore(modeNav, headerActions);
       headerActions.prepend(projectMenu);
       editorToolbarHome.append(editorToolbar);

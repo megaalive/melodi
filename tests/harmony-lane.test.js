@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPianoRollView, tickToX, chordSnapTicks, chordGesturePatch, chordDrawRange, PIANO_RULER_HEIGHT } from '../src/ui/piano-roll.js';
+import { createPianoRollView, tickToX, chordSnapTicks, chordGesturePatch, chordDrawRange, PIANO_RULER_HEIGHT, HARMONY_LANE_HEIGHT } from '../src/ui/piano-roll.js';
 import { createBlankSong } from '../src/core/model.js';
 import { createCommands } from '../src/core/commands.js';
 import { MESSAGES } from '../src/i18n/messages.js';
@@ -90,7 +90,7 @@ test('empty chord lane shows localized hint and keeps meter bar geometry above p
     const bars=svg.querySelectorAll('[data-entity="harmony-bar"]');
     assert.equal(bars[0].dataset.endTick,'1440');
     assert.equal(Number(bars[1].children[0].getAttribute('x')),tickToX(1440,g));
-    assert.equal(g.top,78);
+    assert.equal(g.top,PIANO_RULER_HEIGHT + HARMONY_LANE_HEIGHT);
     assert.equal(Number(svg.querySelector('[data-entity="timeline-ruler"]').getAttribute('height')),PIANO_RULER_HEIGHT);
   }
   const populated=setup({chords:[chord()]});

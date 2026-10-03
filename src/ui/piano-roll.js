@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.73";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.74";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261003.73";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261003.73";
-import { harmonyChordSymbol } from "./harmony.js?v=20261003.73";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261003.74";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261003.74";
+import { harmonyChordSymbol } from "./harmony.js?v=20261003.74";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });
@@ -12,7 +12,7 @@ export const MAX_ROLL_BARS = 64;
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const PIANO_ROW_HEIGHT = 24;
-export const PIANO_RULER_HEIGHT = 34;
+export const PIANO_RULER_HEIGHT = 44;
 export const HARMONY_LANE_HEIGHT = 44;
 const PIANO_TOP = PIANO_RULER_HEIGHT + HARMONY_LANE_HEIGHT;
 const PIANO_LABEL_WIDTH = 56;
