@@ -1,0 +1,5976 @@
+{
+  "generatedAt": "2026-10-03T07:41:16.989Z",
+  "method": "Chromium CDP CSS.startRuleUsageTracking / CSS.stopRuleUsageTracking",
+  "matrixCells": 100,
+  "dynamicScenarios": [
+    "note-selection",
+    "phone-panel-sheet",
+    "drum-selection",
+    "lyrics-content",
+    "command-palette",
+    "reduced-motion"
+  ],
+  "scenarioCount": 106,
+  "activeStylesheetBytes": 229065,
+  "usedStylesheetBytes": 154642,
+  "byteCoveragePercent": 67.51,
+  "cssRuleCount": 1882,
+  "usedCssRuleCount": 1368,
+  "unusedCssRuleCount": 514,
+  "uncoveredStyleRuleCount": 514,
+  "safeStaticCandidateRuleCount": 0,
+  "runtimeClassExceptionList": [
+    {
+      "pattern": "/^abcjs-/",
+      "reason": "ABCJS creates notation classes at runtime."
+    },
+    {
+      "pattern": "/^roll-note-generated$/",
+      "reason": "Piano Roll creates this note class from generated-note state."
+    },
+    {
+      "pattern": "/^studio-overview-(?:note|chord|drum)$/",
+      "reason": "Studio Overview interpolates the track kind into this class."
+    }
+  ],
+  "runtimeExceptionClassesFound": [
+    "abcjs-bar",
+    "abcjs-beam-elem",
+    "abcjs-clef",
+    "abcjs-dragging-in-progress",
+    "abcjs-key-signature",
+    "abcjs-note",
+    "abcjs-rest",
+    "abcjs-slur",
+    "abcjs-staff",
+    "abcjs-stem",
+    "abcjs-tie",
+    "abcjs-time-signature",
+    "roll-note-generated",
+    "studio-overview-chord",
+    "studio-overview-drum",
+    "studio-overview-note"
+  ],
+  "stylesheets": [
+    {
+      "url": "(inline stylesheet)",
+      "bytes": 177,
+      "usedBytes": 0,
+      "ruleCount": 2,
+      "usedRuleCount": 0,
+      "unusedRuleCount": 2,
+      "coveredInMatrix": 0,
+      "coveredInDynamicStates": 0
+    },
+    {
+      "url": "(inline stylesheet)",
+      "bytes": 217,
+      "usedBytes": 0,
+      "ruleCount": 1,
+      "usedRuleCount": 0,
+      "unusedRuleCount": 1,
+      "coveredInMatrix": 0,
+      "coveredInDynamicStates": 0
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/app.css?v=20261003.78",
+      "bytes": 116,
+      "usedBytes": 0,
+      "ruleCount": 0,
+      "usedRuleCount": 0,
+      "unusedRuleCount": 0,
+      "coveredInMatrix": 0,
+      "coveredInDynamicStates": 0
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "bytes": 95949,
+      "usedBytes": 54343,
+      "ruleCount": 742,
+      "usedRuleCount": 434,
+      "unusedRuleCount": 308,
+      "coveredInMatrix": 20,
+      "coveredInDynamicStates": 6
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "bytes": 89759,
+      "usedBytes": 72941,
+      "ruleCount": 795,
+      "usedRuleCount": 683,
+      "unusedRuleCount": 112,
+      "coveredInMatrix": 20,
+      "coveredInDynamicStates": 6
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "bytes": 42847,
+      "usedBytes": 27358,
+      "ruleCount": 342,
+      "usedRuleCount": 251,
+      "unusedRuleCount": 91,
+      "coveredInMatrix": 20,
+      "coveredInDynamicStates": 6
+    }
+  ],
+  "uncoveredStyleRules": [
+    {
+      "url": "(inline stylesheet)",
+      "selector": ".abcjs-dragging-in-progress text, .abcjs-dragging-in-progress tspan",
+      "startByteOffset": 0,
+      "endByteOffset": 217,
+      "sourceBytes": 217,
+      "classTokens": [
+        "abcjs-dragging-in-progress"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "(inline stylesheet)",
+      "selector": ":host summary",
+      "startByteOffset": 1,
+      "endByteOffset": 114,
+      "sourceBytes": 113,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "(inline stylesheet)",
+      "selector": ":host([open]) summary",
+      "startByteOffset": 115,
+      "endByteOffset": 176,
+      "sourceBytes": 61,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "button:hover:not(:disabled)",
+      "startByteOffset": 8282,
+      "endByteOffset": 8347,
+      "sourceBytes": 65,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "button.secondary:hover:not(:disabled)",
+      "startByteOffset": 8525,
+      "endByteOffset": 8641,
+      "sourceBytes": 116,
+      "classTokens": [
+        "secondary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".playback-readout div",
+      "startByteOffset": 11610,
+      "endByteOffset": 11664,
+      "sourceBytes": 54,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".playback-readout dt",
+      "startByteOffset": 11666,
+      "endByteOffset": 11716,
+      "sourceBytes": 50,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".playback-readout dd",
+      "startByteOffset": 11718,
+      "endByteOffset": 11872,
+      "sourceBytes": 154,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".playback-readout .machine-detail",
+      "startByteOffset": 11874,
+      "endByteOffset": 11926,
+      "sourceBytes": 52,
+      "classTokens": [
+        "playback-readout",
+        "machine-detail"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".tempo-control button",
+      "startByteOffset": 12227,
+      "endByteOffset": 12273,
+      "sourceBytes": 46,
+      "classTokens": [
+        "tempo-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".transport-advanced",
+      "startByteOffset": 12996,
+      "endByteOffset": 13085,
+      "sourceBytes": 89,
+      "classTokens": [
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".transport-advanced[open]",
+      "startByteOffset": 13282,
+      "endByteOffset": 13370,
+      "sourceBytes": 88,
+      "classTokens": [
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".transport-advanced[open] > summary",
+      "startByteOffset": 13372,
+      "endByteOffset": 13440,
+      "sourceBytes": 68,
+      "classTokens": [
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 13442,
+      "endByteOffset": 13854,
+      "sourceBytes": 412,
+      "classTokens": [
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".editor-toolbar-group button:hover:not(:disabled)",
+      "startByteOffset": 17097,
+      "endByteOffset": 17225,
+      "sourceBytes": 128,
+      "classTokens": [
+        "editor-toolbar-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".piano-roll-scroll[data-tool=\"draw\"] .roll-move-hit,\r\n.piano-roll-scroll[data-tool=\"draw\"] .roll-resize-handle",
+      "startByteOffset": 17452,
+      "endByteOffset": 17583,
+      "sourceBytes": 131,
+      "classTokens": [
+        "piano-roll-scroll",
+        "roll-move-hit",
+        "roll-resize-handle"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-toolbar h3",
+      "startByteOffset": 18163,
+      "endByteOffset": 18234,
+      "sourceBytes": 71,
+      "classTokens": [
+        "expression-toolbar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-toolbar p",
+      "startByteOffset": 18236,
+      "endByteOffset": 18282,
+      "sourceBytes": 46,
+      "classTokens": [
+        "expression-toolbar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-context-tools .editor-toolbar-group",
+      "startByteOffset": 19484,
+      "endByteOffset": 19599,
+      "sourceBytes": 115,
+      "classTokens": [
+        "expression-context-tools",
+        "editor-toolbar-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-details > summary,\r\n.expression-vibrato-details > summary",
+      "startByteOffset": 19814,
+      "endByteOffset": 19987,
+      "sourceBytes": 173,
+      "classTokens": [
+        "expression-note-details",
+        "expression-vibrato-details"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-tools",
+      "startByteOffset": 19989,
+      "endByteOffset": 20074,
+      "sourceBytes": 85,
+      "classTokens": [
+        "expression-note-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-tools > .editor-toolbar-group",
+      "startByteOffset": 20076,
+      "endByteOffset": 20190,
+      "sourceBytes": 114,
+      "classTokens": [
+        "expression-note-tools",
+        "editor-toolbar-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-list",
+      "startByteOffset": 20192,
+      "endByteOffset": 20303,
+      "sourceBytes": 111,
+      "classTokens": [
+        "expression-note-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-list:empty",
+      "startByteOffset": 20305,
+      "endByteOffset": 20351,
+      "sourceBytes": 46,
+      "classTokens": [
+        "expression-note-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-list .note-card",
+      "startByteOffset": 20353,
+      "endByteOffset": 20449,
+      "sourceBytes": 96,
+      "classTokens": [
+        "expression-note-list",
+        "note-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-fields",
+      "startByteOffset": 20451,
+      "endByteOffset": 20581,
+      "sourceBytes": 130,
+      "classTokens": [
+        "expression-note-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-vibrato-fields",
+      "startByteOffset": 20583,
+      "endByteOffset": 20754,
+      "sourceBytes": 171,
+      "classTokens": [
+        "expression-vibrato-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-vibrato-fields label",
+      "startByteOffset": 20756,
+      "endByteOffset": 20886,
+      "sourceBytes": 130,
+      "classTokens": [
+        "expression-vibrato-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-vibrato-fields button",
+      "startByteOffset": 20888,
+      "endByteOffset": 20946,
+      "sourceBytes": 58,
+      "classTokens": [
+        "expression-vibrato-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-background",
+      "startByteOffset": 20950,
+      "endByteOffset": 21012,
+      "sourceBytes": 62,
+      "classTokens": [
+        "expression-background"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-guide",
+      "startByteOffset": 21014,
+      "endByteOffset": 21085,
+      "sourceBytes": 71,
+      "classTokens": [
+        "expression-guide"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-zero-line",
+      "startByteOffset": 21087,
+      "endByteOffset": 21163,
+      "sourceBytes": 76,
+      "classTokens": [
+        "expression-zero-line"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-beat-line",
+      "startByteOffset": 21165,
+      "endByteOffset": 21240,
+      "sourceBytes": 75,
+      "classTokens": [
+        "expression-beat-line"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-bar-line",
+      "startByteOffset": 21242,
+      "endByteOffset": 21332,
+      "sourceBytes": 90,
+      "classTokens": [
+        "expression-bar-line"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-label-layer",
+      "startByteOffset": 21334,
+      "endByteOffset": 21381,
+      "sourceBytes": 47,
+      "classTokens": [
+        "expression-label-layer"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-label-gutter",
+      "startByteOffset": 21383,
+      "endByteOffset": 21463,
+      "sourceBytes": 80,
+      "classTokens": [
+        "expression-label-gutter"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-label-divider",
+      "startByteOffset": 21465,
+      "endByteOffset": 21555,
+      "sourceBytes": 90,
+      "classTokens": [
+        "expression-label-divider"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-axis-label",
+      "startByteOffset": 21557,
+      "endByteOffset": 21709,
+      "sourceBytes": 152,
+      "classTokens": [
+        "expression-axis-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note-hit",
+      "startByteOffset": 21711,
+      "endByteOffset": 21754,
+      "sourceBytes": 43,
+      "classTokens": [
+        "expression-note-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#expression-lane[data-mode=\"bend\"] .expression-note-hit",
+      "startByteOffset": 21756,
+      "endByteOffset": 21832,
+      "sourceBytes": 76,
+      "classTokens": [
+        "expression-note-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"] .expression-note-hit",
+      "startByteOffset": 21834,
+      "endByteOffset": 22053,
+      "sourceBytes": 219,
+      "classTokens": [
+        "expression-note",
+        "expression-note-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-current=\"true\"] .expression-note-hit",
+      "startByteOffset": 22055,
+      "endByteOffset": 22245,
+      "sourceBytes": 190,
+      "classTokens": [
+        "expression-note",
+        "expression-note-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"][data-current=\"true\"] .expression-note-hit",
+      "startByteOffset": 22247,
+      "endByteOffset": 22421,
+      "sourceBytes": 174,
+      "classTokens": [
+        "expression-note",
+        "expression-note-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-value-line,\r\n.expression-bend-curve",
+      "startByteOffset": 22423,
+      "endByteOffset": 22597,
+      "sourceBytes": 174,
+      "classTokens": [
+        "expression-value-line",
+        "expression-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-value-point,\r\n.expression-bend-point",
+      "startByteOffset": 22599,
+      "endByteOffset": 22750,
+      "sourceBytes": 151,
+      "classTokens": [
+        "expression-value-point",
+        "expression-bend-point"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"] .expression-value-line,\r\n.expression-note[data-selected=\"true\"] .expression-bend-curve",
+      "startByteOffset": 22752,
+      "endByteOffset": 22945,
+      "sourceBytes": 193,
+      "classTokens": [
+        "expression-note",
+        "expression-value-line",
+        "expression-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-current=\"true\"] .expression-value-line,\r\n.expression-note[data-current=\"true\"] .expression-bend-curve",
+      "startByteOffset": 22947,
+      "endByteOffset": 23139,
+      "sourceBytes": 192,
+      "classTokens": [
+        "expression-note",
+        "expression-value-line",
+        "expression-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"][data-current=\"true\"] .expression-value-line,\r\n.expression-note[data-selected=\"true\"][data-current=\"true\"] .expression-bend-curve",
+      "startByteOffset": 23141,
+      "endByteOffset": 23403,
+      "sourceBytes": 262,
+      "classTokens": [
+        "expression-note",
+        "expression-value-line",
+        "expression-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"] .expression-value-point,\r\n.expression-note[data-selected=\"true\"] .expression-bend-point",
+      "startByteOffset": 23405,
+      "endByteOffset": 23599,
+      "sourceBytes": 194,
+      "classTokens": [
+        "expression-note",
+        "expression-value-point",
+        "expression-bend-point"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-current=\"true\"] .expression-value-point,\r\n.expression-note[data-current=\"true\"] .expression-bend-point",
+      "startByteOffset": 23601,
+      "endByteOffset": 23790,
+      "sourceBytes": 189,
+      "classTokens": [
+        "expression-note",
+        "expression-value-point",
+        "expression-bend-point"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"] .expression-value-label",
+      "startByteOffset": 23792,
+      "endByteOffset": 23896,
+      "sourceBytes": 104,
+      "classTokens": [
+        "expression-note",
+        "expression-value-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-current=\"true\"] .expression-value-label",
+      "startByteOffset": 23898,
+      "endByteOffset": 24000,
+      "sourceBytes": 102,
+      "classTokens": [
+        "expression-note",
+        "expression-value-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-note[data-current=\"true\"] .expression-value-point,\r\n.expression-note[data-current=\"true\"] .expression-bend-point",
+      "startByteOffset": 24002,
+      "endByteOffset": 24138,
+      "sourceBytes": 136,
+      "classTokens": [
+        "expression-note",
+        "expression-value-point",
+        "expression-bend-point"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-value-label",
+      "startByteOffset": 24140,
+      "endByteOffset": 24306,
+      "sourceBytes": 166,
+      "classTokens": [
+        "expression-value-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] #piano-roll-section,\r\nbody[data-view-mode=\"combined\"] #score-section,\r\nbody[data-view-mode=\"combined\"] #expression-panel",
+      "startByteOffset": 24702,
+      "endByteOffset": 24872,
+      "sourceBytes": 170,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".candidate-id code",
+      "startByteOffset": 27230,
+      "endByteOffset": 27277,
+      "sourceBytes": 47,
+      "classTokens": [
+        "candidate-id"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".candidate-score-breakdown",
+      "startByteOffset": 27279,
+      "endByteOffset": 27454,
+      "sourceBytes": 175,
+      "classTokens": [
+        "candidate-score-breakdown"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".candidate-score-breakdown dd",
+      "startByteOffset": 27456,
+      "endByteOffset": 27536,
+      "sourceBytes": 80,
+      "classTokens": [
+        "candidate-score-breakdown"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-list",
+      "startByteOffset": 27540,
+      "endByteOffset": 27640,
+      "sourceBytes": 100,
+      "classTokens": [
+        "note-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-list .note-card:not([data-selected=\"true\"])",
+      "startByteOffset": 27642,
+      "endByteOffset": 27710,
+      "sourceBytes": 68,
+      "classTokens": [
+        "note-list",
+        "note-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-card",
+      "startByteOffset": 27712,
+      "endByteOffset": 27779,
+      "sourceBytes": 67,
+      "classTokens": [
+        "note-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-card[data-anchor=\"true\"]",
+      "startByteOffset": 27781,
+      "endByteOffset": 27865,
+      "sourceBytes": 84,
+      "classTokens": [
+        "note-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-card fieldset",
+      "startByteOffset": 27867,
+      "endByteOffset": 27969,
+      "sourceBytes": 102,
+      "classTokens": [
+        "note-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-card legend",
+      "startByteOffset": 27971,
+      "endByteOffset": 28060,
+      "sourceBytes": 89,
+      "classTokens": [
+        "note-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-card .form-grid",
+      "startByteOffset": 28062,
+      "endByteOffset": 28115,
+      "sourceBytes": 53,
+      "classTokens": [
+        "note-card",
+        "form-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-flags,\r\n.note-actions",
+      "startByteOffset": 28117,
+      "endByteOffset": 28227,
+      "sourceBytes": 110,
+      "classTokens": [
+        "note-flags",
+        "note-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-flags label",
+      "startByteOffset": 28229,
+      "endByteOffset": 28340,
+      "sourceBytes": 111,
+      "classTokens": [
+        "note-flags"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-actions label",
+      "startByteOffset": 28342,
+      "endByteOffset": 28455,
+      "sourceBytes": 113,
+      "classTokens": [
+        "note-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-flags input,\r\n.note-actions input",
+      "startByteOffset": 28457,
+      "endByteOffset": 28538,
+      "sourceBytes": 81,
+      "classTokens": [
+        "note-flags",
+        "note-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-actions button",
+      "startByteOffset": 28540,
+      "endByteOffset": 28637,
+      "sourceBytes": 97,
+      "classTokens": [
+        "note-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".entity-id",
+      "startByteOffset": 28639,
+      "endByteOffset": 28668,
+      "sourceBytes": 29,
+      "classTokens": [
+        "entity-id"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".status[data-kind=\"error\"]",
+      "startByteOffset": 29645,
+      "endByteOffset": 29816,
+      "sourceBytes": 171,
+      "classTokens": [
+        "status"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".status[data-kind=\"success\"]",
+      "startByteOffset": 29818,
+      "endByteOffset": 29980,
+      "sourceBytes": 162,
+      "classTokens": [
+        "status"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-card",
+      "startByteOffset": 30219,
+      "endByteOffset": 30268,
+      "sourceBytes": 49,
+      "classTokens": [
+        "syllable-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-card[data-current=\"true\"]",
+      "startByteOffset": 30270,
+      "endByteOffset": 30401,
+      "sourceBytes": 131,
+      "classTokens": [
+        "syllable-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-card fieldset",
+      "startByteOffset": 30403,
+      "endByteOffset": 30462,
+      "sourceBytes": 59,
+      "classTokens": [
+        "syllable-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-assignment",
+      "startByteOffset": 30464,
+      "endByteOffset": 30587,
+      "sourceBytes": 123,
+      "classTokens": [
+        "syllable-assignment"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-assignment label,\r\n.note-selection label",
+      "startByteOffset": 30589,
+      "endByteOffset": 30730,
+      "sourceBytes": 141,
+      "classTokens": [
+        "syllable-assignment",
+        "note-selection"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-assignment input,\r\n.note-selection input",
+      "startByteOffset": 30732,
+      "endByteOffset": 30829,
+      "sourceBytes": 97,
+      "classTokens": [
+        "syllable-assignment",
+        "note-selection"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-actions,\r\n.syllable-split-fields",
+      "startByteOffset": 30831,
+      "endByteOffset": 30978,
+      "sourceBytes": 147,
+      "classTokens": [
+        "syllable-actions",
+        "syllable-split-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-split-fields label",
+      "startByteOffset": 30980,
+      "endByteOffset": 31028,
+      "sourceBytes": 48,
+      "classTokens": [
+        "syllable-split-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".syllable-card details",
+      "startByteOffset": 31030,
+      "endByteOffset": 31077,
+      "sourceBytes": 47,
+      "classTokens": [
+        "syllable-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-selection",
+      "startByteOffset": 31079,
+      "endByteOffset": 31116,
+      "sourceBytes": 37,
+      "classTokens": [
+        "note-selection"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-selection legend",
+      "startByteOffset": 31118,
+      "endByteOffset": 31162,
+      "sourceBytes": 44,
+      "classTokens": [
+        "note-selection"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-ruler-hit:hover",
+      "startByteOffset": 32612,
+      "endByteOffset": 32690,
+      "sourceBytes": 78,
+      "classTokens": [
+        "roll-ruler-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-ruler-hit:focus",
+      "startByteOffset": 32692,
+      "endByteOffset": 32810,
+      "sourceBytes": 118,
+      "classTokens": [
+        "roll-ruler-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-note-generated",
+      "startByteOffset": 32938,
+      "endByteOffset": 33041,
+      "sourceBytes": 103,
+      "classTokens": [
+        "roll-note-generated"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-candidate-note",
+      "startByteOffset": 33043,
+      "endByteOffset": 33217,
+      "sourceBytes": 174,
+      "classTokens": [
+        "roll-candidate-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-draw-preview",
+      "startByteOffset": 33537,
+      "endByteOffset": 33694,
+      "sourceBytes": 157,
+      "classTokens": [
+        "roll-draw-preview"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-locked=\"true\"] .roll-note",
+      "startByteOffset": 33788,
+      "endByteOffset": 33866,
+      "sourceBytes": 78,
+      "classTokens": [
+        "roll-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-current=\"true\"] .roll-note",
+      "startByteOffset": 33960,
+      "endByteOffset": 34086,
+      "sourceBytes": 126,
+      "classTokens": [
+        "roll-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-note-expression",
+      "startByteOffset": 34232,
+      "endByteOffset": 34392,
+      "sourceBytes": 160,
+      "classTokens": [
+        "roll-note-expression"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note[data-selected=\"true\"]",
+      "startByteOffset": 35455,
+      "endByteOffset": 35552,
+      "sourceBytes": 97,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note[data-current=\"true\"][data-selected=\"true\"]",
+      "startByteOffset": 35554,
+      "endByteOffset": 35722,
+      "sourceBytes": 168,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note:focus-visible",
+      "startByteOffset": 35724,
+      "endByteOffset": 35811,
+      "sourceBytes": 87,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-expression-overlay",
+      "startByteOffset": 35813,
+      "endByteOffset": 35872,
+      "sourceBytes": 59,
+      "classTokens": [
+        "score-expression-overlay"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-curve",
+      "startByteOffset": 35874,
+      "endByteOffset": 36020,
+      "sourceBytes": 146,
+      "classTokens": [
+        "score-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-label,\r\n.score-expression-label",
+      "startByteOffset": 36022,
+      "endByteOffset": 36195,
+      "sourceBytes": 173,
+      "classTokens": [
+        "score-bend-label",
+        "score-expression-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-overlay[data-selected=\"true\"] .score-bend-curve",
+      "startByteOffset": 36197,
+      "endByteOffset": 36326,
+      "sourceBytes": 129,
+      "classTokens": [
+        "score-bend-overlay",
+        "score-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-overlay[data-current=\"true\"] .score-bend-curve",
+      "startByteOffset": 36328,
+      "endByteOffset": 36455,
+      "sourceBytes": 127,
+      "classTokens": [
+        "score-bend-overlay",
+        "score-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-overlay[data-selected=\"true\"][data-current=\"true\"] .score-bend-curve",
+      "startByteOffset": 36457,
+      "endByteOffset": 36588,
+      "sourceBytes": 131,
+      "classTokens": [
+        "score-bend-overlay",
+        "score-bend-curve"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-overlay[data-selected=\"true\"] .score-bend-label,\r\n.score-expression-label[data-selected=\"true\"]",
+      "startByteOffset": 36590,
+      "endByteOffset": 36739,
+      "sourceBytes": 149,
+      "classTokens": [
+        "score-bend-overlay",
+        "score-bend-label",
+        "score-expression-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-overlay[data-current=\"true\"] .score-bend-label,\r\n.score-expression-label[data-current=\"true\"]",
+      "startByteOffset": 36741,
+      "endByteOffset": 36887,
+      "sourceBytes": 146,
+      "classTokens": [
+        "score-bend-overlay",
+        "score-bend-label",
+        "score-expression-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-syllable",
+      "startByteOffset": 36889,
+      "endByteOffset": 36939,
+      "sourceBytes": 50,
+      "classTokens": [
+        "score-syllable"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-syllable[data-current=\"true\"]",
+      "startByteOffset": 36941,
+      "endByteOffset": 36999,
+      "sourceBytes": 58,
+      "classTokens": [
+        "score-syllable"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-syllable",
+      "startByteOffset": 37003,
+      "endByteOffset": 37104,
+      "sourceBytes": 101,
+      "classTokens": [
+        "score-syllable"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-syllable[data-current=\"true\"]",
+      "startByteOffset": 37106,
+      "endByteOffset": 37200,
+      "sourceBytes": 94,
+      "classTokens": [
+        "score-syllable"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-melisma",
+      "startByteOffset": 37202,
+      "endByteOffset": 37264,
+      "sourceBytes": 62,
+      "classTokens": [
+        "score-melisma"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-melisma[data-current=\"true\"]",
+      "startByteOffset": 37266,
+      "endByteOffset": 37360,
+      "sourceBytes": 94,
+      "classTokens": [
+        "score-melisma"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#guitar",
+      "startByteOffset": 37734,
+      "endByteOffset": 37778,
+      "sourceBytes": 44,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-board",
+      "startByteOffset": 37782,
+      "endByteOffset": 37822,
+      "sourceBytes": 40,
+      "classTokens": [
+        "neck-board"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-nut",
+      "startByteOffset": 37824,
+      "endByteOffset": 37860,
+      "sourceBytes": 36,
+      "classTokens": [
+        "neck-nut"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-inlay",
+      "startByteOffset": 37862,
+      "endByteOffset": 37902,
+      "sourceBytes": 40,
+      "classTokens": [
+        "neck-inlay"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-fret",
+      "startByteOffset": 37904,
+      "endByteOffset": 37965,
+      "sourceBytes": 61,
+      "classTokens": [
+        "neck-fret"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-fret-octave",
+      "startByteOffset": 37967,
+      "endByteOffset": 38029,
+      "sourceBytes": 62,
+      "classTokens": [
+        "neck-fret-octave"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-fret-label",
+      "startByteOffset": 38031,
+      "endByteOffset": 38140,
+      "sourceBytes": 109,
+      "classTokens": [
+        "neck-fret-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-fret-label-marked",
+      "startByteOffset": 38142,
+      "endByteOffset": 38206,
+      "sourceBytes": 64,
+      "classTokens": [
+        "neck-fret-label-marked"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-fret-label-current",
+      "startByteOffset": 38208,
+      "endByteOffset": 38274,
+      "sourceBytes": 66,
+      "classTokens": [
+        "neck-fret-label-current"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-fret-current",
+      "startByteOffset": 38276,
+      "endByteOffset": 38337,
+      "sourceBytes": 61,
+      "classTokens": [
+        "neck-fret-current"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-string",
+      "startByteOffset": 38339,
+      "endByteOffset": 38399,
+      "sourceBytes": 60,
+      "classTokens": [
+        "neck-string"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-string[data-string=\"6\"]",
+      "startByteOffset": 38401,
+      "endByteOffset": 38453,
+      "sourceBytes": 52,
+      "classTokens": [
+        "neck-string"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-string[data-string=\"5\"],\r\n.neck-string[data-string=\"4\"]",
+      "startByteOffset": 38455,
+      "endByteOffset": 38539,
+      "sourceBytes": 84,
+      "classTokens": [
+        "neck-string"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-string[data-string=\"1\"]",
+      "startByteOffset": 38541,
+      "endByteOffset": 38591,
+      "sourceBytes": 50,
+      "classTokens": [
+        "neck-string"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-string-label",
+      "startByteOffset": 38593,
+      "endByteOffset": 38722,
+      "sourceBytes": 129,
+      "classTokens": [
+        "neck-string-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-string-number",
+      "startByteOffset": 38724,
+      "endByteOffset": 38836,
+      "sourceBytes": 112,
+      "classTokens": [
+        "neck-string-number"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-hit",
+      "startByteOffset": 38992,
+      "endByteOffset": 39091,
+      "sourceBytes": 99,
+      "classTokens": [
+        "neck-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-hit-primary",
+      "startByteOffset": 39093,
+      "endByteOffset": 39202,
+      "sourceBytes": 109,
+      "classTokens": [
+        "neck-hit-primary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-hit-alternative",
+      "startByteOffset": 39204,
+      "endByteOffset": 39309,
+      "sourceBytes": 105,
+      "classTokens": [
+        "neck-hit-alternative"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-hit-open",
+      "startByteOffset": 39311,
+      "endByteOffset": 39386,
+      "sourceBytes": 75,
+      "classTokens": [
+        "neck-hit-open"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-hit-alternative.neck-hit-open",
+      "startByteOffset": 39388,
+      "endByteOffset": 39476,
+      "sourceBytes": 88,
+      "classTokens": [
+        "neck-hit-alternative",
+        "neck-hit-open"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-hit-current",
+      "startByteOffset": 39478,
+      "endByteOffset": 39595,
+      "sourceBytes": 117,
+      "classTokens": [
+        "neck-hit-current"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-fallback p",
+      "startByteOffset": 39736,
+      "endByteOffset": 39790,
+      "sourceBytes": 54,
+      "classTokens": [
+        "score-fallback"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-fallback ul",
+      "startByteOffset": 39790,
+      "endByteOffset": 39880,
+      "sourceBytes": 90,
+      "classTokens": [
+        "score-fallback"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-warning-list",
+      "startByteOffset": 39882,
+      "endByteOffset": 39932,
+      "sourceBytes": 50,
+      "classTokens": [
+        "score-warning-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".playback-readout dt",
+      "startByteOffset": 40839,
+      "endByteOffset": 40891,
+      "sourceBytes": 52,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".playback-readout dd",
+      "startByteOffset": 40893,
+      "endByteOffset": 40944,
+      "sourceBytes": 51,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] .piano-roll-scroll,\r\nbody[data-view-mode=\"combined\"] .score-scroll",
+      "startByteOffset": 42720,
+      "endByteOffset": 42901,
+      "sourceBytes": 181,
+      "classTokens": [
+        "piano-roll-scroll",
+        "score-scroll"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-selection-box",
+      "startByteOffset": 46936,
+      "endByteOffset": 47066,
+      "sourceBytes": 130,
+      "classTokens": [
+        "roll-selection-box"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note",
+      "startByteOffset": 47146,
+      "endByteOffset": 47182,
+      "sourceBytes": 36,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note[data-selected=\"true\"] path",
+      "startByteOffset": 47186,
+      "endByteOffset": 47279,
+      "sourceBytes": 93,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note[data-anchor=\"true\"]:not([data-selected=\"true\"])",
+      "startByteOffset": 47283,
+      "endByteOffset": 47399,
+      "sourceBytes": 116,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note[data-locked=\"true\"]",
+      "startByteOffset": 47403,
+      "endByteOffset": 47457,
+      "sourceBytes": 54,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-note[data-current=\"true\"]",
+      "startByteOffset": 47461,
+      "endByteOffset": 47560,
+      "sourceBytes": 99,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-context-menu [hidden]",
+      "startByteOffset": 47885,
+      "endByteOffset": 47946,
+      "sourceBytes": 61,
+      "classTokens": [
+        "note-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-context-menu [data-context-group]",
+      "startByteOffset": 47950,
+      "endByteOffset": 48029,
+      "sourceBytes": 79,
+      "classTokens": [
+        "note-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-context-menu button",
+      "startByteOffset": 48033,
+      "endByteOffset": 48281,
+      "sourceBytes": 248,
+      "classTokens": [
+        "note-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".note-context-menu button:hover:not(:disabled),\r\n.note-context-menu button:focus-visible",
+      "startByteOffset": 48285,
+      "endByteOffset": 48477,
+      "sourceBytes": 192,
+      "classTokens": [
+        "note-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".context-separator",
+      "startByteOffset": 48481,
+      "endByteOffset": 48572,
+      "sourceBytes": 91,
+      "classTokens": [
+        "context-separator"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".context-group-label",
+      "startByteOffset": 48576,
+      "endByteOffset": 48776,
+      "sourceBytes": 200,
+      "classTokens": [
+        "context-group-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".context-inline-actions",
+      "startByteOffset": 48780,
+      "endByteOffset": 48896,
+      "sourceBytes": 116,
+      "classTokens": [
+        "context-inline-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".context-inline-actions button",
+      "startByteOffset": 48900,
+      "endByteOffset": 48985,
+      "sourceBytes": 85,
+      "classTokens": [
+        "context-inline-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".context-inline-actions:has(button:nth-child(3):last-child)",
+      "startByteOffset": 48989,
+      "endByteOffset": 49106,
+      "sourceBytes": 117,
+      "classTokens": [
+        "context-inline-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".utility-card[hidden]",
+      "startByteOffset": 49110,
+      "endByteOffset": 49165,
+      "sourceBytes": 55,
+      "classTokens": [
+        "utility-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".command-button:hover:not(:disabled)",
+      "startByteOffset": 51536,
+      "endByteOffset": 51674,
+      "sourceBytes": 138,
+      "classTokens": [
+        "command-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".confirm-dialog::backdrop",
+      "startByteOffset": 53005,
+      "endByteOffset": 53104,
+      "sourceBytes": 99,
+      "classTokens": [
+        "confirm-dialog"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ":root[data-theme=\"dark\"] .confirm-dialog::backdrop",
+      "startByteOffset": 53108,
+      "endByteOffset": 53199,
+      "sourceBytes": 91,
+      "classTokens": [
+        "confirm-dialog"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".confirm-dialog-card",
+      "startByteOffset": 53203,
+      "endByteOffset": 53295,
+      "sourceBytes": 92,
+      "classTokens": [
+        "confirm-dialog-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list",
+      "startByteOffset": 53361,
+      "endByteOffset": 53547,
+      "sourceBytes": 186,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list > li",
+      "startByteOffset": 53549,
+      "endByteOffset": 53818,
+      "sourceBytes": 269,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list > li > div:first-child",
+      "startByteOffset": 53820,
+      "endByteOffset": 53881,
+      "sourceBytes": 61,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list h3",
+      "startByteOffset": 53883,
+      "endByteOffset": 53983,
+      "sourceBytes": 100,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list p",
+      "startByteOffset": 53985,
+      "endByteOffset": 54085,
+      "sourceBytes": 100,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list > li > button,\r\n.project-record-list > li > div:last-child",
+      "startByteOffset": 54087,
+      "endByteOffset": 54186,
+      "sourceBytes": 99,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-record-list > li > div:last-child",
+      "startByteOffset": 54188,
+      "endByteOffset": 54263,
+      "sourceBytes": 75,
+      "classTokens": [
+        "project-record-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-title-field",
+      "startByteOffset": 54265,
+      "endByteOffset": 54371,
+      "sourceBytes": 106,
+      "classTokens": [
+        "project-title-field"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-title-field input",
+      "startByteOffset": 54373,
+      "endByteOffset": 54436,
+      "sourceBytes": 63,
+      "classTokens": [
+        "project-title-field"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-dialog-status",
+      "startByteOffset": 54438,
+      "endByteOffset": 54521,
+      "sourceBytes": 83,
+      "classTokens": [
+        "project-dialog-status"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".confirm-dialog-copy h2",
+      "startByteOffset": 54525,
+      "endByteOffset": 54597,
+      "sourceBytes": 72,
+      "classTokens": [
+        "confirm-dialog-copy"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".confirm-dialog-copy p",
+      "startByteOffset": 54601,
+      "endByteOffset": 54711,
+      "sourceBytes": 110,
+      "classTokens": [
+        "confirm-dialog-copy"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".confirm-dialog-actions",
+      "startByteOffset": 54715,
+      "endByteOffset": 54807,
+      "sourceBytes": 92,
+      "classTokens": [
+        "confirm-dialog-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "button.danger-button",
+      "startByteOffset": 54811,
+      "endByteOffset": 54914,
+      "sourceBytes": 103,
+      "classTokens": [
+        "danger-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "button.danger-button:hover:not(:disabled)",
+      "startByteOffset": 54918,
+      "endByteOffset": 54993,
+      "sourceBytes": 75,
+      "classTokens": [
+        "danger-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-tool-group button[data-active=\"true\"],\r\n.bend-tool-group button[aria-pressed=\"true\"]",
+      "startByteOffset": 55080,
+      "endByteOffset": 55263,
+      "sourceBytes": 183,
+      "classTokens": [
+        "bend-tool-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-note-bend",
+      "startByteOffset": 55267,
+      "endByteOffset": 55433,
+      "sourceBytes": 166,
+      "classTokens": [
+        "roll-note-bend"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-source=\"generated\"] .roll-note-bend",
+      "startByteOffset": 55437,
+      "endByteOffset": 55547,
+      "sourceBytes": 110,
+      "classTokens": [
+        "roll-note-bend"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-selected=\"true\"] .roll-note-bend",
+      "startByteOffset": 55551,
+      "endByteOffset": 55657,
+      "sourceBytes": 106,
+      "classTokens": [
+        "roll-note-bend"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-current=\"true\"] .roll-note-bend",
+      "startByteOffset": 55661,
+      "endByteOffset": 55787,
+      "sourceBytes": 126,
+      "classTokens": [
+        "roll-note-bend"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-source=\"generated\"] .roll-note-expression",
+      "startByteOffset": 55791,
+      "endByteOffset": 55905,
+      "sourceBytes": 114,
+      "classTokens": [
+        "roll-note-expression"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-current=\"true\"] .roll-note-expression",
+      "startByteOffset": 55909,
+      "endByteOffset": 56017,
+      "sourceBytes": 108,
+      "classTokens": [
+        "roll-note-expression"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-selected=\"true\"] .roll-note-expression",
+      "startByteOffset": 56021,
+      "endByteOffset": 56131,
+      "sourceBytes": 110,
+      "classTokens": [
+        "roll-note-expression"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-context-actions",
+      "startByteOffset": 56135,
+      "endByteOffset": 56214,
+      "sourceBytes": 79,
+      "classTokens": [
+        "bend-context-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 58822,
+      "endByteOffset": 58989,
+      "sourceBytes": 167,
+      "classTokens": [
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-bend-label",
+      "startByteOffset": 59650,
+      "endByteOffset": 59845,
+      "sourceBytes": 195,
+      "classTokens": [
+        "score-bend-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".share-link-field",
+      "startByteOffset": 60273,
+      "endByteOffset": 60329,
+      "sourceBytes": 56,
+      "classTokens": [
+        "share-link-field"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".share-link-field input",
+      "startByteOffset": 60331,
+      "endByteOffset": 60489,
+      "sourceBytes": 158,
+      "classTokens": [
+        "share-link-field"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-editor",
+      "startByteOffset": 60658,
+      "endByteOffset": 60746,
+      "sourceBytes": 88,
+      "classTokens": [
+        "bend-curve-editor"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-editor > summary",
+      "startByteOffset": 60748,
+      "endByteOffset": 60875,
+      "sourceBytes": 127,
+      "classTokens": [
+        "bend-curve-editor"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-body",
+      "startByteOffset": 60877,
+      "endByteOffset": 60957,
+      "sourceBytes": 80,
+      "classTokens": [
+        "bend-curve-body"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head",
+      "startByteOffset": 60959,
+      "endByteOffset": 61070,
+      "sourceBytes": 111,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head label",
+      "startByteOffset": 61072,
+      "endByteOffset": 61153,
+      "sourceBytes": 81,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head span",
+      "startByteOffset": 61155,
+      "endByteOffset": 61212,
+      "sourceBytes": 57,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-preview",
+      "startByteOffset": 61214,
+      "endByteOffset": 61392,
+      "sourceBytes": 178,
+      "classTokens": [
+        "bend-curve-preview"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-guide",
+      "startByteOffset": 61394,
+      "endByteOffset": 61456,
+      "sourceBytes": 62,
+      "classTokens": [
+        "bend-guide"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-zero",
+      "startByteOffset": 61458,
+      "endByteOffset": 61528,
+      "sourceBytes": 70,
+      "classTokens": [
+        "bend-zero"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-guide-label",
+      "startByteOffset": 61530,
+      "endByteOffset": 61634,
+      "sourceBytes": 104,
+      "classTokens": [
+        "bend-guide-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-preview-line",
+      "startByteOffset": 61636,
+      "endByteOffset": 61774,
+      "sourceBytes": 138,
+      "classTokens": [
+        "bend-preview-line"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-preview-point",
+      "startByteOffset": 61776,
+      "endByteOffset": 61876,
+      "sourceBytes": 100,
+      "classTokens": [
+        "bend-preview-point"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-list",
+      "startByteOffset": 61878,
+      "endByteOffset": 61933,
+      "sourceBytes": 55,
+      "classTokens": [
+        "bend-point-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-row",
+      "startByteOffset": 61935,
+      "endByteOffset": 62073,
+      "sourceBytes": 138,
+      "classTokens": [
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-row label",
+      "startByteOffset": 62075,
+      "endByteOffset": 62136,
+      "sourceBytes": 61,
+      "classTokens": [
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-row label > span",
+      "startByteOffset": 62138,
+      "endByteOffset": 62231,
+      "sourceBytes": 93,
+      "classTokens": [
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-row input,\r\n.bend-point-row select",
+      "startByteOffset": 62233,
+      "endByteOffset": 62353,
+      "sourceBytes": 120,
+      "classTokens": [
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-remove",
+      "startByteOffset": 62355,
+      "endByteOffset": 62441,
+      "sourceBytes": 86,
+      "classTokens": [
+        "bend-point-remove"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-actions",
+      "startByteOffset": 62443,
+      "endByteOffset": 62541,
+      "sourceBytes": 98,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-actions button",
+      "startByteOffset": 62543,
+      "endByteOffset": 62595,
+      "sourceBytes": 52,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-help",
+      "startByteOffset": 62597,
+      "endByteOffset": 62653,
+      "sourceBytes": 56,
+      "classTokens": [
+        "bend-curve-help"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-editor[data-available=\"false\"] .bend-curve-preview,\r\n.bend-curve-editor[data-available=\"false\"] .bend-point-list",
+      "startByteOffset": 62655,
+      "endByteOffset": 62802,
+      "sourceBytes": 147,
+      "classTokens": [
+        "bend-curve-editor",
+        "bend-curve-preview",
+        "bend-point-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-context-actions",
+      "startByteOffset": 62806,
+      "endByteOffset": 62885,
+      "sourceBytes": 79,
+      "classTokens": [
+        "bend-context-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-preview",
+      "startByteOffset": 62986,
+      "endByteOffset": 63094,
+      "sourceBytes": 108,
+      "classTokens": [
+        "bend-curve-preview"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-preview-hit",
+      "startByteOffset": 63096,
+      "endByteOffset": 63198,
+      "sourceBytes": 102,
+      "classTokens": [
+        "bend-preview-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-preview-hit:active",
+      "startByteOffset": 63200,
+      "endByteOffset": 63250,
+      "sourceBytes": 50,
+      "classTokens": [
+        "bend-preview-hit"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-preview-point-active",
+      "startByteOffset": 63252,
+      "endByteOffset": 63331,
+      "sourceBytes": 79,
+      "classTokens": [
+        "bend-preview-point-active"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-time-guide",
+      "startByteOffset": 63333,
+      "endByteOffset": 63420,
+      "sourceBytes": 87,
+      "classTokens": [
+        "bend-time-guide"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-list",
+      "startByteOffset": 63422,
+      "endByteOffset": 63459,
+      "sourceBytes": 37,
+      "classTokens": [
+        "bend-point-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-header,\r\n.bend-point-row",
+      "startByteOffset": 63461,
+      "endByteOffset": 63627,
+      "sourceBytes": 166,
+      "classTokens": [
+        "bend-point-header",
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-header",
+      "startByteOffset": 63629,
+      "endByteOffset": 63757,
+      "sourceBytes": 128,
+      "classTokens": [
+        "bend-point-header"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-row",
+      "startByteOffset": 63759,
+      "endByteOffset": 63803,
+      "sourceBytes": 44,
+      "classTokens": [
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-row input,\r\n.bend-point-row select",
+      "startByteOffset": 63805,
+      "endByteOffset": 63957,
+      "sourceBytes": 152,
+      "classTokens": [
+        "bend-point-row"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-point-remove",
+      "startByteOffset": 63959,
+      "endByteOffset": 64128,
+      "sourceBytes": 169,
+      "classTokens": [
+        "bend-point-remove"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head",
+      "startByteOffset": 64130,
+      "endByteOffset": 64175,
+      "sourceBytes": 45,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head label",
+      "startByteOffset": 64177,
+      "endByteOffset": 64280,
+      "sourceBytes": 103,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head label > span,\r\n.bend-curve-head #bend-curve-state",
+      "startByteOffset": 64282,
+      "endByteOffset": 64406,
+      "sourceBytes": 124,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-head select",
+      "startByteOffset": 64408,
+      "endByteOffset": 64552,
+      "sourceBytes": 144,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-actions",
+      "startByteOffset": 64554,
+      "endByteOffset": 64642,
+      "sourceBytes": 88,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-actions button",
+      "startByteOffset": 64644,
+      "endByteOffset": 64839,
+      "sourceBytes": 195,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".bend-curve-help",
+      "startByteOffset": 64841,
+      "endByteOffset": 64914,
+      "sourceBytes": 73,
+      "classTokens": [
+        "bend-curve-help"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-timeline-selection",
+      "startByteOffset": 64991,
+      "endByteOffset": 65145,
+      "sourceBytes": 154,
+      "classTokens": [
+        "roll-timeline-selection"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".roll-timeline-selection-preview",
+      "startByteOffset": 65147,
+      "endByteOffset": 65233,
+      "sourceBytes": 86,
+      "classTokens": [
+        "roll-timeline-selection-preview"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-menu-trigger:hover",
+      "startByteOffset": 66255,
+      "endByteOffset": 66321,
+      "sourceBytes": 66,
+      "classTokens": [
+        "project-menu-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-menu-trigger::-webkit-details-marker",
+      "startByteOffset": 66323,
+      "endByteOffset": 66387,
+      "sourceBytes": 64,
+      "classTokens": [
+        "project-menu-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-menu-trigger::marker",
+      "startByteOffset": 66389,
+      "endByteOffset": 66435,
+      "sourceBytes": 46,
+      "classTokens": [
+        "project-menu-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-menu-popover button:hover",
+      "startByteOffset": 67084,
+      "endByteOffset": 67157,
+      "sourceBytes": 73,
+      "classTokens": [
+        "project-menu-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".project-menu-popover hr",
+      "startByteOffset": 67159,
+      "endByteOffset": 67279,
+      "sourceBytes": 120,
+      "classTokens": [
+        "project-menu-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".panel-collapse-button:hover:not(:disabled)",
+      "startByteOffset": 68546,
+      "endByteOffset": 68693,
+      "sourceBytes": 147,
+      "classTokens": [
+        "panel-collapse-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".panel-disclosure-content[data-collapsed=\"true\"]",
+      "startByteOffset": 69047,
+      "endByteOffset": 69187,
+      "sourceBytes": 140,
+      "classTokens": [
+        "panel-disclosure-content"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".expression-panel[data-collapsed=\"true\"] .expression-status",
+      "startByteOffset": 69513,
+      "endByteOffset": 69591,
+      "sourceBytes": 78,
+      "classTokens": [
+        "expression-panel",
+        "expression-status"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ":root[data-theme=\"dark\"]",
+      "startByteOffset": 69727,
+      "endByteOffset": 70358,
+      "sourceBytes": 631,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".header-select-control:focus-within",
+      "startByteOffset": 72033,
+      "endByteOffset": 72143,
+      "sourceBytes": 110,
+      "classTokens": [
+        "header-select-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".share-session-actions > button",
+      "startByteOffset": 72318,
+      "endByteOffset": 72404,
+      "sourceBytes": 86,
+      "classTokens": [
+        "share-session-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".disclosure-summary::-webkit-details-marker",
+      "startByteOffset": 72676,
+      "endByteOffset": 72738,
+      "sourceBytes": 62,
+      "classTokens": [
+        "disclosure-summary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".disclosure-summary::marker",
+      "startByteOffset": 72740,
+      "endByteOffset": 72784,
+      "sourceBytes": 44,
+      "classTokens": [
+        "disclosure-summary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".panel-collapse-button[aria-expanded=\"false\"] .disclosure-chevron",
+      "startByteOffset": 73170,
+      "endByteOffset": 73270,
+      "sourceBytes": 100,
+      "classTokens": [
+        "panel-collapse-button",
+        "disclosure-chevron"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-layout-group button:hover:not(:disabled)",
+      "startByteOffset": 74768,
+      "endByteOffset": 74843,
+      "sourceBytes": 75,
+      "classTokens": [
+        "score-layout-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".score-scroll[data-layout=\"page\"]",
+      "startByteOffset": 75049,
+      "endByteOffset": 75153,
+      "sourceBytes": 104,
+      "classTokens": [
+        "score-scroll"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#score[data-layout=\"page\"]",
+      "startByteOffset": 75326,
+      "endByteOffset": 75390,
+      "sourceBytes": 64,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#score[data-layout=\"page\"] > svg",
+      "startByteOffset": 75392,
+      "endByteOffset": 75482,
+      "sourceBytes": 90,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#score .score-note[data-selected=\"true\"]",
+      "startByteOffset": 75570,
+      "endByteOffset": 75656,
+      "sourceBytes": 86,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#score .score-note[data-current=\"true\"]",
+      "startByteOffset": 75658,
+      "endByteOffset": 75742,
+      "sourceBytes": 84,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#score .score-note[data-selected=\"true\"][data-current=\"true\"]",
+      "startByteOffset": 75744,
+      "endByteOffset": 75963,
+      "sourceBytes": 219,
+      "classTokens": [
+        "score-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-note",
+      "startByteOffset": 77818,
+      "endByteOffset": 77877,
+      "sourceBytes": 59,
+      "classTokens": [
+        "guitar-tab-note"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-duration",
+      "startByteOffset": 77879,
+      "endByteOffset": 77978,
+      "sourceBytes": 99,
+      "classTokens": [
+        "guitar-tab-duration"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-fret-bg",
+      "startByteOffset": 77980,
+      "endByteOffset": 78093,
+      "sourceBytes": 113,
+      "classTokens": [
+        "guitar-tab-fret-bg"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-fret",
+      "startByteOffset": 78095,
+      "endByteOffset": 78256,
+      "sourceBytes": 161,
+      "classTokens": [
+        "guitar-tab-fret"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-note[data-selected=\"true\"] .guitar-tab-fret-bg",
+      "startByteOffset": 78258,
+      "endByteOffset": 78419,
+      "sourceBytes": 161,
+      "classTokens": [
+        "guitar-tab-note",
+        "guitar-tab-fret-bg"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-note[data-selected=\"true\"] .guitar-tab-fret",
+      "startByteOffset": 78421,
+      "endByteOffset": 78521,
+      "sourceBytes": 100,
+      "classTokens": [
+        "guitar-tab-note",
+        "guitar-tab-fret"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-note[data-current=\"true\"] .guitar-tab-fret-bg",
+      "startByteOffset": 78523,
+      "endByteOffset": 78683,
+      "sourceBytes": 160,
+      "classTokens": [
+        "guitar-tab-note",
+        "guitar-tab-fret-bg"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-note[data-current=\"true\"] .guitar-tab-fret",
+      "startByteOffset": 78685,
+      "endByteOffset": 78783,
+      "sourceBytes": 98,
+      "classTokens": [
+        "guitar-tab-note",
+        "guitar-tab-fret"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-note:focus-visible .guitar-tab-fret-bg",
+      "startByteOffset": 78785,
+      "endByteOffset": 78885,
+      "sourceBytes": 100,
+      "classTokens": [
+        "guitar-tab-note",
+        "guitar-tab-fret-bg"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-bend",
+      "startByteOffset": 78887,
+      "endByteOffset": 79010,
+      "sourceBytes": 123,
+      "classTokens": [
+        "guitar-tab-bend"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-vibrato",
+      "startByteOffset": 79012,
+      "endByteOffset": 79141,
+      "sourceBytes": 129,
+      "classTokens": [
+        "guitar-tab-vibrato"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".guitar-tab-expression-label",
+      "startByteOffset": 79143,
+      "endByteOffset": 79301,
+      "sourceBytes": 158,
+      "classTokens": [
+        "guitar-tab-expression-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-expression",
+      "startByteOffset": 79387,
+      "endByteOffset": 79433,
+      "sourceBytes": 46,
+      "classTokens": [
+        "neck-expression"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-bend-arc",
+      "startByteOffset": 79435,
+      "endByteOffset": 79554,
+      "sourceBytes": 119,
+      "classTokens": [
+        "neck-bend-arc"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-bend-target",
+      "startByteOffset": 79556,
+      "endByteOffset": 79670,
+      "sourceBytes": 114,
+      "classTokens": [
+        "neck-bend-target"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-vibrato-wave",
+      "startByteOffset": 79672,
+      "endByteOffset": 79800,
+      "sourceBytes": 128,
+      "classTokens": [
+        "neck-vibrato-wave"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".neck-expression-label",
+      "startByteOffset": 79802,
+      "endByteOffset": 79954,
+      "sourceBytes": 152,
+      "classTokens": [
+        "neck-expression-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-grid-ruler-surface:focus-visible",
+      "startByteOffset": 82765,
+      "endByteOffset": 82884,
+      "sourceBytes": 119,
+      "classTokens": [
+        "drum-grid-ruler-surface"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-ruler-range[data-state=\"preview\"]",
+      "startByteOffset": 83228,
+      "endByteOffset": 83410,
+      "sourceBytes": 182,
+      "classTokens": [
+        "drum-ruler-range"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-playback-range[data-state=\"preview\"]",
+      "startByteOffset": 83869,
+      "endByteOffset": 84054,
+      "sourceBytes": 185,
+      "classTokens": [
+        "drum-playback-range"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".instrument-mix-button[data-active=\"true\"]",
+      "startByteOffset": 85516,
+      "endByteOffset": 85669,
+      "sourceBytes": 153,
+      "classTokens": [
+        "instrument-mix-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".instrument-mix-button:focus-visible",
+      "startByteOffset": 85825,
+      "endByteOffset": 85926,
+      "sourceBytes": 101,
+      "classTokens": [
+        "instrument-mix-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-cell:hover:not(:disabled)",
+      "startByteOffset": 86544,
+      "endByteOffset": 86615,
+      "sourceBytes": 71,
+      "classTokens": [
+        "drum-cell"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-grid[data-tool=\"draw\"] .drum-cell[data-hit=\"false\"]",
+      "startByteOffset": 87171,
+      "endByteOffset": 87255,
+      "sourceBytes": 84,
+      "classTokens": [
+        "drum-grid",
+        "drum-cell"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-cell[data-hit=\"true\"]:hover:not(:disabled)",
+      "startByteOffset": 87397,
+      "endByteOffset": 87492,
+      "sourceBytes": 95,
+      "classTokens": [
+        "drum-cell"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-hit-offset",
+      "startByteOffset": 87494,
+      "endByteOffset": 87649,
+      "sourceBytes": 155,
+      "classTokens": [
+        "drum-hit-offset"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-cell:focus-visible",
+      "startByteOffset": 88351,
+      "endByteOffset": 88456,
+      "sourceBytes": 105,
+      "classTokens": [
+        "drum-cell"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".drum-hit-count",
+      "startByteOffset": 88578,
+      "endByteOffset": 88874,
+      "sourceBytes": 296,
+      "classTokens": [
+        "drum-hit-count"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-heading",
+      "startByteOffset": 89702,
+      "endByteOffset": 89861,
+      "sourceBytes": 159,
+      "classTokens": [
+        "percussion-expression-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-heading h3,\r\n.percussion-expression-heading p",
+      "startByteOffset": 89863,
+      "endByteOffset": 89950,
+      "sourceBytes": 87,
+      "classTokens": [
+        "percussion-expression-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-heading h3",
+      "startByteOffset": 89952,
+      "endByteOffset": 90020,
+      "sourceBytes": 68,
+      "classTokens": [
+        "percussion-expression-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-heading p",
+      "startByteOffset": 90022,
+      "endByteOffset": 90113,
+      "sourceBytes": 91,
+      "classTokens": [
+        "percussion-expression-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-capability-summary",
+      "startByteOffset": 90115,
+      "endByteOffset": 90194,
+      "sourceBytes": 79,
+      "classTokens": [
+        "percussion-capability-summary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-capability-summary > div",
+      "startByteOffset": 90196,
+      "endByteOffset": 90298,
+      "sourceBytes": 102,
+      "classTokens": [
+        "percussion-capability-summary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-capability-summary dt",
+      "startByteOffset": 90300,
+      "endByteOffset": 90367,
+      "sourceBytes": 67,
+      "classTokens": [
+        "percussion-capability-summary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-capability-summary dd",
+      "startByteOffset": 90369,
+      "endByteOffset": 90442,
+      "sourceBytes": 73,
+      "classTokens": [
+        "percussion-capability-summary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-primary",
+      "startByteOffset": 90444,
+      "endByteOffset": 90571,
+      "sourceBytes": 127,
+      "classTokens": [
+        "percussion-expression-primary"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-range-control",
+      "startByteOffset": 90573,
+      "endByteOffset": 90750,
+      "sourceBytes": 177,
+      "classTokens": [
+        "percussion-range-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-range-control input[type=\"range\"]",
+      "startByteOffset": 90752,
+      "endByteOffset": 90835,
+      "sourceBytes": 83,
+      "classTokens": [
+        "percussion-range-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-range-control output",
+      "startByteOffset": 90837,
+      "endByteOffset": 91059,
+      "sourceBytes": 222,
+      "classTokens": [
+        "percussion-range-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-advanced",
+      "startByteOffset": 91061,
+      "endByteOffset": 91121,
+      "sourceBytes": 60,
+      "classTokens": [
+        "percussion-expression-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-advanced > summary",
+      "startByteOffset": 91123,
+      "endByteOffset": 91269,
+      "sourceBytes": 146,
+      "classTokens": [
+        "percussion-expression-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-fields",
+      "startByteOffset": 91271,
+      "endByteOffset": 91420,
+      "sourceBytes": 149,
+      "classTokens": [
+        "percussion-expression-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-fields label",
+      "startByteOffset": 91422,
+      "endByteOffset": 91479,
+      "sourceBytes": 57,
+      "classTokens": [
+        "percussion-expression-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-fields input,\r\n.percussion-expression-fields select",
+      "startByteOffset": 91481,
+      "endByteOffset": 91576,
+      "sourceBytes": 95,
+      "classTokens": [
+        "percussion-expression-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".percussion-expression-actions",
+      "startByteOffset": 91578,
+      "endByteOffset": 91696,
+      "sourceBytes": 118,
+      "classTokens": [
+        "percussion-expression-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-timeline-tools #harmony-candidates li",
+      "startByteOffset": 92437,
+      "endByteOffset": 92607,
+      "sourceBytes": 170,
+      "classTokens": [
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-timeline-tools #harmony-candidates p",
+      "startByteOffset": 92609,
+      "endByteOffset": 92695,
+      "sourceBytes": 86,
+      "classTokens": [
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#piano-roll [data-entity=\"chord\"][data-current=\"true\"] [data-chord-shape]",
+      "startByteOffset": 92896,
+      "endByteOffset": 93028,
+      "sourceBytes": 132,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#piano-roll [data-entity=\"chord\"]:focus-visible [data-chord-shape], #piano-roll [data-entity=\"harmony-bar\"]:focus-visible rect",
+      "startByteOffset": 93030,
+      "endByteOffset": 93199,
+      "sourceBytes": 169,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#piano-roll [data-entity=\"chord\"][data-locked=\"true\"]",
+      "startByteOffset": 93201,
+      "endByteOffset": 93275,
+      "sourceBytes": 74,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-list [data-selected=\"true\"]",
+      "startByteOffset": 93277,
+      "endByteOffset": 93355,
+      "sourceBytes": 78,
+      "classTokens": [
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-list [data-current=\"true\"]",
+      "startByteOffset": 93357,
+      "endByteOffset": 93471,
+      "sourceBytes": 114,
+      "classTokens": [
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#chord-context-menu:not([hidden])",
+      "startByteOffset": 93715,
+      "endByteOffset": 93779,
+      "sourceBytes": 64,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": "#chord-context-menu button",
+      "startByteOffset": 93781,
+      "endByteOffset": 93847,
+      "sourceBytes": 66,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".sketch-controls button[aria-pressed=\"true\"]",
+      "startByteOffset": 94466,
+      "endByteOffset": 94595,
+      "sourceBytes": 129,
+      "classTokens": [
+        "sketch-controls"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".sketch-controls button:focus-visible",
+      "startByteOffset": 94597,
+      "endByteOffset": 94692,
+      "sourceBytes": 95,
+      "classTokens": [
+        "sketch-controls"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-card .form-grid",
+      "startByteOffset": 94837,
+      "endByteOffset": 94915,
+      "sourceBytes": 78,
+      "classTokens": [
+        "harmony-card",
+        "form-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-list li",
+      "startByteOffset": 95094,
+      "endByteOffset": 95186,
+      "sourceBytes": 92,
+      "classTokens": [
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-list button",
+      "startByteOffset": 95188,
+      "endByteOffset": 95275,
+      "sourceBytes": 87,
+      "classTokens": [
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-list [aria-pressed=\"true\"]",
+      "startByteOffset": 95277,
+      "endByteOffset": 95371,
+      "sourceBytes": 94,
+      "classTokens": [
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/base.css?v=20261003.78",
+      "selector": ".harmony-list p",
+      "startByteOffset": 95373,
+      "endByteOffset": 95409,
+      "sourceBytes": 36,
+      "classTokens": [
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] .workspace-canvas",
+      "startByteOffset": 84,
+      "endByteOffset": 234,
+      "sourceBytes": 150,
+      "classTokens": [
+        "workspace-canvas"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] #piano-roll-section",
+      "startByteOffset": 238,
+      "endByteOffset": 309,
+      "sourceBytes": 71,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] #score-section",
+      "startByteOffset": 313,
+      "endByteOffset": 379,
+      "sourceBytes": 66,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] #expression-panel",
+      "startByteOffset": 383,
+      "endByteOffset": 457,
+      "sourceBytes": 74,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] #score-scroll",
+      "startByteOffset": 461,
+      "endByteOffset": 529,
+      "sourceBytes": 68,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "body[data-view-mode=\"combined\"] .workspace-canvas",
+      "startByteOffset": 533,
+      "endByteOffset": 675,
+      "sourceBytes": 142,
+      "classTokens": [
+        "workspace-canvas"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-view-mode=\"combined\"] .workspace-canvas",
+      "startByteOffset": 806,
+      "endByteOffset": 929,
+      "sourceBytes": 123,
+      "classTokens": [
+        "studio",
+        "workspace-canvas"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-view-mode=\"combined\"] #expression-panel",
+      "startByteOffset": 933,
+      "endByteOffset": 1008,
+      "sourceBytes": 75,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions",
+      "startByteOffset": 1066,
+      "endByteOffset": 1123,
+      "sourceBytes": 57,
+      "classTokens": [
+        "studio",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .brand-block h1::after",
+      "startByteOffset": 4529,
+      "endByteOffset": 4578,
+      "sourceBytes": 49,
+      "classTokens": [
+        "studio",
+        "brand-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio #playback-readout > div:has(#current-note), .studio #playback-readout > div:has(#current-section)",
+      "startByteOffset": 5552,
+      "endByteOffset": 5676,
+      "sourceBytes": 124,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .playback-readout dt",
+      "startByteOffset": 5680,
+      "endByteOffset": 5727,
+      "sourceBytes": 47,
+      "classTokens": [
+        "studio",
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced",
+      "startByteOffset": 6288,
+      "endByteOffset": 6329,
+      "sourceBytes": 41,
+      "classTokens": [
+        "studio",
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced > summary",
+      "startByteOffset": 6333,
+      "endByteOffset": 6401,
+      "sourceBytes": 68,
+      "classTokens": [
+        "studio",
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 6405,
+      "endByteOffset": 6493,
+      "sourceBytes": 88,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio-overview-track button",
+      "startByteOffset": 7647,
+      "endByteOffset": 7698,
+      "sourceBytes": 51,
+      "classTokens": [
+        "studio-overview-track"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .editor-toolbar label:has(#snap-select) > span",
+      "startByteOffset": 9579,
+      "endByteOffset": 9723,
+      "sourceBytes": 144,
+      "classTokens": [
+        "studio",
+        "editor-toolbar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .editor-toolbar .zoom-control > span",
+      "startByteOffset": 9787,
+      "endByteOffset": 9921,
+      "sourceBytes": 134,
+      "classTokens": [
+        "studio",
+        "editor-toolbar",
+        "zoom-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .percussion-range-control",
+      "startByteOffset": 11325,
+      "endByteOffset": 11380,
+      "sourceBytes": 55,
+      "classTokens": [
+        "studio",
+        "percussion-range-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .percussion-range-control input[type=\"range\"]",
+      "startByteOffset": 11384,
+      "endByteOffset": 11455,
+      "sourceBytes": 71,
+      "classTokens": [
+        "studio",
+        "percussion-range-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "#chord-context-menu button",
+      "startByteOffset": 12587,
+      "endByteOffset": 12635,
+      "sourceBytes": 48,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".progression-context-menu button",
+      "startByteOffset": 12636,
+      "endByteOffset": 12690,
+      "sourceBytes": 54,
+      "classTokens": [
+        "progression-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .progression-help[open] p",
+      "startByteOffset": 13083,
+      "endByteOffset": 13157,
+      "sourceBytes": 74,
+      "classTokens": [
+        "studio",
+        "progression-help"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced > summary",
+      "startByteOffset": 15067,
+      "endByteOffset": 15140,
+      "sourceBytes": 73,
+      "classTokens": [
+        "studio",
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 15144,
+      "endByteOffset": 15300,
+      "sourceBytes": 156,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar[data-sheet-size=\"peek\"] > :not(.studio-inspector-head)",
+      "startByteOffset": 19682,
+      "endByteOffset": 19782,
+      "sourceBytes": 100,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar",
+        "studio-inspector-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar[data-sheet-size=\"peek\"] .studio-inspector-head > strong,\r\n  .studio .workspace-sidebar[data-sheet-size=\"peek\"] button[data-studio-close]",
+      "startByteOffset": 20141,
+      "endByteOffset": 20323,
+      "sourceBytes": 182,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar",
+        "studio-inspector-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-studio-panel=\"none\"] .workspace-sidebar[data-sheet-size=\"peek\"] .mobile-panel-peek-actions",
+      "startByteOffset": 20327,
+      "endByteOffset": 20475,
+      "sourceBytes": 148,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar",
+        "mobile-panel-peek-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .note-selection-bar > .selection-velocity",
+      "startByteOffset": 22274,
+      "endByteOffset": 22342,
+      "sourceBytes": 68,
+      "classTokens": [
+        "studio",
+        "note-selection-bar",
+        "selection-velocity"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .note-selection-bar > button,\r\n  .studio .note-selection-bar > .editor-toolbar-group > button",
+      "startByteOffset": 22346,
+      "endByteOffset": 22504,
+      "sourceBytes": 158,
+      "classTokens": [
+        "studio",
+        "note-selection-bar",
+        "editor-toolbar-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .note-selection-bar > button[data-action=\"generate-selected-gap\"]",
+      "startByteOffset": 22508,
+      "endByteOffset": 22601,
+      "sourceBytes": 93,
+      "classTokens": [
+        "studio",
+        "note-selection-bar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .note-selection-bar > .editor-toolbar-group",
+      "startByteOffset": 22605,
+      "endByteOffset": 22686,
+      "sourceBytes": 81,
+      "classTokens": [
+        "studio",
+        "note-selection-bar",
+        "editor-toolbar-group"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .selection-more > summary",
+      "startByteOffset": 22690,
+      "endByteOffset": 22780,
+      "sourceBytes": 90,
+      "classTokens": [
+        "studio",
+        "selection-more"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions",
+      "startByteOffset": 22854,
+      "endByteOffset": 22969,
+      "sourceBytes": 115,
+      "classTokens": [
+        "studio",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-studio-panel=\"none\"] .mobile-panel-peek-actions",
+      "startByteOffset": 22973,
+      "endByteOffset": 23068,
+      "sourceBytes": 95,
+      "classTokens": [
+        "studio",
+        "mobile-panel-peek-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-panel-peek-actions button:hover",
+      "startByteOffset": 23289,
+      "endByteOffset": 23395,
+      "sourceBytes": 106,
+      "classTokens": [
+        "studio",
+        "mobile-panel-peek-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 24248,
+      "endByteOffset": 24612,
+      "sourceBytes": 364,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .help-sheet[open]",
+      "startByteOffset": 25563,
+      "endByteOffset": 25834,
+      "sourceBytes": 271,
+      "classTokens": [
+        "studio",
+        "help-sheet"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .help-sheet-card",
+      "startByteOffset": 25838,
+      "endByteOffset": 25881,
+      "sourceBytes": 43,
+      "classTokens": [
+        "studio",
+        "help-sheet-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".expression-note-fields,\r\n  .expression-vibrato-fields",
+      "startByteOffset": 26060,
+      "endByteOffset": 26165,
+      "sourceBytes": 105,
+      "classTokens": [
+        "expression-note-fields",
+        "expression-vibrato-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".transport-advanced",
+      "startByteOffset": 26655,
+      "endByteOffset": 26694,
+      "sourceBytes": 39,
+      "classTokens": [
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".generation-fields",
+      "startByteOffset": 26923,
+      "endByteOffset": 26973,
+      "sourceBytes": 50,
+      "classTokens": [
+        "generation-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".tempo-control button",
+      "startByteOffset": 27379,
+      "endByteOffset": 27420,
+      "sourceBytes": 41,
+      "classTokens": [
+        "tempo-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 27805,
+      "endByteOffset": 28154,
+      "sourceBytes": 349,
+      "classTokens": [
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".workspace-chrome .transport-dock",
+      "startByteOffset": 29366,
+      "endByteOffset": 29419,
+      "sourceBytes": 53,
+      "classTokens": [
+        "workspace-chrome",
+        "transport-dock"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".workspace-chrome .workspace-toolbar",
+      "startByteOffset": 29423,
+      "endByteOffset": 29578,
+      "sourceBytes": 155,
+      "classTokens": [
+        "workspace-chrome",
+        "workspace-toolbar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".playback-readout dt",
+      "startByteOffset": 30005,
+      "endByteOffset": 30057,
+      "sourceBytes": 52,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".playback-readout dd",
+      "startByteOffset": 30061,
+      "endByteOffset": 30112,
+      "sourceBytes": 51,
+      "classTokens": [
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".workspace-chrome button,\r\n  .workspace-chrome select,\r\n  .workspace-chrome input",
+      "startByteOffset": 30256,
+      "endByteOffset": 30362,
+      "sourceBytes": 106,
+      "classTokens": [
+        "workspace-chrome"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".workspace-chrome .transport-buttons button,\r\n  .workspace-chrome .history-buttons button",
+      "startByteOffset": 30366,
+      "endByteOffset": 30508,
+      "sourceBytes": 142,
+      "classTokens": [
+        "workspace-chrome",
+        "transport-buttons",
+        "history-buttons"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".generation-options[open] > .generation-advanced-popover",
+      "startByteOffset": 30512,
+      "endByteOffset": 30688,
+      "sourceBytes": 176,
+      "classTokens": [
+        "generation-options",
+        "generation-advanced-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 30692,
+      "endByteOffset": 30782,
+      "sourceBytes": 90,
+      "classTokens": [
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".generation-options[open] > .generation-advanced-popover",
+      "startByteOffset": 30788,
+      "endByteOffset": 30875,
+      "sourceBytes": 87,
+      "classTokens": [
+        "generation-options",
+        "generation-advanced-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": "#copy-selection,\r\n  #paste-notes,\r\n  #clear-selection",
+      "startByteOffset": 30954,
+      "endByteOffset": 31034,
+      "sourceBytes": 80,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".confirm-dialog-actions",
+      "startByteOffset": 31098,
+      "endByteOffset": 31185,
+      "sourceBytes": 87,
+      "classTokens": [
+        "confirm-dialog-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 31537,
+      "endByteOffset": 31612,
+      "sourceBytes": 75,
+      "classTokens": [
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".shared-source",
+      "startByteOffset": 31616,
+      "endByteOffset": 31662,
+      "sourceBytes": 46,
+      "classTokens": [
+        "shared-source"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".bend-curve-head",
+      "startByteOffset": 31666,
+      "endByteOffset": 31745,
+      "sourceBytes": 79,
+      "classTokens": [
+        "bend-curve-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".bend-curve-actions",
+      "startByteOffset": 31749,
+      "endByteOffset": 31808,
+      "sourceBytes": 59,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".bend-curve-actions",
+      "startByteOffset": 31812,
+      "endByteOffset": 31880,
+      "sourceBytes": 68,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".bend-curve-actions button",
+      "startByteOffset": 31884,
+      "endByteOffset": 31938,
+      "sourceBytes": 54,
+      "classTokens": [
+        "bend-curve-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".workspace-chrome .transport-dock",
+      "startByteOffset": 32511,
+      "endByteOffset": 32566,
+      "sourceBytes": 55,
+      "classTokens": [
+        "workspace-chrome",
+        "transport-dock"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".workspace-chrome .transport-main",
+      "startByteOffset": 32570,
+      "endByteOffset": 32620,
+      "sourceBytes": 50,
+      "classTokens": [
+        "workspace-chrome",
+        "transport-main"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".playback-settings-group .tempo-control",
+      "startByteOffset": 32992,
+      "endByteOffset": 33051,
+      "sourceBytes": 59,
+      "classTokens": [
+        "playback-settings-group",
+        "tempo-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".drums-pane-heading p",
+      "startByteOffset": 34764,
+      "endByteOffset": 34812,
+      "sourceBytes": 48,
+      "classTokens": [
+        "drums-pane-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".percussion-expression-heading",
+      "startByteOffset": 34816,
+      "endByteOffset": 34882,
+      "sourceBytes": 66,
+      "classTokens": [
+        "percussion-expression-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".percussion-expression-primary,\r\n  .percussion-expression-fields",
+      "startByteOffset": 34886,
+      "endByteOffset": 34990,
+      "sourceBytes": 104,
+      "classTokens": [
+        "percussion-expression-primary",
+        "percussion-expression-fields"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".percussion-expression-actions",
+      "startByteOffset": 34994,
+      "endByteOffset": 35087,
+      "sourceBytes": 93,
+      "classTokens": [
+        "percussion-expression-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".percussion-expression-actions button",
+      "startByteOffset": 35091,
+      "endByteOffset": 35153,
+      "sourceBytes": 62,
+      "classTokens": [
+        "percussion-expression-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-view-mode=\"combined\"] #score-section",
+      "startByteOffset": 37612,
+      "endByteOffset": 37691,
+      "sourceBytes": 79,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-view-mode=\"combined\"] #piano-roll-section",
+      "startByteOffset": 37695,
+      "endByteOffset": 37779,
+      "sourceBytes": 84,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .studio-overview-label > span",
+      "startByteOffset": 39665,
+      "endByteOffset": 39744,
+      "sourceBytes": 79,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .studio-overview-label output",
+      "startByteOffset": 39748,
+      "endByteOffset": 39829,
+      "sourceBytes": 81,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .playback-settings-group > .tempo-control,\r\n  .studio .mobile-workspace-dock .playback-settings-group > .loop-toggle,\r\n  .studio .mobile-workspace-dock .playback-settings-group > .range-reset,\r\n  .studio .mobile-workspace-dock .playback-settings-group > .history-buttons",
+      "startByteOffset": 40118,
+      "endByteOffset": 40438,
+      "sourceBytes": 320,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "playback-settings-group",
+        "tempo-control",
+        "loop-toggle",
+        "range-reset",
+        "history-buttons"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 41545,
+      "endByteOffset": 41621,
+      "sourceBytes": 76,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio #score-section .score-status:empty",
+      "startByteOffset": 43842,
+      "endByteOffset": 43903,
+      "sourceBytes": 61,
+      "classTokens": [
+        "studio",
+        "score-status"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions",
+      "startByteOffset": 47182,
+      "endByteOffset": 47239,
+      "sourceBytes": 57,
+      "classTokens": [
+        "studio",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .header-actions",
+      "startByteOffset": 47473,
+      "endByteOffset": 47515,
+      "sourceBytes": 42,
+      "classTokens": [
+        "studio",
+        "header-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .brand-block",
+      "startByteOffset": 47519,
+      "endByteOffset": 47566,
+      "sourceBytes": 47,
+      "classTokens": [
+        "studio",
+        "brand-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio #playback-readout > div:has(#current-note), .studio #playback-readout > div:has(#current-section)",
+      "startByteOffset": 48257,
+      "endByteOffset": 48381,
+      "sourceBytes": 124,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar[data-sheet-size=\"peek\"] > :not(.studio-inspector-head)",
+      "startByteOffset": 52834,
+      "endByteOffset": 52934,
+      "sourceBytes": 100,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar",
+        "studio-inspector-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar[data-sheet-size=\"peek\"] .studio-inspector-head > strong,\r\n  .studio .workspace-sidebar[data-sheet-size=\"peek\"] button[data-studio-close]",
+      "startByteOffset": 53024,
+      "endByteOffset": 53206,
+      "sourceBytes": 182,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar",
+        "studio-inspector-head"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-studio-panel=\"none\"] .workspace-sidebar[data-sheet-size=\"peek\"] .mobile-panel-peek-actions",
+      "startByteOffset": 53210,
+      "endByteOffset": 53358,
+      "sourceBytes": 148,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar",
+        "mobile-panel-peek-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .note-selection-bar > .selection-velocity",
+      "startByteOffset": 53781,
+      "endByteOffset": 53849,
+      "sourceBytes": 68,
+      "classTokens": [
+        "studio",
+        "note-selection-bar",
+        "selection-velocity"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions",
+      "startByteOffset": 54145,
+      "endByteOffset": 54239,
+      "sourceBytes": 94,
+      "classTokens": [
+        "studio",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 55094,
+      "endByteOffset": 55458,
+      "sourceBytes": 364,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .help-sheet[open]",
+      "startByteOffset": 56409,
+      "endByteOffset": 56680,
+      "sourceBytes": 271,
+      "classTokens": [
+        "studio",
+        "help-sheet"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .help-sheet-card",
+      "startByteOffset": 56684,
+      "endByteOffset": 56727,
+      "sourceBytes": 43,
+      "classTokens": [
+        "studio",
+        "help-sheet-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 57033,
+      "endByteOffset": 57189,
+      "sourceBytes": 156,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock > .studio-views",
+      "startByteOffset": 58607,
+      "endByteOffset": 58743,
+      "sourceBytes": 136,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-views"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock > .studio-views > button",
+      "startByteOffset": 58747,
+      "endByteOffset": 59039,
+      "sourceBytes": 292,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-views"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock > .studio-views > button[aria-pressed=\"true\"]",
+      "startByteOffset": 59043,
+      "endByteOffset": 59195,
+      "sourceBytes": 152,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-views"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .studio-views > .mobile-panel-trigger",
+      "startByteOffset": 59199,
+      "endByteOffset": 59375,
+      "sourceBytes": 176,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-views",
+        "mobile-panel-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .project-menu-trigger",
+      "startByteOffset": 60151,
+      "endByteOffset": 60251,
+      "sourceBytes": 100,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "project-menu-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .transport-advanced[open] .transport-advanced-grid",
+      "startByteOffset": 60495,
+      "endByteOffset": 60663,
+      "sourceBytes": 168,
+      "classTokens": [
+        "studio",
+        "transport-advanced",
+        "transport-advanced-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .editor-toolbar label",
+      "startByteOffset": 63382,
+      "endByteOffset": 63505,
+      "sourceBytes": 123,
+      "classTokens": [
+        "studio",
+        "editor-toolbar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .editor-toolbar .zoom-control",
+      "startByteOffset": 63509,
+      "endByteOffset": 63560,
+      "sourceBytes": 51,
+      "classTokens": [
+        "studio",
+        "editor-toolbar",
+        "zoom-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .editor-toolbar .zoom-control input[type=\"range\"]",
+      "startByteOffset": 63564,
+      "endByteOffset": 63656,
+      "sourceBytes": 92,
+      "classTokens": [
+        "studio",
+        "editor-toolbar",
+        "zoom-control"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .brand-block h1::after",
+      "startByteOffset": 73826,
+      "endByteOffset": 73875,
+      "sourceBytes": 49,
+      "classTokens": [
+        "studio",
+        "brand-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .studio-overview-track button",
+      "startByteOffset": 76074,
+      "endByteOffset": 76146,
+      "sourceBytes": 72,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "studio-overview-track"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .loop-toggle",
+      "startByteOffset": 76516,
+      "endByteOffset": 76601,
+      "sourceBytes": 85,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "loop-toggle"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .loop-toggle input",
+      "startByteOffset": 76604,
+      "endByteOffset": 76658,
+      "sourceBytes": 54,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "loop-toggle"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .studio-more > summary",
+      "startByteOffset": 76938,
+      "endByteOffset": 77038,
+      "sourceBytes": 100,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "studio-more"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .studio-overview-label",
+      "startByteOffset": 82535,
+      "endByteOffset": 82646,
+      "sourceBytes": 111,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .studio-overview-label > span",
+      "startByteOffset": 82649,
+      "endByteOffset": 82718,
+      "sourceBytes": 69,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .studio-overview-label output",
+      "startByteOffset": 82721,
+      "endByteOffset": 82791,
+      "sourceBytes": 70,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio #piano-roll-collapse[aria-expanded=\"false\"]::before",
+      "startByteOffset": 85213,
+      "endByteOffset": 85290,
+      "sourceBytes": 77,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-studio-dock-open=\"false\"]:not([data-studio-panel=\"none\"]) .workspace-grid",
+      "startByteOffset": 85539,
+      "endByteOffset": 85674,
+      "sourceBytes": 135,
+      "classTokens": [
+        "studio",
+        "workspace-grid"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar-resizer:not([hidden]):hover::after,\n  .studio .workspace-sidebar-resizer:not([hidden]):focus-visible::after",
+      "startByteOffset": 86572,
+      "endByteOffset": 86750,
+      "sourceBytes": 178,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar-resizer"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar-resizer:not([hidden]):focus-visible",
+      "startByteOffset": 86753,
+      "endByteOffset": 86884,
+      "sourceBytes": 131,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar-resizer"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio[data-studio-dock-open=\"false\"] .mobile-panel-trigger:not([hidden])",
+      "startByteOffset": 86962,
+      "endByteOffset": 87062,
+      "sourceBytes": 100,
+      "classTokens": [
+        "studio",
+        "mobile-panel-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/responsive.css?v=20261003.78",
+      "selector": ".studio .page-header .mobile-panel-trigger:not([hidden])",
+      "startByteOffset": 88570,
+      "endByteOffset": 88652,
+      "sourceBytes": 82,
+      "classTokens": [
+        "studio",
+        "page-header",
+        "mobile-panel-trigger"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .studio-overview-label > span",
+      "startByteOffset": 1869,
+      "endByteOffset": 1948,
+      "sourceBytes": 79,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .mobile-workspace-dock .studio-overview-label output",
+      "startByteOffset": 1950,
+      "endByteOffset": 2031,
+      "sourceBytes": 81,
+      "classTokens": [
+        "studio",
+        "mobile-workspace-dock",
+        "studio-overview-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .brand-block h1::after",
+      "startByteOffset": 3290,
+      "endByteOffset": 3436,
+      "sourceBytes": 146,
+      "classTokens": [
+        "studio",
+        "brand-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .transport-main > .studio-overview .studio-overview-track button",
+      "startByteOffset": 5851,
+      "endByteOffset": 5978,
+      "sourceBytes": 127,
+      "classTokens": [
+        "studio",
+        "transport-main",
+        "studio-overview",
+        "studio-overview-track"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .playback-readout dt",
+      "startByteOffset": 6588,
+      "endByteOffset": 6656,
+      "sourceBytes": 68,
+      "classTokens": [
+        "studio",
+        "playback-readout"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .transport-advanced > summary",
+      "startByteOffset": 7067,
+      "endByteOffset": 7125,
+      "sourceBytes": 58,
+      "classTokens": [
+        "studio",
+        "transport-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio #view-controls[hidden]",
+      "startByteOffset": 7386,
+      "endByteOffset": 7446,
+      "sourceBytes": 60,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio-toolbar-actions button:hover",
+      "startByteOffset": 8209,
+      "endByteOffset": 8333,
+      "sourceBytes": 124,
+      "classTokens": [
+        "studio-toolbar-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio-more > summary::-webkit-details-marker",
+      "startByteOffset": 8961,
+      "endByteOffset": 9026,
+      "sourceBytes": 65,
+      "classTokens": [
+        "studio-more"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio-overview-track:focus-visible",
+      "startByteOffset": 11023,
+      "endByteOffset": 11118,
+      "sourceBytes": 95,
+      "classTokens": [
+        "studio-overview-track"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio-overview-barline",
+      "startByteOffset": 11283,
+      "endByteOffset": 11353,
+      "sourceBytes": 70,
+      "classTokens": [
+        "studio-overview-barline"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .workspace-sidebar #expression-heading",
+      "startByteOffset": 15562,
+      "endByteOffset": 15627,
+      "sourceBytes": 65,
+      "classTokens": [
+        "studio",
+        "workspace-sidebar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio[data-studio-selection=\"false\"] .expression-context-tools",
+      "startByteOffset": 15964,
+      "endByteOffset": 16047,
+      "sourceBytes": 83,
+      "classTokens": [
+        "studio",
+        "expression-context-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .expression-panel[data-collapsed=\"true\"] .expression-toolbar",
+      "startByteOffset": 16049,
+      "endByteOffset": 16136,
+      "sourceBytes": 87,
+      "classTokens": [
+        "studio",
+        "expression-panel",
+        "expression-toolbar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio #expression-panel .pane-heading h3",
+      "startByteOffset": 16216,
+      "endByteOffset": 16279,
+      "sourceBytes": 63,
+      "classTokens": [
+        "studio",
+        "pane-heading"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".note-selection-bar [data-delta=\"-12\"]",
+      "startByteOffset": 17588,
+      "endByteOffset": 17640,
+      "sourceBytes": 52,
+      "classTokens": [
+        "note-selection-bar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".note-selection-bar [data-delta=\"12\"]",
+      "startByteOffset": 17642,
+      "endByteOffset": 17693,
+      "sourceBytes": 51,
+      "classTokens": [
+        "note-selection-bar"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-list li",
+      "startByteOffset": 18879,
+      "endByteOffset": 18959,
+      "sourceBytes": 80,
+      "classTokens": [
+        "studio",
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-list li > button",
+      "startByteOffset": 18961,
+      "endByteOffset": 19116,
+      "sourceBytes": 155,
+      "classTokens": [
+        "studio",
+        "harmony-list"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-list li .harmony-actions",
+      "startByteOffset": 19118,
+      "endByteOffset": 19178,
+      "sourceBytes": 60,
+      "classTokens": [
+        "studio",
+        "harmony-list",
+        "harmony-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio #harmony-selected-chord strong",
+      "startByteOffset": 19319,
+      "endByteOffset": 19378,
+      "sourceBytes": 59,
+      "classTokens": [
+        "studio"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .studio-advanced[hidden]",
+      "startByteOffset": 20619,
+      "endByteOffset": 20682,
+      "sourceBytes": 63,
+      "classTokens": [
+        "studio",
+        "studio-advanced"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-card",
+      "startByteOffset": 21972,
+      "endByteOffset": 22059,
+      "sourceBytes": 87,
+      "classTokens": [
+        "studio",
+        "syllable-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-editor > summary",
+      "startByteOffset": 22061,
+      "endByteOffset": 22269,
+      "sourceBytes": 208,
+      "classTokens": [
+        "studio",
+        "syllable-editor"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-card[data-current=\"true\"] .syllable-editor > summary",
+      "startByteOffset": 22271,
+      "endByteOffset": 22419,
+      "sourceBytes": 148,
+      "classTokens": [
+        "studio",
+        "syllable-card",
+        "syllable-editor"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-editor[open]",
+      "startByteOffset": 22421,
+      "endByteOffset": 22597,
+      "sourceBytes": 176,
+      "classTokens": [
+        "studio",
+        "syllable-editor"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-editor form, .studio .syllable-editor fieldset",
+      "startByteOffset": 22599,
+      "endByteOffset": 22684,
+      "sourceBytes": 85,
+      "classTokens": [
+        "studio",
+        "syllable-editor"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-assignment",
+      "startByteOffset": 22686,
+      "endByteOffset": 22753,
+      "sourceBytes": 67,
+      "classTokens": [
+        "studio",
+        "syllable-assignment"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-actions",
+      "startByteOffset": 22755,
+      "endByteOffset": 22801,
+      "sourceBytes": 46,
+      "classTokens": [
+        "studio",
+        "syllable-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .syllable-actions button",
+      "startByteOffset": 22803,
+      "endByteOffset": 22874,
+      "sourceBytes": 71,
+      "classTokens": [
+        "studio",
+        "syllable-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".expression-vibrato-wave",
+      "startByteOffset": 23021,
+      "endByteOffset": 23191,
+      "sourceBytes": 170,
+      "classTokens": [
+        "expression-vibrato-wave"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".expression-note[data-selected=\"true\"] .expression-vibrato-wave",
+      "startByteOffset": 23193,
+      "endByteOffset": 23326,
+      "sourceBytes": 133,
+      "classTokens": [
+        "expression-note",
+        "expression-vibrato-wave"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".expression-note[data-current=\"true\"] .expression-vibrato-wave",
+      "startByteOffset": 23328,
+      "endByteOffset": 23459,
+      "sourceBytes": 131,
+      "classTokens": [
+        "expression-note",
+        "expression-vibrato-wave"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-source=\"generated\"] .roll-note-mark",
+      "startByteOffset": 23666,
+      "endByteOffset": 23750,
+      "sourceBytes": 84,
+      "classTokens": [
+        "roll-note-mark"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-selected=\"true\"] .roll-note-mark",
+      "startByteOffset": 23752,
+      "endByteOffset": 23851,
+      "sourceBytes": 99,
+      "classTokens": [
+        "roll-note-mark"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "[data-entity=\"note\"][data-current=\"true\"] .roll-note-mark",
+      "startByteOffset": 23853,
+      "endByteOffset": 23950,
+      "sourceBytes": 97,
+      "classTokens": [
+        "roll-note-mark"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".roll-note-expression",
+      "startByteOffset": 23952,
+      "endByteOffset": 23989,
+      "sourceBytes": 37,
+      "classTokens": [
+        "roll-note-expression"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "button.danger-button",
+      "startByteOffset": 23991,
+      "endByteOffset": 24040,
+      "sourceBytes": 49,
+      "classTokens": [
+        "danger-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio-overview-chord",
+      "startByteOffset": 24042,
+      "endByteOffset": 24088,
+      "sourceBytes": 46,
+      "classTokens": [
+        "studio-overview-chord"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ":root[data-theme=\"dark\"]",
+      "startByteOffset": 24400,
+      "endByteOffset": 25885,
+      "sourceBytes": 1485,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ":root:not([data-theme=\"light\"]):not([data-theme=\"dark\"] )",
+      "startByteOffset": 25932,
+      "endByteOffset": 27452,
+      "sourceBytes": 1520,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-timeline-tools #harmony-candidates li",
+      "startByteOffset": 27822,
+      "endByteOffset": 27991,
+      "sourceBytes": 169,
+      "classTokens": [
+        "studio",
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-timeline-tools #harmony-candidates li > button",
+      "startByteOffset": 27993,
+      "endByteOffset": 28148,
+      "sourceBytes": 155,
+      "classTokens": [
+        "studio",
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-timeline-tools #harmony-candidates li > button:first-child",
+      "startByteOffset": 28150,
+      "endByteOffset": 28286,
+      "sourceBytes": 136,
+      "classTokens": [
+        "studio",
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-timeline-tools #harmony-candidates p",
+      "startByteOffset": 28288,
+      "endByteOffset": 28365,
+      "sourceBytes": 77,
+      "classTokens": [
+        "studio",
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony]",
+      "startByteOffset": 28367,
+      "endByteOffset": 28517,
+      "sourceBytes": 150,
+      "classTokens": [
+        "studio",
+        "harmony-timeline-tools"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "button:hover:not(:disabled)",
+      "startByteOffset": 28591,
+      "endByteOffset": 28647,
+      "sourceBytes": 56,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled)",
+      "startByteOffset": 28649,
+      "endByteOffset": 29428,
+      "sourceBytes": 779,
+      "classTokens": [
+        "secondary",
+        "editor-toolbar-group",
+        "score-layout-group",
+        "project-menu-popover",
+        "panel-collapse-button",
+        "command-button",
+        "note-context-menu",
+        "studio",
+        "studio-views",
+        "studio-panel-switches",
+        "instrument-mix-button",
+        "sketch-controls",
+        "expression-toolbar",
+        "harmony-list",
+        "studio-overview-track"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".drum-cell:hover:not(:disabled), .drum-cell[data-hit=\"true\"]:hover:not(:disabled)",
+      "startByteOffset": 29430,
+      "endByteOffset": 29544,
+      "sourceBytes": 114,
+      "classTokens": [
+        "drum-cell"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".drum-cell[data-hit=\"true\"]:hover:not(:disabled)",
+      "startByteOffset": 29546,
+      "endByteOffset": 29630,
+      "sourceBytes": 84,
+      "classTokens": [
+        "drum-cell"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-context-menu",
+      "startByteOffset": 29632,
+      "endByteOffset": 29741,
+      "sourceBytes": 109,
+      "classTokens": [
+        "progression-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-context-menu [aria-checked=\"true\"]",
+      "startByteOffset": 29743,
+      "endByteOffset": 29855,
+      "sourceBytes": 112,
+      "classTokens": [
+        "progression-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".drum-grid-ruler-surface:hover:not(:disabled)",
+      "startByteOffset": 29857,
+      "endByteOffset": 29951,
+      "sourceBytes": 94,
+      "classTokens": [
+        "drum-grid-ruler-surface"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "button.danger-button:hover:not(:disabled)",
+      "startByteOffset": 29953,
+      "endByteOffset": 30050,
+      "sourceBytes": 97,
+      "classTokens": [
+        "danger-button"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "#chord-context-menu:not([hidden])",
+      "startByteOffset": 31100,
+      "endByteOffset": 31145,
+      "sourceBytes": 45,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "#chord-context-menu button",
+      "startByteOffset": 31147,
+      "endByteOffset": 31343,
+      "sourceBytes": 196,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "#chord-context-menu button:hover:not(:disabled),\r\n#chord-context-menu button:focus-visible",
+      "startByteOffset": 31345,
+      "endByteOffset": 31500,
+      "sourceBytes": 155,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "#chord-context-menu button[data-action=\"delete-chord\"]",
+      "startByteOffset": 31502,
+      "endByteOffset": 31582,
+      "sourceBytes": 80,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "#chord-context-menu button[data-action=\"delete-chord\"]:hover:not(:disabled),\r\n#chord-context-menu button[data-action=\"delete-chord\"]:focus-visible",
+      "startByteOffset": 31584,
+      "endByteOffset": 31791,
+      "sourceBytes": 207,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": "#chord-context-menu button:disabled",
+      "startByteOffset": 31793,
+      "endByteOffset": 31883,
+      "sourceBytes": 90,
+      "classTokens": [],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .progression-status",
+      "startByteOffset": 32083,
+      "endByteOffset": 32178,
+      "sourceBytes": 95,
+      "classTokens": [
+        "studio",
+        "progression-status"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-help p",
+      "startByteOffset": 32335,
+      "endByteOffset": 32614,
+      "sourceBytes": 279,
+      "classTokens": [
+        "progression-help"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-timeline-block",
+      "startByteOffset": 32616,
+      "endByteOffset": 32664,
+      "sourceBytes": 48,
+      "classTokens": [
+        "progression-timeline-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-timeline-block rect",
+      "startByteOffset": 32666,
+      "endByteOffset": 32793,
+      "sourceBytes": 127,
+      "classTokens": [
+        "progression-timeline-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-timeline-block text",
+      "startByteOffset": 32795,
+      "endByteOffset": 32894,
+      "sourceBytes": 99,
+      "classTokens": [
+        "progression-timeline-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-timeline-block:hover rect, .progression-timeline-block:focus-visible rect",
+      "startByteOffset": 32896,
+      "endByteOffset": 33007,
+      "sourceBytes": 111,
+      "classTokens": [
+        "progression-timeline-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-timeline-block:hover text, .progression-timeline-block:focus-visible text",
+      "startByteOffset": 33009,
+      "endByteOffset": 33123,
+      "sourceBytes": 114,
+      "classTokens": [
+        "progression-timeline-block"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-menu-title",
+      "startByteOffset": 33125,
+      "endByteOffset": 33229,
+      "sourceBytes": 104,
+      "classTokens": [
+        "progression-menu-title"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-context-menu",
+      "startByteOffset": 33231,
+      "endByteOffset": 33325,
+      "sourceBytes": 94,
+      "classTokens": [
+        "progression-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".progression-context-menu button",
+      "startByteOffset": 33327,
+      "endByteOffset": 33519,
+      "sourceBytes": 192,
+      "classTokens": [
+        "progression-context-menu"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity > summary::-webkit-details-marker",
+      "startByteOffset": 36678,
+      "endByteOffset": 36758,
+      "sourceBytes": 80,
+      "classTokens": [
+        "studio",
+        "selection-velocity"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity-popover",
+      "startByteOffset": 36760,
+      "endByteOffset": 37072,
+      "sourceBytes": 312,
+      "classTokens": [
+        "studio",
+        "selection-velocity-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity[open] .selection-velocity-popover",
+      "startByteOffset": 37074,
+      "endByteOffset": 37155,
+      "sourceBytes": 81,
+      "classTokens": [
+        "studio",
+        "selection-velocity",
+        "selection-velocity-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity-popover label",
+      "startByteOffset": 37157,
+      "endByteOffset": 37281,
+      "sourceBytes": 124,
+      "classTokens": [
+        "studio",
+        "selection-velocity-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity-popover label > span",
+      "startByteOffset": 37283,
+      "endByteOffset": 37383,
+      "sourceBytes": 100,
+      "classTokens": [
+        "studio",
+        "selection-velocity-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity-popover input",
+      "startByteOffset": 37385,
+      "endByteOffset": 37457,
+      "sourceBytes": 72,
+      "classTokens": [
+        "studio",
+        "selection-velocity-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-velocity-popover output",
+      "startByteOffset": 37459,
+      "endByteOffset": 37576,
+      "sourceBytes": 117,
+      "classTokens": [
+        "studio",
+        "selection-velocity-popover"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-more > summary::-webkit-details-marker",
+      "startByteOffset": 38133,
+      "endByteOffset": 38209,
+      "sourceBytes": 76,
+      "classTokens": [
+        "studio",
+        "selection-more"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions",
+      "startByteOffset": 38211,
+      "endByteOffset": 38589,
+      "sourceBytes": 378,
+      "classTokens": [
+        "studio",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-more[open] > .selection-more-actions",
+      "startByteOffset": 38591,
+      "endByteOffset": 38665,
+      "sourceBytes": 74,
+      "classTokens": [
+        "studio",
+        "selection-more",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions .editor-toolbar-group,\r\n.studio .selection-advanced-actions",
+      "startByteOffset": 38667,
+      "endByteOffset": 38808,
+      "sourceBytes": 141,
+      "classTokens": [
+        "studio",
+        "selection-more-actions",
+        "editor-toolbar-group",
+        "selection-advanced-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions > button,\r\n.studio .selection-more-actions button",
+      "startByteOffset": 38810,
+      "endByteOffset": 38930,
+      "sourceBytes": 120,
+      "classTokens": [
+        "studio",
+        "selection-more-actions"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .selection-more-actions .editor-toolbar-label",
+      "startByteOffset": 38932,
+      "endByteOffset": 39004,
+      "sourceBytes": 72,
+      "classTokens": [
+        "studio",
+        "selection-more-actions",
+        "editor-toolbar-label"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .studio-more-popover .utility-card",
+      "startByteOffset": 41013,
+      "endByteOffset": 41088,
+      "sourceBytes": 75,
+      "classTokens": [
+        "studio",
+        "studio-more-popover",
+        "utility-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .transport-advanced-grid .menu-sheet-close",
+      "startByteOffset": 41273,
+      "endByteOffset": 41348,
+      "sourceBytes": 75,
+      "classTokens": [
+        "studio",
+        "transport-advanced-grid",
+        "menu-sheet-close"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .help-sheet::backdrop",
+      "startByteOffset": 41854,
+      "endByteOffset": 41917,
+      "sourceBytes": 63,
+      "classTokens": [
+        "studio",
+        "help-sheet"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .help-sheet-card",
+      "startByteOffset": 41919,
+      "endByteOffset": 41988,
+      "sourceBytes": 69,
+      "classTokens": [
+        "studio",
+        "help-sheet-card"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .help-sheet-header",
+      "startByteOffset": 41990,
+      "endByteOffset": 42102,
+      "sourceBytes": 112,
+      "classTokens": [
+        "studio",
+        "help-sheet-header"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .help-sheet-header h2,\r\n.studio .help-sheet section h3",
+      "startByteOffset": 42104,
+      "endByteOffset": 42208,
+      "sourceBytes": 104,
+      "classTokens": [
+        "studio",
+        "help-sheet-header",
+        "help-sheet"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .help-sheet section",
+      "startByteOffset": 42210,
+      "endByteOffset": 42270,
+      "sourceBytes": 60,
+      "classTokens": [
+        "studio",
+        "help-sheet"
+      ],
+      "staticUnreferencedClassTokens": []
+    },
+    {
+      "url": "http://127.0.0.1:4175/melodi/styles/studio.css?v=20261003.78",
+      "selector": ".studio .help-sheet section p",
+      "startByteOffset": 42272,
+      "endByteOffset": 42342,
+      "sourceBytes": 70,
+      "classTokens": [
+        "studio",
+        "help-sheet"
+      ],
+      "staticUnreferencedClassTokens": []
+    }
+  ],
+  "staticUnreferencedRuleCandidates": []
+}

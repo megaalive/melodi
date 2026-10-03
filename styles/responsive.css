@@ -271,23 +271,8 @@
   .studio #piano-roll-section .editor-tool-group { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; border: 0; }
   .studio #piano-roll-section .editor-tool-group button { min-width: 44px; min-height: 44px; padding: 4px 5px; font-size: var(--text-xs); }
   .studio #piano-roll-content { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; padding: 44px 0 0; }
-  .studio #piano-roll-content > .candidate-dock { flex: 0 0 auto; grid-template-columns: minmax(0,1fr) auto auto; gap: 2px 5px; margin: 2px 0 3px; padding: 3px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-dock-header > div { min-width: 0; }
-  .studio #piano-roll-content > .candidate-dock .candidate-dock-header h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .studio #piano-roll-content > .candidate-dock .candidate-dock-header p { display: none; }
-  .studio #piano-roll-content > .candidate-dock .candidate-navigation { display: flex; align-items: center; gap: 2px; grid-column: 2; grid-row: 1; }
-  .studio #piano-roll-content > .candidate-dock .candidate-navigation button,
-  .studio #piano-roll-content > .candidate-dock .candidate-dock-close { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 2px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-navigation button { font-size: 20px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-dock-close { grid-column: 3; grid-row: 1; font-size: 10px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-scrub-help { display: none; }
-  .studio #piano-roll-content > .candidate-dock .generation-candidates { grid-auto-columns: 9.4rem; padding: 1px 0; }
-  .studio #piano-roll-content > .candidate-dock .generation-candidate-card { padding: 2px 4px; }
-  .studio #piano-roll-content > .candidate-dock .generation-candidate-card h3 { font-size: 10px; line-height: 1.2; }
-  .studio #piano-roll-content > .candidate-dock .candidate-melody { display: none; }
-  .studio #piano-roll-content > .candidate-dock .candidate-actions { gap: 1px; margin-top: 1px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-actions button { flex: 0 0 44px; width: 44px; min-width: 44px; min-height: 44px; padding: 1px; }
-  .studio .roll-surface { display: flex; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+.studio .roll-surface { display: flex; flex: 1 1 auto; min-height: 0; overflow: hidden; }
   .studio .piano-roll-scroll, .studio .score-scroll,
   .studio[data-view-mode="score"] .score-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll,
   .studio[data-view-mode="combined"] .score-scroll { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; max-height: none; resize: none; }
@@ -342,15 +327,8 @@
     background: transparent; color: var(--text-muted); font-weight: 600;
   }
   .studio .mobile-panel-peek-actions button:hover { background: var(--surface-subtle); color: var(--text); }
-  .studio #piano-roll-content > .candidate-dock { max-height: 104px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-navigation button,
-  .studio #piano-roll-content > .candidate-dock .candidate-dock-close { min-width: 44px; min-height: 44px; }
-  .studio #piano-roll-content > .candidate-dock .generation-candidates { max-height: 52px; }
-  .studio #piano-roll-content > .candidate-dock { inset: 44px 3px auto; max-height: 96px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-primary-actions { justify-content: flex-start; gap: 2px; }
-  .studio #piano-roll-content > .candidate-dock .candidate-compare-label { padding-inline: 4px; font-size: 10px; }
-  .studio #piano-roll-content > .candidate-dock .generation-candidates { justify-content: start; gap: 4px; }
-  .studio #project-menu[open] { position: static; z-index: 120; }
+
+.studio #project-menu[open] { position: static; z-index: 120; }
   .studio #project-menu[open] > .project-menu-popover {
     position: fixed;
     inset: auto 0 0;
@@ -438,7 +416,7 @@
   .song-identity { min-width: 0; flex: 1 1 10rem; }
   .song-summary { order: 3; flex-basis: 100%; }
   .transport-main { align-items: center; }
-  .playback-readout { order: 3; flex-basis: 100%; }
+
   .tempo-control { flex: 1 1 12rem; }
   .tempo-control label { width: auto; flex: 1 1 auto; }
   .loop-toggle { margin-left: auto; }
@@ -459,7 +437,7 @@
   .tempo-control { width: 100%; }
   .tempo-control label { width: 7rem; flex: 0 0 7rem; }
   .tempo-control button { flex: 1 1 8rem; }
-  .loop-toggle { margin-left: 0; }
+
   .playback-readout { gap: 0.55rem; }
   .editor-toolbar button { flex: 1 1 7rem; }
   .song-strip { padding-inline: 0; }
@@ -497,7 +475,7 @@
   }
   .playback-readout { order: 3; flex-basis: 100%; }
   .tempo-control { width: auto; }
-  .transport-buttons { width: auto; }
+
   /* Di mobile chrome pindah ke bawah dan menempel. Transport jadi objek fisik
      di jangkauan ibu jari, dan konten bisa mulai langsung di atas lipatan
      tanpa menggulir melewati header + strip lagu + transport dulu. */
@@ -845,7 +823,7 @@
   .studio #drums-section > .drums-pane-heading { padding: 0 4px; }
   .studio #drums-status { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .studio #piano-roll-content { display: flex; flex-direction: column; min-height: 0; }
-  .studio #piano-roll-content > .candidate-dock { position: relative; inset: auto; flex: 0 0 auto; max-height: 104px; overflow: hidden; }
+
   .studio .candidate-dock .generation-candidates { max-height: 52px; }
   .studio #score-section .score-pane-heading { gap: 2px; min-height: 0; padding-block: 2px; }
   .studio #lyrics-section > .pane-heading { gap: 0; padding-block: 2px; }
@@ -890,7 +868,7 @@
   .studio .brand-block { flex: 1; min-width: 0; }
   .studio .song-strip { min-height: 24px; }
   .studio .app-shell { position: fixed; inset: 68px 0 0 52px; overflow: hidden; width: auto; max-width: none; padding: 0; }
-  .studio .workspace-chrome { display: contents; }
+
   .studio .workspace-chrome .transport-dock { position: fixed; inset: 24px 0 auto 52px; z-index: 31; width: auto; padding: 0 8px; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); }
   .studio .transport-main { height: 44px; gap: 8px; }
   .studio .transport-action-group { gap: 10px; }
@@ -931,11 +909,10 @@
   .studio .studio-views > button { flex: 0 0 44px; }
   .studio .workspace-grid { height: 100%; min-height: 0; }
   .studio .workspace-canvas, .studio #piano-roll-section { height: 100%; min-height: 0; overflow: hidden; }
-  .studio #piano-roll-section .pane-heading { display: none; }
+
   .studio #piano-roll-content { position: absolute; inset: 0; display: flex; flex-direction: column; min-height: 0; padding: 0; }
-  .studio #piano-roll-content > .candidate-dock { max-height: 118px; }
-  .studio .roll-surface { display: flex; flex: 1 1 auto; min-height: 0; overflow: hidden; }
-  .studio .workspace-pane { min-height: 0; padding: 0; overflow: hidden; }
+
+.studio .workspace-pane { min-height: 0; padding: 0; overflow: hidden; }
   .studio .piano-roll-scroll, .studio .score-scroll,
   .studio[data-view-mode="score"] .score-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll,
   .studio[data-view-mode="combined"] .score-scroll { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; max-height: none; resize: none; }
@@ -965,7 +942,7 @@
     flex: 1 1 auto; height: auto; min-height: 0; max-height: none;
   }
   .studio .selection-more-actions { right: auto; left: 0; bottom: auto; top: calc(100% + 6px); }
-  .studio #piano-roll-content > .candidate-dock { inset: 0 4px auto; }
+
   .studio #project-menu[open] { position: static; z-index: 120; }
   .studio #project-menu[open] > .project-menu-popover {
     position: fixed;
@@ -1051,7 +1028,7 @@
   .studio .workspace-sidebar[data-sheet-size="half"] .mobile-panel-peek-actions { flex-basis: auto; order: 0; }
   .studio .page-header { display: none; }
   .studio .app-shell { position: fixed; inset: 0 0 calc(88px + env(safe-area-inset-bottom, 0px)); width: auto; max-width: none; height: auto; padding: 0; overflow: hidden; }
-  .studio .workspace-chrome { display: contents; }
+
   .studio .workspace-chrome .workspace-toolbar { inset: 0 auto calc(88px + env(safe-area-inset-bottom, 0px)) 0; width: 52px; min-height: 0; overflow: visible; }
   .studio .studio-toolbar-actions { flex: 0 0 auto; flex-direction: column; align-items: stretch; gap: 3px; width: 51px; padding: 3px; }
   .studio .studio-toolbar-actions .editor-tool-group { display: flex; flex-direction: column; gap: 3px; width: 44px; border: 0; }
@@ -1059,7 +1036,7 @@
   .studio[data-studio-panel]:not([data-studio-panel="none"]) .workspace-grid { grid-template-columns: minmax(0, 1fr); }
   .studio .workspace-grid { height: 100%; min-height: 0; overflow: hidden; }
   .studio .workspace-sidebar { position: fixed; inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: min(360px, 70vw); max-height: calc(100dvh - 88px); overflow: auto; }
-  .studio .workspace-sidebar[data-sheet-size="half"] { height: min(55dvh, calc(100dvh - 88px)); max-height: min(55dvh, calc(100dvh - 88px)); }
+
   .studio .mobile-workspace-dock:not([hidden]) { height: calc(89px + env(safe-area-inset-bottom, 0px)); }
   .studio .mobile-workspace-dock > .studio-views { width: 100%; height: 45px; flex: 0 0 45px; flex-direction: row; align-items: stretch; }
   .studio .mobile-workspace-dock > .studio-views > button { flex: 1 1 0; width: auto; min-width: 0; height: 45px; min-height: 45px; padding: 2px 5px; border: 0; border-top: 3px solid transparent; border-bottom: 0; font-size: 12px; line-height: 1.1; white-space: nowrap; overflow-wrap: normal; }
@@ -1071,9 +1048,8 @@
   .studio .mobile-workspace-dock .transport-advanced > summary > span,
   .studio .mobile-workspace-dock .studio-more > summary > [data-copy],
   .studio .mobile-workspace-dock .project-menu-trigger > span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .studio .mobile-workspace-dock .studio-more > summary::after { content: none; margin-left: 0; }
-  .studio .mobile-workspace-dock .studio-more > summary { flex: 0 0 44px; width: 44px; min-width: 44px; max-width: 44px; height: 45px; min-height: 45px; padding: 4px; }
-  .studio .mobile-workspace-dock .studio-more > summary::before { content: "⋯"; font-size: 20px; line-height: 1; }
+
+.studio .mobile-workspace-dock .studio-more > summary::before { content: "⋯"; font-size: 20px; line-height: 1; }
   .studio .mobile-workspace-dock .project-menu-trigger { width: 44px; min-width: 44px; padding: 4px; }
   .studio .studio-more[open] .studio-more-popover { position: fixed; inset: auto 6px calc(88px + env(safe-area-inset-bottom, 0px) + 6px); z-index: 125; width: min(280px, calc(100vw - 12px)); max-height: min(65dvh, calc(100dvh - 100px)); }
   .studio .transport-advanced[open] .transport-advanced-grid { inset: auto 0 calc(88px + env(safe-area-inset-bottom, 0px)); max-height: min(70dvh, calc(100dvh - 88px)); }
@@ -1116,7 +1092,7 @@
   .studio .workspace-pane { flex: 1 1 auto; min-height: 0; padding: 0; overflow: hidden; }
   .studio #piano-roll-section .pane-heading { display: none; }
   .studio #piano-roll-content { position: relative; inset: auto; display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; padding: 0; }
-  .studio #piano-roll-content > .candidate-dock { position: relative; inset: auto; max-height: 96px; }
+
   .studio .roll-surface { display: flex; flex: 1 1 auto; min-height: 0; overflow: hidden; }
   .studio .piano-roll-scroll, .studio .score-scroll, .studio[data-view-mode="combined"] .piano-roll-scroll, .studio[data-view-mode="combined"] .score-scroll { flex: 1 1 auto; width: 100%; height: 100%; min-height: 0; max-height: none; resize: none; }
   .studio #roll-selection { display: inline; }
@@ -1143,7 +1119,7 @@
   .studio #lyrics-section > .pane-heading,
   .studio #drums-section > .drums-pane-heading { display: none !important; }
   .studio .piano-roll-scroll { overflow-y: clip; }
-  .studio #lyrics-section { overflow-y: auto; }
+
   .studio .studio-more-popover > .menu-sheet-close { position: static; bottom: auto; grid-column: 1 / -1; align-self: stretch; width: 100%; }
   .studio #lyrics-section { overflow-y: auto; }
   .studio #lyrics-section { padding-top: 0; }
@@ -1473,4 +1449,20 @@
   }
   .studio .workspace-sidebar .studio-panel-switches { display: flex; flex-wrap: nowrap; width: 100%; gap: 4px; }
   .studio .workspace-sidebar .studio-panel-switches button { flex: 1 1 0; min-width: 0; white-space: nowrap; }
+}
+
+@media (width >= 68rem) {
+  /* Not and Irama have no controls in the canvas toolbar; keep its heading
+     available to assistive tech while collapsing the otherwise empty band. */
+  .studio[data-view-mode="score"] .workspace-chrome .workspace-toolbar,
+  .studio[data-view-mode="lyrics"] .workspace-chrome .workspace-toolbar,
+  .studio[data-view-mode="drums"] .workspace-chrome .workspace-toolbar {
+    min-height: 0;
+    padding-block: 0;
+    border: 0;
+  }
+  .studio[data-view-mode="score"] #view-controls,
+  .studio[data-view-mode="lyrics"] #view-controls,
+  .studio[data-view-mode="drums"] #view-controls { height: auto; min-height: 0; }
+  .studio[data-view-mode="lyrics"] #lyrics-section { padding-top: 14px; }
 }

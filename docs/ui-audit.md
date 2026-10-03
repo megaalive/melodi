@@ -350,6 +350,29 @@ Kontrol yang terpotong oleh viewport atau ancestor `overflow` dihitung sebagai
 clipped; pasangan induk-anak dan area yang sepenuhnya tertutup overlay tidak
 dihitung sebagai overlap.
 
+## Putaran 2 PR6–8 — stabilisasi, coverage, dan polish
+
+| Tahap | Matriks dan build | Chrome default | Kontrol terlihat | CSS aktif / imported | Hasil utama |
+|---|---|---:|---:|---:|---|
+| PR6 | 60 sel, build `.72` | 171 px / 19.0% desktop; 193 px / 22.9% portrait; 97 px / 24.9% landscape | 25 / 19 / 10 | 223,810 B imported | 60/60 tanpa kegagalan; bukti ada di [matriks PR6](ui-audit/round2/pr6-after/matrix.md). |
+| PR7 | 60 sel + 6 state dinamis | Sama dengan PR6 | 25 / 19 / 10 | 222,216 B aktif; 221,709 B imported | 1,228/1,819 aturan terpakai; 0 kandidat mati statis. Lihat [laporan PR7](ui-audit/round2/pr7-summary.md) dan [coverage](ui-audit/round2/pr7-css-coverage/report.md). |
+| PR8 | 60 sel + 6 state dinamis | Maksimum 219.2 px / 24.4% desktop, 192 px / 22.7% portrait, 97 px / 24.9% landscape | 25 / 19 / 16 | 224,693 B aktif; 224,186 B imported | 1,248/1,836 aturan terpakai; 0 kandidat mati statis. Lihat [laporan PR8](ui-audit/round2/pr8-summary.md), [matriks](ui-audit/round2/pr8-after/matrix.md), dan [coverage](ui-audit/round2/pr8-css-coverage/report.md). |
+
+PR6 merapikan putaran awal tanpa mengubah metrik utama; PR7 menambahkan audit
+coverage Chromium dan guard ukuran serta menghapus CSS yang terbukti mati; PR8
+memperbaiki pengukuran landscape, aksesibilitas, dan polish. Clipping di dalam
+kanvas atau panel yang dapat digulir tetap dihitung sebagai clipping mentah,
+namun seluruh tahap ini melaporkan nol klip yang tidak dapat dijangkau. Ringkasan
+PR7 dan PR8 memuat daftar batas serta verifikasi masing-masing.
+
+Metrik klik-untuk-terlihat baru ditambahkan pada PR9, jadi nilainya memang belum
+tersedia untuk PR6–8. Pada keadaan Edit default PR6, ketiga viewport mencatat
+overlap 0, `<details>` 13, clipping mentah 2/2/0 (desktop/portrait/landscape),
+dan unreachable clip 0; [matriks PR6](ui-audit/round2/pr6-after/matrix.md) adalah
+arsip rinci tahap yang belum memiliki ringkasan tersendiri. PR7 dan PR8 memiliki
+ringkasan lengkap berisi angka clipping, media query, coverage, aksesibilitas,
+dan tes pada tautan tabel di atas.
+
 ## Putaran 2 PR9 — kontrol rutin di header desktop
 
 Build `.75` menampilkan tindakan proyek, bahasa, tema, Command Palette, Undo,
@@ -378,3 +401,48 @@ before/after per viewport dan tema ada di [laporan PR11](ui-audit/round2/pr11-su
 Matriks 100 sel, data JSON/CSV, dan 30 screenshot sesudah perubahan ada di
 [hasil PR11](ui-audit/round2/pr11-after/matrix.md); pembandingnya adalah
 [hasil PR10](ui-audit/round2/pr10-after/matrix.md).
+
+## Putaran 2 PR12 — CSS coverage dan diet
+
+Build `.78` menghapus 78 aturan lama `.studio #piano-roll-content > .candidate-dock*`
+(12,029 B) setelah runtime ditelusuri: dock kandidat hanya dipindahkan ke panel
+Generate. Audit juga menghapus 11 salinan sebelumnya dari aturan responsive yang
+identik selector, deklarasi, dan seluruh konteks `@media`-nya (807 B). Aturan
+desktop untuk merapatkan toolbar kosong di tampilan Score/Lyrics/Irama ditambahkan
+agar tinggi chrome tetap di bawah batas.
+
+Audit CSS menjalankan 100 sel matriks dan 6 state dinamis. Ukuran pohon CSS impor
+yang dinormalisasi LF adalah 223,329 B dengan guard 224,000 B; guard tidak
+bergantung pada checkout CRLF Windows. Browser mengukur 229,065 B aktif dan
+154,642 B terpakai (67.51%); ada 18 blok `@media` aktif (17 responsive, 1
+studio). Target 165,000 B belum tercapai. Ada 514 aturan belum terpakai pada
+skenario audit, tetapi tidak ada kandidat aman dari pemeriksaan token kelas statis; “tidak
+terpakai” pada sampel ini sendiri tidak membuktikan sebuah aturan mati. Menghapus
+aturan lain dari hasil sampel itu berisiko menghilangkan state, breakpoint, fokus,
+atau styling runtime. Detail ada pada [laporan coverage sesudah](ui-audit/round2/pr12-css-coverage-after/report.md)
+dan [laporan sebelum cleanup](ui-audit/round2/pr12-css-coverage-before-cleanup/report.md).
+
+Audit UI build `.78` lulus 100/100 sel: nol kegagalan, overlap kontrol, overlap
+label kanvas, dan klip tanpa ancestor scroll. Chrome maksimum per viewport:
+1920×1080 125.2 px / 11.6%; 1440×900 125.2 px / 13.9%; 1024×768 183.2 px /
+23.9%; 390×844 192 px / 22.7%; 844×390 97 px / 24.9%. Konten yang terpotong
+pada area scroll tetap muncul dalam angka clipping mentah—maksimum 11 pada
+landscape—dan dapat dicapai dengan scroll. Metrik klik-untuk-terlihat yang ketat
+menghitung 23 target umum di desktop default (10 di disclosure tertutup dan 13
+di tab dock lain); pada Generate aktif, 13 target tersisa berasal dari tab dock
+lain, bukan disclosure Generate. Tes desktop memisahkan penyebab ini serta
+memastikan kontrol header rutin terlihat.
+
+| Viewport | Klik-untuk-terlihat default | Chrome maksimum | Klip mentah maksimum / tidak terjangkau | Overlap maksimum | `<details>` default |
+|---|---:|---:|---:|---:|---:|
+| 1920×1080 | 23 (10 + 13) | 125.2 px / 11.6% | 1 / 0 | 0 | 13 |
+| 1440×900 | 23 (10 + 13) | 125.2 px / 13.9% | 0 / 0 | 0 | 13 |
+| 1024×768 | 32 (19 + 13) | 183.2 px / 23.9% | 2 / 0 | 0 | 13 |
+| 390×844 | 37 (37 + 0) | 192 px / 22.7% | 10 / 0 | 0 | 13 |
+| 844×390 | 37 (37 + 0) | 97 px / 24.9% | 11 / 0 | 0 | 13 |
+
+Matriks lengkap, JSON/CSV, dan 100 screenshot ada di
+[hasil PR12](ui-audit/round2/pr12-after/matrix.md). Tabel screenshot before/after
+30 pasangan default, Generate dengan kandidat, dan Mixer tersedia di
+[ringkasan PR12](ui-audit/round2/pr12-summary.md). Laporan itu juga mencatat
+`npm test`, `npm run check`, CI, dan bukti Pages untuk build `.78`.
