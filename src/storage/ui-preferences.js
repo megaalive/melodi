@@ -5,6 +5,8 @@ export const DEFAULT_UI_PREFERENCES = Object.freeze({
   expressionCollapsed: false,
   scoreLayout: "flow",
   guitarLayout: "tab",
+  guitarZoneOpen: null,
+  guitarZoneHeight: 220,
   dockOpen: true,
   dockWidth: null
 });
@@ -19,6 +21,10 @@ export function normalizeUiPreferences(value) {
       : DEFAULT_UI_PREFERENCES.expressionCollapsed,
     scoreLayout: value?.scoreLayout === "page" ? "page" : DEFAULT_UI_PREFERENCES.scoreLayout,
     guitarLayout: value?.guitarLayout === "fretboard" ? "fretboard" : DEFAULT_UI_PREFERENCES.guitarLayout,
+    guitarZoneOpen: typeof value?.guitarZoneOpen === "boolean" ? value.guitarZoneOpen : DEFAULT_UI_PREFERENCES.guitarZoneOpen,
+    guitarZoneHeight: Number.isFinite(value?.guitarZoneHeight)
+      ? Math.max(120, Math.min(480, Math.round(value.guitarZoneHeight)))
+      : DEFAULT_UI_PREFERENCES.guitarZoneHeight,
     dockOpen: typeof value?.dockOpen === "boolean" ? value.dockOpen : DEFAULT_UI_PREFERENCES.dockOpen,
     dockWidth: Number.isFinite(value?.dockWidth)
       ? Math.max(320, Math.min(480, Math.round(value.dockWidth)))

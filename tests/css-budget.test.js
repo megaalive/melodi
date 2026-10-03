@@ -2,11 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readAppStyles } from "./helpers/read-app-styles.js";
 
-// PR12 removes proven old-parent candidate-dock rules and exact responsive
-// duplicates. Count normalized LF bytes so the budget is stable across
-// Windows CRLF and Linux LF checkouts. The current imported tree is 223,329
-// bytes; 106-scenario coverage supports this cap while keeping 165 KB as a target.
-const ACTIVE_CSS_BUDGET_BYTES = 224_000;
+// Count normalized LF bytes so the budget is stable across Windows CRLF and
+// Linux LF checkouts. P14's accessible Guitar zone adds 771 active bytes; this
+// cap records the measured 224,100-byte tree while keeping 165 KB as a target.
+const ACTIVE_CSS_BUDGET_BYTES = 224_128;
 const TARGET_CSS_BUDGET_BYTES = 165_000;
 
 test("active imported CSS stays within its tracked byte budget", () => {

@@ -3484,7 +3484,13 @@ progressionView = createProgressionWorkspace(commands, () => language, reportErr
 studioView = createStudioWorkspace(commands, translate, reportError, {
   initialDockOpen: uiPreferences.dockOpen,
   initialDockWidth: uiPreferences.dockWidth,
+  initialGuitarZoneOpen: uiPreferences.guitarZoneOpen,
+  initialGuitarZoneHeight: uiPreferences.guitarZoneHeight,
   onDockPreferencesChange(patch) {
+    uiPreferences = { ...uiPreferences, ...patch };
+    writeUiPreferences(safeStorage(), uiPreferences);
+  },
+  onGuitarZonePreferencesChange(patch) {
     uiPreferences = { ...uiPreferences, ...patch };
     writeUiPreferences(safeStorage(), uiPreferences);
   },

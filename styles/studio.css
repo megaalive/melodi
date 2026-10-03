@@ -103,6 +103,14 @@ body.studio { --radius: 6px; --studio-accent: var(--accent); background: var(--s
 .studio .app-shell { display: flex; flex-direction: column; height: calc(100dvh - 40px); min-height: 0; padding-bottom: 0; }
 .studio .workspace-grid { display: grid; flex: 1 1 auto; min-height: 0; }
 .studio .workspace-canvas { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0; min-width: 0; min-height: 0; }
+.studio-guitar-zone { flex: none; min-width: 0; }
+.studio-guitar-zone[data-open="true"] { display: flex; flex-direction: column; height: var(--studio-guitar-zone-height,220px); min-height: 0; }
+.studio-guitar-zone[hidden],.studio-guitar-zone #guitar-section[hidden],.studio-guitar-resizer[hidden] { display: none !important; }
+.studio-guitar-zone #guitar-section { flex: 1; min-height: 0; overflow: auto; padding: 0 8px 8px; }
+.studio-guitar-resizer { height: 20px; touch-action: none; cursor: ns-resize; }
+.studio-guitar-resizer::after { content: ""; display: block; height: 2px; margin: 9px 0; background: var(--border-strong); }
+.studio-guitar-resizer:focus-visible { outline: 2px solid var(--focus); }
+.guitar-zone-toggle,.mobile-guitar-trigger { min-height: 44px; }
 .studio .workspace-pane { border: 0; border-radius: 0; padding: 6px 8px; min-width: 0; }
 .studio #piano-roll-section, .studio #score-section, .studio #lyrics-section, .studio #drums-section { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
 .studio #piano-roll-content { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }

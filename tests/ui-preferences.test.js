@@ -23,6 +23,8 @@ test("panel disclosure preferences default expanded and normalize fields indepen
     expressionCollapsed: false,
     scoreLayout: "page",
     guitarLayout: "fretboard",
+    guitarZoneOpen: null,
+    guitarZoneHeight: 220,
     dockOpen: true,
     dockWidth: null
   });
@@ -32,14 +34,16 @@ test("panel disclosure preferences default expanded and normalize fields indepen
 
 test("panel disclosure preferences persist independently without storing song data", () => {
   const storage = memoryStorage();
-  assert.equal(writeUiPreferences(storage, { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard" }), true);
-  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard", dockOpen: true, dockWidth: null });
+  assert.equal(writeUiPreferences(storage, { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard", guitarZoneOpen: true, guitarZoneHeight: 315 }), true);
+  assert.deepEqual(readUiPreferences(storage), { pianoRollCollapsed: true, expressionCollapsed: false, scoreLayout: "page", guitarLayout: "fretboard", guitarZoneOpen: true, guitarZoneHeight: 315, dockOpen: true, dockWidth: null });
   assert.equal(storage.values.size, 1);
   assert.deepEqual(JSON.parse(storage.values.get("melodi.ui-preferences")), {
     pianoRollCollapsed: true,
     expressionCollapsed: false,
     scoreLayout: "page",
     guitarLayout: "fretboard",
+    guitarZoneOpen: true,
+    guitarZoneHeight: 315,
     dockOpen: true,
     dockWidth: null
   });
@@ -54,6 +58,14 @@ test("dock preferences are bounded and legacy preference records keep safe defau
   assert.equal(normalizeUiPreferences({ dockWidth: 319.5 }).dockWidth, 320);
   assert.equal(normalizeUiPreferences({ dockWidth: "400", dockOpen: "false" }).dockWidth, null);
   assert.equal(normalizeUiPreferences({}).dockOpen, true);
+});
+
+test("Guitar zone visibility and height are bounded UI preferences", () => {
+  assert.equal(normalizeUiPreferences({ guitarZoneOpen: false, guitarZoneHeight: 1 }).guitarZoneOpen, false);
+  assert.equal(normalizeUiPreferences({ guitarZoneOpen: false, guitarZoneHeight: 1 }).guitarZoneHeight, 120);
+  assert.equal(normalizeUiPreferences({ guitarZoneOpen: true, guitarZoneHeight: 900 }).guitarZoneHeight, 480);
+  assert.equal(normalizeUiPreferences({ guitarZoneOpen: "open", guitarZoneHeight: "240" }).guitarZoneOpen, null);
+  assert.equal(normalizeUiPreferences({ guitarZoneHeight: "240" }).guitarZoneHeight, 220);
 });
 
 test("invalid or unavailable UI preference storage falls back safely", () => {
