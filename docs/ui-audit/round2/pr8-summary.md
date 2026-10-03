@@ -4,7 +4,7 @@
 
 GitHub Pages is configured to publish the repository root from `main` using GitHub's built-in branch deployment. There is no custom Pages workflow; `.github/workflows` contains CI only. The site URL is <https://megaalive.github.io/melodi/>. `index.html`, CSS imports, and JavaScript module URLs use build/cache token `20261003.74`; there is no service worker registration.
 
-Post-merge Pages run and live build verification will be recorded here after GitHub publishes `main`.
+The [Pages build and deployment run #267](https://github.com/megaalive/melodi/actions/runs/37091570756) completed successfully for commit `9d55f27f371220f6a260210abed0722cc1d267b8`. A no-cache GET of the [live site](https://megaalive.github.io/melodi/?codexverify=20261003.74) returned HTTP 200 at 2026-10-03 02:59 UTC. Its build meta tag, HTML CSS/JS asset URLs, all three CSS imports, and the `src/app.js` module token report `20261003.74` consistently.
 
 ## Viewport comparison
 
