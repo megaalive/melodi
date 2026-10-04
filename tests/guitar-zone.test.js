@@ -20,6 +20,9 @@ const ALLOWED_SPACING = new Set([0, 2, 4, 8, 12, 16]);
 async function openStudio(page, url, { width, height, theme }) {
   await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
   await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+  // Lagu kosong membuka tab Ide; tes ini menghitung chrome workspace Edit.
+  await page.evaluate(() => window.melodi.commands.setViewMode('piano-roll'));
+  await page.waitForTimeout(200);
   await page.evaluate(next => {
     const select = document.querySelector("#theme");
     select.value = next;

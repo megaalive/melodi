@@ -1,5 +1,5 @@
-import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20261003.88";
-import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261003.88";
+import { createId, createInitialSong, createSong, MelodiError, PPQ } from "../core/model.js?v=20261003.89";
+import { GM_STANDARD_KIT } from "../instruments/percussion.js?v=20261003.89";
 
 const EXAMPLES = Object.freeze([
   Object.freeze({

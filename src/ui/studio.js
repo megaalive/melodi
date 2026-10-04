@@ -1,5 +1,5 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.88';
-import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.88';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.89';
+import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.89';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -569,6 +569,9 @@ export function createStudioWorkspace(commands, translate, onError, {
         }
       }
     }
+    // Workspace Ide tidak punya bar judul Piano Roll, jadi judul itu kembali ke
+    // pane-nya dan tidak ikut dipindah ke bar toolbar.
+    if (mode === 'ideas') return;
     if ((!wide.matches && !sideDock.matches) || shortLandscape.matches || !toolbarActions) return;
     const selectedRows = mode === 'drums'
       ? [drumsHeading]
@@ -859,7 +862,9 @@ export function createStudioWorkspace(commands, translate, onError, {
     panelDockTrigger.hidden = false;
     setPanelToggleLabel();
     panelDockTrigger.setAttribute('aria-expanded', String(sideDockLayout ? dockOpen : Boolean(panel)));
-    if (!compact.matches || shortLandscapeLayout) inspectorActions.append(panelSwitches);
+    // Tab dock hidup di dalam sheet Panel, tidak pernah di bar tab bawah: bar itu
+    // hanya lima item (Ide, Edit, Not, Irama, Panel) supaya tidak berebut ruang.
+    if (panelSwitches.parentElement !== inspectorActions) inspectorActions.append(panelSwitches);
     modeToolbar.hidden = phone.matches && !shortLandscape.matches;
     overview.hidden = false;
     if (shortLandscapeLayout) {
@@ -926,10 +931,13 @@ export function createStudioWorkspace(commands, translate, onError, {
       editorSettings.hidden = true;
       if (sessionActions) byId('generation-panel').append(sessionActions);
     }
-    if (compact.matches) mobileDock.append(panelSwitches);
+
     coreControlsVisible = wideLayout || mediumLayout;
-    coreControls.hidden = !coreControlsVisible;
-    if (coreControlsVisible) coreControls.setAttribute('aria-label', translate('studioCoreControlsHeading'));
+    // Workspace Ide punya chrome sendiri: bar kontrol Edit (Seek, Snap, Zoom,
+    // Tambah chord, Anchor, Isi gap, Generate) tidak boleh muncul di sana.
+    const ideasOnlyWorkspace = workspaceForMode() === 'ideas';
+    coreControls.hidden = !coreControlsVisible || ideasOnlyWorkspace;
+    if (coreControlsVisible && !ideasOnlyWorkspace) coreControls.setAttribute('aria-label', translate('studioCoreControlsHeading'));
     if (coreControlsVisible && !compact.matches) {
       if (editorTools.parentElement !== editorToolbar) editorToolbar.prepend(editorTools);
       if (editorZoomControl && editorZoomControl.parentElement !== editorToolbar) {
@@ -1344,7 +1352,8 @@ export function createStudioWorkspace(commands, translate, onError, {
       lastPanel = dockTabFor(panel, panelWorkspace) ?? lastPanel;
     } else if (!panel && sideDock.matches && dockOpen) panel = selectedDockPanel(panelWorkspace);
     const guitarSheetOpen = compact.matches && panel === 'guitar';
-    const guitarAvailable = activeWorkspace !== 'rhythm';
+    const guitarAvailable = activeWorkspace !== 'rhythm' && activeWorkspace !== 'ideas';
+    const ideasWorkspace = activeWorkspace === 'ideas';
     chordQuickGroup.hidden = panelWorkspace !== 'edit';
     const tabValue = dockTabFor(panel, panelWorkspace);
     if (guitarZone.parentElement !== (guitarSheetOpen ? sidebar : workspaceCanvas)) {
@@ -1408,6 +1417,9 @@ export function createStudioWorkspace(commands, translate, onError, {
     syncGuitarZoneControls();
     syncWideWorkspaceHeading(mode);
     document.body.dataset.studioWorkspace = activeWorkspace;
+    // Bar kontrol Edit ikut disembunyikan setiap kali mode Ide aktif, bukan
+    // hanya saat breakpoint berubah, karena mode bisa berganti kapan saja.
+    coreControls.hidden = !coreControlsVisible || ideasWorkspace;
     modeNav.querySelectorAll('[data-studio-workspace]').forEach(button => {
       button.setAttribute('aria-pressed', String(button.dataset.studioWorkspace === activeWorkspace));
     });
@@ -1417,6 +1429,11 @@ export function createStudioWorkspace(commands, translate, onError, {
     if (shortLandscape.matches) toolbarActions.append(guitarMode);
     else rollTitleRow.append(guitarMode);
     guitarMode.setAttribute('aria-pressed', String(guitarZoneOpen));
+    // Kontrol Gitar hanya milik workspace Edit; di Ide tombol Gitar, collapse
+    // Piano Roll, dan pemicu sheet Gitar semuanya disembunyikan.
+    guitarMode.hidden = ideasWorkspace;
+    guitarSheetTrigger.hidden = ideasWorkspace;
+    if (rollCollapse) rollCollapse.hidden = ideasWorkspace;
     if (mode === 'lyrics') lyricsHeading.append(lyricsMode);
     else scoreLayoutGroup.append(lyricsMode);
     if (shortLandscape.matches) {

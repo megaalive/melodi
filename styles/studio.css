@@ -796,6 +796,7 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-octave-shift{display:flex;gap:var(--space-1);}
 .ideas-latency{display:inline-flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);color:var(--text-muted);}
 .ideas-latency output{min-width:5.5ch;text-align:center;color:var(--text);font-variant-numeric:tabular-nums;}
+.ideas-latency button{min-width:var(--control-h);padding-inline:var(--space-1);}
 .ideas-hint{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
 .ideas-keyboard{position:relative;display:grid;gap:var(--space-2);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);touch-action:none;}
 .ideas-keyboard-label{font-size:var(--text-xs);color:var(--text-muted);}

@@ -10,6 +10,9 @@ async function withPage(viewport, run) {
     const page = await browser.newPage({ viewport });
     await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
     await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+    // Lagu kosong membuka tab Ide; tes ini menghitung chrome workspace Edit.
+    await page.evaluate(() => window.melodi.commands.setViewMode('piano-roll'));
+    await page.waitForTimeout(200);
     await run(page);
   } finally {
     await browser.close();

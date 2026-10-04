@@ -291,8 +291,12 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   assert.match(css, /\.studio \.mobile-workspace-dock > \.studio-views > button[^}]*min-height: 44px/);
   assert.match(css, /\.studio\[data-view-mode="combined"\] #score-section \{ display: none !important; \}/);
   assert.match(css, /\.studio \.workspace-sidebar\[data-sheet-size="half"\] \{ height: min\(45dvh, calc\(100dvh - 128px\)\)/);
-  assert.match(css, /\.studio \.mobile-workspace-dock > \.studio-panel-switches:not\(\[hidden\]\) \{ display: flex; flex: 0 0 44px/);
-  assert.match(css, /\.studio \.mobile-workspace-dock > \.studio-panel-switches > button\[aria-selected="true"\] \{ border-top-color: var\(--studio-accent\)/);
+  assert.match(css, /\.studio \.mobile-workspace-dock > \.studio-views\{display:flex;flex:0 0 44px;[^}]*height:44px/);
+  // Tab dock (Isi celah, Chord, Mixer, Alat) tinggal di dalam sheet Panel; bar
+  // tab bawah HP hanya Ide, Edit, Not, Irama, Panel.
+  assert.doesNotMatch(css, /\.mobile-workspace-dock > \.studio-panel-switches/);
+  assert.match(css, /\.workspace-sidebar \.studio-panel-switches button\[aria-selected="true"\]/);
+  assert.match(css, /\.mobile-panel-peek-actions button\{[^}]*white-space:nowrap/);
   assert.match(css, /@media \(width >= 56rem\) and \(min-height: 501px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 8px var\(--studio-dock-width, clamp\(20rem, 24vw, 30rem\)\)/);
   assert.match(css, /\.workspace-sidebar-resizer:not\(\[hidden\]\):focus-visible/);
   assert.match(css, /\.workspace-sidebar \.studio-panel-switches button\[aria-selected="true"\]/);
@@ -449,7 +453,7 @@ test('mobile Panel opens the workspace tabs and restores focus to its dock trigg
     assert.equal(setup.doc.body.dataset.studioPanel, 'chords');
     assert.equal(panelButton.attributes.get('aria-expanded'), 'true');
     assert.equal(setup.doc.activeElement, setup.chordTrigger);
-    assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('#mobile-workspace-dock'));
+    assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.mobile-panel-peek-actions'),'tab dock tinggal di sheet Panel');
     assert.equal(setup.nodes.get('.studio-panel-switches').attributes.get('role'), 'tablist');
     assert.equal(setup.chordTrigger.attributes.get('aria-selected'), 'true');
     assert.equal(setup.nodes.get('.studio-panel-switches').children.length, 5);
@@ -555,7 +559,7 @@ test('responsive panel triggers and dock destinations cover desktop, medium, and
         assert.equal(setup.nodes.get('#view-controls').hidden, !landscape);
         assert.equal(setup.mixerTrigger.parent, setup.nodes.get('.studio-panel-switches'));
         assert.equal(setup.chordTrigger.parent, setup.nodes.get('.studio-panel-switches'));
-        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('#mobile-workspace-dock'));
+        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.mobile-panel-peek-actions'),'tab dock tinggal di sheet Panel');
         assert.equal(setup.nodes.get('.studio-panel-switches').children.length, 5);
         assert.equal(setup.nodes.get('.transport-advanced-grid').parent, setup.nodes.get('.studio-tools-content'));
         assert.equal(setup.nodes.get('.follow-mode-control').parent, setup.nodes.get('.transport-advanced-grid'));
@@ -564,7 +568,7 @@ test('responsive panel triggers and dock destinations cover desktop, medium, and
         assert.equal(setup.nodes.get('.history-buttons').parent, setup.nodes.get('.transport-main'));
         assert.equal(setup.nodes.get('.transport-dock').parent, setup.nodes.get('#mobile-workspace-dock'));
         assert.equal(setup.nodes.get('#studio-views').parent, landscape ? setup.nodes.get('#view-controls') : setup.nodes.get('#mobile-workspace-dock'));
-        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('#mobile-workspace-dock'));
+        assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.mobile-panel-peek-actions'),'tab dock tinggal di sheet Panel');
         const panelButton = panelToggle(setup);
         assert.ok(panelButton);
         assert.equal(panelButton.hidden, false);

@@ -82,6 +82,9 @@ async function openStudio(browser, url, { width, height, theme }) {
   const page = await browser.newPage({ viewport: { width, height } });
   await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
   await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+  // Lagu kosong membuka tab Ide; tes ini menghitung chrome workspace Edit.
+  await page.evaluate(() => window.melodi.commands.setViewMode('piano-roll'));
+  await page.waitForTimeout(200);
   await page.evaluate(next => {
     const select = document.querySelector("#theme");
     select.value = next;
@@ -112,6 +115,9 @@ async function measureStates(page, label, selector, failures) {
   await page.mouse.down();
   await page.waitForTimeout(120);
   states.active = await readPair(locator);
+  // Lepas mouse di luar elemen supaya mengukur state aktif tidak menjadi klik
+  // yang memindahkan workspace.
+  await page.mouse.move(2, 2);
   await page.mouse.up();
   for (const [state, pair] of Object.entries(states)) {
     assert.equal(pair.disabled, false, `${label} tidak boleh disabled saat diuji`);

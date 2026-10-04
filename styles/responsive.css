@@ -363,11 +363,9 @@
   .studio .studio-panel-switches{display:flex;flex:1 1 auto;gap:var(--space-1);}
   .studio .mobile-panel-peek-actions{display:flex !important;flex:1 1 auto;min-width:0;}
   .studio .mobile-panel-peek-actions .studio-panel-switches{width:100%;}
-  .studio .mobile-panel-peek-actions button{flex:1 1 0;min-width:44px;min-height:44px;padding-inline:var(--space-1);}
+  .studio .mobile-panel-peek-actions button{flex:1 1 0;min-width:44px;min-height:44px;padding-inline:var(--space-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .studio .mobile-workspace-dock:not([hidden]){display:flex;flex-direction:row;align-items:center;height:calc(44px + env(safe-area-inset-bottom, 0px));}
   .studio .mobile-workspace-dock > .transport-dock{position:static;flex:1 1 auto;width:auto;min-width:0;height:44px;margin:0;padding:0;border:0;}
-  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]){flex:0 0 auto;width:auto;max-width:46vw;height:44px;border:0;overflow-x:auto;}
-  .studio .mobile-workspace-dock > .studio-panel-switches > button{flex:0 0 auto;min-width:44px;width:auto;height:44px;min-height:44px;}
   .studio .app-shell, .studio .workspace-sidebar{bottom:calc(44px + env(safe-area-inset-bottom, 0px));}
   .studio .studio-inspector-head{height:auto;min-height:44px;flex-wrap:wrap;}
   .studio .workspace-sidebar[data-sheet-size="half"] .mobile-panel-peek-actions{order:3;flex-basis:100%;}
@@ -749,9 +747,6 @@
   .studio .mobile-workspace-dock > .studio-views{display:flex;flex:0 0 44px;width:100%;height:44px;border-top:1px solid var(--border);}
   .studio .mobile-workspace-dock > .studio-views > button{flex:1 1 0;min-width:0;height:44px;min-height:44px;padding:var(--space-1) var(--space-1);border:0;border-top:3px solid transparent;font-size:var(--text-xs);}
   .studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"]{border-top-color:var(--studio-accent);border-bottom-color:transparent;}
-  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]) { display: flex; flex: 0 0 44px;width:100%;min-width:0;gap:0;overflow-x:auto;overflow-y:hidden;border-top:1px solid var(--border); }
-  .studio .mobile-workspace-dock > .studio-panel-switches > button{flex:1 1 0;min-width:0;height:44px;min-height:44px;padding:0 var(--space-1);border:0;border-top:3px solid transparent;border-radius:0;background:transparent;font-size:var(--text-xs);line-height:1;white-space:normal;overflow-wrap:anywhere;}
-  .studio .mobile-workspace-dock > .studio-panel-switches > button[aria-selected="true"] { border-top-color: var(--studio-accent); background:var(--surface-subtle); }
   .studio .studio-more[open] .studio-more-popover{position:fixed;inset:auto 6px calc(132px + env(safe-area-inset-bottom, 0px) + 6px);width:min(280px, calc(100vw - 12px));max-height:60dvh;}
   .studio .transport-advanced[open] .transport-advanced-grid{z-index:100;}
   .studio .workspace-sidebar{position:fixed;inset:auto 0 calc(132px + env(safe-area-inset-bottom, 0px));z-index:80;width:100%;max-height:min(55dvh, calc(100dvh - 172px));overflow:auto;border:1px solid var(--border-strong);border-radius:9px 9px 0 0;}
@@ -957,7 +952,7 @@
   .studio .studio-panel-switches{display:flex;flex:1 1 auto;gap:var(--space-1);}
   .studio .mobile-panel-peek-actions{display:flex !important;flex:1 1 auto;min-width:0;}
   .studio .mobile-panel-peek-actions .studio-panel-switches{width:100%;}
-  .studio .mobile-panel-peek-actions button{flex:1 1 0;min-width:44px;min-height:44px;padding-inline:var(--space-1);}
+  .studio .mobile-panel-peek-actions button{flex:1 1 0;min-width:44px;min-height:44px;padding-inline:var(--space-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .studio .studio-inspector-head{height:auto;min-height:44px;flex-wrap:wrap;}
   .studio .studio-more-popover > button{min-height:44px;}
   .studio .help-sheet[open]{
@@ -1013,9 +1008,6 @@
   .studio .workspace-chrome .transport-dock{position:static;width:100%;height:44px;margin:0;padding:0 var(--space-1);border:0;background:var(--surface);}
   .studio .mobile-workspace-dock:not([hidden]){position:fixed;inset:auto 0 0;z-index:90;display:flex;flex-direction:row;align-items:center;width:100%;height:calc(44px + env(safe-area-inset-bottom, 0px));padding:0 0 env(safe-area-inset-bottom, 0px);}
   .studio .mobile-workspace-dock > .transport-dock{flex:1 1 auto;width:auto;min-width:0;height:44px;}
-  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]){display:flex;flex:0 0 auto;width:auto;max-width:46vw;height:44px;min-width:0;gap:0;overflow-x:auto;overflow-y:hidden;border-top:0;border-left:1px solid var(--border);}
-  .studio .mobile-workspace-dock > .studio-panel-switches > button{flex:0 0 auto;min-width:70px;height:44px;min-height:44px;padding:0 var(--space-2);border:0;border-top:3px solid transparent;border-radius:0;background:transparent;white-space:nowrap;}
-  .studio .mobile-workspace-dock > .studio-panel-switches > button[aria-selected="true"]{border-top-color:var(--studio-accent);background:var(--surface-subtle);}
   .studio .studio-views{width:auto;height:45px;flex:0 0 auto;flex-direction:row;align-items:stretch;}
   .studio .studio-views > button{flex:0 0 45px;width:auto;min-width:44px;height:45px;min-height:45px;padding:var(--space-1) var(--space-1);border:0;border-top:3px solid transparent;border-bottom:0;font-size:var(--text-xs);white-space:nowrap;}
   .studio .studio-views > button[aria-pressed="true"]{border-top-color:var(--studio-accent);border-left-color:transparent;}
@@ -1347,10 +1339,8 @@
   .studio[data-studio-panel="none"] .note-selection-bar{bottom:calc(88px + env(safe-area-inset-bottom, 0px));}
   .studio .mobile-workspace-dock:not([hidden]){flex-flow:row wrap;align-content:flex-start;height:calc(88px + env(safe-area-inset-bottom, 0px));}
   .studio .mobile-workspace-dock > .transport-dock{flex:0 0 100%;}
-  .studio .mobile-workspace-dock > .studio-views,
-  .studio .mobile-workspace-dock > .studio-panel-switches:not([hidden]){flex:1 1 50%;width:50%;min-width:0;max-width:none;height:44px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;}
+  .studio .mobile-workspace-dock > .studio-views{flex:1 1 100%;width:100%;min-width:0;max-width:none;height:44px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;}
   .studio .mobile-workspace-dock > .studio-views > button{flex:0 0 auto;min-width:44px;height:44px;min-height:44px;white-space:nowrap;}
-  .studio .mobile-workspace-dock > .studio-panel-switches > button{min-width:44px;}
   .studio #piano-roll-section .guitar-mode-toggle{display:none;}
   .studio .header-actions > .mobile-guitar-trigger{min-height:var(--control-h);}
 }

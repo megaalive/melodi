@@ -10,7 +10,11 @@ test("Panel is a transport button on desktop and only Play stays filled in the c
     for (const theme of ["light", "dark"]) {
       const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
       await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
-      await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+      // Chrome Edit: tab Ide sengaja tidak menampilkan toggle Gitar maupun
+      // collapse Piano Roll, jadi kedua tes ini pindah ke workspace Edit.
+      await page.evaluate(() => window.melodi.commands.setViewMode("piano-roll"));
+      await page.waitForTimeout(120);
       await page.evaluate(next => {
         const select = document.querySelector("#theme");
         select.value = next;
@@ -130,6 +134,9 @@ test("wide default exposes routine project, language, palette, history, and foll
     const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
     await page.goto(url, { waitUntil: "networkidle", timeout: 15000 });
     await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 10000 });
+    // Tes ini menghitung chrome workspace Edit, bukan chrome Ide.
+    await page.evaluate(() => window.melodi.commands.setViewMode("piano-roll"));
+    await page.waitForTimeout(200);
     const audit = await measurePage(page);
     const expected = new Set([
       "project-new", "project-open", "project-save", "project-share", "language", "theme",
@@ -188,11 +195,13 @@ test("wide default exposes routine project, language, palette, history, and foll
 
     await page.setViewportSize({ width: 390, height: 844 });
     const phoneDock = await page.locator("#mobile-workspace-dock").boundingBox();
-    const phoneTabs = await page.locator("#mobile-workspace-dock > .studio-panel-switches").boundingBox();
-    assert.ok(phoneDock && phoneDock.height >= 88 && phoneDock.y + phoneDock.height <= 844,
-      "portrait mobile reserves the second dock row for workspace and panel tabs");
+    const phoneTabs = await page.locator("#mobile-workspace-dock > .studio-views").boundingBox();
+    assert.ok(phoneDock && phoneDock.height >= 44 && phoneDock.y + phoneDock.height <= 844,
+      "portrait mobile keeps the transport and workspace tabs in one on-screen dock");
     assert.ok(phoneTabs && phoneTabs.y + phoneTabs.height <= 844,
-      "portrait panel tabs are not clipped below the viewport");
+      "portrait workspace tabs are not clipped below the viewport");
+    assert.equal(await page.locator("#mobile-workspace-dock > .studio-views > button").count(), 5,
+      "the phone dock row is Ide, Edit, Not, Irama, Panel and nothing else");
     const mobileMenu = await page.locator("#project-menu > summary").boundingBox();
     assert.ok(mobileMenu && mobileMenu.width > 0 && mobileMenu.height > 0, "the compact project menu remains reachable in the header");
     const mobileMenuLabel = await page.locator("#project-menu > summary > span").innerText();
@@ -201,11 +210,11 @@ test("wide default exposes routine project, language, palette, history, and foll
     assert.equal(await page.locator("#project-menu").evaluate(element => element.open), true, "the compact project sheet opens from its visible trigger");
     await page.setViewportSize({ width: 844, height: 390 });
     const landscapeDock = await page.locator("#mobile-workspace-dock").boundingBox();
-    const landscapeTabs = await page.locator("#mobile-workspace-dock > .studio-panel-switches").boundingBox();
+    const landscapeTabs = await page.locator("#studio-views").boundingBox();
     assert.ok(landscapeDock && landscapeDock.height >= 44 && landscapeDock.y + landscapeDock.height <= 390,
-      "short-landscape mobile keeps transport and panel tabs in one on-screen dock row");
+      "short-landscape mobile keeps transport and workspace tabs on screen");
     assert.ok(landscapeTabs && landscapeTabs.y + landscapeTabs.height <= 390,
-      "short-landscape panel tabs remain inside the viewport");
+      "short-landscape workspace tabs remain inside the viewport");
     await page.setViewportSize({ width: 1200, height: 900 });
     await page.waitForFunction(() => document.querySelectorAll(".desktop-project-actions button").length === 4, null, { timeout: 3000 });
     assert.equal(await page.locator(".desktop-project-actions button").count(), 4,

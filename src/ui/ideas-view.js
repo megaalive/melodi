@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.88";
+import { PPQ } from "../core/model.js?v=20261003.89";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.88";
+} from "./ideas.js?v=20261003.89";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,7 +35,7 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.88";
+} from "../storage/recording-preferences.js?v=20261003.89";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
@@ -52,12 +52,29 @@ export function noteName(pitch) {
   return `${NOTE_NAMES[((pitch % 12) + 12) % 12]}${Math.floor(pitch / 12) - 1}`;
 }
 
+const GENERATOR_MOVE_LABELS = Object.freeze({
+  direct: "ideasMoveDirect",
+  passing: "ideasMovePassing",
+  neighbor: "ideasMoveNeighbor",
+  approach: "ideasMoveApproach",
+  leap: "ideasMoveLeap",
+  "leap-resolution": "ideasMoveLeapResolution",
+  repetition: "ideasMoveRepetition",
+  sequence: "ideasMoveSequence"
+});
+
 export function candidateKindLabel(kind) {
   if (kind === "ornament") return "ideasVariationOrnament";
   if (kind === "inversion") return "ideasVariationInversion";
   if (kind === "sequence") return "ideasVariationSequence";
   if (kind === "rhythm") return "ideasVariationRhythm";
   return "ideasVariationRecorded";
+}
+
+/** Kartu variasi memakai jenisnya; kartu lanjutan memakai move generatornya. */
+export function candidateLabelKey(candidate) {
+  if (candidate?.kind !== "continue") return candidateKindLabel(candidate?.kind);
+  return GENERATOR_MOVE_LABELS[candidate?.meta?.move] ?? "ideasContinueCandidate";
 }
 
 export function sourceLabelKey(source) {
@@ -608,7 +625,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     index.textContent = String(slot);
     index.setAttribute("aria-label", translate("ideasSlotLabel", { index: slot }));
     const name = document.createElement("strong");
-    name.textContent = translate(candidateKindLabel(candidate.kind));
+    name.textContent = translate(candidateLabelKey(candidate));
     const count = document.createElement("span");
     count.className = "muted";
     count.textContent = translate("ideasTakeTitle", { count: candidate.notes.length });
@@ -713,8 +730,8 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     if (state.comparePlaying) return translate("ideasComparePlaying");
     if (!hasComparePair()) return translate("ideasCompareNeedsTwo");
     const list = candidates();
-    const label = (candidateId) => translate(candidateKindLabel(
-      list.find((item) => item.id === candidateId)?.kind ?? "recorded"
+    const label = (candidateId) => translate(candidateLabelKey(
+      list.find((item) => item.id === candidateId) ?? { kind: "recorded" }
     ));
     return translate("ideasCompareState", { a: label(state.compare.a), b: label(state.compare.b) });
   }
@@ -978,6 +995,7 @@ if (typeof matchMedia === "function") {
     acceptCandidate,
     acceptActiveCandidate,
     candidateKindLabel,
+    candidateLabelKey,
     toggleComparePick,
     compareSlot,
     hasComparePair,

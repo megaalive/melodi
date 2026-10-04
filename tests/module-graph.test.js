@@ -230,9 +230,11 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   assert.ok(toolbarActionsStart >= 0 && toolbarActionsStart < panelSwitchesStart && panelSwitchesStart < moreStart);
   assert.doesNotMatch(html.slice(moreStart, moreEnd), /data-studio-panel=/);
   assert.match(html, /id="guitar-mode-toggle"[^>]*data-studio-view="guitar"[^>]*aria-pressed="false"/);
-  assert.match(studio, /toolbarActions\.append\(rollCollapse\)/);
-  assert.match(studio, /if \(compact\.matches\) mobileDock\.append\(panelSwitches\)/);
-  assert.match(studio, /if \(!compact\.matches \|\| shortLandscapeLayout\) inspectorActions\.append\(panelSwitches\)/);
+assert.match(studio, /toolbarActions\.append\(rollCollapse\)/);
+  // Tab dock (Isi celah, Chord, Mixer, Alat) selalu tinggal di sheet Panel,
+  // tidak pernah di bar tab bawah HP.
+  assert.match(studio, /if \(panelSwitches\.parentElement !== inspectorActions\) inspectorActions\.append\(panelSwitches\)/);
+  assert.doesNotMatch(studio, /mobileDock\.append\(panelSwitches\)/);
   assert.doesNotMatch(html, /<details class="pane-help"|class="pane-help-popover"/);
   assert.equal((html.match(/class="pane-help-trigger secondary"/g) ?? []).length, 2);
   assert.match(html, /<dialog id="context-help-dialog"[^>]*aria-labelledby="context-help-heading"/);

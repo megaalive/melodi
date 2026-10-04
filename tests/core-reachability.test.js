@@ -7,26 +7,27 @@ import { startAuditServer } from "../tools/ui-audit.mjs";
 // targets: reaching a feature's tab is not the same as reaching its control.
 const CORE_TARGETS = [
   { key: "guitar", operation: "Guitar", selector: ".mobile-guitar-trigger, #guitar-mode-toggle" },
-  { key: "chord-add", operation: "Chord", selector: '.studio-quick-chord button[data-action="add-chord"], #harmony-timeline-tools button[data-action="add-chord"]', outsideDock: true },
-  { key: "generate-anchor-mark", operation: "Mark Generate anchors", selector: '#generation-anchor-actions [data-action="mark-selected-anchors"]', outsideDock: true },
-  { key: "generate-anchor-use", operation: "Use Generate anchors", selector: '#generation-anchor-actions [data-action="use-selected-anchors"]', outsideDock: true },
-  { key: "generate", operation: "Generate", selector: "#generate-gap", outsideDock: true },
-  // C3a: volume hanya ada di panel Mixer, jadi satu klik tab sudah cukup.
-  { key: "mixer-melody", operation: "Mixer melody", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="melody"]', maxSteps: 1 },
-  { key: "mixer-harmony", operation: "Mixer harmony", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="harmony"]', maxSteps: 1 },
-  { key: "mixer-bass", operation: "Mixer bass", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="bass"]', maxSteps: 1 },
+  { key: "chord-add", operation: "Chord", selector: '.studio-quick-chord button[data-action="add-chord"], #harmony-timeline-tools button[data-action="add-chord"]', outsideDock: true, phoneMaxSteps: 2 },
+  { key: "generate-anchor-mark", operation: "Mark Generate anchors", selector: '#generation-anchor-actions [data-action="mark-selected-anchors"]', outsideDock: true, phoneMaxSteps: 2 },
+  { key: "generate-anchor-use", operation: "Use Generate anchors", selector: '#generation-anchor-actions [data-action="use-selected-anchors"]', outsideDock: true, phoneMaxSteps: 2 },
+  { key: "generate", operation: "Generate", selector: "#generate-gap", outsideDock: true, phoneMaxSteps: 2 },
+  // C3a: volume hanya ada di panel Mixer. Di HP tab dock tinggal di sheet
+  // Panel, jadi jalurnya dua tombol: Panel lalu Mixer.
+  { key: "mixer-melody", operation: "Mixer melody", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="melody"]', maxSteps: 1, phoneMaxSteps: 2 },
+  { key: "mixer-harmony", operation: "Mixer harmony", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="harmony"]', maxSteps: 1, phoneMaxSteps: 2 },
+  { key: "mixer-bass", operation: "Mixer bass", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="bass"]', maxSteps: 1, phoneMaxSteps: 2 },
   { key: "snap", operation: "Snap", selector: "#snap-select", outsideDock: true },
   { key: "zoom", operation: "Zoom", selector: "#roll-zoom", outsideDock: true },
   { key: "select-tool", operation: "Select tool", selector: "#roll-tool-select", outsideDock: true },
   { key: "draw-tool", operation: "Draw tool", selector: "#roll-tool-draw", outsideDock: true },
   { key: "add-note", operation: "Add Note", selector: '#add-note-form button[type="submit"], #roll-tool-draw', outsideDock: true },
-  { key: "seek-input", operation: "Seek position", selector: "#seek-tick", outsideDock: true },
-  { key: "seek-submit", operation: "Seek action", selector: 'form[data-action="seek"] button[type="submit"]', outsideDock: true },
+  { key: "seek-input", operation: "Seek position", selector: "#seek-tick", outsideDock: true, phoneMaxSteps: 2 },
+  { key: "seek-submit", operation: "Seek action", selector: 'form[data-action="seek"] button[type="submit"]', outsideDock: true, phoneMaxSteps: 2 },
   { key: "range-select", operation: "Select Range", selector: '#selection-form button[type="submit"], #roll-tool-select', outsideDock: true },
-  { key: "loop-toggle", operation: "Loop toggle", selector: "#loop-enabled", outsideDock: true },
-  { key: "loop-start", operation: "Loop start", selector: "#loop-start", outsideDock: true },
-  { key: "loop-end", operation: "Loop end", selector: "#loop-end", outsideDock: true },
-  { key: "loop-apply", operation: "Apply Loop range", selector: 'form.loop-range button[type="submit"]', outsideDock: true },
+  { key: "loop-toggle", operation: "Loop toggle", selector: "#loop-enabled", outsideDock: true, phoneMaxSteps: 2 },
+  { key: "loop-start", operation: "Loop start", selector: "#loop-start", outsideDock: true, phoneMaxSteps: 2 },
+  { key: "loop-end", operation: "Loop end", selector: "#loop-end", outsideDock: true, phoneMaxSteps: 2 },
+  { key: "loop-apply", operation: "Apply Loop range", selector: 'form.loop-range button[type="submit"]', outsideDock: true, phoneMaxSteps: 2 },
   { key: "undo", operation: "Undo", selector: "#undo" },
   { key: "redo", operation: "Redo", selector: "#redo" },
   { key: "project-new", operation: "New song", selector: '[data-action="new-song"]' },
@@ -74,17 +75,26 @@ async function inspectTargets(page) {
         if (node.matches("details:not([open])") && !element.closest("summary")) {
           addTrigger(node.querySelector(":scope > summary") || node.querySelector("summary"), "closed disclosure without summary");
         }
+        const sidebarClosed = element => Boolean(element?.closest(
+        ".workspace-sidebar[hidden], .workspace-sidebar[inert], .workspace-sidebar[aria-hidden=true]"));
         if (node.matches("[role=tabpanel][hidden]")) {
           const tab = [...document.querySelectorAll("[role=tab][aria-controls]")]
             .find(candidate => candidate.getAttribute("aria-controls") === node.id);
-          addTrigger(tab, `inactive tabpanel ${node.id || "(unnamed)"}`);
+          // Tab yang ikut tertutup sidebar ditangani oleh cabang sidebar supaya
+          // urutannya tombol Panel dulu, lalu tabnya.
+          if (!sidebarClosed(tab)) addTrigger(tab, `inactive tabpanel ${node.id || "(unnamed)"}`);
         }
         if (node.matches(".workspace-sidebar[hidden], .workspace-sidebar[inert], .workspace-sidebar[aria-hidden=true]")) {
           const opener = document.querySelector("button[data-studio-panel-toggle], .mobile-panel-trigger");
           const panel = element.closest('[role="tabpanel"]');
           const tab = panel && [...document.querySelectorAll('[role="tab"][aria-controls]')]
             .find(candidate => candidate.getAttribute("aria-controls") === panel.id);
-          addTrigger(tab || opener, "closed workspace sidebar");
+          if (tab) {
+            addTrigger(opener, "closed workspace sidebar");
+            addTrigger(tab, "panel tab inside the closed sidebar");
+          } else {
+            addTrigger(opener, "closed workspace sidebar");
+          }
         }
         if (node.matches('#studio-guitar-zone[data-open="false"]')) {
           addTrigger(document.querySelector("#guitar-mode-toggle"), "closed Guitar zone");
@@ -196,6 +206,9 @@ test("core operations have a real, labelled control within the reveal-step budge
         const page = await context.newPage();
         await page.goto(url, { waitUntil: "networkidle", timeout: 15000 });
         await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 10000 });
+        // Lagu kosong membuka tab Ide; tes ini menghitung chrome workspace Edit.
+        await page.evaluate(() => window.melodi.commands.setViewMode('piano-roll'));
+        await page.waitForTimeout(200);
         const controls = await inspectTargets(page);
         const errors = [];
         for (const target of controls) {
@@ -212,7 +225,9 @@ test("core operations have a real, labelled control within the reveal-step budge
           }
           if (!control.label) errors.push(`${target.operation}: ${control.selector} has no default accessible/text label`);
           const maxSteps = target.projectSecondary && viewport.width >= 1088 && viewport.width < 1440
-            ? 1 : target.maxSteps ?? viewport.maxSteps;
+            ? 1 : viewport.mobile
+              ? target.phoneMaxSteps ?? target.maxSteps ?? viewport.maxSteps
+              : target.maxSteps ?? viewport.maxSteps;
           if (control.reveal.steps > maxSteps) {
             errors.push(`${target.operation}: needs ${control.reveal.steps} reveal step(s), budget ${maxSteps}; path=${JSON.stringify(control.reveal)}`);
           }
@@ -222,7 +237,10 @@ test("core operations have a real, labelled control within the reveal-step budge
           if (control.reveal.steps === 0 && !control.inViewport && !control.scrollReachable) {
             errors.push(`${target.operation}: zero-step target at ${JSON.stringify(control.rect)} is not fully visible inside the viewport`);
           }
-          if (control.reveal.steps > 0 && !control.reveal.triggers.every(trigger => trigger.visible && trigger.inViewport)) {
+          // Rantai reveal berurutan: tombol pertama harus terlihat, tombol berikutnya
+          // baru terlihat setelah langkah sebelumnya ditekan.
+          const firstTrigger = control.reveal.triggers[0];
+          if (control.reveal.steps > 0 && !(firstTrigger?.visible && firstTrigger?.inViewport)) {
             errors.push(`${target.operation}: reveal control is not visible inside the viewport; path=${JSON.stringify(control.reveal)}`);
           }
           if (control.reveal.steps > 0
