@@ -427,7 +427,9 @@ export function createCommands(initialSong, {
 
   if (typeof audioPlayerFactory === "function") {
     audioPlayer = audioPlayerFactory({
-      getSong: () => cloneData(song),
+      // P1: player hanya membaca, jadi dapat referensi. Song dan mix diganti
+      // utuh saat commit; tidak ada mutasi dari sisi player.
+      getSong: () => song,
       onPosition(tick) {
         setPlaybackPosition(tick);
         notifyPlaybackChange();
@@ -447,7 +449,7 @@ export function createCommands(initialSong, {
         notifyPlaybackEvent("interrupted");
       },
       onError: handlePlayerError,
-      getMix: () => cloneData(mix),
+      getMix: () => mix,
       perf
     });
   }
@@ -601,6 +603,15 @@ export function createCommands(initialSong, {
     getSong() {
       return cloneData(song);
     },
+    // P1: jalur panas playback hanya membaca. Song canonical diganti utuh
+    // setiap commit, jadi referensinya stabil dan tidak pernah dimutasi di
+    // tempat. Pemanggil yang mau mengubah tetap memakai getSong().
+    peekSong() {
+      return song;
+    },
+    peekMix() {
+      return mix;
+    },
     getSelection() {
       return cloneData(selection);
     },
@@ -616,6 +627,18 @@ export function createCommands(initialSong, {
     // P0: probe perf butuh kedalaman undo tanpa snapshot penuh.
     getHistoryState() {
       return readHistoryState();
+    },
+    // P1: hanya untuk render playback per tick. Tidak meng-clone lagu dan
+    // tidak membuat agent snapshot; getState() tetap untuk agent dan render
+    // yang butuh state lengkap.
+    getPlaybackView() {
+      return {
+        playback: readPlayback(),
+        view: { mode: viewMode, follow: followMode },
+        history: readHistoryState(),
+        selectedChordId,
+        harmonyRange: effectiveHarmonyRange()
+      };
     },
     getState() {
       return createAgentSnapshot(song, selection, readPlayback(), {

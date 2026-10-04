@@ -1456,16 +1456,20 @@ function renderPlayback() {
 
 function renderPlaybackNow() {
   if (!commands) return;
-  const state = normalizeRuntimeState(commands.getState());
-  const playback = state.playback;
-  studioView?.updatePlayback(commands.getSong(), playback);
-  const song = commands.getSong();
+  // P1: playback tick tidak boleh meng-clone lagu. getPlaybackView() hanya
+  // memproyeksikan posisi; snapshot penuh diambil pada cabang yang memang
+  // butuh (harmony inspector dan fretboard), bukan tiap tick.
+  const state = commands.getPlaybackView();
+  const playback = normalizePlaybackState(state.playback);
+  const song = commands.peekSong();
+  studioView?.updatePlayback(song, playback);
   const harmonyContext = state.harmonyRange ?? harmonyContextRange(song, state);
   const harmonyContextKey = `${song.id}:${harmonyContext.startTick}:${harmonyContext.endTick}:${state.selectedChordId}`;
   if (lastHarmonyPlaybackContext !== harmonyContextKey && byId("harmony-range-form").dataset.pending !== "true") {
     lastHarmonyPlaybackContext = harmonyContextKey;
-    renderHarmonyInspector(song, state, commands.getHarmonyState(), translate);
-  progressionView?.render();
+    const fullState = normalizeRuntimeState(commands.getState());
+    renderHarmonyInspector(song, fullState, commands.getHarmonyState(), translate);
+    progressionView?.render();
   }
   const statusKey = {
     stopped: "playbackStopped",
@@ -1533,7 +1537,12 @@ function renderPlaybackNow() {
     followMode: state.view.mode === "drums" ? followMode : "none",
     songEndTick
   });
-  if (uiPreferences.guitarLayout === "fretboard" && guitarView?.updatePlayback(state)) renderGuitar(state);
+  // Fretboard opted-in dan view-nya sendiri sudah refuse render kalau nada
+  // aktif tidak berubah, jadi snapshot penuh hanya diambil di mode ini.
+  if (uiPreferences.guitarLayout === "fretboard") {
+    const state = normalizeRuntimeState(commands.getState());
+    if (guitarView?.updatePlayback(state)) renderGuitar(state);
+  }
   const activeSyllableIds = new Set(playback.currentSyllableIds);
   for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
     item.dataset.current = String(activeSyllableIds.has(item.dataset.entityId));
