@@ -184,8 +184,6 @@
   .studio #harmony-range-form{gap:var(--space-1);}
   .studio #harmony-location{min-width:0;width:100%;}
   .studio .harmony-timeline-tools .harmony-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch;gap:var(--space-1);}
-  .studio #harmony-range-form .harmony-actions > label{display:grid;min-width:0;white-space:normal;}
-  .studio #harmony-range-form .harmony-actions > label > select{width:100%;min-width:0;max-width:100%;}
   .studio .percussion-range-control{min-height:44px;}
   .studio .percussion-range-control input[type="range"]{height:45px;}
   .studio #studio-overview{height:44px;min-height:44px;}
@@ -202,7 +200,6 @@
   .studio #harmony-timeline-tools{min-width:0;overflow:visible;}
   .studio .progression-workspace{flex-wrap:wrap;}
   .studio #harmony-range-form{flex:0 1 auto;flex-wrap:wrap;}
-  .studio #harmony-range-form .harmony-actions{flex-wrap:wrap;}
   .studio .progression-workspace > select{flex:0 0 auto;}
   .studio .progression-help[open] p{position:fixed;top:15%;left:8%;}
   body.studio{height:100dvh;overflow:hidden;}
@@ -1104,17 +1101,6 @@
   .studio[data-view-mode="lyrics"] #lyrics-section{padding-top:var(--space-3);}
   .studio .generation-options[open] > .generation-advanced-popover{max-height:none;overflow:visible;}
   .studio #generation-panel .candidate-dock-close{display:none;}
-  .studio .chord-draw-picker[open] .chord-draw-options{
-    position:static;
-    width:auto;
-    max-width:none;
-    margin-top:var(--space-2);
-    padding:var(--space-2) 0 0;
-    border:0;
-    border-radius:0;
-    background:transparent;
-    box-shadow:none;
-  }
   .studio #generation-panel .candidate-dock .generation-candidates{
     grid-auto-flow:row;
     grid-auto-columns:auto;

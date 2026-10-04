@@ -686,9 +686,12 @@ test('Seek and Loop forms survive repeated desktop to phone and back arrangement
       workspace.render(commands.getSong(), commands.getState(), false);
     };
     workspace.render(commands.getSong(), commands.getState(), false);
+    const loopSeekForms = loopSeekGroup.children.find(node => node.className === 'studio-loop-seek-forms');
+    assert.ok(loopSeekForms, 'the Seek and Loop forms share one wrapping unit');
     assert.equal(loopSeekGroup.parent, coreControls);
-    assert.equal(seekForm.parent, loopSeekGroup);
-    assert.equal(loopRangeForm.parent, loopSeekGroup);
+    assert.equal(loopSeekForms.parent, loopSeekGroup);
+    assert.equal(seekForm.parent, loopSeekForms);
+    assert.equal(loopRangeForm.parent, loopSeekForms);
     assert.equal(loopSeekGroup.attributes.get('aria-label'), `${translate('loopEnabledLabel')} / ${translate('seekButton')}`);
 
     for (let cycle = 0; cycle < 3; cycle += 1) {
@@ -704,12 +707,13 @@ test('Seek and Loop forms survive repeated desktop to phone and back arrangement
       assert.doesNotThrow(() => setPhoneLayout(false), `desktop arrangement ${cycle + 1} must restore both forms`);
       assert.equal(coreControls.hidden, false);
       assert.equal(loopSeekGroup.parent, coreControls);
-      assert.equal(seekForm.parent, loopSeekGroup);
-      assert.equal(loopRangeForm.parent, loopSeekGroup);
+      assert.equal(loopSeekForms.parent, loopSeekGroup);
+      assert.equal(seekForm.parent, loopSeekForms);
+      assert.equal(loopRangeForm.parent, loopSeekForms);
       assert.equal(isVisibleInTree(seekForm), true);
       assert.equal(isVisibleInTree(loopRangeForm), true);
-      assert.equal(loopSeekGroup.children.filter(node => node === seekForm).length, 1);
-      assert.equal(loopSeekGroup.children.filter(node => node === loopRangeForm).length, 1);
+      assert.equal(loopSeekForms.children.filter(node => node === seekForm).length, 1);
+      assert.equal(loopSeekForms.children.filter(node => node === loopRangeForm).length, 1);
     }
   } finally { Object.assign(globalThis, previous); }
 });

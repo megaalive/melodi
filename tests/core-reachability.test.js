@@ -11,9 +11,10 @@ const CORE_TARGETS = [
   { key: "generate-anchor-mark", operation: "Mark Generate anchors", selector: '#generation-anchor-actions [data-action="mark-selected-anchors"]', outsideDock: true },
   { key: "generate-anchor-use", operation: "Use Generate anchors", selector: '#generation-anchor-actions [data-action="use-selected-anchors"]', outsideDock: true },
   { key: "generate", operation: "Generate", selector: "#generate-gap", outsideDock: true },
-  { key: "mixer-melody", operation: "Mixer melody", selector: '#studio-core-mixer [data-channel-volume][data-channel-id="melody"], #studio-mixer-channels [data-channel-volume][data-channel-id="melody"]', outsideDock: true },
-  { key: "mixer-harmony", operation: "Mixer harmony", selector: '#studio-core-mixer [data-channel-volume][data-channel-id="harmony"], #studio-mixer-channels [data-channel-volume][data-channel-id="harmony"]', outsideDock: true },
-  { key: "mixer-bass", operation: "Mixer bass", selector: '#studio-core-mixer [data-channel-volume][data-channel-id="bass"], #studio-mixer-channels [data-channel-volume][data-channel-id="bass"]', outsideDock: true },
+  // C3a: volume hanya ada di panel Mixer, jadi satu klik tab sudah cukup.
+  { key: "mixer-melody", operation: "Mixer melody", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="melody"]', maxSteps: 1 },
+  { key: "mixer-harmony", operation: "Mixer harmony", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="harmony"]', maxSteps: 1 },
+  { key: "mixer-bass", operation: "Mixer bass", selector: '#studio-mixer-channels [data-channel-volume][data-channel-id="bass"]', maxSteps: 1 },
   { key: "snap", operation: "Snap", selector: "#snap-select", outsideDock: true },
   { key: "zoom", operation: "Zoom", selector: "#roll-zoom", outsideDock: true },
   { key: "select-tool", operation: "Select tool", selector: "#roll-tool-select", outsideDock: true },

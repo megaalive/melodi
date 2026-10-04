@@ -69,41 +69,6 @@ export function createStudioWorkspace(commands, translate, onError, {
   coreControls.dataset.ariaCopy = 'studioCoreControlsHeading';
   coreControls.setAttribute('role', 'region');
   workspaceCanvas?.prepend(coreControls);
-  const coreMixer = document.createElement('div');
-  coreMixer.id = 'studio-core-mixer';
-  coreMixer.className = 'studio-core-mixer';
-  coreMixer.dataset.ariaCopy = 'studioMixer';
-  coreMixer.setAttribute('role', 'group');
-  const makeCoreMixChannel = (channelId, labelKey) => {
-    const label = document.createElement('label');
-    label.className = 'studio-core-mix-channel';
-    label.dataset.channelId = channelId;
-    const name = document.createElement('span');
-    name.dataset.copy = labelKey;
-    name.textContent = translate(labelKey);
-    const volume = document.createElement('input');
-    volume.type = 'range';
-    volume.min = '0';
-    volume.max = '100';
-    volume.step = '1';
-    volume.value = '100';
-    volume.dataset.action = 'set-instrument-volume';
-    volume.dataset.channelId = channelId;
-    volume.dataset.channelVolume = '';
-    volume.dataset.focusKey = `core-mix:${channelId}:volume`;
-    label.append(name, volume);
-    return label;
-  };
-  coreMixer.append(
-    makeCoreMixChannel('melody', 'melodyInstrumentLabel'),
-    makeCoreMixChannel('harmony', 'sketchHarmony'),
-    makeCoreMixChannel('bass', 'sketchBass')
-  );
-  coreMixer.setAttribute('aria-label', translate('studioMixer'));
-  const syncCoreMixerLabels = () => {
-    coreMixer.setAttribute('aria-label', translate('studioMixer'));
-    for (const name of coreMixer.querySelectorAll('[data-copy]')) name.textContent = translate(name.dataset.copy);
-  };
   // Struktur zona sudah ada di index.html: header, info, body. Di sini hanya
   // dua elemen yang dibuat JS, masing-masing disisipkan sekali di tempatnya:
   // tombol Tutup sebagai anak terakhir header, resizer tepat di atas body.
@@ -363,7 +328,11 @@ export function createStudioWorkspace(commands, translate, onError, {
   syncLoopSeekAria();
   loopSeekGroup.setAttribute('aria-label', loopSeekGroupLabel());
   loopSeekLabel.textContent = loopSeekGroupLabel();
-  loopSeekGroup.append(loopSeekLabel, ...[seekForm, loopRangeForm].filter(Boolean));
+  // C3b: label + dua form adalah satu unit yang wrap bersama, bukan potong-potong.
+  const loopSeekForms = document.createElement('div');
+  loopSeekForms.className = 'studio-loop-seek-forms';
+  loopSeekForms.append(...[seekForm, loopRangeForm].filter(Boolean));
+  loopSeekGroup.append(loopSeekLabel, loopSeekForms);
   const tempo = document.querySelector('.tempo-control');
   const follow = document.querySelector('.follow-mode-control');
   const transportMain = document.querySelector('.transport-main');
@@ -818,6 +787,19 @@ export function createStudioWorkspace(commands, translate, onError, {
     appSettingsSection.hidden = false;
     syncProjectActionLabels();
   }
+  // C2a: di >= 90rem transport punya ruang untuk grup Panel. Di antara 68rem
+  // dan 90rem project actions sudah memenuhi baris pertama, jadi grup ikut
+  // baris kedua seperti tombol Gitar. Tier, bukan pengukuran, supaya tidak
+  // bergantung pada font yang belum selesai dimuat.
+  function placePanelToggleGroup() {
+    const inChrome = panelToggleGroup.parentElement === transportMain || panelToggleGroup.parentElement === toolbarActions;
+    if (!inChrome) return;
+    const home = extraWide.matches ? transportMain : toolbarActions;
+    if (panelToggleGroup.parentElement !== home) home.append(panelToggleGroup);
+    // Tier sempit melepas tombolnya lagi ke tab bar; saat melebar tombol itu
+    // harus ikut kembali ke grupnya, kalau tidak ia tertinggal di header.
+    if (panelDockTrigger.parentElement !== panelToggleGroup) panelToggleGroup.append(panelDockTrigger);
+  }
   function arrangeControls() {
     moreMenu.open = false;
     transportSettings.append(moreMenu);
@@ -830,7 +812,6 @@ export function createStudioWorkspace(commands, translate, onError, {
     const shortLandscapeLayout = shortLandscape.matches && !wide.matches;
     const mediumDesktopLayout = wide.matches && !extraWide.matches && !shortLandscape.matches;
     const sideDockLayout = sideDock.matches && !shortLandscapeLayout;
-    if (dualDock.matches) coreMixer.remove();
     for (const form of [seekForm, loopRangeForm]) {
       form?.querySelectorAll('label > span').forEach(label => label.classList.remove('visually-hidden'));
     }
@@ -898,9 +879,9 @@ export function createStudioWorkspace(commands, translate, onError, {
         overview.hidden = true;
         transportButtons.parentElement.append(historyButtons);
         headerActions.prepend(projectMenu);
-        transportMain.append(panelToggleGroup);
         toolbarActions.append(moreMenu);
       }
+      placePanelToggleGroup();
       editorToolbarHome.append(editorToolbar);
       editorToolsHome.prepend(editorTools);
       editorToolbar.append(...editorExtras);
@@ -934,11 +915,11 @@ export function createStudioWorkspace(commands, translate, onError, {
       generationFormHome?.append(generationForm);
       if (loopToggleHome) loopToggleHome.append(loopToggle);
       if (resetRangeHome) resetRangeHome.append(resetRange);
-      loopSeekGroup.append(...[seekForm, loopRangeForm].filter(Boolean));
+      loopSeekForms.append(...[seekForm, loopRangeForm].filter(Boolean));
+      loopSeekGroup.append(loopSeekLabel, loopSeekForms);
       generationQuickGroup.append(...[generationAnchorActions, generationPrimaryActions].filter(Boolean));
       generateButton?.setAttribute('form', generationForm.id || 'generation-form');
       coreControls.append(...[
-        !dualDock.matches ? coreMixer : null,
         mediumDesktopLayout ? tempo : null,
         loopSeekGroup,
         editorToolbar,
@@ -970,7 +951,6 @@ export function createStudioWorkspace(commands, translate, onError, {
         if (editorTools.parentElement !== editorSettings) editorSettings.prepend(editorTools);
         if (editorZoomControl && editorZoomControl.parentElement !== editorSettings) editorSettings.append(editorZoomControl);
         morePopover.append(editorSettings);
-        coreMixer.remove();
       } else if (shortLandscapeLayout) {
         if (editorTools.parentElement !== editorToolbar) editorToolbar.prepend(editorTools);
         if (editorZoomControl && editorZoomControl.parentElement !== editorToolbar) {
@@ -1289,7 +1269,6 @@ export function createStudioWorkspace(commands, translate, onError, {
     track.setAttribute('aria-valuetext', translate('studioSeekBar', {bar:position.bar, beat:position.beat}));
   }
   function render(song,state,autoSelect=true) {
-    syncCoreMixerLabels();
     const loopSeekLabelText = loopSeekGroupLabel();
     loopSeekGroup.setAttribute('aria-label', loopSeekLabelText);
     loopSeekLabel.textContent = loopSeekLabelText;

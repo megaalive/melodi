@@ -1312,6 +1312,9 @@ function renderGeneration(state) {
   generate.disabled = form.dataset.gapReady !== "true"
     || (sessionReady && generation.stale && form.dataset.pending !== "true");
   gapStatus.textContent = translate(form.dataset.gapHint ?? "generationGapChooseAnchors");
+  // C3c: alasan kenapa tombol nonaktif selalu ikut di title, bukan cuma di
+  // aria-describedby, supaya hover di mouse juga membacanya.
+  generate.title = gapStatus.textContent;
   status.textContent = sessionReady
     ? generation.stale
       ? translate("generationStatusStale")

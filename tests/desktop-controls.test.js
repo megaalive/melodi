@@ -71,11 +71,35 @@ const filled = await page.evaluate(() => {
           quickActions: collect("#studio-core-controls"),
         };
       });
-      const ids = entries => entries.map(entry => entry.id ?? entry.label);
-      assert.deepEqual(ids(filled.transport), ["play"],
-        `${theme}: hanya Play boleh terisi di transport chrome, dapat ${JSON.stringify(filled.transport)}`);
-      assert.deepEqual(ids(filled.quickActions), ["generate-gap"],
-        `${theme}: baris aksi cepat hanya boleh punya Generate terisi, dapat ${JSON.stringify(filled.quickActions)}`);
+      // C3c: Generate nonaktif karena belum ada dua note, jadi warnanya bukan lagi
+      // accent; yang diuji di sini: tombol primer lain di baris
+      // aksi cepat tidak boleh ikut terisi.
+      const primaryActions = await page.evaluate(() => {
+        const probe = document.createElement("span");
+        probe.style.display = "none";
+        document.body.append(probe);
+        probe.style.backgroundColor = "var(--accent)";
+        const accent = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return [...document.querySelectorAll("#studio-core-controls button")]
+          .filter(button => button.getBoundingClientRect().width > 0)
+          .map(button => ({
+            id: button.id || null,
+            label: (button.textContent || "").trim().slice(0, 20),
+            filled: getComputedStyle(button).backgroundColor === accent,
+            disabled: button.matches(":disabled"),
+          }));
+      });
+      assert.deepEqual(
+        primaryActions.filter(entry => entry.filled && !entry.disabled).map(entry => entry.id ?? entry.label),
+        [],
+        `${theme}: tanpa dua note tidak boleh ada tombol terisi di baris aksi cepat, dapat ${JSON.stringify(primaryActions)}`,
+      );
+      const generateButton = primaryActions.find(entry => entry.id === "generate-gap");
+      assert.equal(generateButton.disabled, true, `${theme}: Generate harus nonaktif tanpa dua note`);
+      assert.equal(await page.locator("#generate-gap").getAttribute("aria-describedby"), "generation-gap-status");
+      const generateTitle = await page.locator("#generate-gap").getAttribute("title");
+      assert.ok(generateTitle && generateTitle.trim().length > 8, `${theme}: tombol nonaktif punya alasan yang terbaca`);
 
       // C2b: toggle Gitar ikut --text-sm dan --control-h.
       const guitar = await page.evaluate(() => {

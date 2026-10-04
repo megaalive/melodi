@@ -84,9 +84,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio-panel-switches{display:flex;gap:var(--space-1);flex-wrap:wrap;}
 .studio-panel-switches button{background:transparent;color:var(--text-muted);border:1px solid transparent;padding:var(--space-1) var(--space-2);min-height:30px;font-size:var(--text-sm);white-space:nowrap;}
 .studio-panel-switches button[aria-pressed="true"], .studio-panel-switches button[aria-selected="true"]{border-color:var(--studio-accent);color:var(--studio-accent);background:var(--surface);}
-/* C2a. Panel bukan tab: ikon+label di grup sendiri di kanan transport, gaya
-   seperti Undo/Redo; di HP label saja di tab bar dengan aksen hanya saat sheet
-   terbuka. C2b. Toggle Gitar di baris 2: ghost, aktif = accent-soft. */
+/* C2a. Panel bukan tab: ikon+label di transport, di HP label saja. C2b. Gitar ghost. */
 .panel-toggle-group{display:flex;flex:0 0 auto;align-items:center;gap:var(--space-1);margin-inline-start:var(--space-2)}
 .panel-toggle-group .mobile-panel-trigger{display:inline-flex;align-items:center;gap:var(--space-1);min-height:var(--control-h);padding:var(--space-1) var(--space-2);font-size:var(--text-xs);white-space:nowrap}
 .panel-toggle-group .mobile-panel-trigger[aria-expanded="true"],
@@ -112,12 +110,10 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .workspace-canvas{display:flex;flex:1 1 auto;flex-direction:column;gap:0;min-width:0;min-height:0;}
 .studio-core-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);padding:var(--space-2);border-bottom:1px solid var(--border);background:var(--surface-subtle)}
 /* Guitar zone: satu komponen, empat bagian. Header = judul, segmented
-   TAB/Fretboard, chip playhead, lalu tombol Tutup (selalu anak terakhir). Info =
-   status dan legenda yang boleh membungkus penuh. Body = diagram yang mengisi
-   sisa tinggi dan scroll sendiri. Resizer disisipkan studio.js di atas body.
-   Semua ukuran dari token: --control-h untuk tinggi kontrol, --space-* untuk
-   jarak, dan warna dari token tema. Tidak ada tinggi yang bertabrakan dan tidak
-   ada !important; 44px untuk sentuh datang dari --control-h di media query. */
+   TAB/Fretboard, chip playhead, lalu Tutup (selalu anak terakhir). Info = status
+   dan legenda yang boleh membungkus. Body = diagram yang mengisi sisa tinggi.
+   Resizer disisipkan studio.js di atas body. Semua ukuran dari token dan tidak
+   ada !important; 44px untuk sentuh datang dari --control-h. */
 #studio-guitar-zone{flex:none;min-width:0;min-height:0}
 #studio-guitar-zone:not([data-open="true"]){display:none}
 #studio-guitar-zone[data-open="true"]{
@@ -280,18 +276,16 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio-core-controls .transport-form{display:flex;align-items:end;gap:var(--space-1)}
 .studio-core-controls>.transport-form{flex:0 1 17rem;max-width:20rem}
 .studio-core-controls>.generation-primary-actions button{width:auto}
-.studio-core-mixer{display:flex;flex:0 0 14rem;align-items:center;gap:var(--space-2);min-width:0;max-width:18rem}
-.studio-core-mix-channel{display:flex;flex:1 1 0;flex-direction:column;gap:var(--space-1);min-width:0}
-.studio-core-mix-channel span{overflow:hidden;font-size:var(--text-xs);text-overflow:ellipsis;white-space:nowrap}
-.studio-core-mix-channel input{width:100%;min-width:0;min-height:var(--control-h);margin:0}
 .studio-generation-quick-group{display:flex;flex:0 1 auto;flex-wrap:wrap;align-items:center;gap:var(--space-2);min-width:0}
 .studio-generation-quick-label{flex:0 0 auto;color:var(--text-muted);font-size:var(--text-xs)}
 .studio-generation-quick-group #generation-anchor-actions,.studio-generation-quick-group .generation-primary-actions{display:flex;flex:0 1 auto;gap:var(--space-1);margin:0}
 .studio-generation-quick-group #generation-anchor-actions button{min-height:var(--control-h);padding:var(--space-1) var(--space-2);font-size:var(--text-sm)}
 .studio-core-controls .studio-quick-chord button{min-height:var(--control-h);border-color:var(--border-strong);background:var(--surface);color:var(--text);font-size:var(--text-sm)}
+/* C3b. Label kiri, lalu Seek dan Range/Terapkan satu unit yang wrap. */
 .studio-loop-seek-group{display:flex;flex:0 1 auto;flex-wrap:wrap;align-items:end;gap:var(--space-2);min-width:0}
-.studio-loop-seek-label{flex:0 0 auto;color:var(--text-muted);font-size:var(--text-xs);line-height:1}
-.studio-loop-seek-group .transport-form{flex:0 1 auto;gap:var(--space-1)}
+.studio-loop-seek-label{flex:0 0 auto;color:var(--text-muted);font-size:var(--text-xs);line-height:1;white-space:nowrap}
+.studio-loop-seek-forms{display:flex;flex:0 0 auto;align-items:end;gap:var(--space-2);min-width:0}
+.studio-loop-seek-group .transport-form{flex:0 0 auto;gap:var(--space-1)}
 .studio-loop-seek-group .transport-form label{display:flex;align-items:end;gap:var(--space-1);font-size:var(--text-xs)}
 .studio-loop-seek-group .transport-form input{width:5rem;min-height:var(--control-h);font-size:var(--text-sm)}
 .studio-loop-seek-group .transport-form button{min-height:var(--control-h);padding:var(--space-1) var(--space-2);font-size:var(--text-sm)}
@@ -302,7 +296,18 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio-dock-slot-heading{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:var(--space-2);padding:var(--space-1) var(--space-2);background:var(--surface)}
 .studio-dock-slot-heading strong{font-size:var(--text-xs)}
 .studio-dock-slot-toggle{width:32px;min-height:32px;padding:0}
-.studio-dock-slot-body{flex:1 1 auto;min-height:380px;overflow:auto;overscroll-behavior:contain}
+.studio-dock-slot-body{
+  flex:1 1 auto;
+  min-height:380px;
+  overflow:auto;
+  overscroll-behavior:contain;
+  /* C3d. Dua bayangan lokal + radial yang mengikuti gulir. */
+  background:
+    linear-gradient(var(--surface), transparent) top / 100% var(--space-3) no-repeat local,
+    linear-gradient(transparent, var(--surface)) bottom / 100% var(--space-3) no-repeat local,
+    radial-gradient(farthest-side at 50% 0, color-mix(in srgb, var(--text) 18%, transparent), transparent) top / 100% var(--space-2) no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, color-mix(in srgb, var(--text) 18%, transparent), transparent) bottom / 100% var(--space-2) no-repeat scroll;
+}
 .studio .workspace-pane{border:0;border-radius:0;padding:var(--space-1) var(--space-2);min-width:0;}
 .studio #piano-roll-section, .studio #score-section, .studio #lyrics-section, .studio #drums-section{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;}
 .studio #piano-roll-content{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;}
@@ -324,7 +329,18 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio #roll-zoom{width:75px;}
 .studio .zoom-control input[type="range"]{min-height:30px;}
 .studio .harmony-timeline-tools{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-1);padding:var(--space-1) 0 var(--space-1);background:transparent;border:0;}
+/* C3d. Form chord: dua kolom, select setinggi --control-h. */
 .studio #harmony-range-form{width:auto;gap:var(--space-2);}
+.studio #harmony-range-form .harmony-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:var(--space-2);}
+.studio #harmony-range-form .harmony-actions > label{display:grid;gap:var(--space-1);min-width:0;}
+.studio #harmony-range-form .harmony-actions > label > select{width:100%;min-width:0;height:var(--control-h);}
+.studio #harmony-range-form .chord-draw-picker{justify-self:stretch;width:100%;}
+.studio #harmony-range-form .chord-draw-picker summary{justify-content:flex-start;text-align:left;min-height:var(--control-h);}
+.studio #harmony-range-form .chord-draw-options{display:grid;position:static;width:100%;max-width:none;grid-template-columns:repeat(2,minmax(0,1fr));padding:0;border:0;box-shadow:none;background:transparent;}
+.studio #harmony-range-form .chord-draw-options label{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-1);}
+.studio #harmony-range-form .chord-draw-options select{width:100%;min-width:0;height:var(--control-h);}
+.studio #harmony-range-form .harmony-actions > button{width:100%;}
+.studio #harmony-range-form .harmony-actions > #harmony-clear{grid-column:1 / -1;}
 .studio #harmony-location{font:600 var(--text-xs) ui-monospace, monospace;margin:0;min-width:70px;}
 .studio .harmony-timeline-tools .harmony-actions{gap:var(--space-1);margin:0;}
 .studio .harmony-timeline-tools button, .studio .harmony-timeline-tools select, .studio .chord-draw-picker summary{min-height:30px;font-size:var(--text-xs);padding:var(--space-1) var(--space-2);}
@@ -573,8 +589,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .harmony-timeline-tools #harmony-candidates p{align-self:center;}
 .studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony]{white-space:nowrap;padding-inline:var(--space-2);color:var(--accent);}
 
-/* Hover tombol ghost: accent-soft + accent-strong. Aturan global color:on-accent
-   pernah membuat tinta on-accent mendarat di atas surface. */
+/* Hover ghost: accent-soft + accent-strong; color:on-accent hanya untuk filled. */
 button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .studio-toolbar-actions button:hover:not(:disabled), .studio .desktop-project-action:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled){
 
   background:var(--accent-soft);color:var(--accent-strong);
@@ -591,7 +606,6 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .studio #harmony-timeline-tools{display:flex;flex-direction:column;align-items:stretch;gap:var(--space-3);padding:0 0 var(--space-3);}
 .studio .progression-workspace{min-width:0;}
 .studio #harmony-range-form{margin:0;flex:0 1 auto;}
-.studio #harmony-range-form .harmony-actions{display:flex;align-items:center;flex-wrap:wrap;}
 .studio #harmony-range-form label{white-space:nowrap;}
 .studio #harmony-location{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;min-width:0;}
 .studio .harmony-timeline-tools #harmony-candidates{flex-basis:100%;}

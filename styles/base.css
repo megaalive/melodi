@@ -242,7 +242,14 @@ button{
 
 /* Latar dan tinta harus berpasangan. */
 button:hover:not(:disabled){background:var(--accent-strong);color:var(--on-accent);}
-button:disabled{opacity:0.5;cursor:not-allowed;}
+/* C3c: tanpa opacity 0.5, teks tombol nonaktif tetap >= 3:1 di kedua tema. */
+button:disabled{
+  opacity:1;
+  cursor:not-allowed;
+  border-color:var(--border-strong);
+  background:var(--surface-subtle);
+  color:var(--text-muted);
+}
 
 button.secondary{
   border-color:var(--border-strong);
@@ -3300,13 +3307,11 @@ body[data-view-mode="drums"] .workspace-grid{
 .sketch-controls fieldset label:last-child { grid-column: 1 / -1; }
 .harmony-card input, .harmony-card select{width:100%;min-width:0;}
 .harmony-card .form-grid{grid-template-columns:repeat(2, minmax(0, 1fr));}
+.chord-draw-picker{position:relative;max-width:100%;}
+.chord-draw-picker summary{min-height:var(--control-h);padding:var(--space-1) var(--space-2);border:1px solid var(--border);border-radius:6px;cursor:pointer;}
 .harmony-actions{display:flex;flex-wrap:wrap;gap:var(--space-2);margin:var(--space-2) 0;}
 .harmony-list{list-style:none;padding:0;margin:var(--space-2) 0;display:grid;gap:var(--space-3);}
 .harmony-list li{min-width:0;padding:var(--space-2) 0;border-bottom:1px solid var(--border);}
 .harmony-list button{max-width:100%;white-space:normal;overflow-wrap:anywhere;}
 .harmony-list [aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px;}
 .harmony-list p{margin:var(--space-2) 0;}
-.chord-draw-picker{position:relative;max-width:100%;}
-.chord-draw-picker summary{min-height:44px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;}
-.chord-draw-options{position:absolute;z-index:30;top:100%;left:0;width:220px;max-width:calc(100vw - 48px);padding:12px;display:grid;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px #0002;}
-.chord-draw-options label{justify-content:space-between;}
