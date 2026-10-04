@@ -513,7 +513,6 @@ export function createStudioWorkspace(commands, translate, onError, {
   panelDockTrigger.dataset.ariaCopy = 'studioPanelsButton';
   panelDockTrigger.dataset.entity = 'studio-panel-trigger';
   panelDockTrigger.textContent = translate('studioPanelsButton');
-  panelDockTrigger.hidden = true;
   panelDockTrigger.setAttribute('aria-controls', 'workspace-sidebar');
   panelDockTrigger.setAttribute('aria-expanded', 'false');
   const header = document.querySelector('.page-header');
@@ -808,7 +807,10 @@ export function createStudioWorkspace(commands, translate, onError, {
     previousSideDock = sideDockLayout;
     syncProjectControls(wideLayout, extraWide.matches);
     syncWideWorkspaceHeading(commands.getState().view.mode);
-    panelDockTrigger.hidden = sideDockLayout ? dockOpen : !(compact.matches || mediumLayout || shortLandscape.matches);
+    // Tombol Panel tidak pernah disembunyikan: ia satu-satunya kendali untuk
+    // membuka dan menutup sidebar, jadi menghilangkannya saat panel terbuka
+    // membuat pengguna kehilangan cara menutupnya.
+    panelDockTrigger.hidden = false;
     panelDockTrigger.textContent = translate('studioPanelsButton');
     panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
     panelDockTrigger.setAttribute('aria-expanded', String(sideDockLayout ? dockOpen : Boolean(panel)));
@@ -867,7 +869,6 @@ export function createStudioWorkspace(commands, translate, onError, {
       if (sessionActions) byId('generation-panel').append(sessionActions);
     } else {
       modeNav.append(panelDockTrigger);
-      panelDockTrigger.hidden = true;
       transportHome.append(transportDock);
       headerActions.prepend(projectMenu);
       header.insertBefore(modeNav, headerActions);
@@ -1019,11 +1020,8 @@ export function createStudioWorkspace(commands, translate, onError, {
     if (panel && !wasOpen && (sideDock.matches ? dockOpen : true)) {
       const initialFocus = panel === 'guitar' && compact.matches
         ? guitarZone.querySelector('.guitar-layout-group button')
-        : compact.matches
-         ? panelSwitches.querySelector(`button[data-studio-panel="${dockTabFor(panel)}"]`)
-        : sideDock.matches
-          ? panelSwitches.querySelector(`button[data-studio-panel="${dockTabFor(panel)}"]`)
-          : sidebar.querySelector('[data-studio-close]');
+        : panelSwitches.querySelector(`button[data-studio-panel="${dockTabFor(panel)}"]`)
+          ?? panelDockTrigger;
       initialFocus?.focus({preventScroll:true});
     }
     if (panel && panel !== 'guitar' && (sideDock.matches ? dockOpen : true)) onOpenPanel(panel);
@@ -1054,7 +1052,7 @@ export function createStudioWorkspace(commands, translate, onError, {
         closePopover(details, !document.querySelector(':modal'));
       }
     }
-    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-panel-toggle], [data-studio-guitar-zone-toggle], [data-studio-close], [data-studio-seek]');
+    const target = event.target.closest?.('[data-studio-view], button[data-studio-panel], [data-studio-panel-toggle], [data-studio-guitar-zone-toggle], [data-studio-seek]');
     if (target && 'studioPanelToggle' in target.dataset) {
       if (sideDock.matches) {
         if (dockOpen) {
@@ -1113,10 +1111,6 @@ export function createStudioWorkspace(commands, translate, onError, {
           ? null
           : panel === target.dataset.studioPanel && !compact.matches && !sideDock.matches ? null : target.dataset.studioPanel;
         openPanel(nextPanel);
-      }
-      else if (target.hasAttribute('data-studio-close')) {
-        const closingGuitar = panel === 'guitar';
-        openPanel(null); restorePanelFocus(closingGuitar);
       }
       else commands.seek(Number(target.dataset.studioSeek));
     } catch (error) { onError(error); }
@@ -1356,7 +1350,9 @@ export function createStudioWorkspace(commands, translate, onError, {
     panelDockTrigger.textContent = translate('studioPanelsButton');
     panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
     const dockCapable = sideDock.matches && !shortLandscape.matches;
-    panelDockTrigger.hidden = dockCapable ? dockOpen : !(compact.matches || (!wide.matches && !shortLandscape.matches) || shortLandscape.matches);
+    // Satu-satunya kendali buka/tutup sidebar: tidak pernah disembunyikan,
+    // termasuk saat dock samping sedang terbuka.
+    panelDockTrigger.hidden = false;
     panelDockTrigger.setAttribute('aria-expanded', String(dockCapable ? dockOpen : Boolean(panel)));
     syncProjectActionLabels();
     for (const button of headerActions.querySelectorAll('button')) {

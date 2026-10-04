@@ -20,7 +20,8 @@ const COMMON_TARGETS = [
   ["Redo", "#redo"],
   ["guitar TAB", "#guitar-layout-tab"],
   ["guitar Fretboard", "#guitar-layout-fretboard"],
-  ["Tutup panel", "#workspace-sidebar [data-studio-close]"],
+  // Tombol tutup duplikat di sidebar sudah dihapus, jadi satu-satunya kendali
+  // buka/tutup sidebar yang diukur adalah toggle Panel di bawah.
   ["tombol primer Play", "#play"],
   ["toggle Panel", "[data-studio-panel-toggle]"],
   ["tombol sekunder Stop", "#stop"],

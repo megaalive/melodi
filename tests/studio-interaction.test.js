@@ -6,6 +6,12 @@ import { createStudioWorkspace, noteVolumeForVelocity, selectedNoteVelocity } fr
 import { createCommands } from '../src/core/commands.js';
 import { createBlankSong } from '../src/core/model.js';
 
+// Tombol Panel adalah satu-satunya kendali buka/tutup sidebar; tombol tutup
+// kedua di dalam sidebar sudah dihapus.
+function panelToggle(setup) {
+  return setup.createdNodes.find(node => 'studioPanelToggle' in node.dataset);
+}
+
 function fixture(narrow = false, landscape = false, wide = !narrow && !landscape, dockCapable = !narrow && !landscape, dual = false, extraWide = dual, phoneNarrow = narrow) {
   const listeners = new Map();
   const nodes = new Map();
@@ -208,10 +214,7 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
   nodes.get('.studio-panel-switches').append(trigger, chordTrigger, mixerTrigger, drumExpressionTrigger, toolsTrigger);
   const closePopoverButton = node('[data-sheet-close]', 'button');
   nodes.get('.studio-more-popover').append(closePopoverButton);
-  const sidebarClose = node('[data-studio-close]', 'button');
-  sidebarClose.dataset.studioClose = '';
-  sidebarClose.setAttribute('data-studio-close', '');
-  nodes.get('.studio-inspector-head').append(nodes.get('#studio-panel-title'), nodes.get('.mobile-panel-peek-actions'), sidebarClose);
+  nodes.get('.studio-inspector-head').append(nodes.get('#studio-panel-title'), nodes.get('.mobile-panel-peek-actions'));
   nodes.get('.workspace-sidebar').append(nodes.get('.studio-inspector-head'), nodes.get('#tools-panel'), nodes.get('.utility-card'));
   const split = node('score-split', 'button'); split.dataset.studioView = 'combined';
   const child = node('panel-action', 'button');
@@ -320,11 +323,11 @@ for (const narrow of [false, true]) test(`panel action clicks preserve context o
       setup.click(panelButton);
       assert.equal(setup.doc.body.dataset.studioPanel, 'none');
     } else {
-      setup.click(setup.nodes.get('[data-studio-close]'));
+      const panelButton = panelToggle(setup);
+      setup.click(panelButton);
       assert.equal(setup.nodes.get('.workspace-sidebar').hidden, true);
       assert.equal(setup.doc.body.dataset.studioPanel, 'generate');
-      const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
-      assert.equal(panelButton.hidden, false);
+      assert.equal(panelButton.hidden, false, 'the Panel toggle never disappears');
       setup.click(panelButton);
       assert.equal(setup.nodes.get('.workspace-sidebar').hidden, false);
       assert.equal(setup.doc.body.dataset.studioPanel, 'generate');
@@ -496,7 +499,9 @@ test('responsive panel triggers and dock destinations cover desktop, medium, and
         assert.equal(setup.doc.body.dataset.studioDockOpen, 'true');
         assert.equal(setup.nodes.get('#studio-views').parent, setup.nodes.get('.page-header'));
         assert.equal(setup.guitar.parent, setup.nodes.get('.pane-title-row'));
-        assert.equal(setup.nodes.get('#studio-views').children.some(node => node.dataset.studioPanelToggle !== undefined && node.hidden), true);
+        assert.equal(setup.nodes.get('#studio-views').children.some(node => node.dataset.studioPanelToggle !== undefined && node.hidden), false,
+          'the Panel toggle stays visible while the side dock is open');
+        assert.equal(panelToggle(setup).attributes.get('aria-expanded'), 'true');
       } else if (!narrow && !landscape) {
         assert.equal(setup.nodes.get('#view-controls').hidden, false);
         assert.equal(setup.nodes.get('.studio-more').parent, setup.nodes.get('.studio-toolbar-actions'));
@@ -510,7 +515,9 @@ test('responsive panel triggers and dock destinations cover desktop, medium, and
         assert.equal(setup.nodes.get('.follow-mode-control').parent, setup.createdNodes.find(node => node.id === 'studio-core-controls'));
         assert.equal(setup.nodes.get('.history-buttons').parent, setup.createdNodes.find(node => node.id === 'studio-core-controls'));
         assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('.mobile-panel-peek-actions'));
-        assert.equal(setup.nodes.get('.studio-toolbar-actions').children.some(node => node.dataset.studioPanelToggle !== undefined && node.hidden), true);
+        assert.equal(setup.nodes.get('.studio-toolbar-actions').children.some(node => node.dataset.studioPanelToggle !== undefined && node.hidden), false,
+          'the Panel toggle in the medium toolbar stays visible');
+        assert.equal(panelToggle(setup).attributes.get('aria-expanded'), 'true');
         assert.equal(setup.nodes.get('.workspace-sidebar-resizer').hidden, false);
         assert.equal(setup.nodes.get('.transport-advanced-grid').parent, setup.nodes.get('.studio-tools-content'));
         assert.equal(setup.nodes.get('.loop-toggle').parent, setup.createdNodes.find(node => node.id === 'studio-core-controls'));
@@ -838,7 +845,7 @@ test('wide dock tabs stay open, expose their selected panels, and persist close/
     setup.click(setup.toolsTrigger);
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, false, 'reselecting the active dock tab does not close the dock');
 
-    setup.click(setup.nodes.get('[data-studio-close]'));
+    setup.click(panelToggle(setup));
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, true);
     assert.equal(setup.doc.body.dataset.studioDockOpen, 'false');
     assert.equal(changes.at(-1).dockOpen, false);
@@ -895,7 +902,7 @@ test('mobile has a one-tap Guitar opener separate from the Alat panel tabs', () 
     assert.equal(setup.nodes.get('.studio-panel-switches').hidden, true);
     assert.equal(setup.nodes.get('#tools-panel').hidden, true);
     assert.equal(trigger.attributes.get('aria-pressed'), 'true');
-    setup.click(setup.nodes.get('[data-studio-close]'));
+    setup.click(panelToggle(setup));
     assert.equal(commands.getState().view.mode, 'piano-roll');
     assert.equal(setup.doc.body.dataset.studioPanel, 'none');
     assert.equal(trigger.attributes.get('aria-pressed'), 'false');
@@ -927,7 +934,7 @@ test('opening the phone Guitar sheet from Not preserves the workspace and select
     assert.equal(setup.nodes.get('#guitar-section').parent.parent, setup.nodes.get('.workspace-sidebar'));
     assert.equal(isVisibleInTree(setup.guitarTabScroll), true);
 
-    setup.click(setup.nodes.get('[data-studio-close]'));
+    setup.click(panelToggle(setup));
     const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
     setup.click(panelButton);
     assert.equal(commands.getState().view.mode, 'score');
@@ -972,7 +979,7 @@ for (const route of ['sheet opener', 'toolbar toggle', 'public Guitar command'])
     assert.deepEqual(commands.getSong(), song);
     assert.deepEqual(commands.getSelectedNoteIds(), [note.id]);
 
-    setup.click(setup.nodes.get('[data-studio-close]'));
+    setup.click(panelToggle(setup));
     assert.equal(setup.doc.body.dataset.studioPanel, 'none');
     assert.equal(commands.getState().view.mode, initialMode);
     assert.equal(zone.dataset.open, 'false');

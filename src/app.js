@@ -3521,7 +3521,7 @@ document.addEventListener("click", (event) => {
   const laneTarget = isHarmonyLaneTarget(target);
   if (laneTarget) pianoRollHarmonyContextActive = true;
   else if (!target?.closest("#harmony-timeline-tools")) pianoRollHarmonyContextActive = false;
-  if (target?.closest("[data-studio-panel], [data-studio-close]")) queueMicrotask(renderEditorControls);
+  if (target?.closest("[data-studio-panel]")) queueMicrotask(renderEditorControls);
   else queueMicrotask(syncHarmonyToolsVisibility);
 });
 document.addEventListener("focusin", (event) => {

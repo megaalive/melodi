@@ -274,7 +274,7 @@ test("menu app meratakan project dan settings tanpa disclosure bersarang", () =>
   assert.match(app, /if \(!contextStillFocused\) pianoRollHarmonyContextActive = false/);
   assert.match(app, /studioView\?\.render\(song, state\);\s*syncHarmonyToolsVisibility\(\);/);
   assert.match(app, /noteSelectionBar\.setAttribute\("role", "group"\)/);
-  assert.match(app, /target\?\.closest\("\[data-studio-panel\], \[data-studio-close\]"\)/);
+  assert.match(app, /target\?\.closest\("\[data-studio-panel\]"\)/);
   assert.match(app, /queueMicrotask\(renderEditorControls\)/);
   const transportButtons = html.slice(html.indexOf('class="transport-buttons"'), html.indexOf('</div>', html.indexOf('class="transport-buttons"')));
   assert.match(transportButtons, /id="play"[^>]*data-action="play"[^>]*data-action-alias="pause"/);
