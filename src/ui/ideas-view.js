@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.89";
+import { PPQ } from "../core/model.js?v=20261003.90";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.89";
+} from "./ideas.js?v=20261003.90";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,7 +35,7 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.89";
+} from "../storage/recording-preferences.js?v=20261003.90";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
@@ -1009,6 +1009,8 @@ if (typeof matchMedia === "function") {
     discardTake,
     pressKey,
     releaseKey,
+    noteOn,
+    noteOff,
     shiftOctave,
     setOctave,
     setQuantize,
