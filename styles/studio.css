@@ -306,7 +306,6 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 [data-entity="note"][data-selected="true"] .roll-note-mark{fill:var(--highlight-selected-ink);}
 [data-entity="note"][data-current="true"] .roll-note-mark{fill:var(--highlight-current-ink);}
 .roll-note-expression{opacity:1;}
-button.danger-button{color:var(--on-accent);}
 .studio-overview-chord{fill:var(--ember);}
 .studio-overview-drum{fill:var(--text-muted);}
 #score .abcjs-beam-elem path,

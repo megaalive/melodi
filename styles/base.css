@@ -1844,7 +1844,7 @@ jadi tanpa ini empty state selalu tampil. */
 button.danger-button{
   border-color:var(--danger);
   background:var(--danger);
-  color:#fff;
+  color:var(--on-accent);
 }
 
 button.danger-button:hover:not(:disabled){
