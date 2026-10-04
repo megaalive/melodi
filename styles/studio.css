@@ -58,6 +58,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .transport-buttons button{width:36px;min-width:36px;height:36px;min-height:36px;padding:var(--space-2);border-radius:6px;}
 .studio .transport-buttons button[hidden]{display:none;}
 .studio #play{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
+.studio #play:hover:not(:disabled){background:var(--accent-strong);border-color:var(--accent-strong);}
 .studio .history-buttons button{width:29px;height:29px;min-height:29px;padding:var(--space-1);}
 .studio .playback-readout{font-size:var(--text-xs);gap:var(--space-4);}
 .studio .playback-readout dt{font-size:var(--text-xs);letter-spacing:0;}
@@ -73,7 +74,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio-views button[aria-pressed="true"]{background:var(--surface);color:var(--text);border-bottom-color:var(--studio-accent);}
 .studio-toolbar-actions{display:flex;align-items:center;gap:var(--space-1);flex:0 0 auto;}
 .studio-toolbar-actions button{min-height:36px;padding:var(--space-1) var(--space-2);border:1px solid transparent;background:transparent;color:var(--text-muted);font-weight:550;white-space:nowrap;}
-.studio-toolbar-actions button:hover{background:var(--surface);border-color:var(--border-strong);color:var(--text);}
+.studio-toolbar-actions button:hover{border-color:var(--border-strong);}
 .studio-toolbar-actions button[aria-pressed="true"]{border-color:var(--studio-accent);background:var(--surface);color:var(--studio-accent);}
 .studio-toolbar-actions .project-menu-trigger{min-height:44px;padding:var(--space-1) var(--space-2);}
 .studio-more{position:relative;flex:0 0 auto;}
@@ -430,8 +431,9 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .harmony-timeline-tools #harmony-candidates p{align-self:center;}
 .studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony]{white-space:nowrap;padding-inline:var(--space-2);color:var(--accent);}
 
-button:hover:not(:disabled){color:var(--on-accent);}
-button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled){
+/* Hover tombol ghost: accent-soft + accent-strong. Aturan global color:on-accent
+   pernah membuat tinta on-accent mendarat di atas surface. */
+button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .studio-toolbar-actions button:hover:not(:disabled), .studio .desktop-project-action:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled), #studio-guitar-zone .guitar-layout-group button:hover:not(:disabled){
   background:var(--accent-soft);color:var(--accent-strong);
 }
 .drum-cell:hover:not(:disabled), .drum-cell[data-hit="true"]:hover:not(:disabled){color:var(--accent-strong);}

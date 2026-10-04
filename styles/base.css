@@ -240,7 +240,8 @@ button{
   font-weight:650;
 }
 
-button:hover:not(:disabled){background:var(--accent-strong);}
+/* Latar dan tinta harus berpasangan. */
+button:hover:not(:disabled){background:var(--accent-strong);color:var(--on-accent);}
 button:disabled{opacity:0.5;cursor:not-allowed;}
 
 button.secondary{
