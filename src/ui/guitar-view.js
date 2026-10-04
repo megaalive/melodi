@@ -22,7 +22,8 @@ const INLAY_FRETS = Object.freeze([3, 5, 7, 9, 12, 15, 17, 19, 21]);
 const OCTAVE_FRET = 12;
 
 const LABEL_WIDTH = 34;
-const FRET_WIDTH = 26;
+const MIN_FRET_WIDTH = 28;
+const FRET_WIDTH = MIN_FRET_WIDTH;
 const ROW_HEIGHT = 22;
 const NUT_HEIGHT = 6;
 
@@ -42,6 +43,23 @@ function svgElement(name, attributes = {}, parent = null, text = null) {
  */
 export function fretCenterX(fret, { labelWidth = LABEL_WIDTH, fretWidth = FRET_WIDTH } = {}) {
   return labelWidth + (fret + 1) * fretWidth - fretWidth / 2;
+}
+
+export function createGuitarViewGeometry(viewportWidth, {
+  tuning = STANDARD_TUNING,
+  maxFret = MAX_FRET
+} = {}) {
+  const minimumWidth = LABEL_WIDTH + (maxFret + 1) * MIN_FRET_WIDTH;
+  const measuredWidth = Number(viewportWidth);
+  const availableWidth = Number.isFinite(measuredWidth) && measuredWidth > 0
+    ? measuredWidth
+    : minimumWidth;
+  const fretWidth = Math.max(MIN_FRET_WIDTH, (availableWidth - LABEL_WIDTH) / (maxFret + 1));
+  return {
+    width: LABEL_WIDTH + (maxFret + 1) * fretWidth,
+    height: 18 + ROW_HEIGHT * tuning.length + NUT_HEIGHT,
+    fretWidth
+  };
 }
 
 /**
@@ -163,23 +181,30 @@ export function chooseGuitarFingering(notes, {
   return route;
 }
 
-export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_FRET } = {}) {
+export function createGuitarView(svg, {
+  tuning = STANDARD_TUNING,
+  maxFret = MAX_FRET,
+  container = svg?.parentElement
+} = {}) {
   let lastSoundingKey = null;
+  let lastRenderState = null;
+  let observedWidth = Number(container?.clientWidth) || 0;
+  let geometry = createGuitarViewGeometry(observedWidth, { tuning, maxFret });
 
   function width() {
-    return LABEL_WIDTH + (maxFret + 1) * FRET_WIDTH;
+    return geometry.width;
   }
 
   function height() {
-    return 18 + ROW_HEIGHT * tuning.length + NUT_HEIGHT;
+    return geometry.height;
   }
 
   function fretX(fret) {
-    return LABEL_WIDTH + (fret + 1) * FRET_WIDTH;
+    return LABEL_WIDTH + (fret + 1) * geometry.fretWidth;
   }
 
   function centerX(fret) {
-    return fretCenterX(fret);
+    return fretCenterX(fret, { fretWidth: geometry.fretWidth });
   }
 
   function stringY(index) {
@@ -304,8 +329,12 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
     }
   }
 
-  return {
+  const view = {
     render(state) {
+      lastRenderState = state;
+      const viewportWidth = Number(container?.clientWidth) || 0;
+      if (viewportWidth > 0) observedWidth = viewportWidth;
+      geometry = createGuitarViewGeometry(viewportWidth, { tuning, maxFret });
       // Urutan fokus: note yang dipilih, note yang sedang berbunyi, lalu note
       // pertama. Tanpa fallback terakhir, view akan kosong setiap kali transport
       // berhenti dan tidak ada yang dipilih, padahal lagunya jelas berisi nada.
@@ -360,4 +389,16 @@ export function createGuitarView(svg, { tuning = STANDARD_TUNING, maxFret = MAX_
       return true;
     }
   };
+
+  if (container && typeof ResizeObserver === "function") {
+    const resizeObserver = new ResizeObserver(() => {
+      const nextWidth = Number(container.clientWidth) || 0;
+      if (nextWidth <= 0 || Math.abs(nextWidth - observedWidth) < 1) return;
+      observedWidth = nextWidth;
+      if (lastRenderState) view.render(lastRenderState);
+    });
+    resizeObserver.observe(container);
+  }
+
+  return view;
 }

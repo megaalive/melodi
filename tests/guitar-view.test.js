@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chooseGuitarFingering, findGuitarPositions, fretCenterX, guitarBendLabel, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
+import { chooseGuitarFingering, createGuitarViewGeometry, findGuitarPositions, fretCenterX, guitarBendLabel, MAX_FRET, STANDARD_TUNING } from "../src/ui/guitar-view.js";
 import { createInitialSong } from "../src/core/model.js";
 
 test("standard tuning spans E2 to E4 across six strings", () => {
@@ -37,13 +37,28 @@ test("fret 0 is the nut itself, not the space after the first wire", () => {
   assert.ok(centre < labelWidth + fretWidth);
 });
 
+test("fretboard fills wide containers and keeps a 28px minimum fret when narrow", () => {
+  for (const viewportWidth of [1440, 1920]) {
+    const geometry = createGuitarViewGeometry(viewportWidth);
+    assert.equal(geometry.width, viewportWidth);
+    assert.ok(geometry.fretWidth >= 28);
+  }
+
+  for (const viewportWidth of [320, 680]) {
+    const geometry = createGuitarViewGeometry(viewportWidth);
+    assert.equal(geometry.fretWidth, 28);
+    assert.equal(geometry.width, 34 + (MAX_FRET + 1) * 28);
+    assert.ok(geometry.width > viewportWidth);
+  }
+});
+
 test("every playable position maps to a fret centre inside the drawn neck", () => {
-  const neckWidth = 34 + (MAX_FRET + 1) * 26;
+  const geometry = createGuitarViewGeometry(0);
   for (let pitch = 0; pitch <= 127; pitch += 1) {
     for (const position of findGuitarPositions(pitch)) {
-      const centre = fretCenterX(position.fret);
+      const centre = fretCenterX(position.fret, { fretWidth: geometry.fretWidth });
       assert.ok(centre > 34, `pitch ${pitch} fret ${position.fret} lands left of the nut`);
-      assert.ok(centre < neckWidth, `pitch ${pitch} fret ${position.fret} lands off the neck`);
+      assert.ok(centre < geometry.width, `pitch ${pitch} fret ${position.fret} lands off the neck`);
       assert.ok(Number.isInteger(position.fret) && position.fret >= 0 && position.fret <= MAX_FRET);
     }
   }

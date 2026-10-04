@@ -24,7 +24,7 @@ test("panel disclosure preferences default expanded and normalize fields indepen
     scoreLayout: "page",
     guitarLayout: "fretboard",
     guitarZoneOpen: null,
-    guitarZoneHeight: 220,
+    guitarZoneHeight: null,
     dockOpen: true,
     dockWidth: null,
     dockVisibleCount: 2,
@@ -71,10 +71,10 @@ test("dock preferences are bounded and legacy preference records keep safe defau
 
 test("Guitar zone visibility and height are bounded UI preferences", () => {
   assert.equal(normalizeUiPreferences({ guitarZoneOpen: false, guitarZoneHeight: 1 }).guitarZoneOpen, false);
-  assert.equal(normalizeUiPreferences({ guitarZoneOpen: false, guitarZoneHeight: 1 }).guitarZoneHeight, 120);
-  assert.equal(normalizeUiPreferences({ guitarZoneOpen: true, guitarZoneHeight: 900 }).guitarZoneHeight, 480);
+  assert.equal(normalizeUiPreferences({ guitarZoneOpen: false, guitarZoneHeight: 1 }).guitarZoneHeight, 280);
+  assert.equal(normalizeUiPreferences({ guitarZoneOpen: true, guitarZoneHeight: 900 }).guitarZoneHeight, 440);
   assert.equal(normalizeUiPreferences({ guitarZoneOpen: "open", guitarZoneHeight: "240" }).guitarZoneOpen, null);
-  assert.equal(normalizeUiPreferences({ guitarZoneHeight: "240" }).guitarZoneHeight, 220);
+  assert.equal(normalizeUiPreferences({ guitarZoneHeight: "240" }).guitarZoneHeight, null);
 });
 
 test("invalid or unavailable UI preference storage falls back safely", () => {
