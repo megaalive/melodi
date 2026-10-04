@@ -216,6 +216,15 @@ input, select, textarea{
   color:inherit;
 }
 
+/* Range, checkbox, dan radio mewarisi biru bawaan browser kalau accent-color
+tidak ditetapkan. Satu aturan ini membuat semuanya memakai accent tema, jadi
+tidak ada kontrol yang lepas dari light-dark(). */
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"]{
+  accent-color:var(--accent);
+}
+
 textarea{resize:vertical;}
 
 button{
@@ -565,7 +574,6 @@ p{margin:0.45rem 0 0.8rem;}
   padding:0;
   border:0;
   background:transparent;
-  accent-color:var(--petrol);
   cursor:pointer;
 }
 .zoom-control output{
@@ -3052,7 +3060,6 @@ body[data-view-mode="drums"] .workspace-grid{
   min-width:0;
   margin:0;
   padding:0;
-  accent-color:var(--accent-strong);
 }
 .drum-row-volume{
   flex:0 0 3rem;
@@ -3060,7 +3067,6 @@ body[data-view-mode="drums"] .workspace-grid{
   min-width:0;
   margin:0;
   padding:0;
-  accent-color:var(--accent-strong);
 }
 .drum-row-piece-name{
   flex:1 1 auto;
