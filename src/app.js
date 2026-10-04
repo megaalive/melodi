@@ -3,7 +3,7 @@ import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from ".
 import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.83";
 import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.83";
 import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.83";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi } from "./core/model.js?v=20261003.83";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.83";
 import { createCommands } from "./core/commands.js?v=20261003.83";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.83";
@@ -27,9 +27,11 @@ import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.
 import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.83";
 import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.83";
 import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.83";
+import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.83";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
+let audioPlayer;
 let rollView;
 let expressionView;
 let scoreView;
@@ -1444,6 +1446,16 @@ function renderGeneration(state) {
 
 function renderPlayback() {
   if (!commands) return;
+  const startedAt = perfProbe ? (performance.now()) : 0;
+  try {
+    renderPlaybackNow();
+  } finally {
+    if (perfProbe) perfProbe.recordRender(performance.now() - startedAt);
+  }
+}
+
+function renderPlaybackNow() {
+  if (!commands) return;
   const state = normalizeRuntimeState(commands.getState());
   const playback = state.playback;
   studioView?.updatePlayback(commands.getSong(), playback);
@@ -2064,6 +2076,12 @@ try {
 }
 
 const browserLibrary = createBrowserLibrary();
+// P0: probe perf hanya hidup kalau halaman diminta (?perf=1). Caller diambil
+// lewat closure karena player dan commands baru ada setelah baris ini.
+const perfProbe = perfEnabled()
+  ? createPerfProbe({ player: () => audioPlayer, commands: () => commands })
+  : null;
+perfProbe?.start();
 commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
   onChange(change) {
     render();
@@ -2096,9 +2114,14 @@ commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
     else if (event === "error") reportError(error);
   },
   onNotificationError: reportNotificationError,
-  audioPlayerFactory: (callbacks) => createAudioPlayer(callbacks),
+  audioPlayerFactory: (callbacks) => {
+    audioPlayer = createAudioPlayer(callbacks);
+    return audioPlayer;
+  },
+  perf: perfProbe ? { tick: (ms) => perfProbe.recordTick(ms) } : null,
   browserLibrary
 });
+if (perfProbe) setCloneProbe((ms) => perfProbe.recordClone(ms));
 
 rollView = createPianoRollView(byId("piano-roll"), commands, {
   translate,

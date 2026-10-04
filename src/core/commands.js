@@ -89,7 +89,8 @@ export function createCommands(initialSong, {
   onPlaybackEvent = () => {},
   onNotificationError = reportUnobservedNotificationError,
   audioPlayerFactory = null,
-  browserLibrary = null
+  browserLibrary = null,
+  perf = null
 } = {}) {
   let song = createSong(initialSong);
   let selection = null;
@@ -446,7 +447,8 @@ export function createCommands(initialSong, {
         notifyPlaybackEvent("interrupted");
       },
       onError: handlePlayerError,
-      getMix: () => cloneData(mix)
+      getMix: () => cloneData(mix),
+      perf
     });
   }
 
@@ -610,6 +612,10 @@ export function createCommands(initialSong, {
     },
     getMixState() {
       return cloneData(mix);
+    },
+    // P0: probe perf butuh kedalaman undo tanpa snapshot penuh.
+    getHistoryState() {
+      return readHistoryState();
     },
     getState() {
       return createAgentSnapshot(song, selection, readPlayback(), {

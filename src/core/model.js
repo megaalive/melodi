@@ -22,8 +22,20 @@ export function createId() {
   return id;
 }
 
+// P0: cloneData ada di jalur panas playback, jadi dipantau. Pemantau hanya
+// dipasang saat probe perf aktif; tanpa itu tidak ada timer sama sekali.
+let cloneProbe = null;
+
+export function setCloneProbe(probe) {
+  cloneProbe = typeof probe === "function" ? probe : null;
+}
+
 export function cloneData(value) {
-  return JSON.parse(JSON.stringify(value));
+  if (!cloneProbe) return JSON.parse(JSON.stringify(value));
+  const startedAt = globalThis.performance?.now?.() ?? 0;
+  const result = JSON.parse(JSON.stringify(value));
+  cloneProbe((globalThis.performance?.now?.() ?? 0) - startedAt);
+  return result;
 }
 
 function isRecord(value) {

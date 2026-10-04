@@ -37,7 +37,7 @@ function fail(code) {
   throw new MelodiError(code);
 }
 
-export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), onPosition = () => {}, onComplete = () => {}, onInterrupted = () => {}, onError = () => {}, audioContextFactory = null }) {
+export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), onPosition = () => {}, onComplete = () => {}, onInterrupted = () => {}, onError = () => {}, audioContextFactory = null, perf = null }) {
   let context = null;
   let masterGain = null;
   let noiseBuffer = null;
@@ -559,6 +559,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
 
   function wake() {
     if (!playing || !context || context.state !== "running") return;
+    const startedAt = perf?.tick ? (globalThis.performance?.now?.() ?? 0) : 0;
     try {
       const now = context.currentTime;
       const tick = positionAt(now);
@@ -577,6 +578,8 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       const tick = positionAt();
       halt(tick);
       onError(error);
+    } finally {
+      if (perf?.tick) perf.tick((globalThis.performance?.now?.() ?? 0) - startedAt);
     }
   }
 
@@ -712,6 +715,9 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     songChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
     mixChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
     playPreview,
+    getDebugState() {
+      return { voices: voices.size, scheduled: scheduled.size, playing, tempo, loop: { ...loop }, anchor: { ...anchor } };
+    },
     cancelPreview() {
       if (playing) return false;
       generation += 1;
