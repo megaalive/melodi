@@ -24,7 +24,10 @@ const args = {
   width: 1440,
   height: 900,
   out: "",
-  label: "baseline"
+  label: "baseline",
+  edits: 0,
+  cpuThrottle: 1,
+  scenario: "plain"
 };
 
 for (let index = 0; index < process.argv.length; index += 1) {
@@ -34,6 +37,9 @@ for (let index = 0; index < process.argv.length; index += 1) {
   else if (flag === "--bars") args.bars = Number(process.argv[++index]);
   else if (flag === "--label") args.label = process.argv[++index];
   else if (flag === "--out") args.out = process.argv[++index];
+  else if (flag === "--edits") args.edits = Number(process.argv[++index]);
+  else if (flag === "--cpu-throttle") args.cpuThrottle = Number(process.argv[++index]);
+  else if (flag === "--scenario") args.scenario = process.argv[++index];
 }
 
 const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
@@ -102,8 +108,26 @@ await page.evaluate(() => {
 await page.waitForFunction(() => document.querySelector("#studio-guitar-zone")?.dataset.open === "true", null, { timeout: 5000 })
   .catch(() => {});
 await page.waitForTimeout(400);
+async function runEdits(count) {
+  if (count <= 0) return;
+  await page.evaluate(editCount => {
+    const commands = window.melodi.commands;
+    const notes = commands.getSong().notes;
+    for (let index = 0; index < editCount; index += 1) {
+      const note = notes[index % notes.length];
+      if (index % 3 === 0) commands.addNote({ pitch: 60 + (index % 12), startTick: index * 120, durationTicks: 240 });
+      else if (index % 3 === 1) commands.updateNote(note.id, { pitch: 60 + (index % 12) });
+      else commands.updateNote(note.id, { durationTicks: 240 + (index % 5) * 60 });
+    }
+  }, count);
+  await page.waitForTimeout(200);
+}
+
+const cdp = await page.context().newCDPSession(page);
+if (args.cpuThrottle > 1) await cdp.send("Emulation.setCPUThrottlingRate", { rate: args.cpuThrottle });
 await page.evaluate(() => window.melodiPerf.reset());
 console.log(`lagu uji: ${songInfo.notes} note, ${songInfo.hits} hit drum, ${(songInfo.bytes / 1024).toFixed(0)} KB JSON`);
+console.log(`skenario: ${args.scenario}, cpu throttle: ${args.cpuThrottle}x, edit per putaran: ${args.edits}`);
 
 async function playRound(loop) {
   await page.evaluate(async ({ loop: loopOn, endTick }) => {
@@ -122,6 +146,7 @@ const rows = [];
 for (let round = 1; round <= args.rounds; round += 1) {
   const loop = round % 2 === 0;
   await page.evaluate(name => window.melodiPerf.label(name), `round-${round}`);
+  await runEdits(args.edits);
   await playRound(loop);
   const stats = await page.evaluate(label => {
     const { windows } = window.melodiPerf.report();
@@ -155,6 +180,8 @@ for (let round = 1; round <= args.rounds; round += 1) {
       clonesPerSecond: round(seconds > 0 ? sum("clones") / seconds : 0, 1),
       cloneShare: round(seconds > 0 ? sum("cloneMs") / (seconds * 1000) * 100 : 0, 1),
       voices: peak("voices"),
+      wakeGapOver: sum("wakeGapOver"),
+      wakeP95: round(p(flat("wakeGaps"), 0.95), 1),
       scheduled: peak("scheduled"),
       undoDepth: last("undoDepth"),
       domNodes: last("domNodes")
@@ -175,14 +202,16 @@ for (let round = 1; round <= args.rounds; round += 1) {
     "clone %": stats.cloneShare,
     voices: stats.voices,
     scheduled: stats.scheduled,
+    "wake gap > 0.2s": stats.wakeGapOver,
+    "wake p95": stats.wakeP95,
     undo: stats.undoDepth,
     "node DOM": stats.domNodes
   });
-  console.log(`putaran ${round} (loop ${loop ? "ya" : "tidak"}): long=${stats.longTasks}/${stats.longestTaskMs}ms heap=${stats.heapMB}MB tickP95=${stats.tickP95}ms renderP95=${stats.renderP95}ms clone/s=${stats.clonesPerSecond} clone=${stats.cloneShare}%`);
+  console.log(`putaran ${round} (loop ${loop ? "ya" : "tidak"}): long=${stats.longTasks}/${stats.longestTaskMs}ms heap=${stats.heapMB}MB undo=${stats.undoDepth} tickP95=${stats.tickP95}ms renderP95=${stats.renderP95}ms wakeP95=${stats.wakeP95}ms gap>0.2s=${stats.wakeGapOver} clone/s=${stats.clonesPerSecond}`);
 }
 
 const totals = await page.evaluate(() => window.melodiPerf.report().totals);
-const header = ["putaran", "loop", "long task", "longest ms", "heap MB", "tick p50", "tick p95", "tick max", "render p95", "render max", "clone/dtk", "clone %", "voices", "scheduled", "undo", "node DOM"];
+const header = ["putaran", "loop", "long task", "longest ms", "heap MB", "tick p50", "tick p95", "tick max", "render p95", "render max", "clone/dtk", "clone %", "voices", "scheduled", "undo", "wake gap > 0.2s", "wake p95", "node DOM"];
 const table = [
   `| ${header.join(" | ")} |`,
   `| ${header.map(() => "---").join(" | ")} |`,

@@ -14,6 +14,7 @@ const state = {
   windows: [],
   current: null,
   pendingLabel: null,
+  lastWakeAt: 0,
   totals: {
     clones: 0,
     cloneMs: 0,
@@ -46,6 +47,9 @@ function emptyWindow(label) {
     tickP95: 0,
     tickMax: 0,
     renders: [],
+    wakeGaps: [],
+    wakeGapOver: 0,
+    wakeP95: 0,
     renderMs: 0,
     renderP50: 0,
     renderP95: 0,
@@ -154,6 +158,8 @@ export function createPerfProbe({ player = null, commands = null } = {}) {
     window.renderP50 = round(percentile(window.renders, 0.5));
     window.renderP95 = round(percentile(window.renders, 0.95));
     window.renderMax = round(window.renders.length ? Math.max(...window.renders) : 0);
+    window.wakeP95 = round(percentile(window.wakeGaps, 0.95));
+    window.wakeGapOver = window.wakeGaps.filter(gap => gap > 200).length;
     window.clonesPerSecond = window.durationMs > 0 ? round((window.clones * 1000) / window.durationMs, 1) : 0;
     window.cloneMsShare = window.durationMs > 0 ? round((window.cloneMs * 100) / window.durationMs, 1) : 0;
     state.windows.push(window);
@@ -187,12 +193,19 @@ export function createPerfProbe({ player = null, commands = null } = {}) {
       else bucket();
       return probe;
     },
-    recordTick(durationMs) {
+recordTick(durationMs) {
       const window = bucket();
       window.ticks.push(round(durationMs));
       window.tickMs += durationMs;
       state.totals.ticks += 1;
       state.totals.tickMs += durationMs;
+      // Jeda antar wake() adalah proksi dropout: kalau jeda ini melewati
+      // lookahead, audio yang seharusnya sudah dijadwalkan tidak sempat.
+      const now = performance.now();
+      if (state.lastWakeAt > 0) {
+        window.wakeGaps.push(round(now - state.lastWakeAt));
+      }
+      state.lastWakeAt = now;
     },
     recordRender(durationMs) {
       const window = bucket();
@@ -218,6 +231,7 @@ export function createPerfProbe({ player = null, commands = null } = {}) {
       state.current = null;
       state.pendingLabel = null;
       for (const key of Object.keys(state.totals)) state.totals[key] = 0;
+      state.lastWakeAt = 0;
       bucket();
       return probe;
     }
