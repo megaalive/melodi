@@ -7,6 +7,9 @@ import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=202610
 const LOOK_AHEAD_SECONDS = 0.2;
 const SCHEDULER_INTERVAL_MS = 30;
 const ACTIVATION_TIMEOUT_MS = 1500;
+// Kunci scheduled baru boleh dibuang setelah suaranya selesai, bukan setelah
+// onsetnya lewat. Margin kecil hanya untuk Moreiraan menggeser jadwal.
+const SCHEDULED_PRUNE_MARGIN_SECONDS = 0.05;
 
 export function pitchBendAt(points, position) {
   if (!Array.isArray(points) || points.length < 2) return 0;
@@ -371,7 +374,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
 
   function schedulePercussionVoice(event, channelGain = 1) {
     const spec = percussionVoiceSpec(event.track.kitId, event.hit);
-    if (!spec.oscillators.length) return;
+    if (!spec.oscillators.length) return event.startTime;
 
     chokePercussionGroup(spec.chokeGroup, event.startTime);
 
@@ -499,6 +502,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       disconnectVoice();
       throw error;
     }
+    return endTime;
   }
 
   // P2: event harmoni dan bass turunan hanya bergantung pada song, jadi dihitung
@@ -562,7 +566,7 @@ function currentCycle(tick) {
       try {
         scheduleVoice(event, gain);
         scheduled.set(event.key, event.cycle);
-        scheduledAt.set(event.key, event.startTime);
+        scheduledAt.set(event.key, event.endTime);
       } catch {
         fail("audio-scheduling-failed");
       }
@@ -571,9 +575,8 @@ function currentCycle(tick) {
       const gain = instrumentGain(mix, percussionChannelId(event.track.id, event.hit.pieceId));
       if (gain === 0) continue;
       try {
-        schedulePercussionVoice(event, gain);
+        scheduledAt.set(event.key, schedulePercussionVoice(event, gain));
         scheduled.set(event.key, event.cycle);
-        scheduledAt.set(event.key, event.startTime);
       } catch {
         fail("audio-scheduling-failed");
       }
@@ -584,7 +587,7 @@ function currentCycle(tick) {
       try {
         scheduleSketchVoice(event, gain);
         scheduled.set(`sketch:${event.key}`, event.cycle);
-        scheduledAt.set(`sketch:${event.key}`, event.startTime);
+        scheduledAt.set(`sketch:${event.key}`, event.endTime);
       } catch {
         fail("audio-scheduling-failed");
       }
@@ -606,8 +609,9 @@ function currentCycle(tick) {
       // P2: prune juga saat loop mati. Sebelumnya kunci hanya dibersihkan
       // per siklus loop, jadi setiap playback menumpuk semua event yang
       // sudah lewat dan iterasi prune ikut memanjang.
-      for (const [key, startTime] of scheduledAt) {
-        if (startTime < now - LOOK_AHEAD_SECONDS) {
+      const pruneBefore = now - SCHEDULED_PRUNE_MARGIN_SECONDS;
+      for (const [key, endTime] of scheduledAt) {
+        if (endTime < pruneBefore) {
           scheduledAt.delete(key);
           scheduled.delete(key);
         }
