@@ -634,6 +634,9 @@ p{margin:0.45rem 0 0.8rem;}
   border-radius:0.45rem;
   background:var(--surface);
   touch-action:none;
+  /* Scroll anchoring memaksa layout ulang tiap follow; app yang
+     mengENDalikan posisi, jadi dimatikan. */
+  overflow-anchor:none;
 }
 #piano-roll{display:block;max-width:none;}
 .selection-readout{min-height:1.2rem;margin:var(--space-2) 0 0;}

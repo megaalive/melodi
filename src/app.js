@@ -9,6 +9,7 @@ import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.83";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.83";
 import { createAudioPlayer } from "./audio/player.js?v=20261003.83";
+import { songProjection } from "./audio/transport.js?v=20261003.83";
 import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.83";
 import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.83";
 import { createScoreView } from "./ui/score.js?v=20261003.83";
@@ -1444,6 +1445,64 @@ function renderGeneration(state) {
   });
 }
 
+let playbackRenderHandle = 0;
+let lastRenderedTick = -1;
+let lastRenderedStatus = "";
+
+// P3: onPosition tidak boleh menjalankan kerja DOM. Render dijadwalkan ke
+// frame berikutnya, maksimal sekali per frame, dan hanya kalau tick atau
+// status transport memang berubah.
+function schedulePlaybackRender() {
+  if (playbackRenderHandle) return;
+  playbackRenderHandle = requestAnimationFrame(() => {
+    playbackRenderHandle = 0;
+    const tick = commands?.getPlaybackTick?.() ?? -1;
+    const status = commands?.getPlaybackStatus?.() ?? "";
+    if (tick === lastRenderedTick && status === lastRenderedStatus) return;
+    lastRenderedTick = tick;
+    lastRenderedStatus = status;
+    renderPlayback();
+  });
+}
+
+// P3: penulisan DOM hanya terjadi kalau nilainya berubah. Tanpa ini setiap
+// tick mencederai dozens node even when the value is identical.
+const lastDomValue = new WeakMap();
+
+function writeText(element, value) {
+  if (!element) return;
+  if (lastDomValue.get(element) === value) return;
+  lastDomValue.set(element, value);
+  element.textContent = value;
+}
+
+function writeAttribute(element, name, value) {
+  if (!element) return;
+  const key = `@${name}`;
+  if (lastDomValue.get(element) === key + value) return;
+  lastDomValue.set(element, key + value);
+  element.setAttribute(name, value);
+}
+
+function writeProperty(element, name, value) {
+  if (!element) return;
+  const key = `#${name}`;
+  if (lastDomValue.get(element) === key + value) return;
+  lastDomValue.set(element, key + value);
+  element[name] = value;
+}
+
+// SVG tidak punya properti `hidden`, jadi atributnya yang ditulis.
+function writeHidden(element, hidden) {
+  if (!element) return;
+  const key = `#hidden=${hidden}`;
+  if (lastDomValue.get(element) === key) return;
+  lastDomValue.set(element, key);
+  element.toggleAttribute("hidden", Boolean(hidden));
+}
+
+let lastSyllableKey = "";
+
 function renderPlayback() {
   if (!commands) return;
   const startedAt = perfProbe ? (performance.now()) : 0;
@@ -1476,64 +1535,71 @@ function renderPlaybackNow() {
     playing: "playbackPlaying",
     paused: "playbackStatusPaused"
   }[playback.status];
-  const note = song.notes.find((item) => item.id === playback.currentNoteId);
-  const section = song.sections.find((item) => item.id === playback.currentSectionId);
+  const projection = songProjection(song);
+  const note = playback.currentNoteId ? projection.noteById.get(playback.currentNoteId) : null;
+  const section = playback.currentSectionId
+    ? projection.sections.find((item) => item.id === playback.currentSectionId)
+    : null;
 
-  byId("playback-status").textContent = translate(statusKey);
-  byId("current-tick").textContent = String(playback.currentTick);
-  byId("current-note").textContent = note ? midiToPitch(note.pitch) : translate("noCurrentNote");
-  byId("current-note").dataset.entityId = note?.id ?? "";
+  const songEndTick = canonicalSongEndTick(song);
+  writeText(byId("playback-status"), translate(statusKey));
+  writeText(byId("current-tick"), String(playback.currentTick));
+  writeText(byId("current-note"), note ? midiToPitch(note.pitch) : translate("noCurrentNote"));
+  writeAttribute(byId("current-note"), "data-entity-id", note?.id ?? "");
   byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
   const mobileTransportSummary = byId("mobile-transport-summary");
   const tempoState = translate(playback.loop.enabled ? "loopStateOn" : "loopStateOff");
-  byId("mobile-transport-bpm").textContent = String(playback.tempo);
-  byId("mobile-transport-loop-state").textContent = tempoState;
-  byId("mobile-transport-tempo").setAttribute("aria-label", `${playback.tempo} BPM`);
-  byId("mobile-transport-loop").setAttribute("aria-label", `${translate("loopEnabledLabel")} ${tempoState}`);
-  byId("mobile-transport-loop").dataset.loopEnabled = String(playback.loop.enabled);
-  mobileTransportSummary.setAttribute("aria-label", translate("transportDockSummary", {
-    bpm: playback.tempo,
-    loop: tempoState
-  }));
-  mobileTransportSummary.title = mobileTransportSummary.getAttribute("aria-label");
+  writeText(byId("mobile-transport-bpm"), String(playback.tempo));
+  writeText(byId("mobile-transport-loop-state"), tempoState);
+  writeAttribute(byId("mobile-transport-tempo"), "aria-label", `${playback.tempo} BPM`);
+  writeAttribute(byId("mobile-transport-loop"), "aria-label", `${translate("loopEnabledLabel")} ${tempoState}`);
+  writeAttribute(byId("mobile-transport-loop"), "data-loop-enabled", String(playback.loop.enabled));
+  const summaryLabel = translate("transportDockSummary", { bpm: playback.tempo, loop: tempoState });
+  writeAttribute(mobileTransportSummary, "aria-label", summaryLabel);
+  writeAttribute(mobileTransportSummary, "title", summaryLabel);
   const playing = playback.status === "playing";
   const playToggle = byId("play");
-  playToggle.disabled = false;
+  writeProperty(playToggle, "disabled", false);
   playToggle.dataset.ariaCopy = playing ? "pauseButton" : "playButton";
   const toggleLabel = translate(playToggle.dataset.ariaCopy);
-  playToggle.setAttribute("aria-label", toggleLabel);
-  playToggle.title = toggleLabel;
+  writeAttribute(playToggle, "aria-label", toggleLabel);
+  writeAttribute(playToggle, "title", toggleLabel);
   // Ikonnya <svg>, dan SVGElement tidak punya properti `hidden`, jadi assignment
   // ke sana tidak mengubah atribut. Atributnya yang ditulis di sini, kalau tidak
   // ikon play dan pause tampil bersamaan di dalam satu tombol.
-  playToggle.querySelector('[data-playback-icon="play"]').toggleAttribute("hidden", playing);
-  playToggle.querySelector('[data-playback-icon="pause"]').toggleAttribute("hidden", !playing);
-  byId("pause").disabled = playback.status !== "playing";
-  byId("pause").hidden = true;
-  byId("undo").disabled = !state.history.canUndo;
-  byId("redo").disabled = !state.history.canRedo;
+  writeHidden(playToggle.querySelector('[data-playback-icon="play"]'), playing);
+  writeHidden(playToggle.querySelector('[data-playback-icon="pause"]'), !playing);
+  writeProperty(byId("pause"), "disabled", playback.status !== "playing");
+  writeHidden(byId("pause"), true);
+  writeProperty(byId("undo"), "disabled", !state.history.canUndo);
+  writeProperty(byId("redo"), "disabled", !state.history.canRedo);
 
-  if (document.activeElement !== byId("seek-tick")) byId("seek-tick").value = String(playback.currentTick);
-  if (document.activeElement !== byId("tempo-input")) byId("tempo-input").value = String(playback.tempo);
-  if (document.activeElement !== byId("loop-start")) byId("loop-start").value = String(playback.loop.startTick);
-  if (document.activeElement !== byId("loop-end")) byId("loop-end").value = String(playback.loop.endTick);
-  byId("loop-enabled").checked = playback.loop.enabled;
-  const songEndTick = canonicalSongEndTick(song);
+  const active = document.activeElement;
+  if (active !== byId("seek-tick")) writeProperty(byId("seek-tick"), "value", String(playback.currentTick));
+  if (active !== byId("tempo-input")) writeProperty(byId("tempo-input"), "value", String(playback.tempo));
+  if (active !== byId("loop-start")) writeProperty(byId("loop-start"), "value", String(playback.loop.startTick));
+  if (active !== byId("loop-end")) writeProperty(byId("loop-end"), "value", String(playback.loop.endTick));
+  writeProperty(byId("loop-enabled"), "checked", playback.loop.enabled);
   const customPlaybackRange = playback.loop.startTick !== 0 || playback.loop.endTick !== songEndTick;
-  byId("reset-playback-range").hidden = !customPlaybackRange;
-  byId("reset-playback-range").dataset.startTick = String(playback.loop.startTick);
-  byId("reset-playback-range").dataset.endTick = String(playback.loop.endTick);
+  writeHidden(byId("reset-playback-range"), !customPlaybackRange);
+  writeAttribute(byId("reset-playback-range"), "data-start-tick", String(playback.loop.startTick));
+  writeAttribute(byId("reset-playback-range"), "data-end-tick", String(playback.loop.endTick));
   const textEntryActive = isTextEntryActiveElement(document.activeElement);
   const follow = state.view.follow && playback.status === "playing" && !textEntryActive && !pointerInteractionActive;
   const followMode = playbackFollowMode(follow);
-  rollView?.updatePlayback(playback, { followMode, songEndTick });
-  expressionView?.updatePlayback(playback);
-  scoreView?.updatePlayback(playback, { ...state.view, follow });
-  guitarTabView?.updatePlayback(playback, {
+  // P3: view yang tidak terlihat tidak diberi updatePlayback sama sekali.
+  const rollVisible = !byId("piano-roll-section")?.hidden;
+  const scoreVisible = state.view.mode !== "lyrics";
+  const drumsVisible = state.view.mode !== "lyrics";
+  const guitarVisible = state.view.mode !== "score";
+  if (rollVisible) rollView?.updatePlayback(playback, { followMode, songEndTick });
+  if (rollVisible) expressionView?.updatePlayback(playback);
+  if (scoreVisible) scoreView?.updatePlayback(playback, { ...state.view, follow });
+  if (guitarVisible) guitarTabView?.updatePlayback(playback, {
     follow: follow && state.view.mode === "guitar" && uiPreferences.guitarLayout === "tab"
   });
-  drumGridView?.updatePlayback(playback, {
+  if (drumsVisible) drumGridView?.updatePlayback(playback, {
     followMode: state.view.mode === "drums" ? followMode : "none",
     songEndTick
   });
@@ -1543,9 +1609,14 @@ function renderPlaybackNow() {
     const state = normalizeRuntimeState(commands.getState());
     if (guitarView?.updatePlayback(state)) renderGuitar(state);
   }
-  const activeSyllableIds = new Set(playback.currentSyllableIds);
-  for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
-    item.dataset.current = String(activeSyllableIds.has(item.dataset.entityId));
+  // P3: langkah suku kata hanya jalan kalau-id sukunya berubah.
+  const syllableKey = playback.currentSyllableIds.join(",");
+  if (syllableKey !== lastSyllableKey) {
+    lastSyllableKey = syllableKey;
+    const activeSyllableIds = new Set(playback.currentSyllableIds);
+    for (const item of byId("syllable-list").querySelectorAll('[data-entity="lyric-syllable"]')) {
+      item.dataset.current = String(activeSyllableIds.has(item.dataset.entityId));
+    }
   }
   if (follow && state.view.mode === "lyrics") {
     const syllableId = playback.currentSyllableIds[0] ?? null;
@@ -2117,6 +2188,9 @@ commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
     }
   },
   onPlaybackChange: renderPlayback,
+  // P3: tick audio hanya menandai render; kerja DOM waited on frame berikutnya
+  // supaya setInterval audio tidak pernah menyentuh DOM.
+  onPlaybackTick: schedulePlaybackRender,
   onPlaybackEvent(event, error) {
     if (event === "ended") announce("playbackStoppedMessage");
     else if (event === "interrupted") announce("playbackPaused");

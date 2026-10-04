@@ -86,6 +86,7 @@ export function createCommands(initialSong, {
   onChange = () => {},
   onEditorChange = () => {},
   onPlaybackChange = () => {},
+  onPlaybackTick = null,
   onPlaybackEvent = () => {},
   onNotificationError = reportUnobservedNotificationError,
   audioPlayerFactory = null,
@@ -432,7 +433,10 @@ export function createCommands(initialSong, {
       getSong: () => song,
       onPosition(tick) {
         setPlaybackPosition(tick);
-        notifyPlaybackChange();
+        // P3: tick audio tidak menjalankan render DOM; view yang mau
+        //olutnya (pause, seek, tempo) tetap lewat onPlaybackChange.
+        if (onPlaybackTick) onPlaybackTick();
+        else notifyPlaybackChange();
       },
       onComplete() {
         playback.status = "stopped";
@@ -639,6 +643,13 @@ export function createCommands(initialSong, {
         selectedChordId,
         harmonyRange: effectiveHarmonyRange()
       };
+    },
+    // P3: pembacaan murah untuk Decide render mana yang perlu jalan lagi.
+    getPlaybackTick() {
+      return playback.currentTick;
+    },
+    getPlaybackStatus() {
+      return playback.status;
     },
     getState() {
       return createAgentSnapshot(song, selection, readPlayback(), {

@@ -63,34 +63,87 @@ export function tickAtAudioTime(audioTime, anchor, tempo, loop) {
   return tick;
 }
 
-export function findCurrentNoteId(song, tick) {
-  const active = song.notes
-    .filter((note) => note.startTick <= tick && tick < note.startTick + note.durationTicks)
-    .sort((left, right) => right.startTick - left.startTick || compareText(left.id, right.id));
-  return active[0]?.id ?? null;
+// P3: proyeksi posisi dibaca tiap tick, jadi.indeksnya ikut di-cache per
+// song. Semuanya turunan dari song, jadi tidak perlu dihitung ulang selama
+// song yang sama masih hidup.
+const projectionCache = new WeakMap();
+
+function projectionSignature(song) {
+  return [
+    (song.notes ?? []).length,
+    (song.sections ?? []).length,
+    (song.phrases ?? []).length,
+    song.lyrics?.syllables?.length ?? 0
+  ].join(":");
 }
 
-function getSectionNotes(song, section) {
-  const phraseIds = new Set(section.phraseIds);
-  const noteIds = new Set(song.phrases.filter((phrase) => phraseIds.has(phrase.id)).flatMap((phrase) => phrase.noteIds));
-  return song.notes.filter((note) => noteIds.has(note.id));
+export function songProjection(song) {
+  const signature = projectionSignature(song);
+  const cached = projectionCache.get(song);
+  if (cached && cached.signature === signature) return cached;
+  const timeline = songTimeline(song);
+  const notesById = new Map(timeline.notes.map(note => [note.id, note]));
+  const sections = [];
+  for (const section of song.sections ?? []) {
+    const phraseIds = new Set(section.phraseIds);
+    const noteIds = new Set((song.phrases ?? [])
+      .filter(phrase => phraseIds.has(phrase.id))
+      .flatMap(phrase => phrase.noteIds));
+    let firstTick = Infinity;
+    let lastTick = -Infinity;
+    for (const id of noteIds) {
+      const note = notesById.get(id);
+      if (!note) continue;
+      if (note.startTick < firstTick) firstTick = note.startTick;
+      if (note.startTick + note.durationTicks > lastTick) lastTick = note.startTick + note.durationTicks;
+    }
+    sections.push({ id: section.id, noteIds, firstTick, lastTick });
+  }
+  const sectionByNoteId = new Map();
+  for (const section of sections) {
+    for (const id of section.noteIds) {
+      if (!sectionByNoteId.has(id)) sectionByNoteId.set(id, section.id);
+    }
+  }
+  const projection = {
+    signature,
+    notes: timeline.notes,
+    noteStarts: timeline.noteStarts,
+    noteById: notesById,
+    maxNoteDuration: timeline.maxNoteDuration,
+    sectionByNoteId,
+    sections
+  };
+  projectionCache.set(song, projection);
+  return projection;
+}
+
+export function findCurrentNoteId(song, tick) {
+  const projection = songProjection(song);
+  const { notes, noteStarts, maxNoteDuration } = projection;
+  // Hanya nada yang mulai sebelum tick dan belum selesai yang bisa aktif.
+  const end = lowerBound(noteStarts, tick + 1);
+  const start = Math.max(0, lowerBound(noteStarts, tick - maxNoteDuration));
+  let active = null;
+  for (let index = end - 1; index >= start; index -= 1) {
+    const note = notes[index];
+    if (tick < note.startTick + note.durationTicks) {
+      // Sama onset: id paling kecil dulu, sama seperti urutan lama.
+      if (!active || note.startTick > active.startTick
+        || (note.startTick === active.startTick && compareText(note.id, active.id) < 0)) {
+        active = note;
+      }
+    }
+  }
+  return active?.id ?? null;
 }
 
 export function findCurrentSectionId(song, tick, currentNoteId = findCurrentNoteId(song, tick)) {
-  const byId = new Map(song.notes.map((note) => [note.id, note]));
-  if (currentNoteId !== null) {
-    for (const section of song.sections) {
-      if (getSectionNotes(song, section).some((note) => note.id === currentNoteId)) return section.id;
-    }
-    return null;
-  }
-
-  for (const section of song.sections) {
-    const notes = getSectionNotes(song, section);
-    if (notes.length === 0) continue;
-    const firstTick = Math.min(...notes.map((note) => note.startTick));
-    const lastTick = Math.max(...notes.map((note) => note.startTick + note.durationTicks));
-    if (firstTick <= tick && tick < lastTick && notes.some((note) => byId.has(note.id))) return section.id;
+  const projection = songProjection(song);
+  if (currentNoteId !== null) return projection.sectionByNoteId.get(currentNoteId) ?? null;
+  for (const section of projection.sections) {
+    if (section.firstTick === Infinity) continue;
+    if (section.firstTick <= tick && tick < section.lastTick) return section.id;
   }
   return null;
 }

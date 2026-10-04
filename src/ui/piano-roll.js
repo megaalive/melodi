@@ -363,6 +363,13 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   let lastPlaybackTick = 0;
   let lastPlaybackRange = "0:1";
   let pendingPlaybackFollow = false;
+  // P3: index nota dan chord instead of querySelectorAll tiap tick.
+  let noteGroupById = new Map();
+  let chordRanges = [];
+  let chordRangeEnds = [];
+  let maxChordDuration = 0;
+  let currentNoteGroup = null;
+  let activeChordGroups = new Set();
   let lastFocusTick = null;
   let compactPitchRange = null;
   let lastFollowMode = "none";
@@ -382,13 +389,47 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     };
   }
 
-  function syncFrozenPitchLabels() {
-    const layer = svg.querySelector('[data-entity="pitch-label-layer"]');
+  let frozenLabelLayer = null;
+  let lastFrozenLabelTransform = "";
+  // Lebar viewport dan SVG hanya berubah saat resize; membacanya per tick
+  // memaksa layout sinkron atas seluruh SVG.
+  let scrollViewportWidth = 0;
+  let scrollViewportHeight = 0;
+  let svgBoundsWidth = 0;
+  const CENTER_FOLLOW_TOLERANCE_PX = 8;
+  let knownScrollLeft = 0;
+  let playheadElement = null;
+
+  function handleScroll() {
+    knownScrollLeft = scrollContainer?.scrollLeft ?? 0;
+    syncFrozenPitchLabels(false, knownScrollLeft, true);
+  }
+
+  function scrollTo(left) {
+    knownScrollLeft = left;
+    svgBoundsWidth = svg.getBoundingClientRect?.().width ?? svgBoundsWidth;
+    scrollContainer.scrollLeft = left;
+    syncFrozenPitchLabels(false, left);
+  }
+
+  function measureScrollViewport() {
+    if (!scrollContainer) return;
+    scrollViewportWidth = scrollContainer.clientWidth;
+    scrollViewportHeight = scrollContainer.clientHeight;
+    svgBoundsWidth = svg.getBoundingClientRect?.().width ?? 0;
+  }
+
+  function syncFrozenPitchLabels(force = false, left = scrollContainer?.scrollLeft ?? 0, measure = false) {
+    const layer = frozenLabelLayer ?? svg.querySelector('[data-entity="pitch-label-layer"]');
     if (!layer) return;
-    const boundsWidth = svg.getBoundingClientRect?.().width ?? 0;
-    const scaleX = boundsWidth > 0 ? geometry.width / boundsWidth : 1;
-    const left = (scrollContainer?.scrollLeft ?? 0) * scaleX;
-    layer.setAttribute("transform", `translate(${left} 0)`);
+    frozenLabelLayer = layer;
+    // Event scroll diukur langsung; tick playback memakai nilai cache.
+    if (measure) svgBoundsWidth = svg.getBoundingClientRect?.().width ?? svgBoundsWidth;
+    const scaleX = svgBoundsWidth > 0 ? geometry.width / svgBoundsWidth : 1;
+    const transform = `translate(${left * scaleX} 0)`;
+    if (!force && transform === lastFrozenLabelTransform) return;
+    lastFrozenLabelTransform = transform;
+    layer.setAttribute("transform", transform);
   }
 
   function scheduleViewportResize() {
@@ -821,6 +862,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       scrollContainer.scrollTop = savedTop;
       syncFrozenPitchLabels();
     }
+    frozenLabelLayer = null;
+    measureScrollViewport();
+    lastFrozenLabelTransform = "";
+    indexPlaybackGroups();
     lastFocusTick = focusTick;
   }
 
@@ -860,55 +905,111 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     } else {
       if (!activeDrag && !chordDrag) pendingPlaybackFollow = false;
       const x = tickToX(playback.currentTick, geometry);
-      const playhead = svg.querySelector('[data-entity="playhead"]');
-      if (playhead) {
+      const playhead = playheadElement;
+      if (playhead && (playhead.getAttribute("data-x") !== String(x) || playhead.getAttribute("data-tick") !== String(playback.currentTick))) {
+        playhead.setAttribute("data-x", String(x));
         playhead.setAttribute("x1", String(x));
         playhead.setAttribute("x2", String(x));
         playhead.setAttribute("data-tick", String(playback.currentTick));
       }
-      if (followMode !== "none" && playback.status === "playing" && scrollContainer?.clientWidth > 0 && !activeDrag && !chordDrag && !finishingDrag) {
+      if (followMode !== "none" && playback.status === "playing" && scrollViewportWidth > 0 && !activeDrag && !chordDrag && !finishingDrag) {
         if (followMode === "center") {
-          scrollContainer.scrollLeft = centeredScrollLeft({
-            playheadX: x,
-            viewportWidth: scrollContainer.clientWidth,
-            gutterWidth: geometry.labelWidth,
-            contentWidth: geometry.width
-          });
-          syncFrozenPitchLabels();
+        const centered = centeredScrollLeft({
+          playheadX: x,
+          viewportWidth: scrollViewportWidth,
+          gutterWidth: geometry.labelWidth,
+          contentWidth: geometry.width
+        });
+        // Playhead maju beberapa piksel per tick; scroll ulang tiap tick hanya
+        // memaksa layout tanpa menggeser apa yang terlihat.
+        if (Math.abs(centered - knownScrollLeft) >= CENTER_FOLLOW_TOLERANCE_PX) scrollTo(centered);
         } else {
-          const left = scrollContainer.scrollLeft;
-          const right = left + scrollContainer.clientWidth;
+          const left = knownScrollLeft;
+          const right = left + scrollViewportWidth;
           if (x < left + geometry.labelWidth || x > right - 24) {
-            const maximum = Math.max(0, geometry.width - scrollContainer.clientWidth);
-            scrollContainer.scrollLeft = Math.max(0, Math.min(maximum, x - scrollContainer.clientWidth * 0.35));
-            syncFrozenPitchLabels();
+            const maximum = Math.max(0, geometry.width - scrollViewportWidth);
+            const nextLeft = Math.max(0, Math.min(maximum, x - scrollViewportWidth * 0.35));
+            if (nextLeft !== left) scrollTo(nextLeft);
           }
         }
       }
     }
-    for (const group of svg.querySelectorAll('[data-entity="chord"]')) {
-      const start = Number(group.dataset.startTick);
-      const end = start + Number(group.dataset.durationTicks);
-      const current = playback.status === "playing" && playback.currentTick >= start && playback.currentTick < end;
-      group.setAttribute("data-current", String(current));
-      const shape = group.querySelector('[data-chord-shape]');
-      shape?.setAttribute("stroke-width", current ? "4" : group.dataset.selected === "true" ? "3" : "1");
+    applyCurrentNote(playback.currentNoteId);
+    applyActiveChords(playback);
+  }
+
+  function applyCurrentNote(noteId) {
+    const nextGroup = noteId ? noteGroupById.get(noteId) ?? null : null;
+    if (nextGroup === currentNoteGroup) return;
+    if (currentNoteGroup) writeNoteState(currentNoteGroup, false);
+    if (nextGroup) writeNoteState(nextGroup, true);
+    currentNoteGroup = nextGroup;
+  }
+
+  function writeNoteState(group, current) {
+    group.dataset.current = String(current);
+    const shape = group.querySelector("[data-note-shape]");
+    if (shape) shape.setAttribute("stroke-width", current ? "4" : group.dataset.selected === "true" ? "3" : "1.5");
+    group.setAttribute("aria-label", noteDescription({
+      pitch: Number(group.dataset.pitch),
+      startTick: Number(group.dataset.startTick),
+      durationTicks: Number(group.dataset.durationTicks),
+      source: group.dataset.source,
+      anchor: group.dataset.anchor === "true",
+      locked: group.dataset.locked === "true"
+    }, group.dataset.selected === "true", current));
+  }
+
+  function applyActiveChords(playback) {
+    const next = new Set();
+    if (playback.status === "playing") {
+      const tick = playback.currentTick;
+      // Hanya chord yang bisa membentang hingga tick yang perlu diperiksa.
+      const earliest = tick - maxChordDuration;
+      const end = chordRangeEnds.length;
+      const from = lowerBoundByStart(earliest);
+      for (let index = from; index < end; index += 1) {
+        const entry = chordRanges[index];
+        if (entry.startTick > tick) break;
+        if (entry.endTick > tick) next.add(entry.group);
+      }
     }
+    for (const group of next) if (!activeChordGroups.has(group)) writeChordState(group, true);
+    for (const group of activeChordGroups) if (!next.has(group)) writeChordState(group, false);
+    activeChordGroups = next;
+  }
+
+  function writeChordState(group, current) {
+    group.setAttribute("data-current", String(current));
+    const shape = group.querySelector("[data-chord-shape]");
+    shape?.setAttribute("stroke-width", current ? "4" : group.dataset.selected === "true" ? "3" : "1");
+  }
+
+  function lowerBoundByStart(target) {
+    let low = 0;
+    let high = chordRanges.length;
+    while (low < high) {
+      const middle = (low + high) >> 1;
+      if (chordRanges[middle].endTick < target) low = middle + 1;
+      else high = middle;
+    }
+    return low;
+  }
+
+  function indexPlaybackGroups() {
+    playheadElement = svg.querySelector('[data-entity="playhead"]');
+    noteGroupById = new Map();
     for (const group of svg.querySelectorAll('[data-entity="note"]')) {
-      const current = group.dataset.entityId === playback.currentNoteId;
-      group.dataset.current = String(current);
-      const shape = group.querySelector("[data-note-shape]");
-      if (shape) shape.setAttribute("stroke-width", current ? "4" : group.dataset.selected === "true" ? "3" : "1.5");
-      const note = {
-        pitch: Number(group.dataset.pitch),
-        startTick: Number(group.dataset.startTick),
-        durationTicks: Number(group.dataset.durationTicks),
-        source: group.dataset.source,
-        anchor: group.dataset.anchor === "true",
-        locked: group.dataset.locked === "true"
-      };
-      group.setAttribute("aria-label", noteDescription(note, group.dataset.selected === "true", current));
+      noteGroupById.set(group.dataset.entityId, group);
     }
+    chordRanges = [...svg.querySelectorAll('[data-entity="chord"]')].map(group => {
+      const startTick = Number(group.dataset.startTick);
+      return { group, startTick, endTick: startTick + Number(group.dataset.durationTicks) };
+    }).sort((left, right) => left.startTick - right.startTick);
+    chordRangeEnds = chordRanges.map(entry => entry.endTick);
+    maxChordDuration = chordRanges.reduce((total, entry) => Math.max(total, entry.endTick - entry.startTick), 0);
+    currentNoteGroup = null;
+    activeChordGroups = new Set();
   }
 
   function beginDrag(event) {
@@ -1403,7 +1504,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     commands.seek(Math.max(geometry.startTick, Math.min(geometry.endTick, nextTick)));
   });
 
-  scrollContainer?.addEventListener("scroll", syncFrozenPitchLabels, { passive: true });
+  scrollContainer?.addEventListener("scroll", handleScroll, { passive: true });
 
   bindCanvasNavigation(svg, scrollContainer, {
     getZoom: () => commands.getState().editor.zoom,
@@ -1432,6 +1533,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     const resizeObserver = new ResizeObserver(() => {
       const width = scrollContainer.clientWidth;
       const height = scrollContainer.clientHeight;
+      scrollViewportWidth = width;
+      scrollViewportHeight = height;
+      knownScrollLeft = scrollContainer?.scrollLeft ?? knownScrollLeft;
+      svgBoundsWidth = svg.getBoundingClientRect?.().width ?? svgBoundsWidth;
       const widthChanged = width !== observedWidth;
       const pitchFramingChanged = height > 0 && (height < 400) !== compactPitchRange;
       observedWidth = width;

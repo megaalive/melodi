@@ -201,6 +201,12 @@ export function createPerfProbe({ player = null, commands = null } = {}) {
       state.totals.renders += 1;
       state.totals.renderMs += durationMs;
     },
+    recordRenderPart(label, durationMs) {
+      const window = bucket();
+      window.parts ??= {};
+      const list = window.parts[label] ?? (window.parts[label] = []);
+      list.push(durationMs);
+    },
     recordClone(durationMs) {
       recordClone(durationMs);
     },
