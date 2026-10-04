@@ -3497,6 +3497,9 @@ studioView = createStudioWorkspace(commands, translate, reportError, {
     uiPreferences = { ...uiPreferences, ...patch };
     writeUiPreferences(safeStorage(), uiPreferences);
   },
+  onGuitarZoneLayout() {
+    guitarTabView?.resize();
+  },
   onOpenPanel(panel) {
     renderEditorControls();
     const state = normalizeRuntimeState(commands.getState());

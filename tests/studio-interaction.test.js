@@ -125,6 +125,9 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
   nodes.set('#workspace-sidebar-resizer', nodes.get('.workspace-sidebar-resizer'));
   for (const id of ['studio-mixer-channels', 'expression-collapse', 'harmony-panel', 'harmony-timeline-tools', 'studio-views', 'view-controls', 'mobile-workspace-dock', 'editor-toolbar', 'roll-selection', 'piano-roll-section', 'guitar-section', 'drums-section', 'score-section', 'studio-mixer', 'generation-panel', 'generation-form', 'generation-anchor-actions', 'tools-panel', 'studio-panel-title', 'studio-overview', 'studio-position', 'reset-playback-range', 'workspace-canvas', 'guitar-heading']) node(`#${id}`);
   node('.generation-primary-actions');
+  const generateButton = node('button[type="submit"]', 'button');
+  nodes.get('.generation-primary-actions').append(generateButton);
+  nodes.get('#generation-form').id = 'generation-form';
   nodes.set('.studio-overview', nodes.get('#studio-overview'));
   nodes.get('#piano-roll-section').hidden = false;
   nodes.get('#studio-mixer').hidden = true;
@@ -186,6 +189,9 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
   nodes.get('#editor-toolbar').append(nodes.get('.editor-tool-group'));
   nodes.get('.guitar-pane-heading').append(nodes.get('#guitar-heading'), nodes.get('.guitar-local-toolbar'));
   nodes.get('#guitar-section').append(nodes.get('.guitar-pane-heading'));
+  node('#guitar-status');
+  node('#guitar-legend');
+  nodes.get('#guitar-section').append(nodes.get('#guitar-status'), nodes.get('#guitar-legend'));
   const guitarTabScroll = node('#guitar-tab-scroll');
   const guitarFretboardScroll = node('#guitar-scroll');
   guitarTabScroll.hidden = false;
@@ -241,7 +247,7 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
 
   const matchFixtureMedia = (setup, query) => query === '(width <= 46rem)'
   ? setup.phoneMedia
-  : query.includes('min-height: 800px')
+  : query.includes('min-height: 1000px')
   ? setup.dualMedia
   : query.includes('width >= 90rem') ? setup.extraWideMedia
   : query.includes('width >= 68rem') ? setup.wideMedia
@@ -280,6 +286,10 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   assert.match(css, /\.workspace-sidebar-resizer:not\(\[hidden\]\):focus-visible/);
   assert.match(css, /\.workspace-sidebar \.studio-panel-switches button\[aria-selected="true"\]/);
   assert.match(css, /\.studio-guitar-zone\[data-open="true"\]/);
+  assert.match(css, /height:var\(--studio-guitar-zone-height,clamp\(280px,34dvh,440px\)\)/);
+  assert.match(css, /#studio-guitar-zone #guitar-section\{[^}]*min-height:0;overflow:hidden/);
+  assert.match(css, /#studio-guitar-zone #guitar-tab-scroll,#studio-guitar-zone \.guitar-scroll\{[^}]*overflow-y:hidden/);
+  assert.doesNotMatch(css, /\.studio \.guitar-tab-scroll\s*\{\s*min-height:\s*290px/);
   assert.match(css, /\.studio-guitar-resizer:focus-visible/);
   assert.match(css, /\.mobile-guitar-trigger[^}]*min-height: 44px/);
   assert.doesNotMatch(css, /^\.studio #piano-roll-content\s*\{\s*position: relative;/m);
@@ -627,10 +637,12 @@ test('Seek and Loop forms survive repeated desktop to phone and back arrangement
   globalThis.matchMedia = query => matchFixtureMedia(setup, query);
   try {
     const commands = createCommands(createBlankSong());
-    const workspace = createStudioWorkspace(commands, key => key, error => { throw error; });
+    const translate = key => key;
+    const workspace = createStudioWorkspace(commands, translate, error => { throw error; });
     const coreControls = setup.createdNodes.find(node => node.id === 'studio-core-controls');
     const seekForm = setup.nodes.get('form[data-action="seek"]');
     const loopRangeForm = setup.nodes.get('form.loop-range');
+    const loopSeekGroup = setup.createdNodes.find(node => node.className === 'studio-loop-seek-group');
     const setPhoneLayout = phone => {
       // MatchMedia changes together for a real viewport resize, before callbacks run.
       const changes = new Map([
@@ -646,8 +658,10 @@ test('Seek and Loop forms survive repeated desktop to phone and back arrangement
       workspace.render(commands.getSong(), commands.getState(), false);
     };
     workspace.render(commands.getSong(), commands.getState(), false);
-    assert.equal(seekForm.parent, coreControls);
-    assert.equal(loopRangeForm.parent, coreControls);
+    assert.equal(loopSeekGroup.parent, coreControls);
+    assert.equal(seekForm.parent, loopSeekGroup);
+    assert.equal(loopRangeForm.parent, loopSeekGroup);
+    assert.equal(loopSeekGroup.attributes.get('aria-label'), `${translate('loopEnabledLabel')} / ${translate('seekButton')}`);
 
     for (let cycle = 0; cycle < 3; cycle += 1) {
       assert.doesNotThrow(() => setPhoneLayout(true), `phone arrangement ${cycle + 1} must use a valid insertBefore reference`);
@@ -661,12 +675,13 @@ test('Seek and Loop forms survive repeated desktop to phone and back arrangement
 
       assert.doesNotThrow(() => setPhoneLayout(false), `desktop arrangement ${cycle + 1} must restore both forms`);
       assert.equal(coreControls.hidden, false);
-      assert.equal(seekForm.parent, coreControls);
-      assert.equal(loopRangeForm.parent, coreControls);
+      assert.equal(loopSeekGroup.parent, coreControls);
+      assert.equal(seekForm.parent, loopSeekGroup);
+      assert.equal(loopRangeForm.parent, loopSeekGroup);
       assert.equal(isVisibleInTree(seekForm), true);
       assert.equal(isVisibleInTree(loopRangeForm), true);
-      assert.equal(coreControls.children.filter(node => node === seekForm).length, 1);
-      assert.equal(coreControls.children.filter(node => node === loopRangeForm).length, 1);
+      assert.equal(loopSeekGroup.children.filter(node => node === seekForm).length, 1);
+      assert.equal(loopSeekGroup.children.filter(node => node === loopRangeForm).length, 1);
     }
   } finally { Object.assign(globalThis, previous); }
 });
@@ -731,14 +746,18 @@ test('dual dock pins Generate over the workspace panel and restores a saved Gene
     const secondarySlot = setup.createdNodes.find(node => node.dataset.slot === 'secondary');
     const secondaryBody = secondarySlot.children.find(node => node.className === 'studio-dock-slot-body');
     const coreControls = setup.createdNodes.find(node => node.id === 'studio-core-controls');
+    const generationQuickGroup = setup.createdNodes.find(node => node.className === 'studio-generation-quick-group');
     const generationAnchorActions = setup.nodes.get('#generation-anchor-actions');
     const generationPrimaryActions = setup.nodes.get('.generation-primary-actions');
     assert.equal(generatePanel.parent, generateSlot.children.find(node => node.className === 'studio-dock-slot-body'));
     assert.equal(generatePanel.hidden, false);
-    assert.equal(generationAnchorActions.parent, coreControls);
-    assert.equal(generationPrimaryActions.parent, coreControls);
-    assert.equal(generationAnchorActions.hidden, false);
-    assert.equal(generationPrimaryActions.hidden, false);
+    assert.equal(generationQuickGroup.parent, coreControls);
+    assert.equal(generationAnchorActions.parent, generationQuickGroup);
+    assert.equal(generationPrimaryActions.parent, generationQuickGroup);
+    assert.equal(setup.nodes.get('button[type="submit"]').attributes.get('form'), 'generation-form');
+    assert.equal(coreControls.children.some(node => node.id === 'studio-core-mixer'), false);
+    assert.equal(isVisibleInTree(generationAnchorActions), true);
+    assert.equal(isVisibleInTree(generationPrimaryActions), true);
     assert.equal(setup.doc.body.dataset.studioPanel, 'chords', 'Generate remains pinned while a valid lower panel is selected');
     assert.equal(setup.nodes.get('#harmony-panel').parent, secondaryBody);
     assert.equal(setup.nodes.get('#harmony-panel').hidden, false);
@@ -748,24 +767,24 @@ test('dual dock pins Generate over the workspace panel and restores a saved Gene
     workspace.render(commands.getSong(), commands.getState(), false);
     assert.equal(generatePanel.hidden, false, 'the pinned Generate slot stays available in Rhythm');
     assert.equal(generateSlot.hidden, false, 'Rhythm keeps both dock slots visible');
-    assert.equal(generationAnchorActions.hidden, false, 'Rhythm keeps the pinned Generate setup available');
-    assert.equal(generationPrimaryActions.hidden, false, 'Rhythm keeps the pinned Generate action available');
+    assert.equal(isVisibleInTree(generationAnchorActions), true, 'Rhythm keeps the pinned Generate setup available');
+    assert.equal(isVisibleInTree(generationPrimaryActions), true, 'Rhythm keeps the pinned Generate action available');
     assert.equal(setup.nodes.get('#studio-drum-expression').hidden, false, 'Rhythm opens its drum Expression panel');
 
     commands.setViewMode('score');
     workspace.render(commands.getSong(), commands.getState(), false);
     assert.equal(generatePanel.hidden, false, 'the pinned Generate slot stays available in Notation');
     assert.equal(generateSlot.hidden, false, 'Notation keeps both dock slots visible');
-    assert.equal(generationAnchorActions.hidden, false);
-    assert.equal(generationPrimaryActions.hidden, false);
+    assert.equal(isVisibleInTree(generationAnchorActions), true);
+    assert.equal(isVisibleInTree(generationPrimaryActions), true);
     assert.equal(setup.nodes.get('#studio-mixer').hidden, false, 'Notation keeps Mixer in the secondary slot');
 
     commands.setViewMode('piano-roll');
     workspace.render(commands.getSong(), commands.getState(), false);
     assert.equal(generatePanel.hidden, false, 'Generate returns when Edit is active again');
     assert.equal(generateSlot.hidden, false, 'Edit restores the Generate slot');
-    assert.equal(generationAnchorActions.hidden, false, 'Edit restores Generate anchor actions to the core strip');
-    assert.equal(generationPrimaryActions.hidden, false, 'Edit restores Generate primary actions to the core strip');
+    assert.equal(isVisibleInTree(generationAnchorActions), true, 'Edit keeps Generate anchor actions in the compact core group');
+    assert.equal(isVisibleInTree(generationPrimaryActions), true, 'Edit keeps Generate primary action in the compact core group');
 
     const secondaryToggle = secondarySlot.children[0].children.find(node => 'dockSlotToggle' in node.dataset);
     secondaryToggle.listeners.get('click')();
@@ -985,6 +1004,10 @@ test('large desktop Guitar zone defaults open, can be resized by keyboard and po
     assert.equal(guitarSection.hidden, false);
     assert.equal(toggle.attributes.get('aria-pressed'), 'true');
     assert.equal(resizer.attributes.get('aria-label'), 'guitarZoneResizeLabel');
+    assert.equal(resizer.attributes.get('aria-valuemin'), '280');
+    assert.equal(resizer.attributes.get('aria-valuemax'), '440');
+    assert.equal(setup.nodes.get('#guitar-status').parent, setup.nodes.get('.guitar-local-toolbar'));
+    assert.equal(setup.nodes.get('#guitar-legend').parent, setup.nodes.get('.guitar-local-toolbar'));
     assert.equal(setup.doc.body.dataset.studioPanel, 'chords');
     toggle.click();
     assert.equal(zone.dataset.open, 'false');

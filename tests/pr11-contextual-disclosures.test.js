@@ -27,7 +27,7 @@ async function selectStudioTab(page, name) {
 }
 
 test("wide pinned Generate slot exposes routine generator details without hiding targets behind disclosures", async () => {
-  await withPage({ width: 1440, height: 900 }, async page => {
+  await withPage({ width: 1440, height: 1080 }, async page => {
     const panel = page.locator("#generation-panel");
     assert.equal(await panel.isVisible(), true);
     assert.equal(await page.locator(".studio-dock-slot-generate").isVisible(), true,
