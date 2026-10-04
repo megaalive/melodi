@@ -288,13 +288,17 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   assert.match(css, /@media \(width >= 56rem\) and \(min-height: 501px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 8px var\(--studio-dock-width, clamp\(20rem, 24vw, 30rem\)\)/);
   assert.match(css, /\.workspace-sidebar-resizer:not\(\[hidden\]\):focus-visible/);
   assert.match(css, /\.workspace-sidebar \.studio-panel-switches button\[aria-selected="true"\]/);
-  assert.match(css, /\.studio-guitar-zone\[data-open="true"\]/);
+  // Aturan state memakai id yang sama dengan zonanya, kalau tidak min/max height
+  // kalah spesifisitas dan zona bisa menyusut di bawah tinggi isinya.
+  assert.match(css, /#studio-guitar-zone\[data-open="true"\]/);
   assert.match(css, /height:var\(--studio-guitar-zone-height,clamp\(280px,34dvh,440px\)\)/);
   assert.match(css, /#studio-guitar-zone #guitar-section\{[^}]*min-height:0;overflow:hidden/);
-  assert.match(css, /#studio-guitar-zone #guitar-tab-scroll,#studio-guitar-zone \.guitar-scroll\{[^}]*overflow-y:hidden/);
+  assert.match(css, /#studio-guitar-zone #guitar-tab-scroll,#studio-guitar-zone \.guitar-scroll\{[^}]*overflow:auto/);
   assert.doesNotMatch(css, /\.studio \.guitar-tab-scroll\s*\{\s*min-height:\s*290px/);
   assert.match(css, /\.studio-guitar-resizer:focus-visible/);
-  assert.match(css, /\.mobile-guitar-trigger[^}]*min-height: 44px/);
+  // 44px hanya pada pointer coarse dan <= 46rem; desktop memakai --control-h.
+  assert.match(css, /@media \(pointer:coarse\)\{[\s\S]*?#studio-guitar-zone \.guitar-zone-toggle\{height:var\(--control-h\) !important;\}/);
+  assert.match(css, /:is\(\.guitar-mode-toggle,\.mobile-guitar-trigger\)\{[^}]*min-height:var\(--control-h\)/);
   assert.doesNotMatch(css, /^\.studio #piano-roll-content\s*\{\s*position: relative;/m);
 });
 

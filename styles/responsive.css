@@ -163,7 +163,7 @@
   .studio .zoom-control{flex:0 0 auto;}
   .studio .zoom-control output{width:auto;}
   .studio .editor-toolbar button, .studio .editor-toolbar select{min-height:44px;font-size:var(--text-xs);}
-  .studio .pane-title-row > .guitar-mode-toggle{height:45px;min-height:45px;padding:var(--space-1) var(--space-2);font-size:var(--text-xs);}
+  .studio .pane-title-row > .guitar-mode-toggle{font-size:var(--text-xs);}
   .studio .panel-collapse-button{min-height:44px;width:44px;}
   .studio #roll-zoom{width:50px;height:45px;min-height:45px;}
   .studio .editor-toolbar label:has(#snap-select) > span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
@@ -1023,7 +1023,6 @@
   .studio .studio-toolbar-actions .editor-toolbar{display:flex;flex:0 0 auto;align-items:center;flex-flow:row nowrap;min-width:max-content;min-height:44px;gap:var(--space-1);overflow:visible;}
   .studio .editor-tool-group{display:flex;flex:0 0 auto;flex-direction:row;gap:var(--space-1);width:auto;border:0;}
   .studio .editor-tool-group button, .studio .editor-toolbar button, .studio .editor-toolbar select{min-height:44px;}
-  .studio .studio-toolbar-actions .guitar-mode-toggle{height:45px;min-height:45px;padding:var(--space-1) var(--space-2);}
   .studio .mobile-workspace-dock .transport-main > .mobile-panel-trigger{flex:0 0 68px;min-width:68px;min-height:44px;padding-inline:var(--space-1);}
   .studio .editor-tool-group button{min-width:44px;padding:var(--space-1) var(--space-1);}
   .studio .editor-toolbar label{display:inline-flex;flex:0 0 auto;align-items:center;gap:var(--space-1);white-space:nowrap;}
@@ -1164,7 +1163,7 @@
 }
 .studio #view-controls .studio-toolbar-actions h2{margin:0;font-size:var(--text-xs);line-height:1;white-space:nowrap;}
 .studio #view-controls .studio-toolbar-actions p{display:none !important;}
-.studio #view-controls .studio-toolbar-actions :is(.guitar-mode-toggle, .pane-help-trigger, .score-local-toolbar button, .drums-toolbar button, .drums-toolbar select){min-height:30px;height:30px;padding:var(--space-1) var(--space-1);font-size:var(--text-xs);}
+.studio #view-controls .studio-toolbar-actions :is(.pane-help-trigger, .score-local-toolbar button, .drums-toolbar button, .drums-toolbar select){min-height:var(--control-h);height:var(--control-h);padding:var(--space-1) var(--space-1);font-size:var(--text-xs);}
 .studio .workspace-grid,
 .studio .workspace-canvas,
 .studio #piano-roll-section,
@@ -1364,7 +1363,7 @@
   .studio .mobile-workspace-dock > .studio-views > button{flex:0 0 auto;min-width:44px;height:44px;min-height:44px;white-space:nowrap;}
   .studio .mobile-workspace-dock > .studio-panel-switches > button{min-width:44px;}
   .studio #piano-roll-section .guitar-mode-toggle{display:none;}
-  .studio .header-actions > .mobile-guitar-trigger{min-height:44px;}
+  .studio .header-actions > .mobile-guitar-trigger{min-height:var(--control-h);}
 }
 
 @media (width >= 56rem) and (min-height: 501px){

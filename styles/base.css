@@ -1232,7 +1232,7 @@ posisi yang bisa memainkan note terpilih. */
 .guitar-scroll{
   width:100%;
   overflow-x:auto;
-  padding-bottom:0.3rem;
+  padding-bottom:var(--space-1);
 }
 #guitar{display:block;max-width:none;}
 
@@ -2715,7 +2715,6 @@ details[open] > .disclosure-summary .disclosure-chevron{
   background:var(--surface-subtle);
 }
 .guitar-layout-group button{
-  min-height:1.95rem;
   padding:var(--space-1) var(--space-2);
   border-color:transparent;
   background:transparent;
@@ -2736,7 +2735,7 @@ details[open] > .disclosure-summary .disclosure-chevron{
   width:100%;
   max-width:100%;
   overflow:auto;
-  padding-bottom:0.25rem;
+  padding-bottom:var(--space-1);
   border:1px solid var(--border-strong);
   border-radius:0.45rem;
   background:var(--surface);

@@ -61,7 +61,7 @@ export function createStudioWorkspace(commands, translate, onError, {
   const followToolsControl = document.querySelector('.follow-mode-tools-control');
   const guitarSection = byId('guitar-section');
   const workspaceCanvas = byId('workspace-canvas');
-  const guitarZoneMinHeight = 280;
+  const guitarZoneFloorHeight = 280;
   const guitarZoneMaxHeight = 440;
   const coreControls = document.createElement('section');
   coreControls.id = 'studio-core-controls';
@@ -112,12 +112,6 @@ export function createStudioWorkspace(commands, translate, onError, {
     ? initialGuitarZoneOpen
     : typeof window !== 'undefined' && window.matchMedia('(width >= 90rem)').matches && window.innerHeight >= 800;
   const hasSavedGuitarZoneHeight = Number.isFinite(initialGuitarZoneHeight);
-  const defaultGuitarZoneHeight = () => Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight,
-    Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * 0.34)));
-  let guitarZoneHeight = hasSavedGuitarZoneHeight
-    ? Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight, Math.round(initialGuitarZoneHeight)))
-    : defaultGuitarZoneHeight();
-  let guitarZoneHeightExplicit = hasSavedGuitarZoneHeight;
   const guitarZoneToggle = document.createElement('button');
   guitarZoneToggle.type = 'button';
   guitarZoneToggle.className = 'secondary guitar-zone-toggle';
@@ -148,6 +142,32 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarZone.append(guitarResizer);
   if (guitarSection) guitarZone.append(guitarSection);
   workspaceCanvas?.append(guitarZone);
+  // Tinggi minimum mengikuti isi zona: judul, splitter, dan kanvas TAB atau
+  // Fretboard. Kalau splitter boleh lebih kecil, kanvas terpotong diam-diam.
+  function guitarZoneContentHeight() {
+    const headingHeight = guitarHeading?.offsetHeight ?? 0;
+    const resizerHeight = guitarResizer.offsetHeight || 8;
+    const canvasHeight = Math.max(
+      Number(byId('guitar-tab')?.getAttribute('height')) || 0,
+      Number(byId('guitar')?.getAttribute('height')) || 0,
+    );
+    let decoration = 0;
+    const measureBox = element => {
+      if (!element || typeof getComputedStyle !== 'function') return 0;
+      const style = getComputedStyle(element);
+      return ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth']
+        .reduce((total, property) => total + (Number.parseFloat(style[property]) || 0), 0);
+    };
+    decoration = measureBox(guitarSection) + Math.max(measureBox(byId('guitar-tab-scroll')), measureBox(byId('guitar-scroll')));
+    return Math.ceil(headingHeight + resizerHeight + canvasHeight + decoration);
+  }
+  const guitarZoneMinHeight = () => Math.max(guitarZoneFloorHeight, guitarZoneContentHeight());
+  const defaultGuitarZoneHeight = () => Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight,
+    Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * 0.34)));
+  let guitarZoneHeight = hasSavedGuitarZoneHeight
+    ? Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight, Math.round(initialGuitarZoneHeight)))
+    : defaultGuitarZoneHeight();
+  let guitarZoneHeightExplicit = hasSavedGuitarZoneHeight;
   const headerActions = document.querySelector('.header-actions');
   const projectMenu = document.querySelector('.project-menu');
   const projectSummary = projectMenu.querySelector('summary');
@@ -441,18 +461,22 @@ export function createStudioWorkspace(commands, translate, onError, {
     render(commands.getSong(), commands.getState(), false);
   }
   function setGuitarZoneHeight(value, persist = false) {
-    guitarZoneHeight = Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight, Math.round(Number(value) || defaultGuitarZoneHeight())));
+    guitarZoneHeight = Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight, Math.round(Number(value) || defaultGuitarZoneHeight())));
     guitarZoneHeightExplicit = true;
     workspaceCanvas?.style?.setProperty('--studio-guitar-zone-height', `${guitarZoneHeight}px`);
     syncGuitarZoneHeightAttributes();
     if (persist) onGuitarZonePreferencesChange({ guitarZoneHeight });
   }
   function syncGuitarZoneHeightAttributes() {
+    const minimum = guitarZoneMinHeight();
+    // CSS menegakkan minimum yang sama, jadi aria-valuenow tidak boleh lebih kecil.
+    const announced = Math.max(minimum, guitarZoneHeight);
+    workspaceCanvas?.style?.setProperty('--studio-guitar-zone-min', `${minimum}px`);
     guitarResizer.setAttribute('aria-label', translate('guitarZoneResizeLabel'));
-    guitarResizer.setAttribute('aria-valuemin', String(guitarZoneMinHeight));
+    guitarResizer.setAttribute('aria-valuemin', String(minimum));
     guitarResizer.setAttribute('aria-valuemax', String(guitarZoneMaxHeight));
-    guitarResizer.setAttribute('aria-valuenow', String(guitarZoneHeight));
-    guitarResizer.setAttribute('aria-valuetext', translate('guitarZoneResizeValue', { height: guitarZoneHeight }));
+    guitarResizer.setAttribute('aria-valuenow', String(announced));
+    guitarResizer.setAttribute('aria-valuetext', translate('guitarZoneResizeValue', { height: announced }));
   }
   syncGuitarZoneControls();
   if (hasSavedGuitarZoneHeight) setGuitarZoneHeight(guitarZoneHeight);
@@ -466,7 +490,7 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarResizer.addEventListener('pointerdown', event => {
     if (!guitarZoneOpen || guitarResizer.hidden || event.button !== 0 || !event.isPrimary) return;
     const measuredHeight = Math.round(guitarZone.getBoundingClientRect?.().height || guitarZoneHeight);
-    guitarZoneHeight = Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight, measuredHeight));
+    guitarZoneHeight = Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight, measuredHeight));
     syncGuitarZoneHeightAttributes();
     guitarResizePointer = {
       id: event.pointerId,
@@ -500,7 +524,7 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarResizer.addEventListener('keydown', event => {
     if (!guitarZoneOpen || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
     const step = event.shiftKey ? 32 : 16;
-    const nextHeight = event.key === 'Home' ? guitarZoneMinHeight : event.key === 'End' ? guitarZoneMaxHeight
+    const nextHeight = event.key === 'Home' ? guitarZoneMinHeight() : event.key === 'End' ? guitarZoneMaxHeight
       : guitarZoneHeight + (event.key === 'ArrowUp' ? step : -step);
     event.preventDefault();
     setGuitarZoneHeight(nextHeight, true);
@@ -1399,7 +1423,14 @@ export function createStudioWorkspace(commands, translate, onError, {
     moreSummary.setAttribute('aria-label', translate('transportAdvanced'));
     if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing,translate('studioSeekBar', {bar:1})])) renderOverview(song);
     updatePlayback(song,state.playback);
-    if (!guitarZone.hidden && !guitarSection?.hidden) onGuitarZoneLayout();
+    if (!guitarZone.hidden && !guitarSection?.hidden) {
+      // Kanvas TAB/Fretboard baru punya tinggi pasti setelah render, jadi minimum
+      // zona dihitung ulang di sini; tanpa itu zona default masih boleh lebih kecil
+      // dari isinya dan kanvas terpotong.
+      onGuitarZoneLayout();
+      syncGuitarZoneHeightAttributes();
+      if (guitarZoneHeightExplicit) setGuitarZoneHeight(guitarZoneHeight);
+    }
   }
   return {render,openPanel,updatePlayback};
 }
