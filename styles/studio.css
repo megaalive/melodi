@@ -25,7 +25,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .mobile-workspace-dock > .studio-views > button{flex:1 1 0;min-width:0;height:44px;min-height: 44px;padding:var(--space-1) var(--space-1);border:0;border-top:3px solid transparent;font-size:var(--text-xs);}
 .studio .mobile-workspace-dock > .studio-views > button[aria-pressed="true"]{border-top-color:var(--studio-accent);border-bottom-color:transparent;}
 .studio .brand-block h1{font-size:var(--text-lg);letter-spacing:-.5px;}
-.studio .brand-block h1::after{content:' / STUDIO';font-size:var(--text-xs);letter-spacing:2px;color:#8fa6aa;margin-left:var(--space-2);font-weight:500;}
+.studio .brand-block h1::after{content:' / STUDIO';font-size:var(--text-xs);letter-spacing:2px;color:var(--text-muted);margin-left:var(--space-2);font-weight:500;}
 .studio .page-header button, .studio .page-header select, .studio .project-menu-trigger{min-height:32px;background:var(--surface);color:var(--text);border-color:var(--border-strong);font-size:var(--text-xs);}
 .studio .header-actions, .studio .header-controls{gap:var(--space-2);}
 .studio .header-actions .command-button{width:32px;min-width:32px;height:32px;min-height:32px;padding:var(--space-1);}
