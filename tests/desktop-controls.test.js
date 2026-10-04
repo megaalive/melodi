@@ -7,7 +7,7 @@ test("wide default exposes routine project, language, palette, history, and foll
   const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1080 } });
     await page.goto(url, { waitUntil: "networkidle", timeout: 15000 });
     await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 10000 });
     const audit = await measurePage(page);

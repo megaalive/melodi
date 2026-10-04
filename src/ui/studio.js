@@ -26,9 +26,10 @@ export function createStudioWorkspace(commands, translate, onError, {
   initialDockVisibleCount = 2,
   initialDockPanelByWorkspace = null,
   initialGuitarZoneOpen = null,
-  initialGuitarZoneHeight = 220,
+  initialGuitarZoneHeight = null,
   onDockPreferencesChange = () => {},
   onGuitarZonePreferencesChange = () => {},
+  onGuitarZoneLayout = () => {},
   onOpenPanel = () => {}
 } = {}) {
   const byId = id => document.getElementById(id);
@@ -50,7 +51,6 @@ export function createStudioWorkspace(commands, translate, onError, {
   let previousViewMode = null;
   let previousWorkspace = null;
   let coreControlsVisible = false;
-  let coreGenerationActions = [];
   let lastChord = null;
   let overviewSong = null;
   const sidebar = document.querySelector('.workspace-sidebar');
@@ -61,6 +61,8 @@ export function createStudioWorkspace(commands, translate, onError, {
   const followToolsControl = document.querySelector('.follow-mode-tools-control');
   const guitarSection = byId('guitar-section');
   const workspaceCanvas = byId('workspace-canvas');
+  const guitarZoneMinHeight = 280;
+  const guitarZoneMaxHeight = 440;
   const coreControls = document.createElement('section');
   coreControls.id = 'studio-core-controls';
   coreControls.className = 'studio-core-controls';
@@ -72,26 +74,13 @@ export function createStudioWorkspace(commands, translate, onError, {
   coreMixer.className = 'studio-core-mixer';
   coreMixer.dataset.ariaCopy = 'studioMixer';
   coreMixer.setAttribute('role', 'group');
-  const makeCoreMixChannel = (channelId, labelKey, muteKey, soloKey) => {
-    const group = document.createElement('div');
-    group.className = `studio-core-mix-channel studio-core-mix-${channelId}`;
-    group.dataset.channelId = channelId;
-    group.setAttribute('role', 'group');
-    const label = document.createElement('strong');
-    label.dataset.copy = labelKey;
-    const button = flag => {
-      const control = document.createElement('button');
-      control.type = 'button';
-      control.className = 'instrument-mix-button';
-      control.dataset.action = `toggle-instrument-${flag}`;
-      control.dataset.channelId = channelId;
-      control.dataset.mixFlag = flag;
-      control.dataset.copy = flag === 'mute' ? 'mixMuteShort' : 'mixSoloShort';
-      control.dataset.ariaCopy = flag === 'mute' ? muteKey : soloKey;
-      control.dataset.focusKey = `core-mix:${channelId}:${flag}`;
-      control.setAttribute('aria-pressed', 'false');
-      return control;
-    };
+  const makeCoreMixChannel = (channelId, labelKey) => {
+    const label = document.createElement('label');
+    label.className = 'studio-core-mix-channel';
+    label.dataset.channelId = channelId;
+    const name = document.createElement('span');
+    name.dataset.copy = labelKey;
+    name.textContent = translate(labelKey);
     const volume = document.createElement('input');
     volume.type = 'range';
     volume.min = '0';
@@ -102,14 +91,19 @@ export function createStudioWorkspace(commands, translate, onError, {
     volume.dataset.channelId = channelId;
     volume.dataset.channelVolume = '';
     volume.dataset.focusKey = `core-mix:${channelId}:volume`;
-    group.append(label, button('mute'), button('solo'), volume);
-    return group;
+    label.append(name, volume);
+    return label;
   };
   coreMixer.append(
-    makeCoreMixChannel('melody', 'melodyInstrumentLabel', 'mixMuteMelodyAria', 'mixSoloMelodyAria'),
-    makeCoreMixChannel('harmony', 'sketchHarmony', 'sketchHarmonyMute', 'mixSoloHarmonyAria'),
-    makeCoreMixChannel('bass', 'sketchBass', 'sketchBassMute', 'mixSoloBassAria')
+    makeCoreMixChannel('melody', 'melodyInstrumentLabel'),
+    makeCoreMixChannel('harmony', 'sketchHarmony'),
+    makeCoreMixChannel('bass', 'sketchBass')
   );
+  coreMixer.setAttribute('aria-label', translate('studioMixer'));
+  const syncCoreMixerLabels = () => {
+    coreMixer.setAttribute('aria-label', translate('studioMixer'));
+    for (const name of coreMixer.querySelectorAll('[data-copy]')) name.textContent = translate(name.dataset.copy);
+  };
   const guitarZone = document.createElement('section');
   guitarZone.id = 'studio-guitar-zone';
   guitarZone.className = 'studio-guitar-zone';
@@ -117,8 +111,13 @@ export function createStudioWorkspace(commands, translate, onError, {
   let guitarZoneOpen = typeof initialGuitarZoneOpen === 'boolean'
     ? initialGuitarZoneOpen
     : typeof window !== 'undefined' && window.matchMedia('(width >= 90rem)').matches && window.innerHeight >= 800;
-  let guitarZoneHeight = Number.isFinite(initialGuitarZoneHeight)
-    ? Math.max(120, Math.min(480, Math.round(initialGuitarZoneHeight))) : 220;
+  const hasSavedGuitarZoneHeight = Number.isFinite(initialGuitarZoneHeight);
+  const defaultGuitarZoneHeight = () => Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight,
+    Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * 0.34)));
+  let guitarZoneHeight = hasSavedGuitarZoneHeight
+    ? Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight, Math.round(initialGuitarZoneHeight)))
+    : defaultGuitarZoneHeight();
+  let guitarZoneHeightExplicit = hasSavedGuitarZoneHeight;
   const guitarZoneToggle = document.createElement('button');
   guitarZoneToggle.type = 'button';
   guitarZoneToggle.className = 'secondary guitar-zone-toggle';
@@ -128,6 +127,14 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarZoneToggle.setAttribute('aria-controls', 'guitar-section');
   const guitarLocalToolbar = guitarSection?.querySelector('.guitar-local-toolbar');
   guitarLocalToolbar?.append(guitarZoneToggle);
+  const guitarStatus = byId('guitar-status');
+  if (guitarStatus && guitarLocalToolbar && guitarStatus.parentElement !== guitarLocalToolbar) {
+    guitarLocalToolbar.append(guitarStatus);
+  }
+  const guitarLegend = byId('guitar-legend');
+  if (guitarLegend && guitarLocalToolbar && guitarLegend.parentElement !== guitarLocalToolbar) {
+    guitarLocalToolbar.append(guitarLegend);
+  }
   const guitarResizer = document.createElement('div');
   guitarResizer.id = 'studio-guitar-resizer';
   guitarResizer.className = 'studio-guitar-resizer';
@@ -182,6 +189,22 @@ export function createStudioWorkspace(commands, translate, onError, {
   const generationPanel = byId('generation-panel');
   const generationForm = byId('generation-form');
   const generationFormHome = generationForm?.parentElement;
+  const generationAnchorActions = generationForm?.querySelector('#generation-anchor-actions');
+  const generationPrimaryActions = generationForm?.querySelector('.generation-primary-actions');
+  const generateButton = generationPrimaryActions?.querySelector('button[type="submit"]');
+  const generationQuickGroup = document.createElement('div');
+  generationQuickGroup.className = 'studio-generation-quick-group';
+  generationQuickGroup.setAttribute('role', 'group');
+  const generationQuickGroupLabel = document.createElement('span');
+  generationQuickGroupLabel.className = 'studio-generation-quick-label';
+  generationQuickGroupLabel.classList.add('visually-hidden');
+  const syncGenerationQuickGroup = () => {
+    const label = translate('generationHeading');
+    generationQuickGroup.setAttribute('aria-label', label);
+    generationQuickGroupLabel.textContent = label;
+  };
+  syncGenerationQuickGroup();
+  generationQuickGroup.append(generationQuickGroupLabel);
   const selectionBar = document.createElement('div');
   selectionBar.id = 'note-selection-bar';
   selectionBar.className = 'note-selection-bar';
@@ -297,6 +320,38 @@ export function createStudioWorkspace(commands, translate, onError, {
   document.querySelector('.brand-block').append(document.querySelector('.song-strip'));
   const transportSettings = document.querySelector('.playback-settings-group');
   const advancedBody = document.querySelector('.transport-advanced-grid');
+  const seekForm = document.querySelector('form[data-action="seek"]');
+  const loopRangeForm = advancedBody?.querySelector('form.loop-range') || coreControls.querySelector('form.loop-range');
+  const loopSeekGroup = document.createElement('div');
+  loopSeekGroup.className = 'studio-loop-seek-group';
+  loopSeekGroup.setAttribute('role', 'group');
+  const loopSeekLabel = document.createElement('span');
+  loopSeekLabel.className = 'studio-loop-seek-label';
+  const loopSeekGroupLabel = () => `${translate('loopEnabledLabel')} / ${translate('seekButton')}`;
+  const loopSeekCopy = [
+    [seekForm?.querySelector('label > span'), 'studioSeekTickShortLabel'],
+    [loopRangeForm?.querySelector('label:nth-of-type(1) > span'), 'studioLoopStartShortLabel'],
+    [loopRangeForm?.querySelector('label:nth-of-type(2) > span'), 'studioLoopEndShortLabel'],
+    [loopRangeForm?.querySelector('button[type="submit"]'), 'studioApplyLoopShortButton']
+  ].filter(([element]) => element);
+  const loopSeekAria = [
+    [seekForm?.querySelector('label > input'), 'seekTickLabel'],
+    [loopRangeForm?.querySelector('label:nth-of-type(1) > input'), 'loopStartLabel'],
+    [loopRangeForm?.querySelector('label:nth-of-type(2) > input'), 'loopEndLabel'],
+    [loopRangeForm?.querySelector('button[type="submit"]'), 'applyLoopButton']
+  ].filter(([element]) => element);
+  for (const [element, copy] of loopSeekCopy) element.dataset.copy = copy;
+  const syncLoopSeekCopy = () => {
+    for (const [element, copy] of loopSeekCopy) element.textContent = translate(copy);
+  };
+  const syncLoopSeekAria = () => {
+    for (const [element, copy] of loopSeekAria) element.setAttribute('aria-label', translate(copy));
+  };
+  syncLoopSeekCopy();
+  syncLoopSeekAria();
+  loopSeekGroup.setAttribute('aria-label', loopSeekGroupLabel());
+  loopSeekLabel.textContent = loopSeekGroupLabel();
+  loopSeekGroup.append(loopSeekLabel, ...[seekForm, loopRangeForm].filter(Boolean));
   const tempo = document.querySelector('.tempo-control');
   const follow = document.querySelector('.follow-mode-control');
   const transportMain = document.querySelector('.transport-main');
@@ -373,6 +428,7 @@ export function createStudioWorkspace(commands, translate, onError, {
     guitarMode.setAttribute('aria-pressed', String(guitarZoneOpen));
     guitarSheetTrigger.setAttribute('aria-pressed', String(panel === 'guitar'));
     guitarZone.dataset.open = String(guitarZoneOpen);
+    workspaceCanvas.dataset.guitarZoneOpen = String(guitarZoneOpen);
     guitarSection.dataset.guitarZoneOpen = String(guitarZoneOpen);
     guitarResizer.hidden = !guitarZoneOpen;
   }
@@ -385,21 +441,39 @@ export function createStudioWorkspace(commands, translate, onError, {
     render(commands.getSong(), commands.getState(), false);
   }
   function setGuitarZoneHeight(value, persist = false) {
-    guitarZoneHeight = Math.max(120, Math.min(480, Math.round(Number(value) || 220)));
+    guitarZoneHeight = Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight, Math.round(Number(value) || defaultGuitarZoneHeight())));
+    guitarZoneHeightExplicit = true;
     workspaceCanvas?.style?.setProperty('--studio-guitar-zone-height', `${guitarZoneHeight}px`);
-    guitarResizer.setAttribute('aria-label', translate('guitarZoneResizeLabel'));
-    guitarResizer.setAttribute('aria-valuemin', '120');
-    guitarResizer.setAttribute('aria-valuemax', '480');
-    guitarResizer.setAttribute('aria-valuenow', String(guitarZoneHeight));
-    guitarResizer.setAttribute('aria-valuetext', translate('guitarZoneResizeValue', { height: guitarZoneHeight }));
+    syncGuitarZoneHeightAttributes();
     if (persist) onGuitarZonePreferencesChange({ guitarZoneHeight });
   }
+  function syncGuitarZoneHeightAttributes() {
+    guitarResizer.setAttribute('aria-label', translate('guitarZoneResizeLabel'));
+    guitarResizer.setAttribute('aria-valuemin', String(guitarZoneMinHeight));
+    guitarResizer.setAttribute('aria-valuemax', String(guitarZoneMaxHeight));
+    guitarResizer.setAttribute('aria-valuenow', String(guitarZoneHeight));
+    guitarResizer.setAttribute('aria-valuetext', translate('guitarZoneResizeValue', { height: guitarZoneHeight }));
+  }
   syncGuitarZoneControls();
-  setGuitarZoneHeight(guitarZoneHeight);
+  if (hasSavedGuitarZoneHeight) setGuitarZoneHeight(guitarZoneHeight);
+  else syncGuitarZoneHeightAttributes();
+  if (typeof window !== 'undefined') window.addEventListener?.('resize', () => {
+    if (guitarZoneHeightExplicit) return;
+    guitarZoneHeight = defaultGuitarZoneHeight();
+    syncGuitarZoneHeightAttributes();
+  });
   let guitarResizePointer = null;
   guitarResizer.addEventListener('pointerdown', event => {
     if (!guitarZoneOpen || guitarResizer.hidden || event.button !== 0 || !event.isPrimary) return;
-    guitarResizePointer = { id: event.pointerId, y: event.clientY, height: guitarZoneHeight };
+    const measuredHeight = Math.round(guitarZone.getBoundingClientRect?.().height || guitarZoneHeight);
+    guitarZoneHeight = Math.max(guitarZoneMinHeight, Math.min(guitarZoneMaxHeight, measuredHeight));
+    syncGuitarZoneHeightAttributes();
+    guitarResizePointer = {
+      id: event.pointerId,
+      y: event.clientY,
+      height: guitarZoneHeight,
+      wasExplicit: guitarZoneHeightExplicit
+    };
     try { guitarResizer.setPointerCapture(event.pointerId); } catch {}
     event.preventDefault();
   });
@@ -414,13 +488,19 @@ export function createStudioWorkspace(commands, translate, onError, {
   });
   guitarResizer.addEventListener('pointercancel', event => {
     if (guitarResizePointer?.id !== event.pointerId) return;
-    setGuitarZoneHeight(guitarResizePointer.height);
+    if (guitarResizePointer.wasExplicit) setGuitarZoneHeight(guitarResizePointer.height);
+    else {
+      guitarZoneHeightExplicit = false;
+      guitarZoneHeight = defaultGuitarZoneHeight();
+      workspaceCanvas?.style?.removeProperty?.('--studio-guitar-zone-height');
+      syncGuitarZoneHeightAttributes();
+    }
     guitarResizePointer = null;
   });
   guitarResizer.addEventListener('keydown', event => {
     if (!guitarZoneOpen || !['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
     const step = event.shiftKey ? 32 : 16;
-    const nextHeight = event.key === 'Home' ? 120 : event.key === 'End' ? 480
+    const nextHeight = event.key === 'Home' ? guitarZoneMinHeight : event.key === 'End' ? guitarZoneMaxHeight
       : guitarZoneHeight + (event.key === 'ArrowUp' ? step : -step);
     event.preventDefault();
     setGuitarZoneHeight(nextHeight, true);
@@ -507,7 +587,7 @@ export function createStudioWorkspace(commands, translate, onError, {
   const phone = matchMedia('(width <= 46rem)');
   const wide = matchMedia('(width >= 68rem)');
   const extraWide = matchMedia('(width >= 90rem)');
-  const dualDock = matchMedia('(width >= 90rem) and (min-height: 800px)');
+  const dualDock = matchMedia('(width >= 90rem) and (min-height: 1000px)');
   const compact = matchMedia('(width <= 46rem), (orientation: landscape) and (max-height: 500px) and (width < 68rem)');
   const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 500px)');
   const sideDock = matchMedia('(width >= 56rem) and (min-height: 501px)');
@@ -705,18 +785,16 @@ export function createStudioWorkspace(commands, translate, onError, {
     guitarSheetTrigger.remove();
     if (phone.matches && rollHelpTrigger) morePopover.append(rollHelpTrigger);
     else if (rollHelpTrigger) rollHelpHome?.append(rollHelpTrigger);
-    const seekForm = document.querySelector('form[data-action="seek"]');
-    const loopRangeForm = advancedBody?.querySelector('form.loop-range') || coreControls.querySelector('form.loop-range');
-    const generationPrimaryActions = generationForm?.querySelector('.generation-primary-actions') || coreControls.querySelector('.generation-primary-actions');
-    const generationAnchorActions = generationForm?.querySelector('#generation-anchor-actions') || coreControls.querySelector('#generation-anchor-actions');
-    coreGenerationActions = [generationAnchorActions, generationPrimaryActions].filter(Boolean);
-    const generateButton = generationPrimaryActions?.querySelector('button[type="submit"]');
-    const generationActionsNext = generationForm?.querySelector('#generation-lock-help');
     mobileDock.hidden = !compact.matches;
     const wideLayout = wide.matches;
     const mediumLayout = !wide.matches && !compact.matches && !shortLandscape.matches;
     const shortLandscapeLayout = shortLandscape.matches && !wide.matches;
+    const mediumDesktopLayout = wide.matches && !extraWide.matches && !shortLandscape.matches;
     const sideDockLayout = sideDock.matches && !shortLandscapeLayout;
+    if (dualDock.matches) coreMixer.remove();
+    for (const form of [seekForm, loopRangeForm]) {
+      form?.querySelectorAll('label > span').forEach(label => label.classList.remove('visually-hidden'));
+    }
     if (compact.matches && !shortLandscapeLayout && rollCollapse) {
       if (phone.matches) morePopover.append(rollCollapse);
       else modeNav.append(rollCollapse);
@@ -762,7 +840,6 @@ export function createStudioWorkspace(commands, translate, onError, {
       editorSettings.setAttribute('aria-label', translate('editorSettingsHeading'));
       if (editorTools.parentElement !== editorSettings) editorSettings.prepend(editorTools);
       morePopover.append(editorSettings);
-      coreMixer.remove();
       if (sessionActions) byId('generation-panel').append(sessionActions);
     } else if (wideLayout || mediumLayout) {
       modeNav.append(panelDockTrigger);
@@ -807,9 +884,6 @@ export function createStudioWorkspace(commands, translate, onError, {
     coreControlsVisible = wideLayout || mediumLayout;
     coreControls.hidden = !coreControlsVisible;
     if (coreControlsVisible) coreControls.setAttribute('aria-label', translate('studioCoreControlsHeading'));
-    for (const form of [seekForm, loopRangeForm]) {
-      form?.querySelectorAll('label > span').forEach(label => label.classList.toggle('visually-hidden', coreControlsVisible));
-    }
     if (coreControlsVisible && !compact.matches) {
       if (editorTools.parentElement !== editorToolbar) editorToolbar.prepend(editorTools);
       if (editorZoomControl && editorZoomControl.parentElement !== editorToolbar) {
@@ -820,26 +894,25 @@ export function createStudioWorkspace(commands, translate, onError, {
       generationFormHome?.append(generationForm);
       if (loopToggleHome) loopToggleHome.append(loopToggle);
       if (resetRangeHome) resetRangeHome.append(resetRange);
-      if (seekForm) coreControls.append(seekForm);
-      if (loopRangeForm) coreControls.append(loopRangeForm);
-      if (generateButton) generateButton.setAttribute('form', generationForm.id);
+      loopSeekGroup.append(...[seekForm, loopRangeForm].filter(Boolean));
+      generationQuickGroup.append(...[generationAnchorActions, generationPrimaryActions].filter(Boolean));
+      generateButton?.setAttribute('form', generationForm.id || 'generation-form');
       coreControls.append(...[
+        !dualDock.matches ? coreMixer : null,
+        mediumDesktopLayout ? tempo : null,
+        loopSeekGroup,
         editorToolbar,
         !extraWide.matches ? historyButtons : null,
         chordQuickGroup,
-        coreMixer,
-        generationAnchorActions,
-        generationPrimaryActions,
+        generationQuickGroup,
         !extraWide.matches ? loopToggle : null,
         !extraWide.matches ? follow : null
       ].filter(Boolean));
     } else {
       generationFormHome?.append(generationForm);
-      if (generationAnchorActions && generationForm) {
-        generationForm.insertBefore(generationAnchorActions, generationForm.querySelector('.generation-options'));
-      }
-      if (generationPrimaryActions && generationForm) {
-        generationForm.insertBefore(generationPrimaryActions, generationActionsNext?.parentNode === generationForm ? generationActionsNext : null);
+      if (generationForm) {
+        if (generationAnchorActions) generationForm.prepend(generationAnchorActions);
+        if (generationPrimaryActions) generationForm.append(generationPrimaryActions);
       }
       generateButton?.removeAttribute('form');
       if (loopRangeForm && loopRangeForm.parentElement !== advancedBody) advancedBody.append(loopRangeForm);
@@ -1183,6 +1256,13 @@ export function createStudioWorkspace(commands, translate, onError, {
     track.setAttribute('aria-valuetext', translate('studioSeekBar', {bar:position.bar, beat:position.beat}));
   }
   function render(song,state,autoSelect=true) {
+    syncCoreMixerLabels();
+    const loopSeekLabelText = loopSeekGroupLabel();
+    loopSeekGroup.setAttribute('aria-label', loopSeekLabelText);
+    loopSeekLabel.textContent = loopSeekLabelText;
+    syncLoopSeekCopy();
+    syncLoopSeekAria();
+    syncGenerationQuickGroup();
     if (autoSelect && state.selectedChordId && state.selectedChordId !== lastChord) {
       panel = 'chords'; lastPanel = panel;
       if (sideDock.matches && !dockOpen) { dockOpen = true; onDockPreferencesChange({ dockOpen }); }
@@ -1199,7 +1279,6 @@ export function createStudioWorkspace(commands, translate, onError, {
     previousViewMode = mode;
     const activeWorkspace = workspaceForMode(mode);
     if (dualDock.matches) arrangePanelSlots();
-    for (const actions of coreGenerationActions) actions.hidden = false;
     if (previousWorkspace !== null && activeWorkspace !== previousWorkspace) {
       const previousTab = dockTabFor(panel, previousWorkspace);
       if (previousTab && !(dualDock.matches && dockPanelByWorkspace[previousWorkspace] === 'generate')) {
@@ -1265,7 +1344,7 @@ export function createStudioWorkspace(commands, translate, onError, {
       dockResizer.setAttribute('aria-valuetext', translate('dockResizeValue', { width: visibleWidth }));
     }
     guitarZone.hidden = !guitarAvailable || compact.matches && !guitarSheetOpen;
-    guitarZone.style.setProperty('--studio-guitar-zone-height', `${guitarZoneHeight}px`);
+    if (guitarZoneHeightExplicit) guitarZone.style.setProperty('--studio-guitar-zone-height', `${guitarZoneHeight}px`);
     if (guitarSection) guitarSection.hidden = !guitarZoneOpen || !guitarAvailable;
     byId('studio-mixer').hidden = panel !== 'mixer';
     byId('harmony-panel').hidden = panel !== 'chords';
@@ -1324,6 +1403,7 @@ export function createStudioWorkspace(commands, translate, onError, {
     moreSummary.setAttribute('aria-label', translate('transportAdvanced'));
     if (overviewSong !== JSON.stringify([song.notes,song.chords,song.tracks,song.timing,translate('studioSeekBar', {bar:1})])) renderOverview(song);
     updatePlayback(song,state.playback);
+    if (!guitarZone.hidden && !guitarSection?.hidden) onGuitarZoneLayout();
   }
   return {render,openPanel,updatePlayback};
 }
