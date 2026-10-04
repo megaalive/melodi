@@ -3,8 +3,11 @@ import { test } from "node:test";
 import { readAppStyles } from "./helpers/read-app-styles.js";
 
 // Count normalized LF bytes so the budget is stable across Windows CRLF and
-// Linux LF checkouts. Keep the active CSS at the original 224 KB hard limit.
-const ACTIVE_CSS_BUDGET_BYTES = 224_000;
+// Linux LF checkouts. 224 KB -> 225 KB: the Panel toggle became a real component
+// (icon+label group in the transport plus its own states), which costs ~0.9 KB.
+// The guard still exists to catch drift between rounds, so it keeps roughly the
+// same headroom as before instead of being removed.
+const ACTIVE_CSS_BUDGET_BYTES = 225_000;
 
 test("active imported CSS stays within its tracked byte budget", () => {
   const normalizedStyles = readAppStyles().replace(/\r\n?/g, "\n");

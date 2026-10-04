@@ -113,12 +113,12 @@
               <div class="transport-advanced-grid">
                 <form class="transport-form" data-action="seek">
                   <label><span data-copy="seekTickLabel"></span><input id="seek-tick" name="tick" type="number" min="0" step="1" value="0" required></label>
-                  <button type="submit" data-action="seek" data-copy="seekButton"></button>
+                  <button type="submit" class="secondary" data-action="seek" data-copy="seekButton"></button>
                 </form>
                 <form class="transport-form loop-range" data-action="set-loop">
                   <label><span data-copy="loopStartLabel"></span><input id="loop-start" name="startTick" type="number" min="0" step="1" value="0" required></label>
                   <label><span data-copy="loopEndLabel"></span><input id="loop-end" name="endTick" type="number" min="1" step="1" value="1920" required></label>
-                  <button type="submit" data-action="set-loop" data-copy="applyLoopButton"></button>
+                  <button type="submit" class="secondary" data-action="set-loop" data-copy="applyLoopButton"></button>
                 </form>
               </div>
             <div class="history-buttons" role="group" data-aria-copy="editHistoryLabel">
@@ -221,7 +221,7 @@
                         <label><span data-copy="harmonyQuality"></span><select id="chord-draw-quality" data-action="set-chord-draw" data-focus-key="chord-draw-quality" data-aria-copy="harmonyDrawQuality"><option value="major" data-copy="harmonyMajor"></option><option value="minor" selected data-copy="harmonyMinor"></option><option value="diminished" data-copy="harmonyDiminished"></option><option value="augmented" data-copy="harmonyAugmented"></option></select></label>
                       </div>
                     </details>
-                    <button type="submit" data-copy="harmonySuggest"></button><button type="button" data-action="add-chord" data-copy="harmonyAdd"></button><button id="harmony-clear" type="button" class="secondary" data-action="clear-harmony" data-copy="harmonyClear"></button>
+                    <button type="submit" class="secondary" data-copy="harmonySuggest"></button><button type="button" class="secondary" data-action="add-chord" data-copy="harmonyAdd"></button><button id="harmony-clear" type="button" class="secondary" data-action="clear-harmony" data-copy="harmonyClear"></button>
                   </div>
                 </form>
                 <p id="harmony-status" class="muted" aria-live="polite"></p><ol id="harmony-candidates" class="harmony-list harmony-candidate-strip" data-entity="harmony-candidate-list"></ol>
@@ -535,7 +535,7 @@
               <label><span data-copy="harmonyRoot"></span><select name="rootPitchClass" data-focus-key="chord-root"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">Eb</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">Ab</option><option value="9">A</option><option value="10">Bb</option><option value="11">B</option></select></label>
               <label><span data-copy="harmonyQuality"></span><select name="quality" data-focus-key="chord-quality"><option value="major" data-copy="harmonyMajor"></option><option value="minor" data-copy="harmonyMinor"></option><option value="diminished" data-copy="harmonyDiminished"></option><option value="augmented" data-copy="harmonyAugmented"></option></select></label>
               </div><p id="harmony-edit-location"></p><input name="startTick" type="hidden" value="0"><input name="durationTicks" type="hidden">
-              <div class="harmony-actions"><button type="submit" data-copy="harmonySave"></button><button type="button" class="secondary" data-action="new-chord" data-copy="harmonyNew"></button></div></form></details>
+              <div class="harmony-actions"><button type="submit" class="secondary" data-copy="harmonySave"></button><button type="button" class="secondary" data-action="new-chord" data-copy="harmonyNew"></button></div></form></details>
           </section>
 
           <section id="generation-panel" class="inspector-card" role="tabpanel" aria-labelledby="generation-heading" hidden>

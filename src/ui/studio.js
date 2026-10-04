@@ -521,16 +521,40 @@ export function createStudioWorkspace(commands, translate, onError, {
     event.preventDefault();
     setGuitarZoneHeight(nextHeight, true);
   });
+  // Panel bukan tab: di desktop ia tombol ikon+label di grup sendiri di sisi kanan
+  // transport, gaya seperti Undo/Redo. Di HP tetap di tab bar bawah sebagai
+  // tombol biasa. Labelnya lewat setPanelToggleLabel supaya ikon tidak ikut
+  // tertimpa, dan data-copy dipindah ke span label karena sinkronisasi bahasa
+  // menulis textContent untuk setiap elemen[data-copy].
   const panelDockTrigger = document.createElement('button');
   panelDockTrigger.type = 'button';
   panelDockTrigger.className = 'secondary mobile-panel-trigger';
   panelDockTrigger.dataset.studioPanelToggle = '';
-  panelDockTrigger.dataset.copy = 'studioPanelsButton';
   panelDockTrigger.dataset.ariaCopy = 'studioPanelsButton';
   panelDockTrigger.dataset.entity = 'studio-panel-trigger';
-  panelDockTrigger.textContent = translate('studioPanelsButton');
   panelDockTrigger.setAttribute('aria-controls', 'workspace-sidebar');
   panelDockTrigger.setAttribute('aria-expanded', 'false');
+  const panelToggleIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  panelToggleIcon.setAttribute('class', 'toolbar-icon');
+  panelToggleIcon.setAttribute('viewBox', '0 0 20 20');
+  panelToggleIcon.setAttribute('aria-hidden', 'true');
+  panelToggleIcon.setAttribute('focusable', 'false');
+  panelToggleIcon.innerHTML = '<rect x="3" y="4" width="14" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"></rect><line x1="12" y1="4" x2="12" y2="16" stroke="currentColor" stroke-width="1.6"></line>';
+  const panelToggleLabel = document.createElement('span');
+  panelToggleLabel.dataset.copy = 'studioPanelsButton';
+  panelDockTrigger.append(panelToggleIcon, panelToggleLabel);
+  const panelToggleGroup = document.createElement('div');
+  panelToggleGroup.className = 'panel-toggle-group';
+  panelToggleGroup.setAttribute('role', 'group');
+  panelToggleGroup.dataset.ariaCopy = 'studioPanels';
+  panelToggleGroup.append(panelDockTrigger);
+  function setPanelToggleLabel() {
+    const label = translate('studioPanelsButton');
+    panelToggleLabel.textContent = label;
+    panelDockTrigger.setAttribute('aria-label', label);
+    panelDockTrigger.title = label;
+  }
+  setPanelToggleLabel();
   const header = document.querySelector('.page-header');
   const mobileDock = byId('mobile-workspace-dock');
   const transportDock = document.querySelector('.transport-dock');
@@ -827,8 +851,7 @@ export function createStudioWorkspace(commands, translate, onError, {
     // membuka dan menutup sidebar, jadi menghilangkannya saat panel terbuka
     // membuat pengguna kehilangan cara menutupnya.
     panelDockTrigger.hidden = false;
-    panelDockTrigger.textContent = translate('studioPanelsButton');
-    panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
+    setPanelToggleLabel();
     panelDockTrigger.setAttribute('aria-expanded', String(sideDockLayout ? dockOpen : Boolean(panel)));
     if (!compact.matches || shortLandscapeLayout) inspectorActions.append(panelSwitches);
     modeToolbar.hidden = phone.matches && !shortLandscape.matches;
@@ -860,7 +883,7 @@ export function createStudioWorkspace(commands, translate, onError, {
       morePopover.append(editorSettings);
       if (sessionActions) byId('generation-panel').append(sessionActions);
     } else if (wideLayout || mediumLayout) {
-      modeNav.append(panelDockTrigger);
+      transportMain.append(panelToggleGroup);
       header.insertBefore(modeNav, headerActions);
       header.append(transportDock);
       transportMain.insertBefore(overview, transportSettings);
@@ -875,7 +898,7 @@ export function createStudioWorkspace(commands, translate, onError, {
         overview.hidden = true;
         transportButtons.parentElement.append(historyButtons);
         headerActions.prepend(projectMenu);
-        toolbarActions.prepend(panelDockTrigger);
+        transportMain.append(panelToggleGroup);
         toolbarActions.append(moreMenu);
       }
       editorToolbarHome.append(editorToolbar);
@@ -1363,8 +1386,7 @@ export function createStudioWorkspace(commands, translate, onError, {
     toolsPanel.hidden = tabValue !== 'tools' || guitarSheetOpen;
     panelSwitches.hidden = guitarSheetOpen;
     byId('studio-panel-title').textContent = translate(({mixer:'studioMixer',chords:'harmonyLaneLabel',generate:'studioGenerate',tools:'toolsHeading',expression:'expressionHeading','drum-expression':'percussionExpressionHeading',guitar:'guitarHeading'})[panel] ?? 'studioPanels');
-    panelDockTrigger.textContent = translate('studioPanelsButton');
-    panelDockTrigger.setAttribute('aria-label', translate('studioPanelsButton'));
+    setPanelToggleLabel();
     const dockCapable = sideDock.matches && !shortLandscape.matches;
     // Satu-satunya kendali buka/tutup sidebar: tidak pernah disembunyikan,
     // termasuk saat dock samping sedang terbuka.

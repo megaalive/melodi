@@ -342,7 +342,7 @@ for (const narrow of [false, true]) test(`panel action clicks preserve context o
     assert.deepEqual(commands.getSelectedNoteIds(), [note.id]);
     assert.deepEqual(commands.getSong(), before);
     if (narrow) {
-      const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
+      const panelButton = panelToggle(setup);
       setup.click(panelButton);
       assert.equal(setup.doc.body.dataset.studioPanel, 'none');
     } else {
@@ -443,7 +443,7 @@ test('mobile Panel opens the workspace tabs and restores focus to its dock trigg
   try {
     const commands = createCommands(createBlankSong());
     createStudioWorkspace(commands, key => key, error => { throw error; });
-    const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
+    const panelButton = panelToggle(setup);
     assert.ok(panelButton);
     setup.click(panelButton);
     assert.equal(setup.doc.body.dataset.studioPanel, 'chords');
@@ -546,7 +546,7 @@ test('responsive panel triggers and dock destinations cover desktop, medium, and
         assert.equal(setup.nodes.get('.loop-toggle').parent, setup.createdNodes.find(node => node.id === 'studio-core-controls'));
         assert.equal(setup.guitar.parent, setup.nodes.get('.pane-title-row'));
       } else if (landscape && wide) {
-        const panelButton = setup.nodes.get('#studio-views').children.find(node => node.dataset.studioPanelToggle !== undefined);
+        const panelButton = panelToggle(setup);
         assert.ok(panelButton);
         assert.equal(panelButton.hidden, false);
         assert.equal(setup.nodes.get('.workspace-sidebar').hidden, true);
@@ -565,9 +565,7 @@ test('responsive panel triggers and dock destinations cover desktop, medium, and
         assert.equal(setup.nodes.get('.transport-dock').parent, setup.nodes.get('#mobile-workspace-dock'));
         assert.equal(setup.nodes.get('#studio-views').parent, landscape ? setup.nodes.get('#view-controls') : setup.nodes.get('#mobile-workspace-dock'));
         assert.equal(setup.nodes.get('.studio-panel-switches').parent, setup.nodes.get('#mobile-workspace-dock'));
-        const panelButton = landscape
-          ? setup.nodes.get('.transport-main').children.find(node => node.dataset.studioPanelToggle !== undefined)
-          : setup.nodes.get('#studio-views').children.find(node => node.dataset.studioPanelToggle !== undefined);
+        const panelButton = panelToggle(setup);
         assert.ok(panelButton);
         assert.equal(panelButton.hidden, false);
         assert.equal(setup.guitar.parent, landscape ? setup.nodes.get('.studio-toolbar-actions') : setup.nodes.get('.pane-title-row'));
@@ -872,7 +870,7 @@ test('wide dock tabs stay open, expose their selected panels, and persist close/
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, true);
     assert.equal(setup.doc.body.dataset.studioDockOpen, 'false');
     assert.equal(changes.at(-1).dockOpen, false);
-    const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
+    const panelButton = panelToggle(setup);
     assert.equal(panelButton.hidden, false);
     setup.click(panelButton);
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, false);
@@ -958,7 +956,7 @@ test('opening the phone Guitar sheet from Not preserves the workspace and select
     assert.equal(isVisibleInTree(setup.guitarTabScroll), true);
 
     setup.click(panelToggle(setup));
-    const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
+    const panelButton = panelToggle(setup);
     setup.click(panelButton);
     assert.equal(commands.getState().view.mode, 'score');
     assert.equal(setup.doc.body.dataset.studioWorkspace, 'notation');
@@ -1109,7 +1107,7 @@ test('dock width restores, resizes by keyboard and pointer, clamps, and announce
     assert.equal(grid.style.values.get('--studio-dock-width'), '448px');
     assert.equal(resizer.attributes.get('aria-valuenow'), '448');
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, true);
-    const panelButton = setup.nodes.get('#studio-views').children.find(node => 'studioPanelToggle' in node.dataset);
+    const panelButton = panelToggle(setup);
     setup.click(panelButton);
     assert.equal(setup.nodes.get('.workspace-sidebar').hidden, false);
 
