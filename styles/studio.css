@@ -776,3 +776,45 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .studio-views button[aria-pressed="false"]{border-bottom-color:transparent;}
 .studio .panel-collapse-button [data-copy]{font-size:var(--text-xs);white-space:nowrap;}
 .studio .drum-grid-ruler-surface{min-height:var(--drum-row-height);}
+
+/* I1 Ide: tangkap ide. Strip kontrol, keyboard sentuh, dan daftar take.
+   Semua ukuran pakai token dan clamp supaya keyboard tetap muat di HP. */
+.ideas-pane{display:flex;flex-direction:column;gap:var(--space-3);padding:var(--space-4) clamp(var(--space-4),4vw,var(--space-6));}
+.ideas-strip{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);}
+.ideas-strip .ideas-toggle,.ideas-strip .ideas-field{white-space:nowrap;}
+.ideas-strip .ideas-status{flex:1 1 8ch;}
+.ideas-record{min-width:6.5rem;border-radius:var(--radius);border:1px solid transparent;background:var(--ember);color:#fff;font-weight:600;}
+.ideas-record[data-state="stop"]{background:var(--danger);}
+.ideas-record[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ember-soft);}
+.ideas-toggle,.ideas-field{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);color:var(--text-muted);}
+.ideas-field select{min-height:var(--control-h);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);}
+.ideas-meter,.ideas-status{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
+.ideas-status{color:var(--text);min-width:9ch;}
+.ideas-readout{font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent-strong);}
+.ideas-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(11rem,17rem);gap:var(--space-4);align-items:start;}
+.ideas-keyboard{position:relative;display:grid;gap:var(--space-2);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);touch-action:none;}
+.ideas-keyboard-label{font-size:var(--text-xs);color:var(--text-muted);}
+.ideas-keyboard-white{position:relative;display:flex;gap:2px;}
+.ideas-keyboard-black{position:absolute;inset:0 var(--space-2) auto var(--space-2);height:60%;min-height:clamp(1.75rem,7dvh,2.75rem);pointer-events:none;}
+.ideas-key{flex:1 1 0;min-width:0;min-height:clamp(2.75rem,11dvh,5rem);border:1px solid var(--border-strong);border-radius:0 0 var(--radius) var(--radius);background:var(--surface);color:var(--text);cursor:pointer;}
+/* Posisi tombol hitam mengikuti celah antara sembilan tombol putih. */
+.ideas-key-black[data-slot="1"]{left:11.111%;}
+.ideas-key-black[data-slot="2"]{left:22.222%;}
+.ideas-key-black[data-slot="3"]{left:33.333%;}
+.ideas-key-black[data-slot="4"]{left:44.444%;}
+.ideas-key-black[data-slot="6"]{left:66.667%;}
+/* Warna tombol piano tidak mengikuti tema: tombol putih selalu terang dan
+   tombol hitam selalu gelap supaya oktaf terbaca di mode terang maupun gelap. */
+.ideas-key-white{background:light-dark(#f7f5f1,#ecebe6);color:#1b2124;border-color:light-dark(#9d968c,#8b8479);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font-size:var(--text-xs);}
+.ideas-key-black{position:absolute;top:0;width:min(7.5%, 2rem);min-width:0;min-height:clamp(1.75rem,7dvh,2.75rem);transform:translateX(-50%);border-radius:0 0 4px 4px;background:light-dark(#22262a,#0c0f12);color:#e7e4de;border-color:light-dark(#22262a,#0c0f12);pointer-events:auto;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:9px;}
+.ideas-key-label{display:flex;flex-direction:column;align-items:center;line-height:1.1;}
+.ideas-keyboard-hint{margin:0;font-size:var(--text-xs);color:var(--text-muted);}
+.ideas-key[data-active="true"]{background:var(--accent);border-color:var(--accent-strong);color:var(--surface);}
+/* Tombol hitam mengikuti lebar reboot piano, bukan minimum 44px global. */
+.app-shell .ideas-key-black{min-width:0;}
+.ideas-takes-panel{display:grid;gap:var(--space-2);align-content:start;}
+.ideas-takes-panel h3{margin:0;font-size:var(--text-sm);}
+.ideas-takes{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2);}
+.ideas-take{display:grid;gap:var(--space-1);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
+.ideas-take-actions{display:flex;flex-wrap:wrap;gap:var(--space-1);}
+.ideas-take-actions button{flex:1 1 auto;}

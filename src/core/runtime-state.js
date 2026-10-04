@@ -1,9 +1,10 @@
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM } from "./editor.js";
 
-const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar", "drums"]);
+const VIEW_MODES = new Set(["score", "piano-roll", "combined", "lyrics", "guitar", "drums", "ideas"]);
 
 /** Region mana yang tampil pada mode tampilan apa. */
 export const VIEW_REGION_MODES = Object.freeze({
+  ideas: ["ideas"],
   score: ["score", "combined"],
   "piano-roll": ["piano-roll", "combined", "guitar"],
   expression: ["score", "piano-roll", "combined", "guitar"],

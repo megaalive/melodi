@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261003.84">
+    <meta name="melodi-build" content="20261003.85">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.84">
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.85">
     <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.74"></script>
-    <script type="module" src="./src/app.js?v=20261003.84"></script>
+    <script type="module" src="./src/app.js?v=20261003.85"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -140,6 +140,7 @@
       <section id="view-controls" class="workspace-toolbar" aria-labelledby="view-heading">
         <h2 id="view-heading" class="visually-hidden" data-copy="viewHeading"></h2>
         <nav id="studio-views" class="studio-views" data-aria-copy="viewControlGroupLabel" data-entity="workspace-view">
+          <button type="button" data-action="set-view-mode" data-studio-workspace="ideas" data-studio-view="ideas" data-copy="studioWorkspaceIdeas" data-focus-key="view-ideas" aria-pressed="false"></button>
           <button type="button" data-action="set-view-mode" data-studio-workspace="edit" data-studio-view="piano-roll" data-copy="studioWorkspaceEdit" data-focus-key="view-piano-roll" aria-pressed="true"></button>
           <button type="button" data-action="set-view-mode" data-studio-workspace="notation" data-studio-view="score" data-copy="studioWorkspaceNotation" aria-pressed="false"></button>
           <button type="button" data-action="set-view-mode" data-studio-workspace="rhythm" data-studio-view="drums" data-copy="studioWorkspaceRhythm" aria-pressed="false"></button>
@@ -170,6 +171,41 @@
 
       <div class="workspace-grid">
         <div id="workspace-canvas" class="workspace-canvas">
+          <section id="ideas-section" class="workspace-pane ideas-pane" data-view-region="ideas" data-record-count="0" aria-labelledby="ideas-heading">
+            <div class="pane-heading compact-pane-heading">
+              <div class="pane-title-row">
+                <h2 id="ideas-heading" data-copy="ideasHeading"></h2>
+                <output class="ideas-readout" data-entity="ideas-readout" aria-live="polite"></output>
+              </div>
+            </div>
+            <div class="ideas-strip" role="group" data-aria-copy="ideasStripLabel">
+              <button type="button" id="ideas-record" class="ideas-record" data-action="ideas-record" data-copy="ideasRecord" aria-pressed="false"></button>
+              <label class="ideas-toggle"><input type="checkbox" data-action="ideas-count-in" checked><span data-copy="ideasCountInLabel"></span></label>
+              <label class="ideas-field"><span data-copy="ideasQuantizeLabel"></span>
+                <select data-action="ideas-quantize">
+                  <option value="off" data-copy="ideasQuantizeOff"></option>
+                  <option value="light" data-copy="ideasQuantizeLight"></option>
+                  <option value="strict" data-copy="ideasQuantizeStrict"></option>
+                </select>
+              </label>
+              <label class="ideas-field"><span data-copy="ideasSnapLabel"></span>
+                <select data-action="ideas-snap">
+                  <option value="1/8" data-copy="ideasSnapEighth"></option>
+                  <option value="1/16" data-copy="ideasSnapSixteenth"></option>
+                </select>
+              </label>
+              <p class="ideas-meter"><span data-copy="ideasTempoLabel"></span> <output data-entity="ideas-tempo"></output> <span class="muted">BPM</span></p>
+              <p class="ideas-status" data-entity="ideas-status" role="status" aria-live="polite"></p>
+              <button type="button" class="secondary" data-action="undo" data-copy="undoButton" aria-label="Batalkan perubahan terakhir" title="Batalkan perubahan terakhir" data-focus-key="undo-ideas"></button>
+            </div>
+            <div class="ideas-board">
+              <div class="ideas-keyboard" data-entity="ideas-keyboard" data-aria-copy="ideasKeyboardLabel" tabindex="0" role="group"></div>
+              <aside class="ideas-takes-panel" data-aria-copy="ideasTakesHeading">
+                <h3 data-copy="ideasTakesHeading"></h3>
+                <ul class="ideas-takes" data-entity="ideas-takes" data-count="0"></ul>
+              </aside>
+            </div>
+          </section>
           <section id="piano-roll-section" class="workspace-pane" data-view-region="piano-roll" aria-labelledby="piano-roll-heading">
             <div class="pane-heading compact-pane-heading">
               <div class="pane-title-row">

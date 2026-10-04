@@ -23,6 +23,9 @@
 }
 @media (pointer:coarse){
   :root{--control-h:44px;}
+  /* Keyboard tangkap ide butuh tinggi tombol hitam lebih pendek supaya
+     sembilan tombol putih tetap muat dan tidak saling menutupi. */
+  .studio .app-shell .ideas-keyboard .ideas-key-black{min-height:2rem !important;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
   .roll-note, .roll-move-hit, .roll-resize-handle{touch-action:none;}
@@ -378,6 +381,16 @@
   .studio .help-sheet-card{padding:var(--space-4);}
 }
 @media (width <= 46rem){
+  /* I1 Ide: keyboard dan daftar take turun ke bawah supaya tombol tidak keluar
+     viewport di HP. Lebar tombol putih 40px agar sembilan tombol muat satu
+     baris pada 390px; tinggi tetap 44px. */
+  .ideas-board{grid-template-columns:minmax(0,1fr);}
+  .ideas-strip{gap:var(--space-2);}
+  .ideas-takes{grid-template-columns:minmax(0,1fr);}
+  .app-shell .ideas-key{min-width:2.5rem;}
+  .app-shell .ideas-key-black{min-width:0;}
+  .ideas-keyboard{padding:var(--space-1);gap:var(--space-1);}
+  .ideas-keyboard-white{gap:1px;}
   :root{--control-h:44px;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}

@@ -92,6 +92,9 @@ test("portrait drops the empty band between the app header and the ruler", async
 
 test("the empty-song hint is centred in the canvas, avoids pitch labels and click targets, and can be dismissed", async () => {
   await withPage({ width: 390, height: 844 }, async page => {
+    // Lagu kosong membuka tab Ide; petunjuk roll diuji dari tab Edit.
+    await page.evaluate(() => window.melodi.commands.setViewMode("piano-roll"));
+    await page.waitForTimeout(150);
     const empty = await page.evaluate(() => {
       const hint = document.querySelector("#piano-roll-empty");
       const surface = document.querySelector(".roll-surface").getBoundingClientRect();

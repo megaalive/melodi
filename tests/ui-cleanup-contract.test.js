@@ -6,7 +6,7 @@ import { createBlankSong } from "../src/core/model.js";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/app.js", import.meta.url), "utf8");
-const legacyModes = ["score", "piano-roll", "combined", "lyrics", "guitar", "drums"];
+const legacyModes = ["score", "piano-roll", "combined", "lyrics", "guitar", "drums", "ideas"];
 
 test("studio shell has unique IDs and one source for tempo, key, meter, and loop", () => {
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
@@ -36,12 +36,12 @@ test("view tabs replace the duplicate select and retain the old hooks", () => {
   const nav = html.match(/<nav\b[^>]*id="studio-views"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
   assert.ok(nav, "the main workspace navigation remains present");
   const workspaceModes = [...nav.matchAll(/data-studio-view="([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(workspaceModes, ["piano-roll", "score", "drums"]);
+  assert.deepEqual(workspaceModes, ["ideas", "piano-roll", "score", "drums"]);
   assert.doesNotMatch(nav, /data-studio-view="guitar"/);
 
   const tabModes = [...html.matchAll(/data-studio-view="([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual([...new Set(tabModes)].sort(), [...legacyModes].sort());
-  assert.equal((html.match(/data-action="set-view-mode"/g) ?? []).length, legacyModes.length - 1);
+  assert.equal((nav.match(/data-action="set-view-mode"/g) ?? []).length, 4, "nav memiliki satu tombol per workspace utama");
   assert.match(html, /id="guitar-mode-toggle"[^>]*data-studio-view="guitar"/);
   assert.match(html, /data-studio-view="piano-roll"[^>]*data-focus-key="view-piano-roll"/);
   assert.match(app, /target\.dataset\.action === "set-view-mode"[\s\S]*?target\.dataset\.studioView/);

@@ -1,34 +1,35 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.84';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.84";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.84";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.84";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.84";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.84";
-import { createCommands } from "./core/commands.js?v=20261003.84";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.85';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.85";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.85";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.85";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.85";
+import { PPQ, createBlankSong, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.85";
+import { createCommands } from "./core/commands.js?v=20261003.85";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.84";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.84";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.84";
-import { songProjection } from "./audio/transport.js?v=20261003.84";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.84";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.84";
-import { createScoreView } from "./ui/score.js?v=20261003.84";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.84";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.84";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.84";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.84";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.84";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.85";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.85";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.85";
+import { songProjection } from "./audio/transport.js?v=20261003.85";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.85";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.85";
+import { createScoreView } from "./ui/score.js?v=20261003.85";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.85";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.85";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.85";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.85";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.85";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.84";
-import { createGenerationContext } from "./generation/context.js?v=20261003.84";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.85";
+import { createGenerationContext } from "./generation/context.js?v=20261003.85";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.84";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.84";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.84";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.84";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.84";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.84";
-import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.84";
+import { createIdeasView } from "./ui/ideas-view.js?v=20261003.85";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.85";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.85";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.85";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.85";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.85";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.85";
+import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.85";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -55,6 +56,7 @@ let lastHarmonyPlaybackContext = null;
 let lastHarmonyRenderKey = null;
 let studioView = null;
 let progressionView = null;
+let ideasView = null;
 let candidateScrub = null;
 
 const byId = (id) => document.getElementById(id);
@@ -1703,6 +1705,7 @@ function render() {
   renderSyllables(song, state);
   renderEditorControls();
   renderGeneration(state);
+  ideasView?.render({ visible: state.view.mode === "ideas" });
   renderHarmonyInspector(song, state, commands.getHarmonyState(), translate);
   progressionView?.render();
   renderPanelDisclosures(song, state);
@@ -2583,6 +2586,7 @@ const publicCommands = Object.freeze({
   updateNote: (noteId, patch) => commands.updateNote(noteId, patch, { actor: "user" }),
   updateNotes: (updates) => commands.updateNotes(updates, { actor: "user" }),
   deleteNote: (noteId) => commands.deleteNote(noteId, { actor: "user" }),
+  commitTake: (input) => commands.commitTake(input),
   addPercussionHit: commands.addPercussionHit,
   updatePercussionHit: commands.updatePercussionHit,
   deletePercussionHit: commands.deletePercussionHit,
@@ -3609,6 +3613,13 @@ window.addEventListener("pagehide", () => persistence.flush());
 document.querySelectorAll("details").forEach((details) => { details.open = false; });
 
 progressionView = createProgressionWorkspace(commands, () => language, reportError);
+ideasView = createIdeasView({
+  root: byId("ideas-section"),
+  commands,
+  translate,
+  getPlayer: () => audioPlayer
+});
+ideasView.onChange(() => render());
 studioView = createStudioWorkspace(commands, translate, reportError, {
   initialDockOpen: uiPreferences.dockOpen,
   initialDockWidth: uiPreferences.dockWidth,
@@ -3670,7 +3681,25 @@ document.addEventListener("focusout", () => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") queueMicrotask(renderEditorControls);
 });
-if (commands.getSong().notes.length === 0 && commands.getState().editor.tool !== "draw") commands.setTool("draw");
+// Lagu kosong membuka Ide: rekam lebih dulu, baru disusun di Edit.
+if (commands.getSong().notes.length === 0) {
+  commands.setViewMode("ideas");
+  if (commands.getState().editor.tool !== "draw") commands.setTool("draw");
+}
+document.addEventListener("keydown", (event) => {
+  if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (commands.getState().view.mode !== "ideas" || paletteDialog?.open) return;
+  if (event.target instanceof Element && event.target.closest("#ideas-section, .menu-sheet, dialog")) return;
+  if (!ideasView?.keyboardActive(event.target)) return;
+  if (ideasView.pressKey(event.key)) event.preventDefault();
+});
+document.addEventListener("keyup", (event) => {
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  if (commands.getState().view.mode !== "ideas" || paletteDialog?.open) return;
+  if (event.target instanceof Element && event.target.closest("#ideas-section, .menu-sheet, dialog")) return;
+  if (!ideasView?.keyboardActive(event.target)) return;
+  if (ideasView.releaseKey(event.key)) event.preventDefault();
+});
 const wideDisclosureLayout = window.matchMedia?.("(min-width: 68rem)");
 wideDisclosureLayout?.addEventListener?.("change", render);
 render();

@@ -1,16 +1,16 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.84";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.84";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.85";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.85";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261003.84";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.84";
+import { createAgentSnapshot } from "./snapshot.js?v=20261003.85";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.85";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261003.84";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.84";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.84";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.84";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261003.84";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261003.85";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.85";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.85";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.85";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261003.85";
 import { syllabifyLyrics } from "./lyrics.js";
 
 function fail(code) {
@@ -1018,7 +1018,7 @@ export function createCommands(initialSong, {
       return commands.generateGap(request);
     },
     setViewMode(mode) {
-      if (!["score", "piano-roll", "combined", "lyrics", "guitar", "drums"].includes(mode)) fail("invalid-view-mode");
+      if (!["score", "piano-roll", "combined", "lyrics", "guitar", "drums", "ideas"].includes(mode)) fail("invalid-view-mode");
       viewMode = mode;
       // Masuk ke Drum Grid harus aman dari tool Gambar yang mungkin aktif di
       // Piano Roll. Satu klik pertama tidak boleh diam-diam membuat hit.
@@ -1402,6 +1402,41 @@ export function createCommands(initialSong, {
       const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
       updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
       return cloneData(note);
+    },
+    // I1: satu take = satu langkah undo. insertAtTick default-nya akhir lagu
+    // atau playhead, jadi agent bisa mengirim take tanpa menyebut posisi.
+    commitTake({ notes, insertAtTick = null } = {}) {
+      if (!Array.isArray(notes) || notes.length === 0) fail("invalid-note");
+      const allowed = new Set(["pitch", "startTick", "durationTicks", "volume", "pan"]);
+      const normalized = notes.map((input) => {
+        if (input === null || typeof input !== "object" || Array.isArray(input)
+          || Object.keys(input).some((key) => !allowed.has(key))) fail("invalid-note");
+        return {
+          id: idFactory(),
+          pitch: input.pitch,
+          startTick: input.startTick,
+          durationTicks: input.durationTicks,
+          ...(Object.hasOwn(input, "volume") ? { volume: input.volume } : {}),
+          ...(Object.hasOwn(input, "pan") ? { pan: input.pan } : {}),
+          source: "user",
+          anchor: false,
+          locked: false
+        };
+      });
+      const base = Number.isSafeInteger(insertAtTick) && insertAtTick >= 0
+        ? insertAtTick
+        : (playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick);
+      const offset = base;
+      const shifted = normalized.map((note) => ({ ...note, startTick: note.startTick + offset }));
+      commit((candidate) => {
+        for (const note of shifted) {
+          candidate.notes.push(note);
+          registerNoteInPhrase(candidate, note);
+        }
+      });
+      const tick = playback.status === "playing" && audioPlayer ? audioPlayer.getPosition() : playback.currentTick;
+      updatePlayerSafely(() => audioPlayer?.songChanged(tick, playback.loop));
+      return cloneData(shifted);
     },
     addNotes(inputs, { actor = "user" } = {}) {
       validateActor(actor);

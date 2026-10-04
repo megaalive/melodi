@@ -373,10 +373,16 @@ export async function measurePage(page, stateId = "") {
     });
     const overlaps = [];
     const overlaySelector = "dialog[open], .app-menu-popover, .studio-more-popover, .workspace-sidebar:not([hidden]), .transport-advanced[open] .transport-advanced-grid, .selection-more[open] .selection-more-actions, .generation-options[open]";
+    // Keyboard tangkap ide adalah satu kontrol majemuk: tombol hitam memang
+    // duduk di atas tombol putih seperti pada piano, jadi pasangan tombol
+    // di dalam satu keyboard bukan dua kontrol yang saling menimpa.
+    const compositeSelector = '[data-entity="ideas-keyboard"]';
     for (let i = 0; i < controls.length; i += 1) {
       for (let j = i + 1; j < controls.length; j += 1) {
         const a = controls[i]; const b = controls[j];
         if (a.element.contains(b.element) || b.element.contains(a.element)) continue;
+        const compositeA = a.element.closest(compositeSelector);
+        if (compositeA && compositeA === b.element.closest(compositeSelector)) continue;
         const overlayA = a.element.closest(overlaySelector);
         const overlayB = b.element.closest(overlaySelector);
         if (overlayA !== overlayB && (overlayA || overlayB)) continue;

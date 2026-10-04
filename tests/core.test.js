@@ -595,7 +595,7 @@ test("state snapshot is detached and reports the actual command surface", () => 
     lockedNoteIds: ["note-2"],
     history: { canUndo: false, canRedo: false, undoDepth: 0, redoDepth: 0 },
     availableActions: [
-      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "selectChord", "clearChordSelection", "setHarmonyRange", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "setHarmonyStyle", "setBassStyle", "addNote", "updateNote", "updateNotes", "deleteNote",
+      "getSong", "suggestHarmony", "getHarmonyState", "selectHarmonyCandidate", "acceptHarmonyCandidate", "clearHarmonySuggestions", "addChord", "updateChord", "deleteChord", "setChordLocked", "selectChord", "clearChordSelection", "setHarmonyRange", "getSelection", "getSelectedNoteIds", "getSelectedPercussionHitIds", "getMixState", "setInstrumentMute", "setInstrumentSolo", "setInstrumentVolume", "setHarmonyStyle", "setBassStyle", "addNote", "updateNote", "updateNotes", "deleteNote", "commitTake",
       "addPercussionHit", "updatePercussionHit", "deletePercussionHit", "selectPercussionHits", "clearPercussionSelection", "deletePercussionHits", "duplicatePercussionHits", "setLyrics",
       "setAnchor", "setLocked", "selectRange", "selectNotes", "clearSelection", "copySelection", "pasteNotes",
       "setSnap", "setChordSnap", "setTool", "setZoom", "addLyricSyllable", "updateLyricSyllable", "deleteLyricSyllable", "splitLyricSyllable",

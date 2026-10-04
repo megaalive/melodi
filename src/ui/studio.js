@@ -1,5 +1,5 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.84';
-import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.84';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.85';
+import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.85';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -620,9 +620,15 @@ export function createStudioWorkspace(commands, translate, onError, {
   const sideDock = matchMedia('(width >= 56rem) and (min-height: 501px)');
   function workspaceForMode(mode = commands.getState().view.mode) {
     return mode === 'drums' ? 'rhythm'
-      : mode === 'score' || mode === 'lyrics' || mode === 'combined' && !phone.matches ? 'notation'
-        : 'edit';
+      : mode === 'ideas' ? 'ideas'
+        : mode === 'score' || mode === 'lyrics' || mode === 'combined' && !phone.matches ? 'notation'
+          : 'edit';
   }
+  // Panel dock milik workspace lain; Ide memakai panel Edit.
+  function panelWorkspaceFor(workspace) {
+    return workspace === 'ideas' ? 'edit' : workspace;
+  }
+  // Workspace Ide berbagi dock dengan Edit lewat panelWorkspace di bawah.
   const allowedPanels = {
     edit: ['generate', 'chords', 'mixer', 'tools'],
     notation: ['mixer', 'tools'],
@@ -1024,7 +1030,7 @@ export function createStudioWorkspace(commands, translate, onError, {
         }
         if (compact.matches) panel = 'guitar';
       } else {
-        const workspace = workspaceForMode();
+        const workspace = panelWorkspaceFor(workspaceForMode());
         const tab = dockTabFor(value, workspace);
         if (!tab) return;
         panel = value === 'expression' ? 'expression'
@@ -1309,37 +1315,38 @@ export function createStudioWorkspace(commands, translate, onError, {
     if (compact.matches && guitarInspector && previousViewMode !== 'guitar') panel = 'guitar';
     previousViewMode = mode;
     const activeWorkspace = workspaceForMode(mode);
+    const panelWorkspace = panelWorkspaceFor(activeWorkspace);
     if (dualDock.matches) arrangePanelSlots();
-    if (previousWorkspace !== null && activeWorkspace !== previousWorkspace) {
-      const previousTab = dockTabFor(panel, previousWorkspace);
+    if (previousWorkspace !== null && panelWorkspace !== panelWorkspaceFor(previousWorkspace)) {
+      const previousTab = dockTabFor(panel, panelWorkspaceFor(previousWorkspace));
       if (previousTab && !(dualDock.matches && dockPanelByWorkspace[previousWorkspace] === 'generate')) {
         dockPanelByWorkspace[previousWorkspace] = previousTab;
       }
       if (panel !== null && panel !== 'guitar') {
-        panel = selectedDockPanel(activeWorkspace);
+        panel = selectedDockPanel(panelWorkspace);
         lastPanel = panel;
       }
     }
     previousWorkspace = activeWorkspace;
     if (!compact.matches && panel === 'guitar') {
-      panel = selectedDockPanel(activeWorkspace);
+      panel = selectedDockPanel(panelWorkspace);
       lastPanel = panel;
     }
     if (panel && panel !== 'guitar') {
-      const validTab = dockTabFor(panel, activeWorkspace);
-      if (!validTab || dualDock.matches && validTab === 'generate') panel = selectedDockPanel(activeWorkspace);
+      const validTab = dockTabFor(panel, panelWorkspace);
+      if (!validTab || dualDock.matches && validTab === 'generate') panel = selectedDockPanel(panelWorkspace);
       else {
         if (panel !== 'expression') panel = validTab;
-        if (!(dualDock.matches && dockPanelByWorkspace[activeWorkspace] === 'generate')) {
-          dockPanelByWorkspace[activeWorkspace] = validTab;
+        if (!(dualDock.matches && dockPanelByWorkspace[panelWorkspace] === 'generate')) {
+          dockPanelByWorkspace[panelWorkspace] = validTab;
         }
       }
-      lastPanel = dockTabFor(panel, activeWorkspace) ?? lastPanel;
-    } else if (!panel && sideDock.matches && dockOpen) panel = selectedDockPanel(activeWorkspace);
+      lastPanel = dockTabFor(panel, panelWorkspace) ?? lastPanel;
+    } else if (!panel && sideDock.matches && dockOpen) panel = selectedDockPanel(panelWorkspace);
     const guitarSheetOpen = compact.matches && panel === 'guitar';
     const guitarAvailable = activeWorkspace !== 'rhythm';
-    chordQuickGroup.hidden = activeWorkspace !== 'edit';
-    const tabValue = dockTabFor(panel, activeWorkspace);
+    chordQuickGroup.hidden = panelWorkspace !== 'edit';
+    const tabValue = dockTabFor(panel, panelWorkspace);
     if (guitarZone.parentElement !== (guitarSheetOpen ? sidebar : workspaceCanvas)) {
       (guitarSheetOpen ? sidebar : workspaceCanvas).append(guitarZone);
     }
@@ -1396,7 +1403,7 @@ export function createStudioWorkspace(commands, translate, onError, {
         button.title = button.getAttribute('aria-label');
       }
     }
-    syncPanelSwitches(panel, activeWorkspace);
+    syncPanelSwitches(panel, panelWorkspace);
     syncDockSlots();
     syncGuitarZoneControls();
     syncWideWorkspaceHeading(mode);

@@ -1,8 +1,8 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261003.84";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.84";
-import { percussionVoiceSpec } from "./percussion.js?v=20261003.84";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.84";
-import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.84";
+import { MelodiError, PPQ } from "../core/model.js?v=20261003.85";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.85";
+import { percussionVoiceSpec } from "./percussion.js?v=20261003.85";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.85";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.85";
 
 const LOOK_AHEAD_SECONDS = 0.2;
 const SCHEDULER_INTERVAL_MS = 30;
@@ -53,6 +53,10 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
   const scheduled = new Map();
   const scheduledAt = new Map();
   const voices = new Map();
+  // Monitor tangkap ide: maksimal delapan suara, node sendiri, dibersihkan
+  // di 'ended'. Tidak pernah menyentuh voices transport.
+  const MONITOR_MAX_VOICES = 8;
+  const monitorVoices = new Map();
   const chokeVoices = new Map();
   let nextVoiceId = 0;
   let previewTimer = null;
@@ -137,7 +141,33 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     return noiseBuffer;
   }
 
+  function scheduleClick(atTime, accent) {
+    const audioContext = ensureContext();
+    if (audioContext.state === "suspended") void audioContext.resume?.();
+    if (audioContext.state !== "running") return;
+    const source = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const envelope = audioContext.createGain();
+    source.buffer = getNoiseBuffer();
+    filter.type = "bandpass";
+    filter.frequency.value = accent ? 1760 : 1174;
+    filter.Q.value = 6;
+    envelope.gain.setValueAtTime(accent ? 0.34 : 0.2, atTime);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, atTime + 0.06);
+    source.connect(filter);
+    filter.connect(envelope);
+    envelope.connect(masterGain);
+    source.addEventListener("ended", () => {
+      try { source.disconnect(); } catch {}
+      try { filter.disconnect(); } catch {}
+      try { envelope.disconnect(); } catch {}
+    }, { once: true });
+    source.start(atTime);
+    source.stop(atTime + 0.07);
+  }
+
   function cancelVoices() {
+    for (const pitch of [...monitorVoices.keys()]) releaseMonitorVoice(pitch, context?.currentTime ?? 0);
     if (previewTimer !== null) clearTimeout(previewTimer);
     previewTimer = null;
     previewGeneration += 1;
@@ -534,6 +564,20 @@ function sketchSongFor(song) {
   return derived;
 }
 
+function releaseMonitorVoice(pitch, atTime) {
+  const voice = monitorVoices.get(pitch);
+  if (!voice) return;
+  try {
+    const parameter = voice.envelope.gain;
+    if (typeof parameter.cancelAndHoldAtTime === "function") parameter.cancelAndHoldAtTime(atTime);
+    else parameter.setValueAtTime(Math.max(0, parameter.value), atTime);
+    parameter.linearRampToValueAtTime(0, atTime + 0.06);
+    voice.oscillator.stop(atTime + 0.07);
+  } catch {
+    try { voice.oscillator.stop(); } catch {}
+  }
+  monitorVoices.delete(pitch);
+}
 function currentCycle(tick) {
     if (!loop.enabled) return 0;
     return Math.max(0, Math.floor((tick - loop.startTick) / (loop.endTick - loop.startTick)));
@@ -762,6 +806,56 @@ function currentCycle(tick) {
     songChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
     mixChanged(tick, nextLoop = loop) { reanchor(wrapLoopTick(tick, nextLoop), tempo, nextLoop, playing); },
     playPreview,
+    now() {
+      return context?.currentTime ?? 0;
+    },
+    noteOn(pitch, velocity = 100) {
+      const audioContext = ensureContext();
+      // Tangkap ide selalu datang dari sentuhan atau ketukan, jadi context
+      // suspended di sini adalah artefak browser, bukan pilihan pengguna.
+      if (audioContext.state === "suspended") void audioContext.resume?.();
+      if (audioContext.state !== "running") return false;
+      this.noteOff(pitch);
+      if (monitorVoices.size >= MONITOR_MAX_VOICES) {
+        const oldest = [...monitorVoices.entries()].sort((left, right) => left[1].startedAt - right[1].startedAt)[0];
+        if (oldest) releaseMonitorVoice(oldest[0], audioContext.currentTime);
+      }
+      const startTime = audioContext.currentTime;
+      const oscillator = audioContext.createOscillator();
+      const envelope = audioContext.createGain();
+      oscillator.type = "triangle";
+      oscillator.frequency.value = 440 * 2 ** ((pitch - 69) / 12);
+      const peak = 0.16 * Math.max(0.2, Math.min(1, velocity / 127));
+      envelope.gain.setValueAtTime(0, startTime);
+      envelope.gain.linearRampToValueAtTime(peak, startTime + 0.008);
+      oscillator.connect(envelope);
+      envelope.connect(masterGain);
+      const voice = { oscillator, envelope, pitch, startedAt: startTime, released: false };
+      monitorVoices.set(pitch, voice);
+      oscillator.addEventListener("ended", () => {
+        try { oscillator.disconnect(); } catch {}
+        try { envelope.disconnect(); } catch {}
+        if (monitorVoices.get(pitch) === voice) monitorVoices.delete(pitch);
+      }, { once: true });
+      oscillator.start(startTime);
+      return true;
+    },
+    noteOff(pitch) {
+      const voice = monitorVoices.get(pitch);
+      if (!voice || voice.released) return false;
+      voice.released = true;
+      releaseMonitorVoice(pitch, context.currentTime);
+      return true;
+    },
+    noteOffAll() {
+      for (const pitch of [...monitorVoices.keys()]) this.noteOff(pitch);
+    },
+    monitorVoiceCount() {
+      return monitorVoices.size;
+    },
+    click(atTime, accent) {
+      scheduleClick(atTime, accent);
+    },
     getDebugState() {
       return { voices: voices.size, scheduled: scheduled.size, playing, tempo, loop: { ...loop }, anchor: { ...anchor } };
     },
