@@ -80,6 +80,9 @@ function reportUnobservedNotificationError(error) {
 // Batas jumlah state yang disimpan. Cukup untuk satu sesi editing panjang tanpa
 // menahan memori tanpa batas; lagian Melodi tidak menyimpan audio di dalam song.
 const HISTORY_LIMIT = 100;
+// Anggaran ukuran undo: 100 snapshot lagu 1 MB berarti 100 MB heap yang
+// tidak perlu dipelihara. Snapshot tertua dibuang lebih dulu.
+const HISTORY_BYTE_BUDGET = 24 * 1024 * 1024;
 
 export function createCommands(initialSong, {
   idFactory = createId,
@@ -108,6 +111,8 @@ export function createCommands(initialSong, {
   let canonicalRevision = 0;
   let undoStack = [];
   let redoStack = [];
+  let undoStackBytes = 0;
+  const historyBytes = [];
   let generationSession = null;
   let harmonySession = null;
   let harmonyProgressionSession = null;
@@ -366,9 +371,26 @@ export function createCommands(initialSong, {
   // sesi kandidat bukan keputusan editorial user, jadi undo tidak pernah
   // mengubahnya secara tak terduga; kandidat otomatis jadi tidak berlaku karena
   // revision membesar.
+  // Satu serialisasi dipakai untuk snapshot sekaligus untuk mengukur byte.
+  function snapshotSong() {
+    const serialized = JSON.stringify(song);
+    return { song: JSON.parse(serialized), bytes: serialized.length };
+  }
+
+  function trimHistory() {
+    while (undoStack.length > 1
+      && (undoStack.length > HISTORY_LIMIT || undoStackBytes > HISTORY_BYTE_BUDGET)) {
+      undoStackBytes -= historyBytes.shift() ?? 0;
+      undoStack.shift();
+    }
+  }
+
   function pushHistory() {
-    undoStack.push(cloneData(song));
-    if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    const snapshot = snapshotSong();
+    undoStack.push(snapshot.song);
+    historyBytes.push(snapshot.bytes);
+    undoStackBytes += snapshot.bytes;
+    trimHistory();
     redoStack = [];
   }
 
@@ -580,6 +602,8 @@ export function createCommands(initialSong, {
     if (clearHistory) {
       undoStack = [];
       redoStack = [];
+      undoStackBytes = 0;
+      historyBytes.length = 0;
     }
     notifyPlaybackChange();
     notifyChange("song");
@@ -714,13 +738,18 @@ export function createCommands(initialSong, {
     undo() {
       if (undoStack.length === 0) fail("nothing-to-undo");
       const previous = undoStack.pop();
+      undoStackBytes -= historyBytes.pop() ?? 0;
       redoStack.push(cloneData(song));
       return restoreSong(previous);
     },
     redo() {
       if (redoStack.length === 0) fail("nothing-to-redo");
       const next = redoStack.pop();
-      undoStack.push(cloneData(song));
+      const snapshot = snapshotSong();
+      undoStack.push(snapshot.song);
+      historyBytes.push(snapshot.bytes);
+      undoStackBytes += snapshot.bytes;
+      trimHistory();
       return restoreSong(next);
     },
     getHarmonyState() {

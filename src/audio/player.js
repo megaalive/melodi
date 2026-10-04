@@ -4,8 +4,8 @@ import { percussionVoiceSpec } from "./percussion.js?v=20261003.83";
 import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.83";
 import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.83";
 
-const LOOK_AHEAD_SECONDS = 0.12;
-const SCHEDULER_INTERVAL_MS = 25;
+const LOOK_AHEAD_SECONDS = 0.2;
+const SCHEDULER_INTERVAL_MS = 30;
 const ACTIVATION_TIMEOUT_MS = 1500;
 
 export function pitchBendAt(points, position) {

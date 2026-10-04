@@ -177,6 +177,34 @@ test("undo history stays inside its snapshot budget", () => {
   assert.equal(typeof commands.peekSong().notes.length, "number", "peekSong memberi song yang bisa dibaca");
 });
 
+test("undo drops the oldest snapshots when the byte budget is exceeded", () => {
+  const ref = {};
+  // Snapshot besar: 260 bar x 16 note dengan bend dan vibrato, jadi satu
+  // snapshot meleebih dari satu megabyte.
+  const song = fixture(260, 16);
+  for (const note of song.notes) {
+    note.pitchBend = [{ position: 0, semitones: 0 }, { position: 0.5, semitones: 2 }, { position: 1, semitones: 0 }];
+    note.vibrato = { rateHz: 5.2, depthSemitones: 0.4, delayPosition: 0.1 };
+  }
+  const commands = createCommands(song, { audioPlayerFactory: fakePlayerFactory(ref) });
+  const sizes = [];
+  for (let round = 0; round < 24; round += 1) {
+    commands.updateNote(commands.peekSong().notes[0].id, { pitch: 60 + (round % 12) });
+    sizes.push(JSON.stringify(commands.peekSong()).length);
+  }
+  const history = commands.getHistoryState();
+  const snapshotBytes = sizes.at(-1);
+  const affordable = Math.max(1, Math.floor((24 * 1024 * 1024) / snapshotBytes));
+  assert.ok(history.undoDepth <= affordable,
+    `undoDepth ${history.undoDepth} melebihi anggaran ${affordable} snapshot @ ${snapshotBytes}B`);
+  assert.ok(history.undoDepth < 24, `sebagian snapshot tertua harus dibuang, undoDepth ${history.undoDepth}`);
+  // Undo/redo tetap jalan untuk langkah yang tersisa.
+  const before = commands.peekSong().notes[0].pitch;
+  commands.undo();
+  assert.notEqual(commands.peekSong().notes[0].pitch, before, "undo masih mengubah state");
+  assert.equal(commands.getHistoryState().canRedo, true, "redo tersedia setelah undo");
+});
+
 test("createSong still validates a song built from a reference", () => {
   const song = createSong(fixture(2, 2));
   assert.equal(song.notes.length, 4);
