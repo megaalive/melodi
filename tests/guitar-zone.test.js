@@ -190,6 +190,9 @@ function overlaps(a, b) {
   return a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5;
 }
 
+// BOARD_TOP + MIN_ROW_HEIGHT * 6 senar + NUT_HEIGHT, sesuai guitar-view.js
+const minimumDiagramHeight = 18 + 20 * 6 + 6;
+
 test("zona Gitar rapi di empat breakpoint, dua layout, dan dua tema", async () => {
   const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
   const browser = await chromium.launch({ headless: true });
@@ -266,8 +269,12 @@ test("zona Gitar rapi di empat breakpoint, dua layout, dan dua tema", async () =
             assert.ok(ratio >= 4.5, `${at}: chip playhead kontrasnya ${ratio.toFixed(2)}:1`);
           }
 
-          assert.ok(state.minHeight >= state.chromeHeight + state.strings.svg,
-            `${at}: minimum splitter ${state.minHeight}px harus memuat chrome dan diagram`);
+          // Tinggi senar adaptsif: minimum splitter dihitung dari diagram
+          // terkecil (BOARD_TOP 18 + MIN_ROW_HEIGHT 20 * 6 senar + NUT 6),
+          // bukan dari tinggi yang sedang dirender, karena yang kedua akan
+          // chasing sendiri saat zona mendapat ruang lebih.
+          assert.ok(state.minHeight >= state.chromeHeight + minimumDiagramHeight,
+            `${at}: minimum splitter ${state.minHeight}px harus memuat chrome dan diagram terkecil`);
 
           // C1a: resizer di tepi atas zona, garis 1px, area sentuh 8px.
           assert.equal(state.resizer.height, 8, `${at}: area sentuh resizer harus 8px`);

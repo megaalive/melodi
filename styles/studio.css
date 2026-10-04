@@ -115,7 +115,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 #studio-guitar-zone[data-open="true"]{
   display:flex;
   flex-direction:column;
-  height:var(--studio-guitar-zone-height,clamp(280px,34dvh,440px));
+  height:var(--studio-guitar-zone-height,clamp(300px,34dvh,440px));
   min-height:var(--studio-guitar-zone-min,280px);
   max-height:440px;
   padding-inline:var(--space-2);
@@ -242,12 +242,12 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
   .guitar-zone-header{
     display:grid;
     grid-template-columns:auto 1fr;
-    grid-template-areas:"title close" "layout playhead";
+    grid-template-areas:"layout close" "playhead playhead";
     gap:var(--space-1) var(--space-2);
     padding-block:var(--space-2);
   }
   .guitar-zone-header h2{grid-area:title}
-  .guitar-layout-group{grid-area:layout}
+  .guitar-layout-group{grid-area:layout;justify-self:start}
   .guitar-zone-header .guitar-playhead{grid-area:playhead;justify-self:start;margin:0}
   .guitar-zone-header .guitar-zone-toggle{grid-area:close;justify-self:end}
   /* Sheet Gitar muat 6 senar TAB (232px); sheet lain tetap 55dvh. */

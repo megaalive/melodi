@@ -78,6 +78,19 @@ export function createGuitarViewGeometry(viewportWidth, {
 }
 
 /**
+ * Tinggi terkecil yang masih memuat semua senar. Resizer memakai ini, bukan
+ * tinggi yang sedang dirender: kalau yang diukur tinggi saat ini, setiap
+ * penambahan ruang di zona akan menaikkan minimum lagi dan minimum itu
+ * chasing itself.
+ */
+export function minimumGuitarViewHeight({
+  tuning = STANDARD_TUNING,
+  maxFret = MAX_FRET
+} = {}) {
+  return BOARD_TOP + MIN_ROW_HEIGHT * tuning.length + NUT_HEIGHT;
+}
+
+/**
  * Semua posisi yang bisa memainkan satu MIDI pitch pada satu tuning.
  * String dinomori seperti pemain gitar: 6 adalah senar terendah.
  */

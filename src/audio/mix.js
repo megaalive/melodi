@@ -1,4 +1,4 @@
-import { findPercussionKit } from "../instruments/percussion.js?v=20261003.82";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261003.83";
 
 const DEFAULT_CHANNEL_STATE = Object.freeze({ mute: false, solo: false, volume: 1 });
 

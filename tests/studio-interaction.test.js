@@ -299,7 +299,7 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   // Aturan state memakai id yang sama dengan zonanya, kalau tidak min/max height
   // kalah spesifisitas dan zona bisa menyusut di bawah tinggi isinya.
   assert.match(css, /#studio-guitar-zone\[data-open="true"\]/);
-  assert.match(css, /height:var\(--studio-guitar-zone-height,clamp\(280px,34dvh,440px\)\)/);
+  assert.match(css, /height:var\(--studio-guitar-zone-height,clamp\(300px,34dvh,440px\)\)/);
   // Selector lama (guitar-pane-heading, guitar-local-toolbar, guitar-status,
   // guitar-legend, guitar-playhead, guitar-heading-copy) dihapus: zona Gitar
   // kini satu blok "Guitar zone" di studio.css.
@@ -1036,7 +1036,7 @@ test('large desktop Guitar zone defaults open, can be resized by keyboard and po
     assert.equal(guitarSection.hidden, false);
     assert.equal(toggle.attributes.get('aria-pressed'), 'true');
     assert.equal(resizer.attributes.get('aria-label'), 'guitarZoneResizeLabel');
-    assert.equal(resizer.attributes.get('aria-valuemin'), '280');
+    assert.equal(resizer.attributes.get('aria-valuemin'), '300');
     assert.equal(resizer.attributes.get('aria-valuemax'), '440');
     // Status dan legenda kini satu baris info di bawah header, bukan lagi di dalam
   // toolbar lokal: itulah struktur zona Gitar yang baru.

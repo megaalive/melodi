@@ -1,4 +1,5 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.82';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.83';
+import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.83';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -61,7 +62,7 @@ export function createStudioWorkspace(commands, translate, onError, {
   const followToolsControl = document.querySelector('.follow-mode-tools-control');
   const guitarSection = byId('guitar-section');
   const workspaceCanvas = byId('workspace-canvas');
-  const guitarZoneFloorHeight = 280;
+  const guitarZoneFloorHeight = 300;
   const guitarZoneMaxHeight = 440;
   const coreControls = document.createElement('section');
   coreControls.id = 'studio-core-controls';
@@ -98,16 +99,13 @@ export function createStudioWorkspace(commands, translate, onError, {
   // splitter yang lain. Menyisipkannya sekali di sini membuat posisinya tetap
   // sama di semua layout.
   guitarZone?.insertBefore(guitarResizer, guitarZone?.firstChild);
-  // Tinggi minimum mengikuti isi zona: header, info, splitter, dan diagram.
-  // Kalau splitter boleh lebih kecil, kanvas terpotong diam-diam.
-  function guitarZoneContentHeight() {
+  // Tinggi minimum mengikuti isi zona: header, info, splitter, dan diagram
+  // terkecil yang masih muat semua senar. Kalau splitter boleh lebih kecil,
+  // kanvas terpotong diam-diam.
+  function guitarZoneContentHeight(canvasHeight = minimumGuitarViewHeight()) {
     const chrome = [...(guitarZone?.children ?? [])]
       .filter(element => element !== guitarSection)
       .reduce((total, element) => total + (element.offsetHeight || 0), 0);
-    const canvasHeight = Math.max(
-      Number(byId('guitar-tab')?.getAttribute('height')) || 0,
-      Number(byId('guitar')?.getAttribute('height')) || 0,
-    );
     let decoration = 0;
     const measureBox = element => {
       if (!element || typeof getComputedStyle !== 'function') return 0;
@@ -119,8 +117,15 @@ export function createStudioWorkspace(commands, translate, onError, {
     return Math.ceil(chrome + canvasHeight + decoration);
   }
   const guitarZoneMinHeight = () => Math.max(guitarZoneFloorHeight, guitarZoneContentHeight());
+  // Tinggi awal: 34% viewport, tapi tidak boleh lebih kecil dari yang sedang
+  // dirender, supaya enam senar langsung terlihat tanpa scroll vertikal.
+  const guitarZoneRenderedHeight = () => guitarZoneContentHeight(Math.max(
+    Number(byId('guitar-tab')?.getAttribute('height')) || 0,
+    Number(byId('guitar')?.getAttribute('height')) || 0,
+  ));
   const defaultGuitarZoneHeight = () => Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight,
-    Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * 0.34)));
+    Math.max(Math.round((typeof window !== 'undefined' ? window.innerHeight : 900) * 0.34),
+      guitarZoneRenderedHeight())));
   let guitarZoneHeight = hasSavedGuitarZoneHeight
     ? Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight, Math.round(initialGuitarZoneHeight)))
     : defaultGuitarZoneHeight();
@@ -442,10 +447,24 @@ export function createStudioWorkspace(commands, translate, onError, {
   syncGuitarZoneControls();
   if (hasSavedGuitarZoneHeight) setGuitarZoneHeight(guitarZoneHeight);
   else syncGuitarZoneHeightAttributes();
-  if (typeof window !== 'undefined') window.addEventListener?.('resize', () => {
-    if (guitarZoneHeightExplicit) return;
-    guitarZoneHeight = defaultGuitarZoneHeight();
+  // Diagram baru tahu tinggi akhirnya setelah render pertama, jadi tinggi
+  // awal dihitung ulang sekali di frame berikutnya. Tanpa itu enam senar bisa
+  // keluar satu piksel dari kanvas.
+  function refreshDefaultGuitarZoneHeight() {
+    if (!guitarZoneHeightExplicit) {
+      const next = defaultGuitarZoneHeight();
+      if (next !== guitarZoneHeight) {
+        guitarZoneHeight = next;
+        workspaceCanvas?.style?.setProperty('--studio-guitar-zone-height', `${next}px`);
+      }
+    }
+    // Minimum dan maksimum diumumkan ulang setiap kali isi zona berubah, tapi
+    // tinggi yang sedang dipakai tidak pernah disentuh di sini.
     syncGuitarZoneHeightAttributes();
+  }
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(refreshDefaultGuitarZoneHeight);
+  if (typeof window !== 'undefined') window.addEventListener?.('resize', () => {
+    refreshDefaultGuitarZoneHeight();
   });
   let guitarResizePointer = null;
   guitarResizer.addEventListener('pointerdown', event => {
@@ -1425,5 +1444,5 @@ export function createStudioWorkspace(commands, translate, onError, {
       if (guitarZoneHeightExplicit) setGuitarZoneHeight(guitarZoneHeight);
     }
   }
-  return {render,openPanel,updatePlayback};
+  return {render,openPanel,updatePlayback,refreshGuitarZoneHeight:refreshDefaultGuitarZoneHeight};
 }
