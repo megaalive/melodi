@@ -2,7 +2,7 @@
  * I1: view tab Ide. Tangkap ide dengan keyboard, mouse, atau sentuh; rekam
  * take memakai jam audio; take tetap di memori sampai user menekan Pakai.
  */
-import { PPQ } from "../core/model.js?v=20261003.85";
+import { PPQ } from "../core/model.js?v=20261003.86";
 import {
   BLACK_KEY_ROWS,
   KEYBOARD_OCTAVE_LOW,
@@ -14,7 +14,7 @@ import {
   keyboardDisabled,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.85";
+} from "./ideas.js?v=20261003.86";
 
 const OCTAVE_MIN = 0;
 const OCTAVE_MAX = 4;
@@ -42,7 +42,8 @@ export function createIdeasView({ root, commands, translate, getPlayer }) {
     countIn: true,
     quantize: "light",
     snap: "1/8",
-    takes: [],
+takes: [],
+    variations: null,
     events: [],
     openPitch: null,
     openAt: 0,
@@ -166,7 +167,8 @@ export function createIdeasView({ root, commands, translate, getPlayer }) {
     return commands.commitTake({ notes: take.notes, insertAtTick: null });
   }
 
-  function discardTake(take) {
+function discardTake(take) {
+    if (state.variations?.takeId === take.id) state.variations = null;
     state.takes = state.takes.filter((item) => item.id !== take.id);
     emit();
   }
@@ -242,7 +244,82 @@ export function createIdeasView({ root, commands, translate, getPlayer }) {
     return element;
   }
 
-  function renderTakeRow(take) {
+function variationKindLabel(kind) {
+  if (kind === "passing") return "ideasVariationPassing";
+  if (kind === "syncopation") return "ideasVariationSyncopation";
+  if (kind === "register") return "ideasVariationRegister";
+  return "ideasVariationRecorded";
+}
+
+function developTake(take, seed) {
+  const result = commands.developTake({ notes: take.notes, count: undefined, seed });
+  state.variations = { takeId: take.id, seed: result.seed, candidates: result.candidates };
+  emit();
+  return state.variations;
+}
+
+function reseedTake(take) {
+  const current = state.variations?.takeId === take.id ? state.variations.seed : 0;
+  return developTake(take, (current + 1) >>> 0);
+}
+
+function playVariation(candidate) {
+  const result = audio()?.playPreview?.(candidate.notes.slice(0, PREVIEW_LIMIT), { tempo: song().timing.tempo });
+  if (result && typeof result.catch === "function") result.catch(() => {});
+}
+
+function acceptVariation(candidate) {
+  if (state.recording) stopRecording();
+  return commands.commitTake({ notes: candidate.notes.map(note => ({ ...note })), insertAtTick: null });
+}
+
+function renderVariations() {
+  const host = root?.querySelector('[data-entity="ideas-variations"]');
+  if (!host) return null;
+  const data = state.variations;
+  host.dataset.open = String(Boolean(data));
+  host.dataset.seed = data ? String(data.seed) : "";
+  host.replaceChildren();
+  if (!data) return null;
+  const head = document.createElement("div");
+  head.className = "ideas-variations-head";
+  head.textContent = translate("ideasVariationSeed", { seed: data.seed });
+  const strip = document.createElement("div");
+  strip.className = "ideas-variations-strip";
+  strip.setAttribute("role", "group");
+  strip.setAttribute("aria-label", translate("ideasVariationsHeading"));
+  for (const candidate of data.candidates) {
+    const card = document.createElement("div");
+    card.className = "ideas-variation";
+    card.dataset.entity = "ideas-variation";
+    card.dataset.variationId = candidate.id;
+    card.dataset.kind = candidate.kind;
+    card.dataset.noteCount = String(candidate.notes.length);
+    const name = document.createElement("strong");
+    name.textContent = translate(variationKindLabel(candidate.kind));
+    const count = document.createElement("span");
+    count.className = "muted";
+    count.textContent = translate("ideasTakeTitle", { count: candidate.notes.length });
+    const row = document.createElement("div");
+    row.className = "ideas-take-actions";
+    row.append(
+      button("ideasPlay", "ideas-variation-play", () => playVariation(candidate)),
+      button("ideasUse", "ideas-variation-use", () => acceptVariation(candidate))
+    );
+    card.append(name, count, row);
+    strip.append(card);
+  }
+  const reseed = button("ideasVariationReseed", "ideas-variation-reseed", () => {
+    const take = state.takes.find(item => item.id === data.takeId);
+    if (take) reseedTake(take);
+  });
+  reseed.classList.add("secondary");
+  head.append(reseed);
+  host.append(head, strip);
+  return host;
+}
+
+function renderTakeRow(take) {
     const row = document.createElement("li");
     row.className = "ideas-take";
     row.dataset.entity = "ideas-take";
@@ -257,6 +334,7 @@ export function createIdeasView({ root, commands, translate, getPlayer }) {
     actions.className = "ideas-take-actions";
     actions.append(
       button("ideasPlay", "ideas-play", () => playTake(take)),
+      button("ideasDevelop", "ideas-develop", () => developTake(take)),
       button("ideasUse", "ideas-use", () => commitTake(take)),
       button("ideasDiscard", "ideas-discard", () => discardTake(take))
     );
@@ -337,7 +415,9 @@ key.append(keyLabel(entry.key.toUpperCase()));
     const current = song();
     const grid = gridTicksFor(state.snap);
     const remaining = state.recording === "countin" ? Math.max(0, state.countInUntil - now()) : 0;
-    renderKeyboard();
+renderKeyboard();
+    root.dataset.variationCount = String(state.variations?.candidates.length ?? 0);
+    root.dataset.variationSeed = state.variations ? String(state.variations.seed) : "";
     root.dataset.recording = String(state.recording === true);
     root.dataset.countIn = String(state.recording === "countin");
     root.dataset.takeCount = String(state.takes.length);
@@ -379,11 +459,12 @@ key.append(keyLabel(entry.key.toUpperCase()));
       key.dataset.active = String(active);
     }
 
-    const list = root.querySelector('[data-entity="ideas-takes"]');
+const list = root.querySelector('[data-entity="ideas-takes"]');
     if (list) {
       list.replaceChildren(...state.takes.map(renderTakeRow));
       list.dataset.count = String(state.takes.length);
     }
+    renderVariations();
   }
 
   function bind() {
@@ -432,7 +513,12 @@ key.append(keyLabel(entry.key.toUpperCase()));
     startRecording,
     stopRecording,
     suspend,
-    commitTake,
+commitTake,
+    developTake,
+    reseedTake,
+    playVariation,
+    acceptVariation,
+    variationKindLabel,
     discardTake,
     playTake,
     noteOn,

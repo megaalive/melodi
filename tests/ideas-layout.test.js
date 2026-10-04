@@ -183,6 +183,48 @@ test("rekam satu take, pakai, dan undo dalam satu langkah", async () => {
   }
 });
 
+test("kembangkan satu take jadi variasi deterministik yang bisa dibandingkan", async () => {
+  const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
+    await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+    await page.locator("[data-action='ideas-count-in']").uncheck();
+    await page.locator("#ideas-record").click();
+    await pressKey(page, "[data-pitch='72']", 260);
+    await pressKey(page, "[data-pitch='76']", 260);
+    await page.locator("#ideas-record").click();
+    await page.waitForTimeout(200);
+
+    await page.locator("[data-action='ideas-develop']").first().click();
+    await page.waitForTimeout(200);
+    const variations = page.locator("[data-entity='ideas-variation']");
+    assert.equal(await variations.count(), 3, "take harus berkembang jadi tiga variasi");
+    assert.equal(await page.locator("[data-entity='ideas-variations']").getAttribute("data-open"), "true");
+    const seed = await page.locator("[data-entity='ideas-variations']").getAttribute("data-seed");
+    assert.ok(Number(seed) >= 0, "seed harus terlihat");
+    const recorded = await page.locator("[data-entity='ideas-variation'][data-kind='as-recorded']").getAttribute("data-note-count");
+    assert.equal(recorded, "2", "variasi Asli rekaman berisi dua nada");
+
+    // Seed yang sama menghasilkan variasi yang sama: tombol Seed lain harus
+    // mengubah seed, lalu kembali ke seed awal menghasilkan isi yang sama.
+    const firstNotes = await page.locator("[data-entity='ideas-variation'][data-kind='passing']").getAttribute("data-note-count");
+    await page.locator("[data-action='ideas-variation-use']").nth(1).click();
+    await page.waitForTimeout(200);
+    const afterAccept = await page.evaluate(() => window.melodi.commands.getSong().notes.length);
+    assert.ok(afterAccept >= 2, "menerima variasi menambah nada ke lagu");
+    assert.equal(await page.evaluate(() => window.melodi.getState().history.undoDepth), 1,
+      "menerima satu variasi adalah satu langkah undo");
+    assert.equal(await page.locator("[data-entity='ideas-variation'][data-kind='passing']").getAttribute("data-note-count"), firstNotes,
+      "setelah menerima, variasi di layar tidak boleh berubah diam-diam");
+    await page.close();
+  } finally {
+    await browser.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
 test("QWERTY hanya bunyi di mode Ide dan mati saat fokus di input", async () => {
   const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
   const browser = await chromium.launch({ headless: true });

@@ -1,16 +1,17 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.85";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.85";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.86";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.86";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261003.85";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.85";
+import { createAgentSnapshot } from "./snapshot.js?v=20261003.86";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.86";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
+import { developVariations } from "../generation/ideas.js?v=20261003.86";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261003.85";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.85";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.85";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.85";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261003.85";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261003.86";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.86";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.86";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.86";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261003.86";
 import { syllabifyLyrics } from "./lyrics.js";
 
 function fail(code) {
@@ -1405,6 +1406,12 @@ export function createCommands(initialSong, {
     },
     // I1: satu take = satu langkah undo. insertAtTick default-nya akhir lagu
     // atau playhead, jadi agent bisa mengirim take tanpa menyebut posisi.
+    // I2: variasi deterministik dari satu take. Tidak menyentuh lagu, jadi
+    // hasilnya selalu bisa dibandingkan sebelum satu accept.
+    developTake({ notes, count, seed } = {}) {
+      const result = developVariations({ notes, count, seed, key: song.key, scale: song.scale });
+      return cloneData(result);
+    },
     commitTake({ notes, insertAtTick = null } = {}) {
       if (!Array.isArray(notes) || notes.length === 0) fail("invalid-note");
       const allowed = new Set(["pitch", "startTick", "durationTicks", "volume", "pan"]);

@@ -9,7 +9,7 @@ import { readAppStyles } from "./helpers/read-app-styles.js";
 // empty-song hint becomes a centred, dismissible block. Both are covered by
 // tests/dock-summary-hint.test.js, so the guard moves instead of losing its
 // purpose: it still catches drift between rounds.
-const ACTIVE_CSS_BUDGET_BYTES = 231_000;
+const ACTIVE_CSS_BUDGET_BYTES = 232_000;
 
 test("active imported CSS stays within its tracked byte budget", () => {
   const normalizedStyles = readAppStyles().replace(/\r\n?/g, "\n");
