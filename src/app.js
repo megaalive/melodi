@@ -1479,8 +1479,11 @@ function renderPlayback() {
   const toggleLabel = translate(playToggle.dataset.ariaCopy);
   playToggle.setAttribute("aria-label", toggleLabel);
   playToggle.title = toggleLabel;
-  playToggle.querySelector('[data-playback-icon="play"]').hidden = playing;
-  playToggle.querySelector('[data-playback-icon="pause"]').hidden = !playing;
+  // Ikonnya <svg>, dan SVGElement tidak punya properti `hidden`, jadi assignment
+  // ke sana tidak mengubah atribut. Atributnya yang ditulis di sini, kalau tidak
+  // ikon play dan pause tampil bersamaan di dalam satu tombol.
+  playToggle.querySelector('[data-playback-icon="play"]').toggleAttribute("hidden", playing);
+  playToggle.querySelector('[data-playback-icon="pause"]').toggleAttribute("hidden", !playing);
   byId("pause").disabled = playback.status !== "playing";
   byId("pause").hidden = true;
   byId("undo").disabled = !state.history.canUndo;

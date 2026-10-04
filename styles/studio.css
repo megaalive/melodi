@@ -4,7 +4,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .page-header{width:100%;max-width:none;min-height:40px;padding:var(--space-1) var(--space-4);gap:var(--space-3);background:var(--surface);color:var(--text);border-bottom:1px solid var(--border);}
 .studio .page-header > #studio-views{margin-inline:auto;flex:0 0 auto;}
 .studio .page-header > #studio-views > button{min-height:36px;}
-.studio .mobile-workspace-dock, .studio .mobile-workspace-dock[hidden]{display:none;}
+.studio .mobile-workspace-dock{display:none;}
 .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset:auto 0 0;z-index:90;display:flex;flex-direction:column;width:100%;height:calc(88px + env(safe-area-inset-bottom, 0px));padding-bottom:env(safe-area-inset-bottom, 0px);border-top:0;box-shadow:inset 0 1px 0 var(--border-strong);background:var(--surface);}
 .studio .mobile-workspace-dock > .transport-dock{flex:0 0 44px;width:100%;height:44px;margin:0;padding:0 var(--space-1);border:0;background:var(--surface);}
 .studio .mobile-workspace-dock .transport-main{display:flex;align-items:center;height:44px;gap:var(--space-1);}
@@ -56,7 +56,6 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .transport-action-group{gap:var(--space-4);}
 .studio .transport-buttons{gap:var(--space-1);}
 .studio .transport-buttons button{width:36px;min-width:36px;height:36px;min-height:36px;padding:var(--space-2);border-radius:6px;}
-.studio .transport-buttons button[hidden]{display:none;}
 .studio #play{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
 .studio #play:hover:not(:disabled){background:var(--accent-strong);border-color:var(--accent-strong);}
 .studio .history-buttons button{width:29px;height:29px;min-height:29px;padding:var(--space-1);}
@@ -68,7 +67,6 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio #tempo-input{width:62px;flex:0 0 62px;height:30px;min-height:30px;padding:var(--space-1) var(--space-2);font:600 var(--text-sm) ui-monospace, monospace;}
 .studio .transport-advanced > summary{font-size:var(--text-sm);}
 .studio .workspace-chrome .workspace-toolbar{display:flex;align-items:center;justify-content:space-between;width:100%;margin:0;padding:0 var(--space-2);border-top:1px solid var(--border);background:var(--surface-subtle);border-radius:0;gap:var(--space-3);}
-.studio #view-controls[hidden]{display:none !important;}
 .studio-views{display:flex;align-items:center;gap:var(--space-1);min-width:0;overflow:visible;}
 .studio-views button{border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--text-muted);font-size:var(--text-sm);font-weight:550;min-height:36px;padding:var(--space-2) var(--space-3) var(--space-1);white-space:nowrap;}
 .studio-views button[aria-pressed="true"]{background:var(--surface);color:var(--text);border-bottom-color:var(--studio-accent);}
@@ -105,7 +103,6 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .workspace-canvas{display:flex;flex:1 1 auto;flex-direction:column;gap:0;min-width:0;min-height:0;}
 #studio-guitar-zone{flex:none;min-width:0;min-height:0}
 .studio-guitar-zone[data-open="true"]{display:flex;flex-direction:column;height:var(--studio-guitar-zone-height,clamp(280px,34dvh,440px));min-height:280px;max-height:440px}
-#studio-guitar-zone[hidden]{display:none!important}
 #studio-guitar-zone #guitar-section{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;padding:0 var(--space-2) var(--space-1)}
 .studio-guitar-resizer{flex:none;height:8px;touch-action:none;cursor:ns-resize}
 .studio-guitar-resizer::after{content:"";display:block;height:2px;margin:var(--space-1) 0;background:var(--border-strong)}
@@ -121,10 +118,8 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 #studio-guitar-zone .guitar-status{flex:1 1 auto}
 #studio-guitar-zone .guitar-playhead{color:var(--ember);font-weight:700}
 #studio-guitar-zone #guitar-tab-scroll,#studio-guitar-zone .guitar-scroll{flex:1 1 auto;width:100%;min-height:0;max-height:none;overflow-x:auto;overflow-y:hidden;padding:0}
-#studio-guitar-zone #guitar-tab-scroll[hidden],#studio-guitar-zone .guitar-scroll[hidden]{display:none!important}
 .studio #workspace-canvas[data-guitar-zone-open="true"] :is(#piano-roll-section,#score-section){flex:1 1 0;min-height:320px}
 .studio-core-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);padding:var(--space-2);border-bottom:1px solid var(--border);background:var(--surface-subtle)}
-.studio-core-controls[hidden]{display:none!important}
 .studio-core-controls>.editor-toolbar{flex:1 1 auto}
 .studio-core-controls>.transport-advanced-grid{display:contents}
 .studio-core-controls .transport-form{display:flex;align-items:end;gap:var(--space-1)}
@@ -146,16 +141,13 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio-loop-seek-group .transport-form input{width:5rem;min-height:var(--control-h);font-size:var(--text-sm)}
 .studio-loop-seek-group .transport-form button{min-height:var(--control-h);padding:var(--space-1) var(--space-2);font-size:var(--text-sm)}
 .studio-quick-chord{display:flex;align-items:center;gap:var(--space-1)}
-.studio-quick-chord[hidden]{display:none!important}
 .studio .studio-core-controls>.instrument-mix-strip{width:auto;max-width:20rem;flex-wrap:nowrap;min-width:12rem;margin:0;padding:var(--space-1) var(--space-1)}
 .studio-dock-slot{display:flex;flex:1 1 50%;flex-direction:column;min-height:0;border-top:1px solid var(--border)}
-.studio-dock-slot[hidden]{display:none!important}
 .studio-dock-slot[data-open="false"]{flex:0 0 auto}
 .studio-dock-slot-heading{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:var(--space-2);padding:var(--space-1) var(--space-2);background:var(--surface)}
 .studio-dock-slot-heading strong{font-size:var(--text-xs)}
 .studio-dock-slot-toggle{width:32px;min-height:32px;padding:0}
 .studio-dock-slot-body{flex:1 1 auto;min-height:380px;overflow:auto;overscroll-behavior:contain}
-.studio-dock-slot-body[hidden]{display:none!important}
 .guitar-zone-toggle,.mobile-guitar-trigger{min-height: 44px;}
 .studio .workspace-pane{border:0;border-radius:0;padding:var(--space-1) var(--space-2);min-width:0;}
 .studio #piano-roll-section, .studio #score-section, .studio #lyrics-section, .studio #drums-section{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;}
@@ -217,9 +209,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio #expression-panel .pane-heading h3{font-size:var(--text-xs);}
 .studio #selection-summary{font-size:var(--text-xs);}
 .studio .workspace-sidebar{position:sticky;top:82px;align-self:start;max-height:calc(100dvh - 92px);overflow:auto;display:block;padding:0;border-left:1px solid var(--border);background:var(--surface-subtle);scrollbar-width:thin;}
-.studio .workspace-sidebar[hidden]{display:none !important;}
 .note-selection-bar{position:sticky;bottom:0;z-index:20;display:flex;flex-wrap:nowrap;align-items:center;gap:var(--space-1);padding:var(--space-1);overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;scrollbar-width:thin;background:var(--surface);border:1px solid var(--border);font-size:var(--text-xs);}
-.note-selection-bar[hidden], .drums-selection-toolbar[hidden]{display:none !important;}
 .note-selection-bar button{flex:0 0 auto;min-height:var(--control-h);min-width:44px;padding:var(--space-1) var(--space-1);font-size:var(--text-sm);border-color:var(--border-strong);background:var(--surface);color:var(--text);}
 .note-selection-bar [data-action="context-delete"]{border-color:var(--danger);color:var(--danger);}
 .note-selection-bar .editor-toolbar-group{flex:0 0 auto;flex-wrap:nowrap;gap:var(--space-1);padding:0;border:0;}
@@ -487,7 +477,6 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 }
 .studio-toolbar-actions > .studio-more > summary::before{content:"⋯";font-size:var(--text-lg);line-height:1;}
 .studio-toolbar-actions > .studio-more > summary::after{content:none;}
-.studio .roll-gesture-cue[hidden]{display:none !important;}
 .studio .roll-gesture-cue{
   position:absolute;z-index:3;top:40%;left:14%;
   width:min(500px, 66%);aspect-ratio:320 / 96;

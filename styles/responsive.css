@@ -235,7 +235,6 @@
   .studio-more{flex:1 1 44px;min-width:44px;}
   .studio-more[open] .studio-more-popover{top:auto;bottom:calc(100% + 7px);right:0;width:min(290px,calc(100vw - 14px));max-height:68dvh;}
   .studio-more-popover > button, .studio-panel-switches button, .studio-editor-settings button{min-height:44px;}
-  .studio .studio-panel-switches[hidden]{display:none !important;}
   .studio-panel-switches{display:grid;grid-template-columns:1fr;gap:var(--space-1);}
   .studio-panel-switches button{min-height:44px;padding:var(--space-1) var(--space-2);text-align:left;}
   .studio-editor-settings{display:grid;gap:var(--space-1);padding-top:var(--space-2);border-top:1px solid var(--border);}
@@ -1267,7 +1266,6 @@
   .studio .studio-toolbar-actions .desktop-project-actions button{display:inline-flex;flex:0 0 auto;align-items:center;gap:var(--space-1);width:auto;min-width:0;height:28px;min-height:28px;padding:var(--space-1) var(--space-1);white-space:nowrap;font-size:var(--text-xs);}
   .studio .studio-toolbar-actions > .studio-more{margin-left:auto;}
   .studio .page-header .mobile-panel-trigger{display:none;}
-  .studio #project-menu .app-settings-section[hidden]{display:none !important;}
   .studio #piano-roll-collapse{display:inline-flex;flex:0 0 auto;flex-direction:row;align-items:center;justify-content:center;width:auto;min-width:104px;min-height:34px;gap:var(--space-1);padding:var(--space-1) var(--space-2);white-space:nowrap;}
   .studio #piano-roll-collapse .disclosure-chevron{position:static;inset:auto;flex:0 0 16px;}
   .studio #piano-roll-collapse [data-copy]{flex:0 0 auto;font-size:var(--text-xs);white-space:nowrap;}
@@ -1292,7 +1290,6 @@
   .studio .studio-core-controls #generation-anchor-actions{display:flex;flex:0 0 auto;align-items:center;gap:var(--space-1);}
   .studio .studio-core-controls .generation-primary-actions,
   .studio .studio-core-controls #generation-anchor-actions{flex-direction:row;flex-wrap:nowrap;}
-  .studio .studio-core-controls [hidden]{display:none !important;}
   .studio .studio-core-controls .generation-primary-actions button,
   .studio .studio-core-controls #generation-anchor-actions button{width:auto;min-height:28px;padding:var(--space-1) var(--space-1);white-space:nowrap;font-size:var(--text-xs);}
   .studio .studio-core-controls .loop-toggle{display:flex;align-items:center;min-height:28px;font-size:var(--text-xs);}
@@ -1304,7 +1301,6 @@
   .studio[data-view-mode="score"] #view-controls,
   .studio[data-view-mode="lyrics"] #view-controls,
   .studio[data-view-mode="drums"] #view-controls{height:44px;min-height:44px;}
-  .studio #piano-roll-section .pane-heading[hidden]{display:none !important;}
   .studio #drums-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
 }
 
@@ -1313,7 +1309,6 @@
 }
 
 @media (width >= 90rem){
-  .studio .header-actions .project-menu[hidden]{display:none !important;}
 }
 
 @media (width > 46rem) and (width < 68rem) and (min-height:501px){
@@ -1427,7 +1422,6 @@
     outline:2px solid var(--focus);
     outline-offset:-2px;
   }
-  .studio .workspace-sidebar-resizer[hidden]{display:none !important;}
   .studio[data-studio-dock-open="false"] .mobile-panel-trigger:not([hidden]){display:inline-flex;}
   .studio .workspace-sidebar .studio-inspector-head{
     display:flex;
