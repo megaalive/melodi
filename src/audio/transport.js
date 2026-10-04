@@ -112,6 +112,56 @@ function eventKey(cycle, noteId) {
   return JSON.stringify([cycle, noteId]);
 }
 
+// P2: indeks jendela per lagu. Song canonical diganti utuh setiap commit, jadi
+// cache per objek (WeakMap) otomatis basi bersama song lama. Signature
+// pendek tetap dijaga agar engine juga benar kalau pemanggil menambah isi
+// song in-place, seperti yang dilakukan test dan importer.
+const timelineCache = new WeakMap();
+
+function timelineSignature(song) {
+  const notes = song.notes ?? [];
+  let events = 0;
+  for (const track of song.tracks ?? []) events += track.events?.length ?? 0;
+  return `${notes.length}:${notes[notes.length - 1]?.id ?? ""}:${events}:${song.tracks?.length ?? 0}`;
+}
+
+function lowerBound(values, target) {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = (low + high) >> 1;
+    if (values[middle] < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+export function songTimeline(song) {
+  const signature = timelineSignature(song);
+  const cached = timelineCache.get(song);
+  if (cached && cached.signature === signature) return cached;
+  const notes = [...(song.notes ?? [])].sort((left, right) => left.startTick - right.startTick || compareText(left.id, right.id));
+  const noteStarts = notes.map(note => note.startTick);
+  let maxNoteDuration = 0;
+  for (const note of notes) maxNoteDuration = Math.max(maxNoteDuration, note.durationTicks);
+  const hits = [];
+  for (const track of song.tracks ?? []) {
+    if (track.kind !== "percussion") continue;
+    for (const hit of track.events ?? []) hits.push({ track, hit });
+  }
+  hits.sort((left, right) => left.hit.startTick - right.hit.startTick || compareText(left.hit.id, right.hit.id));
+  const timeline = {
+    signature,
+    notes,
+    noteStarts,
+    maxNoteDuration,
+    hits,
+    hitStarts: hits.map(entry => entry.hit.startTick)
+  };
+  timelineCache.set(song, timeline);
+  return timeline;
+}
+
 export function planPercussionEvents(song, {
   audioNow,
   anchorAudioTime,
@@ -125,45 +175,50 @@ export function planPercussionEvents(song, {
   const rawNow = anchorTick + Math.max(0, audioNow - anchorAudioTime) / secondsPerTick;
   const rawEnd = anchorTick + Math.max(0, audioNow + lookAheadSeconds - anchorAudioTime) / secondsPerTick;
   const candidates = [];
+  const timeline = songTimeline(song);
+  const hits = timeline.hits;
+  const starts = timeline.hitStarts;
 
   function add(track, hit, cycle, absoluteStart) {
+    if (absoluteStart < rawNow - 1e-9 || absoluteStart > rawEnd) return;
+    // Kunci dibangun setelah filter jendela: formatnya kontrak dengan test
+    // engine, jadi yang diubah hanya kapan biayanya dibayar.
     const key = JSON.stringify(["percussion", cycle, track.id, hit.id]);
-    if (scheduledKeys.has(key) || absoluteStart < rawNow - 1e-9 || absoluteStart > rawEnd) return;
+    if (scheduledKeys.has(key)) return;
     const startTime = Math.max(audioNow, anchorAudioTime + (absoluteStart - anchorTick) * secondsPerTick);
     candidates.push({ key, track, hit, cycle, startTime });
   }
 
-  const tracks = (song.tracks ?? []).filter((track) => track.kind === "percussion");
+  function addRange(startIndex, endIndex, cycle, shift) {
+    for (let index = startIndex; index < endIndex; index += 1) {
+      const { track, hit } = hits[index];
+      add(track, hit, cycle, hit.startTick + shift);
+    }
+  }
+
   if (!loop.enabled) {
     const rangeStart = loop?.startTick ?? 0;
     const rangeEnd = loop?.endTick ?? Number.POSITIVE_INFINITY;
-    for (const track of tracks) {
-      for (const hit of track.events) {
-        if (hit.startTick < rangeStart || hit.startTick >= rangeEnd) continue;
-        add(track, hit, 0, hit.startTick);
-      }
-    }
+    const from = Math.max(rangeStart, rawNow - 1e-9);
+    const to = Math.min(rangeEnd, rawEnd);
+    if (to >= from) addRange(lowerBound(starts, from), lowerBound(starts, to + 1e-9), 0, 0);
   } else {
     const length = loop.endTick - loop.startTick;
     const currentCycle = Math.max(0, Math.floor((rawNow - loop.startTick) / length));
 
     if (anchorTick < loop.startTick && rawNow < loop.startTick) {
-      for (const track of tracks) {
-        for (const hit of track.events) {
-          if (hit.startTick < anchorTick || hit.startTick >= loop.startTick) continue;
-          add(track, hit, 0, hit.startTick);
-        }
-      }
+      const from = Math.max(anchorTick, loop.startTick - length);
+      const to = Math.min(loop.startTick, rawEnd);
+      if (to >= from) addRange(lowerBound(starts, from), lowerBound(starts, to + 1e-9), 0, 0);
     }
 
-    for (const track of tracks) {
-      for (const hit of track.events) {
-        if (hit.startTick < loop.startTick || hit.startTick >= loop.endTick) continue;
-        const lastCycle = Math.max(currentCycle, Math.floor((rawEnd - loop.startTick) / length) + 1);
-        for (let cycle = currentCycle; cycle <= lastCycle; cycle += 1) {
-          add(track, hit, cycle, hit.startTick + cycle * length);
-        }
-      }
+    const lastCycle = Math.max(currentCycle, Math.floor((rawEnd - loop.startTick) / length) + 1);
+    for (let cycle = currentCycle; cycle <= lastCycle; cycle += 1) {
+      const shift = cycle * length;
+      const from = Math.max(loop.startTick, rawNow - shift);
+      const to = Math.min(loop.endTick, rawEnd - shift);
+      if (to < from) continue;
+      addRange(lowerBound(starts, from), lowerBound(starts, to + 1e-9), cycle, shift);
     }
   }
 
@@ -185,10 +240,15 @@ export function planNoteEvents(song, {
   const rawNow = anchorTick + Math.max(0, audioNow - anchorAudioTime) / secondsPerTick;
   const rawEnd = anchorTick + Math.max(0, audioNow + lookAheadSeconds - anchorAudioTime) / secondsPerTick;
   const candidates = [];
+  const timeline = songTimeline(song);
+  const notes = timeline.notes;
+  const starts = timeline.noteStarts;
+  const maxDuration = timeline.maxNoteDuration;
 
   function add(note, cycle, absoluteStart, absoluteEnd, noteAbsoluteStart = note.startTick) {
+    if (absoluteEnd <= rawNow || absoluteStart > rawEnd) return;
     const key = eventKey(cycle, note.id);
-    if (scheduledKeys.has(key) || absoluteEnd <= rawNow || absoluteStart > rawEnd) return;
+    if (scheduledKeys.has(key)) return;
     const onsetTick = Math.max(absoluteStart, rawNow, anchorTick);
     const startTime = Math.max(audioNow, anchorAudioTime + (onsetTick - anchorTick) * secondsPerTick);
     const endTime = anchorAudioTime + (absoluteEnd - anchorTick) * secondsPerTick;
@@ -206,39 +266,47 @@ export function planNoteEvents(song, {
     });
   }
 
+  function addRange(fromIndex, toIndex, cycle, shift, rangeStart, rangeEnd, skipFirstCycle = false) {
+    for (let index = fromIndex; index < toIndex; index += 1) {
+      const note = notes[index];
+      const noteEnd = note.startTick + note.durationTicks;
+      if (note.startTick >= rangeEnd || noteEnd <= rangeStart) continue;
+      // Nada yang dimulai sebelum loop tidak ikut berulang di siklus pertama.
+      if (skipFirstCycle && note.startTick < rangeStart) continue;
+      add(note, cycle,
+        Math.max(note.startTick, rangeStart) + shift,
+        Math.min(noteEnd, rangeEnd) + shift,
+        note.startTick + shift);
+    }
+  }
+
   if (!loop.enabled) {
     const rangeStart = loop?.startTick ?? 0;
     const rangeEnd = loop?.endTick ?? Number.POSITIVE_INFINITY;
-    for (const note of song.notes) {
-      const noteEnd = note.startTick + note.durationTicks;
-      if (note.startTick >= rangeEnd || noteEnd <= rangeStart) continue;
-      add(note, 0, Math.max(note.startTick, rangeStart), Math.min(noteEnd, rangeEnd));
-    }
+    // Batas bawah tetap memakai durasi terpanjang, bukan rangeStart: nada yang
+    // mulai sebelum range masih berbunyi setelah di-clip ke dalam range.
+    const from = rawNow - maxDuration;
+    const to = Math.min(rangeEnd, rawEnd);
+    if (to >= from) addRange(lowerBound(starts, from), lowerBound(starts, to + 1e-9), 0, 0, rangeStart, rangeEnd);
   } else {
     const length = loop.endTick - loop.startTick;
     const currentCycle = Math.max(0, Math.floor((rawNow - loop.startTick) / length));
+    const lastCycle = Math.max(currentCycle, Math.floor((rawEnd - loop.startTick) / length) + 1);
 
     // Notes before the loop range may finish on the first pass, but never repeat.
     if (anchorTick < loop.startTick && rawNow < loop.endTick) {
-      for (const note of song.notes) {
-        if (note.startTick < loop.startTick) {
-          add(note, 0, note.startTick, Math.min(note.startTick + note.durationTicks, loop.endTick), note.startTick);
-        }
-      }
+      addRange(0, lowerBound(starts, loop.startTick), 0, 0, loop.startTick, loop.endTick);
     }
 
-    for (const note of song.notes) {
-      const noteEnd = note.startTick + note.durationTicks;
-      if (note.startTick >= loop.endTick || noteEnd <= loop.startTick) continue;
-      const firstCycle = note.startTick < loop.startTick && anchorTick < loop.startTick && currentCycle === 0
-        ? currentCycle + 1
-        : currentCycle;
-      const lastCycle = Math.max(firstCycle, Math.floor((rawEnd - loop.startTick) / length) + 1);
-      for (let cycle = firstCycle; cycle <= lastCycle; cycle += 1) {
-        const start = Math.max(note.startTick, loop.startTick) + cycle * length;
-        const end = Math.min(noteEnd, loop.endTick) + cycle * length;
-        add(note, cycle, start, end, note.startTick + cycle * length);
-      }
+    for (let cycle = currentCycle; cycle <= lastCycle; cycle += 1) {
+      const shift = cycle * length;
+      // Batas bawah tidak boleh dijepit ke loop.startTick: nada yang mulai
+      // sebelum itu masih berbunyi saat jendela terbuka.
+      const from = rawNow - maxDuration - shift;
+      const to = Math.min(loop.endTick, rawEnd - shift);
+      if (to < from) continue;
+      const skipFirstCycle = currentCycle === 0 && anchorTick < loop.startTick;
+      addRange(lowerBound(starts, from), lowerBound(starts, to + 1e-9), cycle, shift, loop.startTick, loop.endTick, skipFirstCycle);
     }
   }
 

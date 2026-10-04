@@ -182,3 +182,81 @@ test("createSong still validates a song built from a reference", () => {
   assert.equal(song.notes.length, 4);
   assert.equal(song.tracks[0].events.length, 8);
 });
+
+function bigSong(barCount = 128, notesPerBar = 16, hitsPerBar = 48) {
+  const notes = [];
+  const events = [];
+  for (let bar = 0; bar < barCount; bar += 1) {
+    const barStart = bar * 4 * PPQ;
+    for (let index = 0; index < notesPerBar; index += 1) {
+      notes.push({
+        id: `big-note-${bar}-${index}`,
+        pitch: 60 + ((bar * 3 + index * 5) % 24),
+        startTick: barStart + Math.floor((index * 4 * PPQ) / notesPerBar),
+        durationTicks: Math.max(60, Math.floor((4 * PPQ) / notesPerBar) - 24),
+        source: "user",
+        anchor: false,
+        locked: false
+      });
+    }
+    for (let hit = 0; hit < hitsPerBar; hit += 1) {
+      events.push({
+        id: `big-hit-${bar}-${hit}`,
+        pieceId: hit % 2 === 0 ? "kick" : "snare",
+        startTick: barStart + Math.floor((hit * 4 * PPQ) / hitsPerBar),
+        velocity: 90,
+        articulation: "normal"
+      });
+    }
+  }
+  const song = fixture(1, 1);
+  song.notes = notes;
+  song.tracks = [{ id: "track-perf", kind: "percussion", role: "drums", kitId: "gm-standard", events }];
+  song.chords = [];
+  return song;
+}
+
+test("planning a 128-bar window stays under the per-tick budget", () => {
+  const song = createSong(bigSong());
+  const loop = { enabled: false, startTick: 0, endTick: 128 * 4 * PPQ };
+  const scheduled = new Set();
+  const durations = [];
+  // 400 tick coupon dengan posisi maju seperti playback nyata.
+  for (let step = 0; step < 400; step += 1) {
+    const anchorTick = step * 120;
+    const options = {
+      audioNow: 0,
+      anchorAudioTime: 0,
+      anchorTick,
+      tempo: 120,
+      lookAheadSeconds: 0.12,
+      loop,
+      scheduledKeys: scheduled
+    };
+    const startedAt = performance.now();
+    for (const event of planNoteEvents(song, options)) scheduled.add(event.key);
+    for (const event of planPercussionEvents(song, options)) scheduled.add(event.key);
+    durations.push(performance.now() - startedAt);
+  }
+  durations.sort((left, right) => left - right);
+  const median = durations[Math.floor(durations.length / 2)];
+  assert.ok(median < 3, `median planner ${median.toFixed(3)}ms per tick untuk 128 bar`);
+});
+
+test("planning the same song twice returns the same events without rescanning", () => {
+  const song = createSong(bigSong(8, 8, 8));
+  const options = {
+    audioNow: 0,
+    anchorAudioTime: 0,
+    anchorTick: 0,
+    tempo: 120,
+    lookAheadSeconds: 0.12,
+    loop: { enabled: false, startTick: 0, endTick: 32 * PPQ },
+    scheduledKeys: new Set()
+  };
+  const first = planNoteEvents(song, options).map(event => event.key);
+  const second = planNoteEvents(song, options).map(event => event.key);
+  assert.deepEqual(second, first, "hasil planner deterministik untuk song yang sama");
+  const percussion = planPercussionEvents(song, options).map(event => event.key);
+  assert.ok(percussion.length > 0, "percussion planner tetap mengembalikan event");
+});

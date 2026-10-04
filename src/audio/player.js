@@ -47,7 +47,8 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
   let anchor = { audioTime: 0, tick: 0 };
   let tempo = 120;
   let loop = { enabled: false, startTick: 0, endTick: 1920 };
-  let scheduled = new Map();
+  const scheduled = new Map();
+  const scheduledAt = new Map();
   const voices = new Map();
   const chokeVoices = new Map();
   let nextVoiceId = 0;
@@ -172,6 +173,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     }
     chokeVoices.clear();
     scheduled.clear();
+    scheduledAt.clear();
   }
 
   function halt(tick = positionAt()) {
@@ -499,7 +501,36 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     }
   }
 
-  function currentCycle(tick) {
+  // P2: event harmoni dan bass turunan hanya bergantung pada song, jadi dihitung
+// sekali per song. Song digantikan utuh saat commit, jadi cache per objek
+// (WeakMap) ikut basi bersama song lama; signature pendek menutup perubahan
+// in-place supaya cache tidak serving turunan lama.
+const sketchCache = new WeakMap();
+
+function sketchSignature(song) {
+  const chords = song.chords ?? [];
+  const notes = song.notes ?? [];
+  return [
+    chords.length,
+    chords[0]?.id ?? "",
+    chords[0]?.rootPitchClass ?? "",
+    chords[chords.length - 1]?.id ?? "",
+    notes.length,
+    song.sketch?.harmony?.style ?? "",
+    song.sketch?.bass?.style ?? ""
+  ].join(":");
+}
+
+function sketchSongFor(song) {
+  const signature = sketchSignature(song);
+  const cached = sketchCache.get(song);
+  if (cached && cached.signature === signature) return cached.derived;
+  const derived = { notes: [...planHarmonyEvents(song), ...planBassEvents(song)] };
+  sketchCache.set(song, { signature, derived });
+  return derived;
+}
+
+function currentCycle(tick) {
     if (!loop.enabled) return 0;
     return Math.max(0, Math.floor((tick - loop.startTick) / (loop.endTick - loop.startTick)));
   }
@@ -519,7 +550,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     const percussionEvents = planPercussionEvents(song, options);
     // Derived notes share transport clipping, rehydration, cycle keys and clock
     // with melody; they never enter canonical Song.notes.
-    const sketchEvents = planNoteEvents({ notes: [...planHarmonyEvents(song), ...planBassEvents(song)] }, {
+    const sketchEvents = planNoteEvents(sketchSongFor(song), {
       ...options,
       scheduledKeys: { has: (key) => scheduled.has(`sketch:${key}`) }
     });
@@ -531,6 +562,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       try {
         scheduleVoice(event, gain);
         scheduled.set(event.key, event.cycle);
+        scheduledAt.set(event.key, event.startTime);
       } catch {
         fail("audio-scheduling-failed");
       }
@@ -541,6 +573,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       try {
         schedulePercussionVoice(event, gain);
         scheduled.set(event.key, event.cycle);
+        scheduledAt.set(event.key, event.startTime);
       } catch {
         fail("audio-scheduling-failed");
       }
@@ -551,6 +584,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       try {
         scheduleSketchVoice(event, gain);
         scheduled.set(`sketch:${event.key}`, event.cycle);
+        scheduledAt.set(`sketch:${event.key}`, event.startTime);
       } catch {
         fail("audio-scheduling-failed");
       }
@@ -569,6 +603,15 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
         return;
       }
       const cycle = currentCycle(anchor.tick + Math.max(0, now - anchor.audioTime) * tempo * 480 / 60);
+      // P2: prune juga saat loop mati. Sebelumnya kunci hanya dibersihkan
+      // per siklus loop, jadi setiap playback menumpuk semua event yang
+      // sudah lewat dan iterasi prune ikut memanjang.
+      for (const [key, startTime] of scheduledAt) {
+        if (startTime < now - LOOK_AHEAD_SECONDS) {
+          scheduledAt.delete(key);
+          scheduled.delete(key);
+        }
+      }
       for (const [key, eventCycle] of scheduled) {
         if (loop.enabled && eventCycle < cycle - 1) scheduled.delete(key);
       }
