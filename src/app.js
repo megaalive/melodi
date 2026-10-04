@@ -39,6 +39,7 @@ let drumGridView;
 let bendEditor;
 let statusTimer;
 let pointerInteractionActive = false;
+let rollHintDismissed = false;
 let lastFollowSyllableId = null;
 let contextTarget = null;
 let shareSession = false;
@@ -1469,12 +1470,17 @@ function renderPlayback() {
   byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
   byId("current-section").dataset.entityId = section?.id ?? "";
   const mobileTransportSummary = byId("mobile-transport-summary");
-  mobileTransportSummary.textContent = translate("transportDockSummary", {
+  const tempoState = translate(playback.loop.enabled ? "loopStateOn" : "loopStateOff");
+  byId("mobile-transport-bpm").textContent = String(playback.tempo);
+  byId("mobile-transport-loop-state").textContent = tempoState;
+  byId("mobile-transport-tempo").setAttribute("aria-label", `${playback.tempo} BPM`);
+  byId("mobile-transport-loop").setAttribute("aria-label", `${translate("loopEnabledLabel")} ${tempoState}`);
+  byId("mobile-transport-loop").dataset.loopEnabled = String(playback.loop.enabled);
+  mobileTransportSummary.setAttribute("aria-label", translate("transportDockSummary", {
     bpm: playback.tempo,
-    loop: translate(playback.loop.enabled ? "loopStateOn" : "loopStateOff")
-  });
-  mobileTransportSummary.setAttribute("aria-label", mobileTransportSummary.textContent);
-  mobileTransportSummary.title = mobileTransportSummary.textContent;
+    loop: tempoState
+  }));
+  mobileTransportSummary.title = mobileTransportSummary.getAttribute("aria-label");
   const playing = playback.status === "playing";
   const playToggle = byId("play");
   playToggle.disabled = false;
@@ -1605,7 +1611,7 @@ function render() {
   rollView.render(song, state, null, songEndTick);
   expressionView?.render(song, state, rollView.getGeometry());
   renderExpressionControls(state);
-  byId("piano-roll-empty").hidden = song.notes.length > 0;
+  byId("piano-roll-empty").hidden = rollHintDismissed || song.notes.length > 0;
   renderScoreControls(song, state);
   scoreView.render(song, state);
   renderGuitar(state);
@@ -2833,7 +2839,10 @@ document.addEventListener("click", (event) => {
   if (target.closest("#chord-context-menu")) closeChordContextMenu();
   if (target.closest("#project-menu") && !(target instanceof HTMLSelectElement)) closeProjectMenu();
   const state = commands.getState();
-  if (target.dataset.action === "set-view-mode") {
+  if (target.dataset.action === "dismiss-roll-hint") {
+    rollHintDismissed = true;
+    byId("piano-roll-empty").hidden = true;
+  } else if (target.dataset.action === "set-view-mode") {
     const mode = target.dataset.studioView;
     if (mode && state.view.mode !== mode) run(() => commands.setViewMode(mode));
   } else if (target.dataset.action === "select-harmony") {

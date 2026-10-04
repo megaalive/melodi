@@ -109,11 +109,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .workspace-grid{display:grid;flex:1 1 auto;min-height:0;}
 .studio .workspace-canvas{display:flex;flex:1 1 auto;flex-direction:column;gap:0;min-width:0;min-height:0;}
 .studio-core-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);padding:var(--space-2);border-bottom:1px solid var(--border);background:var(--surface-subtle)}
-/* Guitar zone: satu komponen, empat bagian. Header = judul, segmented
-   TAB/Fretboard, chip playhead, lalu Tutup (selalu anak terakhir). Info = status
-   dan legenda yang boleh membungkus. Body = diagram yang mengisi sisa tinggi.
-   Resizer disisipkan studio.js di atas body. Semua ukuran dari token dan tidak
-   ada !important; 44px untuk sentuh datang dari --control-h. */
+/* Guitar zone: header, info, body. Resizer disisipkan studio.js di atas body. */
 #studio-guitar-zone{flex:none;min-width:0;min-height:0}
 #studio-guitar-zone:not([data-open="true"]){display:none}
 #studio-guitar-zone[data-open="true"]{
@@ -174,7 +170,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
   white-space:nowrap;
 }
 .guitar-zone-header .guitar-playhead:empty{display:none}
-/* Tanpa chip playhead, tombol Tutup yang mengambil jarak pemisah di kanan. */
+/* Tanpa chip playhead, Tutup yang menjadi pemisah kanan. */
 .guitar-zone-header:not(:has(.guitar-playhead:not(:empty))) .guitar-zone-toggle{margin-inline-start:auto}
 .guitar-zone-header .guitar-zone-toggle{
   flex:0 0 auto;
@@ -205,8 +201,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
   cursor:ns-resize;
 }
 .studio-guitar-resizer::after{content:"";display:block;height:1px;background:var(--border)}
-/* Grip kecil di tengah hanya saat hover atau fokus: petunjuk bahwa area 8px
-   ini bisa digeser, tanpa menambah garis tebal di atas header. */
+/* Grip di tengah saat hover/fokus: petunjuk area 8px ini bisa digeser. */
 .studio-guitar-resizer::before{
   content:"";
   position:absolute;
@@ -242,8 +237,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 #guitar-tab,#guitar{display:block;max-width:none;color:var(--text)}
 .studio #workspace-canvas[data-guitar-zone-open="true"] :is(#piano-roll-section,#score-section){flex:1 1 0;min-height:320px}
 @media (width <= 46rem){
-  /* HP: judul sheet sudah menyebut Gitar, jadi h2 di dalam zona disembunyikan
-     dan baris pertama header tinggal tombol Tutup. */
+  /* HP: judul sheet sudah menyebut Gitar, jadi h2 dalam zona disembunyikan. */
   .guitar-zone-header h2{display:none}
   .guitar-zone-header{
     display:grid;
@@ -256,9 +250,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
   .guitar-layout-group{grid-area:layout}
   .guitar-zone-header .guitar-playhead{grid-area:playhead;justify-self:start;margin:0}
   .guitar-zone-header .guitar-zone-toggle{grid-area:close;justify-self:end}
-  /* Sheet Gitar harus muat 6 senar TAB (232px) plus chrome zona; sheet panel
-     lain tetap memakai tinggi lamanya. Zona mengisi sisa sheet, jadi di HP
-     splitter tidak menambah tinggi melewati sheet. */
+  /* Sheet Gitar muat 6 senar TAB (232px); sheet lain tetap 55dvh. */
   body.studio[data-studio-panel="guitar"] .workspace-sidebar[data-sheet-size="half"]{
     height:min(68dvh, 560px);
     max-height:min(68dvh, 560px);
@@ -589,7 +581,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .harmony-timeline-tools #harmony-candidates p{align-self:center;}
 .studio .harmony-timeline-tools #harmony-candidates [data-action=accept-harmony]{white-space:nowrap;padding-inline:var(--space-2);color:var(--accent);}
 
-/* Hover ghost: accent-soft + accent-strong; color:on-accent hanya untuk filled. */
+/* Hover ghost: accent-soft/-strong; on-accent hanya untuk filled. */
 button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .studio-toolbar-actions button:hover:not(:disabled), .studio .desktop-project-action:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled){
 
   background:var(--accent-soft);color:var(--accent-strong);
@@ -771,6 +763,14 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .studio .help-sheet section{display:grid;gap:var(--space-1);}
 .studio .help-sheet section p{margin:0;color:var(--text-muted);}
 .studio .mobile-transport-summary{display:none;}
+/* C4a. Dock: chip tempo dibaca, chip loop lewat ikon; tidak ada yang dipotong. */
+.studio .transport-summary-chip{display:inline-flex;align-items:center;gap:var(--space-1);flex:0 0 auto;padding:0 var(--space-1);border:1px solid var(--border);border-radius:999px;background:var(--surface-subtle);color:var(--text-muted);font-size:var(--text-xs);font-weight:650;line-height:1.6;white-space:nowrap;}
+.studio .transport-summary-icon{width:0.75rem;height:0.75rem;flex:0 0 auto;}
+.studio .transport-summary-tempo output{font-variant-numeric:tabular-nums;color:var(--text);}
+.studio .transport-summary-unit{letter-spacing:0.02em;}
+.studio .mobile-workspace-dock .transport-summary-loop{width:1.5rem;height:1.5rem;justify-content:center;padding:0;}
+.studio .mobile-workspace-dock .transport-summary-loop > span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);}
+.studio .transport-summary-loop[data-loop-enabled="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong);}
 .studio .transport-buttons > .tempo-control{display:flex;align-items:center;}
 .studio .transport-buttons > .tempo-control label{display:flex;align-items:center;gap:var(--space-1);white-space:nowrap;}
 .studio-views button[aria-pressed="false"]{border-bottom-color:transparent;}

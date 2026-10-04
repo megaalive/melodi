@@ -99,7 +99,10 @@
               <div><dt data-copy="currentNoteLabel"></dt><dd><output id="current-note" data-entity="current-note"></output></dd></div>
               <div class="machine-detail"><dt data-copy="currentSectionLabel"></dt><dd><output id="current-section" data-entity="current-section"></output></dd></div>
             </dl>
-            <span id="mobile-transport-summary" class="mobile-transport-summary" data-entity="transport-summary"></span>
+            <span id="mobile-transport-summary" class="mobile-transport-summary" role="group" data-aria-copy="transportDockSummaryGroup">
+              <span class="transport-summary-chip transport-summary-tempo" id="mobile-transport-tempo"><svg class="transport-summary-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M7 3h6l-3 8h4l-8 6 2-7H5z" fill="currentColor" stroke="none"></path></svg><output id="mobile-transport-bpm" data-entity="transport-tempo">120</output><span class="transport-summary-unit">BPM</span></span>
+              <span class="transport-summary-chip transport-summary-loop" id="mobile-transport-loop"><svg class="transport-summary-icon" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 8h8l-2.5-2.5M15 12H7l2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></svg><span id="mobile-transport-loop-state" data-entity="transport-loop-state"></span></span>
+            </span>
           </div>
 
           <div class="playback-settings-group" role="group" data-aria-copy="playbackSettingsGroupLabel">
@@ -247,6 +250,7 @@
                 </div>
                 <div id="piano-roll-empty" class="roll-empty" data-entity="roll-empty" hidden>
                   <p class="roll-empty-hint" data-copy="emptyRollHint"></p>
+                  <button type="button" class="roll-empty-dismiss" data-action="dismiss-roll-hint" data-aria-copy="closeButton"></button>
                 </div>
               </div>
               <p id="roll-selection" class="muted selection-readout" data-entity="selected-notes"></p>
