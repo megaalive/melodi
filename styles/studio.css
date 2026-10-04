@@ -193,8 +193,30 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .guitar-zone-info p{margin:0;min-width:0}
 .guitar-zone-info .guitar-status{flex:1 1 auto}
 .guitar-zone-info .guitar-legend{flex:0 1 auto}
-.studio-guitar-resizer{flex:none;height:8px;touch-action:none;cursor:ns-resize}
-.studio-guitar-resizer::after{content:"";display:block;height:2px;background:var(--border-strong)}
+.studio-guitar-resizer{
+  position:relative;
+  flex:none;
+  height:8px;
+  touch-action:none;
+  cursor:ns-resize;
+}
+.studio-guitar-resizer::after{content:"";display:block;height:1px;background:var(--border)}
+/* Grip kecil di tengah hanya saat hover atau fokus: petunjuk bahwa area 8px
+   ini bisa digeser, tanpa menambah garis tebal di atas header. */
+.studio-guitar-resizer::before{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:24px;
+  height:3px;
+  border-radius:2px;
+  background:var(--border-strong);
+  opacity:0;
+  transform:translate(-50%, -50%);
+}
+.studio-guitar-resizer:hover::before,
+.studio-guitar-resizer:focus-visible::before{opacity:1}
 .studio-guitar-resizer:focus-visible{outline:2px solid var(--focus)}
 #guitar-section.guitar-zone-body{
   display:flex;
@@ -216,7 +238,9 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 #guitar-tab,#guitar{display:block;max-width:none;color:var(--text)}
 .studio #workspace-canvas[data-guitar-zone-open="true"] :is(#piano-roll-section,#score-section){flex:1 1 0;min-height:320px}
 @media (width <= 46rem){
-  /* HP: baris 1 = judul dan Tutup, baris 2 = segmented dan playhead. */
+  /* HP: judul sheet sudah menyebut Gitar, jadi h2 di dalam zona disembunyikan
+     dan baris pertama header tinggal tombol Tutup. */
+  .guitar-zone-header h2{display:none}
   .guitar-zone-header{
     display:grid;
     grid-template-columns:auto 1fr;
@@ -228,6 +252,20 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
   .guitar-layout-group{grid-area:layout}
   .guitar-zone-header .guitar-playhead{grid-area:playhead;justify-self:start;margin:0}
   .guitar-zone-header .guitar-zone-toggle{grid-area:close;justify-self:end}
+  /* Sheet Gitar harus muat 6 senar TAB (232px) plus chrome zona; sheet panel
+     lain tetap memakai tinggi lamanya. Zona mengisi sisa sheet, jadi di HP
+     splitter tidak menambah tinggi melewati sheet. */
+  body.studio[data-studio-panel="guitar"] .workspace-sidebar[data-sheet-size="half"]{
+    height:min(68dvh, 560px);
+    max-height:min(68dvh, 560px);
+    display:flex;
+    flex-direction:column;
+  }
+  body.studio[data-studio-panel="guitar"] #studio-guitar-zone[data-open="true"]{
+    flex:1 1 auto;
+    height:auto;
+    max-height:none;
+  }
 }
 .studio-core-controls>.editor-toolbar{flex:1 1 auto}
 .studio-core-controls>.transport-advanced-grid{display:contents}

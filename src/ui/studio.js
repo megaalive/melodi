@@ -129,7 +129,10 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarResizer.setAttribute('aria-orientation', 'horizontal');
   guitarResizer.setAttribute('aria-controls', 'guitar-section');
   guitarResizer.setAttribute('tabindex', '0');
-  guitarZone?.insertBefore(guitarResizer, guitarSection);
+// Resizer di tepi atas zona: batasnya dengan kanvas di atasnya, persis seperti
+  // splitter yang lain. Menyisipkannya sekali di sini membuat posisinya tetap
+  // sama di semua layout.
+  guitarZone?.insertBefore(guitarResizer, guitarZone?.firstChild);
   // Tinggi minimum mengikuti isi zona: header, info, splitter, dan diagram.
   // Kalau splitter boleh lebih kecil, kanvas terpotong diam-diam.
   function guitarZoneContentHeight() {

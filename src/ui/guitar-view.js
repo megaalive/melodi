@@ -25,6 +25,9 @@ const LABEL_WIDTH = 34;
 const MIN_FRET_WIDTH = 28;
 const FRET_WIDTH = MIN_FRET_WIDTH;
 const ROW_HEIGHT = 22;
+const MIN_ROW_HEIGHT = 20;
+const MAX_ROW_HEIGHT = 32;
+const BOARD_TOP = 18;
 const NUT_HEIGHT = 6;
 
 function svgElement(name, attributes = {}, parent = null, text = null) {
@@ -45,9 +48,15 @@ export function fretCenterX(fret, { labelWidth = LABEL_WIDTH, fretWidth = FRET_W
   return labelWidth + (fret + 1) * fretWidth - fretWidth / 2;
 }
 
+/**
+ * Papan fret mengisi tinggi yang tersedia: jarak senar dihitung dari tinggi
+ * body dan dibatasi 20-32px. Dengan tinggi tetap, papan meninggalkan 78-138px kosong
+ * di bawahnya di 1440x900 dan 1920x1080.
+ */
 export function createGuitarViewGeometry(viewportWidth, {
   tuning = STANDARD_TUNING,
-  maxFret = MAX_FRET
+  maxFret = MAX_FRET,
+  viewportHeight = 0
 } = {}) {
   const minimumWidth = LABEL_WIDTH + (maxFret + 1) * MIN_FRET_WIDTH;
   const measuredWidth = Number(viewportWidth);
@@ -55,9 +64,15 @@ export function createGuitarViewGeometry(viewportWidth, {
     ? measuredWidth
     : minimumWidth;
   const fretWidth = Math.max(MIN_FRET_WIDTH, (availableWidth - LABEL_WIDTH) / (maxFret + 1));
+  const measuredHeight = Number(viewportHeight);
+  const rowHeight = Number.isFinite(measuredHeight) && measuredHeight > 0
+    ? Math.min(MAX_ROW_HEIGHT, Math.max(MIN_ROW_HEIGHT,
+      Math.floor((measuredHeight - BOARD_TOP - NUT_HEIGHT) / tuning.length)))
+    : ROW_HEIGHT;
   return {
     width: LABEL_WIDTH + (maxFret + 1) * fretWidth,
-    height: 18 + ROW_HEIGHT * tuning.length + NUT_HEIGHT,
+    height: BOARD_TOP + rowHeight * tuning.length + NUT_HEIGHT,
+    rowHeight,
     fretWidth
   };
 }
@@ -189,7 +204,8 @@ export function createGuitarView(svg, {
   let lastSoundingKey = null;
   let lastRenderState = null;
   let observedWidth = Number(container?.clientWidth) || 0;
-  let geometry = createGuitarViewGeometry(observedWidth, { tuning, maxFret });
+  let observedHeight = Number(container?.clientHeight) || 0;
+  let geometry = createGuitarViewGeometry(observedWidth, { tuning, maxFret, viewportHeight: observedHeight });
 
   function width() {
     return geometry.width;
@@ -208,11 +224,14 @@ export function createGuitarView(svg, {
   }
 
   function stringY(index) {
-    return 18 + index * ROW_HEIGHT + ROW_HEIGHT / 2;
+    return BOARD_TOP + index * geometry.rowHeight + geometry.rowHeight / 2;
   }
 
   function drawNeck(hitFrets, currentFrets) {
     svgElement("rect", { x: 0, y: 0, width: width(), height: height(), class: "neck-board" }, svg);
+    // Gutter label memakai latar surface sendiri dan garis senar mulai setelah
+    // gutter, jadi label nama dan nomor senar tidak lagi dicoret garis.
+    svgElement("rect", { x: 0, y: 0, width: LABEL_WIDTH, height: height(), class: "neck-gutter" }, svg);
     svgElement("rect", { x: LABEL_WIDTH, y: 10, width: FRET_WIDTH, height: height() - 10, class: "neck-nut" }, svg);
 
     for (const fret of INLAY_FRETS) {
@@ -220,7 +239,7 @@ export function createGuitarView(svg, {
       svgElement("circle", {
         cx: centerX(fret),
         // Inlay di antara senar D dan G, bukan tepat di senar D.
-        cy: 18 + (ROW_HEIGHT * tuning.length) * 0.375,
+        cy: BOARD_TOP + (geometry.rowHeight * tuning.length) * 0.375,
         r: 4.5,
         class: "neck-inlay"
       }, svg);
@@ -248,7 +267,7 @@ export function createGuitarView(svg, {
     for (let index = 0; index < tuning.length; index += 1) {
       const y = stringY(index);
       const stringNumber = tuning.length - index;
-      svgElement("line", { x1: 0, y1: y, x2: width(), y2: y, class: "neck-string", "data-string": stringNumber }, svg);
+      svgElement("line", { x1: LABEL_WIDTH, y1: y, x2: width(), y2: y, class: "neck-string", "data-string": stringNumber }, svg);
       svgElement("text", { x: 4, y: y + 4, class: "neck-string-label" }, svg, STRING_NAMES[index]);
       // Nomor senar ikut dicetak supaya tidak ada ambiguitas senar mana yang
       // dimaksud, karena urutan baris di view ini dibalik dari diagram chord.
@@ -333,8 +352,10 @@ export function createGuitarView(svg, {
     render(state) {
       lastRenderState = state;
       const viewportWidth = Number(container?.clientWidth) || 0;
+      const viewportHeight = Number(container?.clientHeight) || 0;
       if (viewportWidth > 0) observedWidth = viewportWidth;
-      geometry = createGuitarViewGeometry(viewportWidth, { tuning, maxFret });
+      if (viewportHeight > 0) observedHeight = viewportHeight;
+      geometry = createGuitarViewGeometry(viewportWidth, { tuning, maxFret, viewportHeight });
       // Urutan fokus: note yang dipilih, note yang sedang berbunyi, lalu note
       // pertama. Tanpa fallback terakhir, view akan kosong setiap kali transport
       // berhenti dan tidak ada yang dipilih, padahal lagunya jelas berisi nada.
@@ -366,6 +387,12 @@ export function createGuitarView(svg, {
         drawFocusedExpression(note, primaryPosition);
       }
       lastSoundingKey = `${note?.id ?? ""}:${sounding}`;
+      // Kalau kontainer belum punya ukuran (diagram masih tersembunyi), gambar
+      // ulang pada frame berikutnya: lebar dan tinggi yang dipakai geometry
+      // memengaruhi fretWidth dan jarak senar.
+      if (!(viewportWidth > 0) && typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => view.render(lastRenderState ?? state));
+      }
       return { note, positions, primaryPosition, sounding, playheadTick: state.playback.currentTick };
     },
 
@@ -393,8 +420,13 @@ export function createGuitarView(svg, {
   if (container && typeof ResizeObserver === "function") {
     const resizeObserver = new ResizeObserver(() => {
       const nextWidth = Number(container.clientWidth) || 0;
-      if (nextWidth <= 0 || Math.abs(nextWidth - observedWidth) < 1) return;
-      observedWidth = nextWidth;
+      const nextHeight = Number(container.clientHeight) || 0;
+      const widthChanged = nextWidth > 0 && Math.abs(nextWidth - observedWidth) >= 1;
+      // Tinggi badan ikut dipantau: jarak senar mengikuti tinggi yang tersedia.
+      const heightChanged = nextHeight > 0 && Math.abs(nextHeight - observedHeight) >= 1;
+      if (!widthChanged && !heightChanged) return;
+      observedWidth = nextWidth || observedWidth;
+      observedHeight = nextHeight || observedHeight;
       if (lastRenderState) view.render(lastRenderState);
     });
     resizeObserver.observe(container);

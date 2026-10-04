@@ -1006,34 +1006,35 @@ body[data-view-mode="combined"] #expression-panel{min-width:0;}
 
 .muted{color:var(--text-muted);font-size:var(--text-sm);}
 
+/* Toast: satu blok. Toast pernah duduk di tengah bawah dan menutupi diagram
+   TAB/Fretboard di desktop serta dock transport di HP. Sekarang selalu di pojok
+   kanan bawah dengan jarak setinggi dock, jadi melangkahi dock di HP dan tidak
+   pernah menutupi diagram di desktop. */
 .status{
   position:fixed;
-  left:50%;
-  bottom:1rem;
+  right:var(--space-3);
+  bottom:calc(var(--space-4) + 88px + env(safe-area-inset-bottom, 0px));
   z-index:50;
-  transform:translateX(-50%);
-  max-width:min(34rem, calc(100vw - 2rem));
+  max-width:min(20rem, calc(100vw - 2 * var(--space-3)));
   margin:0;
-  padding:0.55rem 0.8rem;
+  padding:var(--space-2) var(--space-3);
   border-radius:999px;
-  background:var(--chip-surface);
-  color:var(--chip-ink);
-  box-shadow:var(--shadow);
+  background:var(--toast-surface);
+  color:var(--toast-ink);
+  box-shadow:inset 0.16rem 0 0 var(--success), var(--shadow);
   font-size:var(--text-sm);
   font-weight:650;
 }
 .status:empty{display:none;}
-
-.status{background:var(--toast-surface);color:var(--toast-ink);box-shadow:inset 0.16rem 0 0 var(--success), var(--shadow);}
 .status[data-kind="error"]{
   background:var(--toast-surface-error);
   color:var(--toast-ink-error);
   box-shadow:inset 0.16rem 0 0 var(--danger), var(--shadow);
 }
-.status[data-kind="success"]{
-  background:var(--toast-surface);
-  color:var(--toast-ink);
-  box-shadow:inset 0.16rem 0 0 var(--success), var(--shadow);
+/* Sheet Gitar mengisi pita yang sama dengan dock di HP, jadi saat sheet itu
+   terbuka toast naik lagi agar tidak menutupi diagram TAB/Fretboard. */
+body.studio[data-studio-panel="guitar"] .status{
+  bottom:calc(min(68dvh, 560px) + 88px + env(safe-area-inset-bottom, 0px));
 }
 
 .lyrics-form{
@@ -1231,6 +1232,7 @@ body[data-view-mode="combined"] #expression-panel{min-width:0;}
 posisi yang bisa memainkan note terpilih. */
 
 .neck-board{fill:var(--neck-board);}
+.neck-gutter{fill:var(--surface);}
 .neck-nut{fill:var(--neck-nut);}
 .neck-inlay{fill:var(--neck-inlay);}
 .neck-fret{stroke:var(--border-strong);stroke-width:1;}

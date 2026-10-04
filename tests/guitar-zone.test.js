@@ -86,6 +86,7 @@ async function readZone(page) {
     const resizer = document.querySelector("#studio-guitar-resizer");
     const canvas = [...zone.querySelectorAll("#guitar-tab-scroll, #guitar-scroll")]
       .find(element => !element.hidden);
+    const body = document.querySelector("#guitar-section");
     const svg = canvas.querySelector("svg");
     const box = element => element?.getBoundingClientRect() ?? null;
     const height = element => Math.round(element?.getBoundingClientRect().height ?? 0);
@@ -145,6 +146,42 @@ async function readZone(page) {
       chromeHeight: height(header) + height(resizer)
         + height(zone.querySelector(".guitar-zone-info")),
       zonePaddingBlock: paddingOf(zone).filter((_, index) => index === 0 || index === 2),
+      resizer: {
+        top: Math.round(resizer.getBoundingClientRect().top),
+        bottom: Math.round(resizer.getBoundingClientRect().bottom),
+        height: height(resizer),
+        lineWidth: getComputedStyle(resizer, "::after").height,
+      },
+      headerTop: Math.round(header.getBoundingClientRect().top),
+      titleVisible: (() => {
+        const title = zone.querySelector(".guitar-zone-header h2");
+        return title ? getComputedStyle(title).display !== "none" : false;
+      })(),
+      fretboard: (() => {
+        const scroller = zone.querySelector("#guitar-scroll");
+        if (!scroller || scroller.hidden) return null;
+        const board = scroller.querySelector("svg");
+        const labels = [...board.querySelectorAll(".neck-string-label, .neck-string-number")];
+        const strings = [...board.querySelectorAll(".neck-string")];
+        const hits = labels.filter(label => strings.some(line => {
+          const a = label.getBoundingClientRect();
+          const b = line.getBoundingClientRect();
+          return !(a.right <= b.left + 0.5 || b.right <= a.left + 0.5 || a.bottom <= b.top + 0.5 || b.bottom <= a.top + 0.5);
+        })).length;
+        return {
+          labelHits: hits,
+          labelCount: labels.length,
+          emptyBelow: Math.round(scroller.clientHeight - board.getBoundingClientRect().height),
+          boardHeight: Math.round(board.getBoundingClientRect().height),
+        };
+      })(),
+      toastOverlapsBody: (() => {
+        const status = document.querySelector(".status");
+        if (!status || !status.textContent) return false;
+        const a = status.getBoundingClientRect();
+        const b = body.getBoundingClientRect();
+        return !(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top);
+      })(),
     };
   });
 }
@@ -199,6 +236,11 @@ test("zona Gitar rapi di empat breakpoint, dua layout, dan dua tema", async () =
           }
 
           assert.equal(state.strings.overflowY, "auto", `${at}: diagram harus bisa scroll vertikal`);
+          if (viewport.width <= 46 * 16) {
+            // C1d: 6 senar TAB harus muat tanpa scroll vertikal di HP.
+            assert.ok(state.strings.client >= state.strings.svg,
+              `${at}: 6 senar TAB harus terlihat tanpa scroll vertikal (${state.strings.client} < ${state.strings.svg})`);
+          }
           if (viewport.width >= 1024) {
             assert.ok(state.strings.client >= state.strings.svg,
               `${at}: 6 senar harus terlihat tanpa scroll vertikal (${state.strings.client} < ${state.strings.svg})`);
@@ -226,6 +268,34 @@ test("zona Gitar rapi di empat breakpoint, dua layout, dan dua tema", async () =
 
           assert.ok(state.minHeight >= state.chromeHeight + state.strings.svg,
             `${at}: minimum splitter ${state.minHeight}px harus memuat chrome dan diagram`);
+
+          // C1a: resizer di tepi atas zona, garis 1px, area sentuh 8px.
+          assert.equal(state.resizer.height, 8, `${at}: area sentuh resizer harus 8px`);
+          assert.ok(state.resizer.bottom <= state.headerTop + 1,
+            `${at}: resizer harus di atas header zona (resizer ${state.resizer.bottom}, header ${state.headerTop})`);
+          assert.equal(state.resizer.lineWidth, "1px", `${at}: garis resizer harus 1px`);
+
+          // C1d: judul sheet sudah menyebut Gitar, jadi h2 disembunyikan di HP.
+          if (viewport.width <= 46 * 16) {
+            assert.equal(state.titleVisible, false, `${at}: h2 Gitar harus disembunyikan di dalam sheet HP`);
+          }
+
+          // C1b/C1c: label senar tidak dicoret dan papan mengisi tinggi body.
+          if (state.fretboard) {
+            assert.equal(state.fretboard.labelHits, 0,
+              `${at}: ${state.fretboard.labelHits} label senar masih beririsan dengan garis senar`);
+            assert.equal(state.fretboard.labelCount, 12, `${at}: semua label senar harus diukur`);
+            if (viewport.width === 1440) {
+              // C1c: papan mengisi tinggi body pada 1440x900. Di 1920 badannya
+              // lebih tinggi dari batas atas 32px per senar, jadi sisa kosongnya
+              // memang ada dan tidak bolehInstead dipaksa.
+              assert.ok(state.fretboard.emptyBelow <= 16,
+                `${at}: ruang kosong di bawah papan fret ${state.fretboard.emptyBelow}px (maks 16px)`);
+            }
+          }
+
+          // C1e: toast tidak menutupi diagram.
+          assert.equal(state.toastOverlapsBody, false, `${at}: toast menutupi diagram`);
         }
         await page.close();
       }
