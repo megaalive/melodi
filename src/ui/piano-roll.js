@@ -396,7 +396,10 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   let scrollViewportWidth = 0;
   let scrollViewportHeight = 0;
   let svgBoundsWidth = 0;
-  const CENTER_FOLLOW_TOLERANCE_PX = 8;
+  // Toleransi follow dihitung dari viewport, bukan konstanta: playhead pada
+  // lagu panjang bergerak puluhan piksel per tick, jadi toleransi tetap
+  // berarti container digeser tiap tick.
+  const centerFollowTolerance = () => Math.max(24, Math.round(scrollViewportWidth * 0.12));
   let knownScrollLeft = 0;
   let playheadElement = null;
 
@@ -406,10 +409,11 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   }
 
   function scrollTo(left) {
-    knownScrollLeft = left;
-    svgBoundsWidth = svg.getBoundingClientRect?.().width ?? svgBoundsWidth;
     scrollContainer.scrollLeft = left;
-    syncFrozenPitchLabels(false, left);
+    // Nilai setelah ditulis yang dipakai, bukan yang kita minta: browser bisa
+    // menjepit scrollLeft di tepi konten.
+    knownScrollLeft = scrollContainer.scrollLeft;
+    syncFrozenPitchLabels(false, knownScrollLeft);
   }
 
   function measureScrollViewport() {
@@ -423,8 +427,11 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
     const layer = frozenLabelLayer ?? svg.querySelector('[data-entity="pitch-label-layer"]');
     if (!layer) return;
     frozenLabelLayer = layer;
-    // Event scroll diukur langsung; tick playback memakai nilai cache.
-    if (measure) svgBoundsWidth = svg.getBoundingClientRect?.().width ?? svgBoundsWidth;
+    // Lebar SVG diukur saat transform pertama setelah render dan saat event
+    // scroll dari user; tick playback berikutnya memakai nilai cache.
+    if (measure || lastFrozenLabelTransform === "") {
+      svgBoundsWidth = svg.getBoundingClientRect?.().width ?? svgBoundsWidth;
+    }
     const scaleX = svgBoundsWidth > 0 ? geometry.width / svgBoundsWidth : 1;
     const transform = `translate(${left * scaleX} 0)`;
     if (!force && transform === lastFrozenLabelTransform) return;
@@ -922,7 +929,7 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
         });
         // Playhead maju beberapa piksel per tick; scroll ulang tiap tick hanya
         // memaksa layout tanpa menggeser apa yang terlihat.
-        if (Math.abs(centered - knownScrollLeft) >= CENTER_FOLLOW_TOLERANCE_PX) scrollTo(centered);
+        if (Math.abs(centered - knownScrollLeft) >= centerFollowTolerance()) scrollTo(centered);
         } else {
           const left = knownScrollLeft;
           const right = left + scrollViewportWidth;

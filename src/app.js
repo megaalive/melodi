@@ -49,6 +49,10 @@ let shareSession = false;
 let shareLoadStatus = "none";
 let uiPreferences;
 let lastHarmonyPlaybackContext = null;
+// R3: konteks render inspector harmoni. Bar yang berganti saat playhead
+// berjalan tidak termasuk bagian ini; hanya range harmoni dan chord terpilih
+// yang boleh memicu render ulang.
+let lastHarmonyRenderKey = null;
 let studioView = null;
 let progressionView = null;
 let candidateScrub = null;
@@ -1524,7 +1528,9 @@ function renderPlaybackNow() {
   studioView?.updatePlayback(song, playback);
   const harmonyContext = state.harmonyRange ?? harmonyContextRange(song, state);
   const harmonyContextKey = `${song.id}:${harmonyContext.startTick}:${harmonyContext.endTick}:${state.selectedChordId}`;
-  if (lastHarmonyPlaybackContext !== harmonyContextKey && byId("harmony-range-form").dataset.pending !== "true") {
+  const harmonyRenderKey = `${song.id}:${state.harmonyRange ? `${state.harmonyRange.startTick}-${state.harmonyRange.endTick}` : "auto"}:${state.selectedChordId ?? ""}`;
+  if (lastHarmonyRenderKey !== harmonyRenderKey && byId("harmony-range-form").dataset.pending !== "true") {
+    lastHarmonyRenderKey = harmonyRenderKey;
     lastHarmonyPlaybackContext = harmonyContextKey;
     const fullState = normalizeRuntimeState(commands.getState());
     renderHarmonyInspector(song, fullState, commands.getHarmonyState(), translate);
@@ -1609,7 +1615,7 @@ function renderPlaybackNow() {
     const state = normalizeRuntimeState(commands.getState());
     if (guitarView?.updatePlayback(state)) renderGuitar(state);
   }
-  // P3: langkah suku kata hanya jalan kalau-id sukunya berubah.
+  // P3: langkah suku kata hanya jalan kalau id sukunya berubah.
   const syllableKey = playback.currentSyllableIds.join(",");
   if (syllableKey !== lastSyllableKey) {
     lastSyllableKey = syllableKey;
