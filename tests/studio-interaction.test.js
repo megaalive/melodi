@@ -127,7 +127,7 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
   const compactMedia = media(narrow);
   const phoneMedia = phoneNarrow === narrow ? compactMedia : media(phoneNarrow);
   const body = node('body');
-  for (const selector of ['.workspace-sidebar', '.studio-inspector-head', '.mobile-panel-peek-actions', '.studio-tools-content', '.follow-mode-tools-control', '.utility-card', '.workspace-sidebar-resizer', '.studio-more', '.studio-more-popover', '.studio-toolbar-actions', '.project-menu', '.project-menu-section', '.project-menu-popover', '.app-settings-section', '.expression-panel-heading', '.expression-toolbar', '.sketch-controls', '.instrument-mix-strip', '.brand-block', '.song-strip', '.history-buttons', '.header-actions', '.header-controls', '.page-header', '.workspace-chrome', '.app-shell', '.workspace-grid', '.transport-dock', '.transport-main', '.transport-buttons', '.playback-settings-group', '.transport-advanced-grid', '.tempo-control', '.loop-toggle', '.follow-mode-control', '.studio-panel-switches', '.studio-editor-settings', '.editor-tool-group', '.guitar-local-toolbar', '#guitar-section .guitar-local-toolbar', '.guitar-pane-heading', '.guitar-layout-group', '.drums-pane-heading', '#drums-section .drums-toolbar', '#studio-drum-expression', '#percussion-multi-selection', '#percussion-expression-form', '.pane-title-row', '#lyrics-section .pane-heading', '.score-pane-heading', '.score-layout-group', '[data-sheet-close]', 'summary', 'summary [data-copy]', '[data-copy]']) node(selector);
+  for (const selector of ['.workspace-sidebar', '.studio-inspector-head', '.mobile-panel-peek-actions', '.studio-tools-content', '.follow-mode-tools-control', '.utility-card', '.workspace-sidebar-resizer', '.studio-more', '.studio-more-popover', '.studio-toolbar-actions', '.project-menu', '.project-menu-section', '.project-menu-popover', '.app-settings-section', '.expression-panel-heading', '.expression-toolbar', '.sketch-controls', '.instrument-mix-strip', '.brand-block', '.song-strip', '.history-buttons', '.header-actions', '.header-controls', '.page-header', '.workspace-chrome', '.app-shell', '.workspace-grid', '.transport-dock', '.transport-main', '.transport-buttons', '.playback-settings-group', '.transport-advanced-grid', '.tempo-control', '.loop-toggle', '.follow-mode-control', '.studio-panel-switches', '.studio-editor-settings', '.editor-tool-group', '.guitar-layout-group', '.guitar-zone-header', '.guitar-zone-info', '.drums-pane-heading', '#drums-section .drums-toolbar', '#studio-drum-expression', '#percussion-multi-selection', '#percussion-expression-form', '.pane-title-row', '#lyrics-section .pane-heading', '.score-pane-heading', '.score-layout-group', '[data-sheet-close]', 'summary', 'summary [data-copy]', '[data-copy]']) node(selector);
   nodes.set('#workspace-sidebar-resizer', nodes.get('.workspace-sidebar-resizer'));
   for (const id of ['studio-mixer-channels', 'expression-collapse', 'harmony-panel', 'harmony-timeline-tools', 'studio-views', 'view-controls', 'mobile-workspace-dock', 'editor-toolbar', 'roll-selection', 'piano-roll-section', 'guitar-section', 'drums-section', 'score-section', 'studio-mixer', 'generation-panel', 'generation-form', 'generation-anchor-actions', 'tools-panel', 'studio-panel-title', 'studio-overview', 'studio-position', 'reset-playback-range', 'workspace-canvas', 'guitar-heading']) node(`#${id}`);
   node('.generation-primary-actions');
@@ -193,18 +193,23 @@ function fixture(narrow = false, landscape = false, wide = !narrow && !landscape
   nodes.get('#piano-roll-section').append(nodes.get('.pane-title-row'));
   nodes.get('.pane-title-row').append(nodes.get('#editor-toolbar'), node('#guitar-layer-slot'));
   nodes.get('#editor-toolbar').append(nodes.get('.editor-tool-group'));
-  nodes.get('.guitar-pane-heading').append(nodes.get('#guitar-heading'), nodes.get('.guitar-local-toolbar'));
-  nodes.get('#guitar-section').append(nodes.get('.guitar-pane-heading'));
-  node('#guitar-status');
-  node('#guitar-legend');
-  nodes.get('#guitar-section').append(nodes.get('#guitar-status'), nodes.get('#guitar-legend'));
+  // Struktur zona Gitar mengikuti index.html: header (judul, segmented, playhead,
+  // lalu tombol Tutup dari studio.js), info (status + legenda), dan body diagram.
+  const zoneHeader = node('.guitar-zone-header');
+  zoneHeader.append(nodes.get('#guitar-heading'), nodes.get('.guitar-layout-group'), node('#guitar-playhead'));
+  const zoneInfo = node('.guitar-zone-info');
+  zoneInfo.append(node('#guitar-status'), node('#guitar-legend'));
+  nodes.get('#guitar-section').className = 'guitar-zone-body';
   const guitarTabScroll = node('#guitar-tab-scroll');
   const guitarFretboardScroll = node('#guitar-scroll');
   guitarTabScroll.hidden = false;
   guitarFretboardScroll.hidden = true;
   nodes.get('#guitar-section').append(guitarTabScroll, guitarFretboardScroll);
+  const guitarZoneNode = node('#studio-guitar-zone', 'section');
+  guitarZoneNode.dataset.entity = 'guitar-zone';
+  guitarZoneNode.append(zoneHeader, zoneInfo, nodes.get('#guitar-section'));
   nodes.get('.workspace-grid').append(nodes.get('#workspace-canvas'));
-  nodes.get('#workspace-canvas').append(nodes.get('#piano-roll-section'), nodes.get('#guitar-section'));
+  nodes.get('#workspace-canvas').append(nodes.get('#piano-roll-section'), guitarZoneNode);
   nodes.get('#mobile-workspace-dock').hidden = false;
   const trigger = node('button[data-studio-panel="generate"]', 'button'); trigger.dataset.studioPanel = 'generate';
   const chordTrigger = node('button[data-studio-panel="chords"]', 'button'); chordTrigger.dataset.studioPanel = 'chords';
@@ -277,7 +282,10 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\) and \(width < 68rem\)\s*\{[\s\S]*?\.studio \.workspace-canvas, \.studio #piano-roll-section \{ height: 100%; min-height: 0; overflow: hidden; \}/);
   assert.match(css, /@media \(width > 46rem\) and \(width < 68rem\)/);
   assert.match(css, /@media \(width >= 68rem\)/);
-  assert.ok((css.match(/@media\b/g) ?? []).length <= 21);
+  // 21 -> 22: blok "Guitar zone" di studio.css memakai satu breakpoint sendiri
+  // untuk dua baris header di HP. Postgres ini grown per breakpoint, bukan per
+  // komponen, dan breakpoint ini bisa dihapus tanpa sisa aturan lain.
+  assert.ok((css.match(/@media\b/g) ?? []).length <= 22);
   assert.equal((css.match(/@media[^\n]*orientation/g) ?? []).length, 2);
   assert.match(css, /\.studio \.mobile-workspace-dock:not\(\[hidden\]\)\s*\{[^}]*position: fixed/);
   assert.match(css, /\.studio \.mobile-workspace-dock > \.studio-views > button[^}]*min-height: 44px/);
@@ -292,12 +300,23 @@ test('responsive roll positioning keeps compact canvases full-height and bounds 
   // kalah spesifisitas dan zona bisa menyusut di bawah tinggi isinya.
   assert.match(css, /#studio-guitar-zone\[data-open="true"\]/);
   assert.match(css, /height:var\(--studio-guitar-zone-height,clamp\(280px,34dvh,440px\)\)/);
-  assert.match(css, /#studio-guitar-zone #guitar-section\{[^}]*min-height:0;overflow:hidden/);
-  assert.match(css, /#studio-guitar-zone #guitar-tab-scroll,#studio-guitar-zone \.guitar-scroll\{[^}]*overflow:auto/);
+  // Selector lama (guitar-pane-heading, guitar-local-toolbar, guitar-status,
+  // guitar-legend, guitar-playhead, guitar-heading-copy) dihapus: zona Gitar
+  // kini satu blok "Guitar zone" di studio.css.
+  assert.match(css, /#guitar-section\.guitar-zone-body\{[^}]*min-height:0;\s*overflow:hidden/);
+  assert.match(css, /\.guitar-zone-body > div\{[^}]*overflow:auto/);
+  for (const legacy of ['guitar-pane-heading', 'guitar-local-toolbar', 'guitar-heading-copy']) {
+    assert.doesNotMatch(css, new RegExp(`\\.${legacy}[\\s{,:]`), `${legacy} tidak lagi punya aturan sendiri`);
+  }
+  const zoneBlock = css.slice(css.indexOf('/* Guitar zone:'), css.indexOf('/* Guitar zone:') + 4000)
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(zoneBlock, /!important/, 'blok zona Gitar tidak memakai !important');
   assert.doesNotMatch(css, /\.studio \.guitar-tab-scroll\s*\{\s*min-height:\s*290px/);
   assert.match(css, /\.studio-guitar-resizer:focus-visible/);
-  // 44px hanya pada pointer coarse dan <= 46rem; desktop memakai --control-h.
-  assert.match(css, /@media \(pointer:coarse\)\{[\s\S]*?#studio-guitar-zone \.guitar-zone-toggle\{height:var\(--control-h\) !important;\}/);
+  // 44px hanya pada pointer coarse dan <= 46rem; desktop memakai --control-h. Aturan
+  // touch global mengecualikan tombol segmented karena tinggi grupnya sudah
+  // --control-h, jadi tombol di dalamnya boleh lebih pendek.
+  assert.match(css, /@media \(pointer:coarse\)\{[\s\S]*?:not\(\.guitar-layout-group button\)\{/);
   assert.match(css, /:is\(\.guitar-mode-toggle,\.mobile-guitar-trigger\)\{[^}]*min-height:var\(--control-h\)/);
   assert.doesNotMatch(css, /^\.studio #piano-roll-content\s*\{\s*position: relative;/m);
 });
@@ -1017,8 +1036,10 @@ test('large desktop Guitar zone defaults open, can be resized by keyboard and po
     assert.equal(resizer.attributes.get('aria-label'), 'guitarZoneResizeLabel');
     assert.equal(resizer.attributes.get('aria-valuemin'), '280');
     assert.equal(resizer.attributes.get('aria-valuemax'), '440');
-    assert.equal(setup.nodes.get('#guitar-status').parent, setup.nodes.get('.guitar-local-toolbar'));
-    assert.equal(setup.nodes.get('#guitar-legend').parent, setup.nodes.get('.guitar-local-toolbar'));
+    // Status dan legenda kini satu baris info di bawah header, bukan lagi di dalam
+  // toolbar lokal: itulah struktur zona Gitar yang baru.
+  assert.equal(setup.nodes.get('#guitar-status').parent, setup.nodes.get('.guitar-zone-info'));
+  assert.equal(setup.nodes.get('#guitar-legend').parent, setup.nodes.get('.guitar-zone-info'));
     assert.equal(setup.doc.body.dataset.studioPanel, 'chords');
     toggle.click();
     assert.equal(zone.dataset.open, 'false');

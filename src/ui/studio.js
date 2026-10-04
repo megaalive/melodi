@@ -1,4 +1,4 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.81';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.82';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);
@@ -104,10 +104,10 @@ export function createStudioWorkspace(commands, translate, onError, {
     coreMixer.setAttribute('aria-label', translate('studioMixer'));
     for (const name of coreMixer.querySelectorAll('[data-copy]')) name.textContent = translate(name.dataset.copy);
   };
-  const guitarZone = document.createElement('section');
-  guitarZone.id = 'studio-guitar-zone';
-  guitarZone.className = 'studio-guitar-zone';
-  guitarZone.dataset.entity = 'guitar-zone';
+  // Struktur zona sudah ada di index.html: header, info, body. Di sini hanya
+  // dua elemen yang dibuat JS, masing-masing disisipkan sekali di tempatnya:
+  // tombol Tutup sebagai anak terakhir header, resizer tepat di atas body.
+  const guitarZone = byId('studio-guitar-zone');
   let guitarZoneOpen = typeof initialGuitarZoneOpen === 'boolean'
     ? initialGuitarZoneOpen
     : typeof window !== 'undefined' && window.matchMedia('(width >= 90rem)').matches && window.innerHeight >= 800;
@@ -119,16 +119,8 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarZoneToggle.dataset.entity = 'guitar-zone-toggle';
   guitarZoneToggle.dataset.copy = guitarZoneOpen ? 'guitarZoneCloseButton' : 'guitarZoneOpenButton';
   guitarZoneToggle.setAttribute('aria-controls', 'guitar-section');
-  const guitarLocalToolbar = guitarSection?.querySelector('.guitar-local-toolbar');
-  guitarLocalToolbar?.append(guitarZoneToggle);
-  const guitarStatus = byId('guitar-status');
-  if (guitarStatus && guitarLocalToolbar && guitarStatus.parentElement !== guitarLocalToolbar) {
-    guitarLocalToolbar.append(guitarStatus);
-  }
-  const guitarLegend = byId('guitar-legend');
-  if (guitarLegend && guitarLocalToolbar && guitarLegend.parentElement !== guitarLocalToolbar) {
-    guitarLocalToolbar.append(guitarLegend);
-  }
+  const guitarZoneHeader = guitarZone?.querySelector('.guitar-zone-header');
+  guitarZoneHeader?.append(guitarZoneToggle);
   const guitarResizer = document.createElement('div');
   guitarResizer.id = 'studio-guitar-resizer';
   guitarResizer.className = 'studio-guitar-resizer';
@@ -137,16 +129,13 @@ export function createStudioWorkspace(commands, translate, onError, {
   guitarResizer.setAttribute('aria-orientation', 'horizontal');
   guitarResizer.setAttribute('aria-controls', 'guitar-section');
   guitarResizer.setAttribute('tabindex', '0');
-  const guitarHeading = guitarSection?.querySelector('.guitar-pane-heading');
-  if (guitarHeading) guitarZone.append(guitarHeading);
-  guitarZone.append(guitarResizer);
-  if (guitarSection) guitarZone.append(guitarSection);
-  workspaceCanvas?.append(guitarZone);
-  // Tinggi minimum mengikuti isi zona: judul, splitter, dan kanvas TAB atau
-  // Fretboard. Kalau splitter boleh lebih kecil, kanvas terpotong diam-diam.
+  guitarZone?.insertBefore(guitarResizer, guitarSection);
+  // Tinggi minimum mengikuti isi zona: header, info, splitter, dan diagram.
+  // Kalau splitter boleh lebih kecil, kanvas terpotong diam-diam.
   function guitarZoneContentHeight() {
-    const headingHeight = guitarHeading?.offsetHeight ?? 0;
-    const resizerHeight = guitarResizer.offsetHeight || 8;
+    const chrome = [...(guitarZone?.children ?? [])]
+      .filter(element => element !== guitarSection)
+      .reduce((total, element) => total + (element.offsetHeight || 0), 0);
     const canvasHeight = Math.max(
       Number(byId('guitar-tab')?.getAttribute('height')) || 0,
       Number(byId('guitar')?.getAttribute('height')) || 0,
@@ -158,8 +147,8 @@ export function createStudioWorkspace(commands, translate, onError, {
       return ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth']
         .reduce((total, property) => total + (Number.parseFloat(style[property]) || 0), 0);
     };
-    decoration = measureBox(guitarSection) + Math.max(measureBox(byId('guitar-tab-scroll')), measureBox(byId('guitar-scroll')));
-    return Math.ceil(headingHeight + resizerHeight + canvasHeight + decoration);
+    decoration = measureBox(guitarZone) + measureBox(guitarSection);
+    return Math.ceil(chrome + canvasHeight + decoration);
   }
   const guitarZoneMinHeight = () => Math.max(guitarZoneFloorHeight, guitarZoneContentHeight());
   const defaultGuitarZoneHeight = () => Math.max(guitarZoneMinHeight(), Math.min(guitarZoneMaxHeight,

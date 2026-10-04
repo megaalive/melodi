@@ -363,14 +363,31 @@ test("Guitar memakai TAB dan Fretboard sebagai projection canonical yang sinkron
   const css = readAppStyles();
   const preferences = readFileSync(resolve("src/storage/ui-preferences.js"), "utf8");
 
-  const start = html.indexOf('<section id="guitar-section"');
-  const end = html.indexOf("</section>", start);
-  const section = html.slice(start, end);
-  assert.match(section, /data-guitar-layout="tab"/);
-  assert.match(section, /id="guitar-layout-tab"[^>]*data-action="set-guitar-layout"/);
-  assert.match(section, /id="guitar-layout-fretboard"[^>]*data-action="set-guitar-layout"/);
-  assert.match(section, /id="guitar-tab-scroll"/);
-  assert.match(section, /id="guitar-scroll"[^>]*hidden/);
+  // Zona Gitar kini satu blok terstruktur di index.html: header (judul, segmented,
+  // playhead), info (status + legenda), lalu body diagram. Tombol Tutup dan
+  // resizer disisipkan studio.js, jadi slice diambil dari awal zone.
+  const start = html.indexOf('<section id="studio-guitar-zone"');
+  const end = html.indexOf('id="workspace-sidebar-resizer"', start);
+  const zone = html.slice(start, end);
+  assert.match(zone, /data-guitar-layout="tab"/);
+  assert.match(zone, /class="guitar-zone-header"/);
+  assert.match(zone, /<h2 id="guitar-heading"/);
+  assert.match(zone, /id="guitar-layout-tab"[^>]*data-action="set-guitar-layout"/);
+  assert.match(zone, /id="guitar-layout-fretboard"[^>]*data-action="set-guitar-layout"/);
+  assert.match(zone, /id="guitar-playhead"/);
+  assert.match(zone, /class="guitar-zone-info"/);
+  assert.match(zone, /id="guitar-status"/);
+  assert.match(zone, /id="guitar-legend"/);
+  assert.match(zone, /<section id="guitar-section" class="guitar-zone-body"/);
+  assert.match(zone, /id="guitar-tab-scroll"/);
+  assert.match(zone, /id="guitar-scroll"[^>]*hidden/);
+  const headerAt = zone.indexOf('class="guitar-zone-header"');
+  const infoAt = zone.indexOf('class="guitar-zone-info"');
+  const bodyAt = zone.indexOf('<section id="guitar-section"');
+  assert.ok(headerAt >= 0 && headerAt < infoAt && infoAt < bodyAt,
+    `urutan zona harus header, info, body; dapat ${headerAt}, ${infoAt}, ${bodyAt}`);
+  assert.doesNotMatch(zone, /guitar-pane-heading|guitar-local-toolbar|guitar-heading-copy/,
+    "selector lama zona Gitar sudah tidak dipakai");
 
   assert.match(preferences, /guitarLayout:\s*"tab"/);
   assert.match(app, /createGuitarTabView/);

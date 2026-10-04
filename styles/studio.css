@@ -102,25 +102,133 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .app-shell{display:flex;flex-direction:column;height:calc(100dvh - 40px);min-height:0;padding-bottom:0;}
 .studio .workspace-grid{display:grid;flex:1 1 auto;min-height:0;}
 .studio .workspace-canvas{display:flex;flex:1 1 auto;flex-direction:column;gap:0;min-width:0;min-height:0;}
+.studio-core-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);padding:var(--space-2);border-bottom:1px solid var(--border);background:var(--surface-subtle)}
+/* Guitar zone: satu komponen, empat bagian. Header = judul, segmented
+   TAB/Fretboard, chip playhead, lalu tombol Tutup (selalu anak terakhir). Info =
+   status dan legenda yang boleh membungkus penuh. Body = diagram yang mengisi
+   sisa tinggi dan scroll sendiri. Resizer disisipkan studio.js di atas body.
+   Semua ukuran dari token: --control-h untuk tinggi kontrol, --space-* untuk
+   jarak, dan warna dari token tema. Tidak ada tinggi yang bertabrakan dan tidak
+   ada !important; 44px untuk sentuh datang dari --control-h di media query. */
 #studio-guitar-zone{flex:none;min-width:0;min-height:0}
-#studio-guitar-zone[data-open="true"]{display:flex;flex-direction:column;height:var(--studio-guitar-zone-height,clamp(280px,34dvh,440px));min-height:var(--studio-guitar-zone-min,280px);max-height:440px}
-#studio-guitar-zone #guitar-section{display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;padding:0 var(--space-2) var(--space-1)}
+#studio-guitar-zone:not([data-open="true"]){display:none}
+#studio-guitar-zone[data-open="true"]{
+  display:flex;
+  flex-direction:column;
+  height:var(--studio-guitar-zone-height,clamp(280px,34dvh,440px));
+  min-height:var(--studio-guitar-zone-min,280px);
+  max-height:440px;
+  padding-inline:var(--space-2);
+  border-top:1px solid var(--border);
+}
+.guitar-zone-header{
+  display:flex;
+  flex:0 0 auto;
+  align-items:center;
+  gap:var(--space-2);
+  min-height:var(--control-h);
+  padding-block:var(--space-1);
+}
+.guitar-zone-header h2{margin:0;font-size:var(--text-lg);line-height:1;white-space:nowrap}
+.guitar-layout-group{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  height:var(--control-h);
+  padding:2px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:var(--surface-subtle);
+}
+.guitar-layout-group button{
+  min-height:0;
+  height:100%;
+  padding:0 var(--space-2);
+  border-color:transparent;
+  background:transparent;
+  color:var(--text-muted);
+  font-size:var(--text-xs);
+}
+.guitar-layout-group button[aria-pressed="true"]{
+  border-color:var(--accent);
+  background:var(--accent-soft);
+  color:var(--accent-strong);
+}
+.guitar-layout-group button:hover:not(:disabled){background:var(--accent-soft);color:var(--accent-strong)}
+.guitar-zone-header .guitar-playhead{
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  height:var(--control-h);
+  margin:0 0 0 auto;
+  padding-inline:var(--space-2);
+  border-radius:var(--radius);
+  background:var(--ember-soft);
+  color:var(--ember);
+  font-size:var(--text-xs);
+  font-weight:700;
+  white-space:nowrap;
+}
+.guitar-zone-header .guitar-playhead:empty{display:none}
+/* Tanpa chip playhead, tombol Tutup yang mengambil jarak pemisah di kanan. */
+.guitar-zone-header:not(:has(.guitar-playhead:not(:empty))) .guitar-zone-toggle{margin-inline-start:auto}
+.guitar-zone-header .guitar-zone-toggle{
+  flex:0 0 auto;
+  min-height:var(--control-h);
+  height:var(--control-h);
+  padding:var(--space-1) var(--space-2);
+  font-size:var(--text-xs);
+}
+.guitar-zone-info{
+  display:flex;
+  flex:0 0 auto;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:var(--space-1) var(--space-3);
+  padding-block:var(--space-1);
+  color:var(--text-muted);
+  font-size:var(--text-xs);
+  line-height:1.35;
+}
+.guitar-zone-info p{margin:0;min-width:0}
+.guitar-zone-info .guitar-status{flex:1 1 auto}
+.guitar-zone-info .guitar-legend{flex:0 1 auto}
 .studio-guitar-resizer{flex:none;height:8px;touch-action:none;cursor:ns-resize}
 .studio-guitar-resizer::after{content:"";display:block;height:2px;background:var(--border-strong)}
 .studio-guitar-resizer:focus-visible{outline:2px solid var(--focus)}
-#studio-guitar-zone .guitar-pane-heading{display:flex;flex:0 0 auto;flex-direction:row;align-items:center;gap:var(--space-2);min-height:32px;margin:0;overflow:hidden}
-#studio-guitar-zone .guitar-heading-copy{flex:0 0 auto}
-#studio-guitar-zone .guitar-heading-copy h2{margin:0;font-size:var(--text-lg);line-height:1;white-space:nowrap}
-#studio-guitar-zone .guitar-local-toolbar{display:flex;flex:1 1 auto;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:var(--space-2);min-width:0;overflow:hidden}
-#studio-guitar-zone .guitar-layout-group{flex:none}
-#studio-guitar-zone .guitar-layout-group button{min-height:var(--control-h);height:var(--control-h);padding:var(--space-1) var(--space-2)}
-#studio-guitar-zone .guitar-zone-toggle{flex:none;min-height:var(--control-h);height:var(--control-h);padding:var(--space-1) var(--space-2)}
-#studio-guitar-zone :is(.guitar-status,.guitar-playhead,#guitar-legend){flex:0 1 auto;min-width:0;max-width:18rem;min-height:0;margin:0;overflow:hidden;font-size:var(--text-xs);line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
-#studio-guitar-zone .guitar-status{flex:1 1 auto}
-#studio-guitar-zone .guitar-playhead{color:var(--ember);font-weight:700}
-#studio-guitar-zone #guitar-tab-scroll,#studio-guitar-zone .guitar-scroll{flex:1 1 auto;width:100%;min-height:0;max-height:none;overflow:auto;padding:0}
+#guitar-section.guitar-zone-body{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  min-height:0;
+  overflow:hidden;
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius);
+  background:var(--surface);
+  overscroll-behavior:contain;
+}
+.guitar-zone-body > div{
+  flex:1 1 auto;
+  width:100%;
+  min-height:0;
+  overflow:auto;
+}
+#guitar-tab,#guitar{display:block;max-width:none;color:var(--text)}
 .studio #workspace-canvas[data-guitar-zone-open="true"] :is(#piano-roll-section,#score-section){flex:1 1 0;min-height:320px}
-.studio-core-controls{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);padding:var(--space-2);border-bottom:1px solid var(--border);background:var(--surface-subtle)}
+@media (width <= 46rem){
+  /* HP: baris 1 = judul dan Tutup, baris 2 = segmented dan playhead. */
+  .guitar-zone-header{
+    display:grid;
+    grid-template-columns:auto 1fr;
+    grid-template-areas:"title close" "layout playhead";
+    gap:var(--space-1) var(--space-2);
+    padding-block:var(--space-2);
+  }
+  .guitar-zone-header h2{grid-area:title}
+  .guitar-layout-group{grid-area:layout}
+  .guitar-zone-header .guitar-playhead{grid-area:playhead;justify-self:start;margin:0}
+  .guitar-zone-header .guitar-zone-toggle{grid-area:close;justify-self:end}
+}
 .studio-core-controls>.editor-toolbar{flex:1 1 auto}
 .studio-core-controls>.transport-advanced-grid{display:contents}
 .studio-core-controls .transport-form{display:flex;align-items:end;gap:var(--space-1)}
@@ -249,12 +357,10 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .studio-advanced{margin-top:var(--space-2);padding:var(--space-2) var(--space-3);font-size:var(--text-xs);}
 .studio .studio-advanced[hidden]{display:block !important;}
 .studio #drum-grid-scroll{max-height:calc(100dvh - 285px);overflow:auto;border-radius:3px;}
-.studio .drums-pane-heading p, .studio .guitar-heading-copy p{display:none;}
+.studio .drums-pane-heading p{display:none;}
 .studio .drums-selection-toolbar{font-size:var(--text-xs);padding:var(--space-1) 0;}
 .studio .drums-selection-toolbar button{min-height:28px;font-size:var(--text-xs);padding:var(--space-1) var(--space-2);}
 .studio .percussion-expression-panel{margin-top:var(--space-2);border-radius:3px;font-size:var(--text-xs);}
-.studio .guitar-tab-scroll{min-height:0;max-height:none;}
-.studio .guitar-layout-group button{min-height:32px;font-size:var(--text-xs);}
 .studio #lyrics-section{padding:var(--space-4) clamp(var(--space-4),5vw,var(--space-6));}
 .studio .lyrics-form{display:block;border:0;background:transparent;padding:0;}
 .studio .lyrics-form textarea{min-height:240px;font:400 22px/1.75 Georgia,serif;padding:var(--space-4);border:1px solid var(--border);background:var(--surface);box-shadow:none;}
@@ -423,7 +529,8 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 
 /* Hover tombol ghost: accent-soft + accent-strong. Aturan global color:on-accent
    pernah membuat tinta on-accent mendarat di atas surface. */
-button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .studio-toolbar-actions button:hover:not(:disabled), .studio .desktop-project-action:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled), #studio-guitar-zone .guitar-layout-group button:hover:not(:disabled){
+button.secondary:hover:not(:disabled), .editor-toolbar-group button:hover:not(:disabled), .score-layout-group button:hover:not(:disabled), .project-menu-popover button:hover:not(:disabled), .panel-collapse-button:hover:not(:disabled), .command-button:hover:not(:disabled), .note-context-menu button:hover:not(:disabled), .studio .studio-views button:hover:not(:disabled), .studio .studio-panel-switches button:hover:not(:disabled), .studio .studio-toolbar-actions button:hover:not(:disabled), .studio .desktop-project-action:hover:not(:disabled), .studio .instrument-mix-button:hover:not(:disabled), .studio .sketch-controls button:hover:not(:disabled), .studio .expression-toolbar button:hover:not(:disabled), .studio .harmony-list li > button:hover:not(:disabled), .studio .studio-overview-track button:hover:not(:disabled){
+
   background:var(--accent-soft);color:var(--accent-strong);
 }
 .drum-cell:hover:not(:disabled), .drum-cell[data-hit="true"]:hover:not(:disabled){color:var(--accent-strong);}

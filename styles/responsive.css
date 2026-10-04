@@ -23,9 +23,8 @@
 }
 @media (pointer:coarse){
   :root{--control-h:44px;}
-  .studio :is(button, summary, [role="button"]){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
+  .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
-  .studio #studio-guitar-zone .guitar-zone-toggle{height:var(--control-h) !important;}
   .roll-note, .roll-move-hit, .roll-resize-handle{touch-action:none;}
   .panel-collapse-button{width:2.75rem;min-width:2.75rem;min-height:2.75rem;}
   .project-menu-trigger{min-width:2.75rem;min-height:2.75rem;}
@@ -383,9 +382,8 @@
 }
 @media (width <= 46rem){
   :root{--control-h:44px;}
-  .studio :is(button, summary, [role="button"]){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
+  .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
-  .studio #studio-guitar-zone .guitar-zone-toggle{height:var(--control-h) !important;}
   .expression-toolbar{
     align-items:flex-start;
     flex-direction:column;
@@ -658,19 +656,6 @@
   }
   .score-scroll[data-layout="flow"]{
     max-height:20rem;
-  }
-  .guitar-pane-heading{
-    align-items:stretch;
-    flex-direction:column;
-  }
-  .guitar-local-toolbar{
-    justify-content:space-between;
-  }
-  .guitar-heading-copy > p{
-    display:none;
-  }
-  .guitar-playhead{
-    font-size:var(--text-xs);
   }
   .drums-pane-heading{
     align-items:stretch;
