@@ -1,4 +1,4 @@
-import { serializeProject as serializeCanonicalProject } from "../core/serialization.js?v=20261003.80";
+import { serializeProject as serializeCanonicalProject } from "../core/serialization.js?v=20261003.81";
 
 function projectFileName(title) {
   const base = String(title || "melodi")
