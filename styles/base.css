@@ -24,7 +24,9 @@
   --surface:#ffffff;
   --surface-subtle:#f2f0eb;
   --border:#ddd9d1;
-  --border-strong:#b2ada4;
+  /* 3.43:1 against --surface in light, 3.47:1 in dark: enough for a control
+     edge to be readable without help from its fill. */
+  --border-strong:#8f8a82;
   --hairline:rgba(27, 33, 36, 0.05);
   --text:#1b2124;
   --text-muted:#5f686f;
@@ -133,7 +135,7 @@
     --surface:light-dark(#ffffff, #1b1f23);
     --surface-subtle:light-dark(#f2f0eb, #22272c);
     --border:light-dark(#ddd9d1, #2d333a);
-    --border-strong:light-dark(#b2ada4, #464f57);
+    --border-strong:light-dark(#8f8a82, #6a747c);
     --hairline:light-dark(rgba(27, 33, 36, 0.05), rgba(255, 255, 255, 0.05));
     --text:light-dark(#1b2124, #e7e4de);
     --text-muted:light-dark(#5f686f, #949ca2);
@@ -2475,9 +2477,9 @@ button.danger-button:hover:not(:disabled){
     --expression-muted:#949ca2;
     --expression-bend-label:#e08a3c;
     --expression-guide:#2d333a;
-    --expression-zero:#464f57;
+    --expression-zero:#6a747c;
     --expression-gutter:#1b1f23;
-    --expression-gutter-divider:#464f57;
+    --expression-gutter-divider:#6a747c;
     --expression-selected-ink:#f0cf9a;
     --expression-selected-fill:#7a5a1e;
     --expression-current-ink:#b6e3c0;
