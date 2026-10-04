@@ -3,16 +3,53 @@ import assert from "node:assert/strict";
 import { PPQ, createSong } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import {
+  CONTINUATION_BARS,
+  CONTINUATION_COUNT,
+  CONTINUATION_TARGETS,
+  DEVELOP_KINDS,
+  RESEED_ATTEMPTS,
   VARIATION_KINDS,
   VARIATION_MAX,
   VARIATION_MIN,
+  developContinuation,
   developVariations,
+  ideaDevelop,
+  notesHash,
   seedForNotes,
   variationSpan
 } from "../src/generation/ideas.js";
 import { isScalePitch } from "../src/generation/primitives.js";
+import { contourGeometry } from "../src/ui/ideas.js";
 
 const SCALE = Object.freeze({ name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] });
+const SEEDS = Array.from({ length: 20 }, (_unused, index) => index + 1);
+
+// Empat take contoh: legato seperempat, legato stepwise, ada jeda, dan ritme campur.
+const TAKES = Object.freeze({
+  "legato empat nada seperempat": [
+    { pitch: 72, startTick: 0, durationTicks: 480 },
+    { pitch: 74, startTick: 480, durationTicks: 480 },
+    { pitch: 76, startTick: 960, durationTicks: 480 },
+    { pitch: 79, startTick: 1440, durationTicks: 480 }
+  ],
+  "legato delapan nada stepwise": [60, 62, 64, 65, 67, 69, 71, 72].map((pitch, index) => ({
+    pitch,
+    startTick: index * 240,
+    durationTicks: 240
+  })),
+  "empat nada dengan jeda": [
+    { pitch: 72, startTick: 0, durationTicks: 480 },
+    { pitch: 74, startTick: 960, durationTicks: 480 },
+    { pitch: 76, startTick: 1920, durationTicks: 480 },
+    { pitch: 79, startTick: 2880, durationTicks: 480 }
+  ],
+  "ritme campur": [
+    { pitch: 72, startTick: 0, durationTicks: 960 },
+    { pitch: 76, startTick: 960, durationTicks: 240 },
+    { pitch: 74, startTick: 1200, durationTicks: 240 },
+    { pitch: 72, startTick: 1440, durationTicks: 480 }
+  ]
+});
 
 function fixture() {
   return createSong({
@@ -29,106 +66,200 @@ function fixture() {
   });
 }
 
-const take = [
-  { pitch: 72, startTick: 0, durationTicks: 240 },
-  { pitch: 74, startTick: 480, durationTicks: 240 },
-  { pitch: 76, startTick: 960, durationTicks: 480 }
-];
+function assertNoOverlap(notes, label) {
+  const sorted = [...notes].sort((left, right) => left.startTick - right.startTick);
+  for (let index = 1; index < sorted.length; index += 1) {
+    const previous = sorted[index - 1];
+    assert.ok(sorted[index].startTick >= previous.startTick + previous.durationTicks,
+      `${label}: nada tumpang tindih di tick ${sorted[index].startTick}`);
+  }
+}
 
-test("variasi dibatasi dua sampai tiga kandidat", () => {
+test("empat jenis variasi semuanya berbasis seed dan tidak ada as-recorded di daftar", () => {
+  assert.deepEqual([...VARIATION_KINDS], ["ornament", "inversion", "sequence", "rhythm"]);
+  assert.equal(VARIATION_MAX, VARIATION_KINDS.length, "jenis variasi harus bisa semua terjangkau");
+  assert.deepEqual([...DEVELOP_KINDS], ["variation", "continue"]);
+  const result = developVariations({ notes: TAKES["legato empat nada seperempat"], key: "C", scale: SCALE, seed: 3 });
+  assert.ok(!result.candidates.some(candidate => candidate.kind === "as-recorded"),
+    "kartu Asli adalah referensi, bukan kandidat");
+  assert.deepEqual(result.candidates.map(candidate => candidate.kind), [...VARIATION_KINDS]);
+  assert.deepEqual(result.candidates.map(candidate => candidate.id), ["variation-1", "variation-2", "variation-3", "variation-4"]);
+});
+
+test("jumlah kandidatvariasi mengikuti batas dua sampai empat", () => {
+  const take = TAKES["legato empat nada seperempat"];
   assert.equal(VARIATION_MIN, 2);
-  assert.equal(VARIATION_MAX, 3);
-  assert.equal(developVariations({ notes: take, key: "C", scale: SCALE }).total, 3);
+  assert.equal(developVariations({ notes: take, key: "C", scale: SCALE }).total, 4);
   assert.equal(developVariations({ notes: take, key: "C", scale: SCALE, count: 2 }).candidates.length, 2);
-  assert.equal(developVariations({ notes: take, key: "C", scale: SCALE, count: 9 }).candidates.length, 3);
+  assert.equal(developVariations({ notes: take, key: "C", scale: SCALE, count: 9 }).candidates.length, 4);
   assert.equal(developVariations({ notes: take, key: "C", scale: SCALE, count: 1 }).candidates.length, 2);
   assert.throws(() => developVariations({ notes: take, key: "C", scale: SCALE, count: 2.5 }), (error) => error?.code === "ideas-invalid-count");
 });
 
-test("seed sama menghasilkan variasi yang persis sama", () => {
-  const first = developVariations({ notes: take, key: "C", scale: SCALE, seed: 4242 });
-  const second = developVariations({ notes: take, key: "C", scale: SCALE, seed: 4242 });
-  assert.equal(JSON.stringify(first), JSON.stringify(second));
-  const longer = Array.from({ length: 8 }, (unused, index) => ({
-    pitch: 60 + index * 2,
-    startTick: index * 240,
-    durationTicks: 240
-  }));
-  const base = developVariations({ notes: longer, key: "C", scale: SCALE, seed: 4242 });
-  const other = developVariations({ notes: longer, key: "C", scale: SCALE, seed: 99 });
-  assert.notEqual(JSON.stringify(base.candidates), JSON.stringify(other.candidates),
-    "seed berbeda harus menghasilkan variasi yang berbeda");
+for (const [label, take] of Object.entries(TAKES)) {
+  test(`${label}: tiap kandidat berbeda dari take asli dan dari kandidat lain di 20 seed`, () => {
+    const takeHash = notesHash(take);
+    for (const seed of SEEDS) {
+      const result = developVariations({ notes: take, key: "C", scale: SCALE, seed });
+      assert.ok(result.candidates.length >= 3, `seed ${seed} hanya menghasilkan ${result.candidates.length} kandidat`);
+      const seen = new Set();
+      for (const candidate of result.candidates) {
+        const hash = notesHash(candidate.notes);
+        assert.notEqual(hash, takeHash, `seed ${seed}: ${candidate.kind} identik dengan take asli`);
+        assert.ok(!seen.has(hash), `seed ${seed}: ${candidate.kind} identik dengan kandidat lain`);
+        seen.add(hash);
+      }
+    }
+  });
+
+  test(`${label}: nada pembuka dan penutup tetap, semua nada di dalam skala`, () => {
+    for (const seed of SEEDS) {
+      const result = developVariations({ notes: take, key: "C", scale: SCALE, seed });
+      for (const candidate of result.candidates) {
+        const first = candidate.notes[0];
+        const last = candidate.notes.at(-1);
+        for (const [position, expected] of [[first, take[0]], [last, take.at(-1)]]) {
+          assert.equal(position.pitch, expected.pitch, `seed ${seed}: nada batas bergeser`);
+          assert.equal(position.startTick, expected.startTick, `seed ${seed}: waktu nada batas bergeser`);
+          assert.equal(position.durationTicks, expected.durationTicks, `seed ${seed}: durasi nada batas bergeser`);
+        }
+        for (const note of candidate.notes) {
+          assert.ok(isScalePitch(note.pitch, "C", SCALE), `nada ${note.pitch} di luar skala`);
+          assert.ok(note.startTick >= 0 && note.durationTicks >= 1);
+        }
+        assertNoOverlap(candidate.notes, `seed ${seed} ${candidate.kind}`);
+      }
+    }
+  });
+
+  test(`${label}: Seed lain menghasilkan himpunan kandidat berbeda pada minimal 80 persen seed`, () => {
+    const signature = (seed) => JSON.stringify(
+      developVariations({ notes: take, key: "C", scale: SCALE, seed }).candidates.map(candidate => notesHash(candidate.notes))
+    );
+    const baseline = signature(SEEDS[0]);
+    const different = SEEDS.slice(1).filter(seed => signature(seed) !== baseline).length;
+    const ratio = different / (SEEDS.length - 1);
+    assert.ok(ratio >= 0.8, `hanya ${Math.round(ratio * 100)} persen seed lain menghasilkan himpunan berbeda`);
+  });
+}
+
+test("take legato empat nada menghasilkan minimal tiga variasi yang saling berbeda", () => {
+  const take = TAKES["legato empat nada seperempat"];
+  const result = developVariations({ notes: take, key: "C", scale: SCALE, seed: 11 });
+  assert.ok(result.candidates.length >= 3);
+  assert.equal(new Set(result.candidates.map(candidate => notesHash(candidate.notes))).size, result.candidates.length);
+  assert.equal(result.sourceNotes.length, take.length);
+  assert.deepEqual([...result.sourceNotes], take.map((note) => ({ ...note })));
 });
 
-test("tanpa seed, take yang sama menghasilkan seed yang sama", () => {
+test("take legato tanpa jeda tetap punya hiasan, jadi tidak hanya jenis ritme yang berubah", () => {
+  const take = TAKES["legato empat nada seperempat"];
+  const ornament = developVariations({ notes: take, key: "C", scale: SCALE, seed: 4 })
+    .candidates.find(candidate => candidate.kind === "ornament");
+  assert.ok(ornament.notes.length > take.length, "hiasan memecah nada panjang");
+  assert.equal(ornament.notes[0].pitch, take[0].pitch);
+  assert.equal(ornament.notes.at(-1).pitch, take.at(-1).pitch);
+  assertNoOverlap(ornament.notes, "ornament");
+});
+
+test("seed sama dan input sama selalu menghasilkan kandidat yang persis sama", () => {
+  const take = TAKES["ritme campur"];
+  assert.equal(
+    JSON.stringify(ideaDevelop({ kind: "variation", notes: take, key: "C", scale: SCALE, seed: 4242 })),
+    JSON.stringify(ideaDevelop({ kind: "variation", notes: take, key: "C", scale: SCALE, seed: 4242 }))
+  );
   assert.equal(seedForNotes(take), seedForNotes([...take].reverse()));
   assert.equal(seedForNotes(take), developVariations({ notes: take, key: "C", scale: SCALE }).seed);
 });
 
-test("nada pembuka dan penutup take tidak pernah berubah", () => {
-  const result = developVariations({ notes: take, key: "C", scale: SCALE, seed: 7 });
-  for (const candidate of result.candidates) {
-    const first = candidate.notes[0];
-    const last = candidate.notes.at(-1);
-    assert.equal(first.pitch, take[0].pitch);
-    assert.equal(first.startTick, take[0].startTick);
-    assert.equal(last.pitch, take.at(-1).pitch);
-    assert.equal(last.startTick, take.at(-1).startTick);
-  }
-});
-
-test("semua nada variasi tetap di dalam scale lagu dan tidak menabrak diri sendiri", () => {
-  const result = developVariations({ notes: take, key: "C", scale: SCALE, seed: 11 });
-  for (const candidate of result.candidates) {
-    for (const note of candidate.notes) {
-      assert.ok(isScalePitch(note.pitch, "C", SCALE), `nada ${note.pitch} di luar scale`);
-      assert.ok(note.startTick >= 0);
-      assert.ok(note.durationTicks >= 1);
-      assert.ok(note.pitch >= 36 && note.pitch <= 96);
-    }
-    const sorted = [...candidate.notes].sort((left, right) => left.startTick - right.startTick);
-    for (let index = 1; index < sorted.length; index += 1) {
-      const previous = sorted[index - 1];
-      assert.ok(sorted[index].startTick >= previous.startTick + previous.durationTicks,
-        `variasi ${candidate.id}: nada tumpang tindih di tick ${sorted[index].startTick}`);
-    }
-  }
-});
-
-test("jenis variasi mengikuti urutan yang bisa diandalkan", () => {
-  const result = developVariations({ notes: take, key: "C", scale: SCALE, seed: 3 });
-  assert.deepEqual(result.candidates.map(candidate => candidate.kind), [...VARIATION_KINDS].slice(0, result.total));
-  assert.deepEqual(result.candidates.map(candidate => candidate.id), ["variation-1", "variation-2", "variation-3"]);
-  assert.deepEqual(result.candidates[0].notes, take.map(note => ({ ...note })));
-});
-
-test("take rusak ditolak sebelum apa pun dihitung", () => {
+test("take rusak, jenis asing, dan skala tanpa nada ditolak sebelum apa pun dihitung", () => {
+  const take = TAKES["legato empat nada seperempat"];
   for (const input of [[], null, "take", [{ pitch: 72 }], [{ pitch: 200, startTick: 0, durationTicks: 120 }],
     [{ pitch: 72, startTick: 0, durationTicks: 120, anchor: true }]]) {
     assert.throws(() => developVariations({ notes: input, key: "C", scale: SCALE }), (error) => error?.code === "ideas-invalid-take");
+    assert.throws(() => developContinuation({ notes: input, key: "C", scale: SCALE }), (error) => error?.code === "ideas-invalid-take");
+  }
+  assert.throws(() => developVariations({ notes: take, key: "C", scale: { name: "empty", intervals: [] } }),
+    (error) => error?.code === "ideas-invalid-scale");
+  assert.throws(() => ideaDevelop({ kind: "ajar", notes: take, key: "C", scale: SCALE }),
+    (error) => error?.code === "ideas-invalid-kind");
+});
+
+test("Lanjutan mengisi celah di antara anchor A dan B tanpa mengubah lagu", () => {
+  const take = TAKES["legato empat nada seperempat"];
+  const takeEnd = take.at(-1).startTick + take.at(-1).durationTicks;
+  assert.deepEqual([...CONTINUATION_BARS], [1, 2]);
+  assert.deepEqual([...CONTINUATION_TARGETS], ["tonic", "dominant"]);
+  for (const bars of CONTINUATION_BARS) {
+    for (const target of CONTINUATION_TARGETS) {
+      const result = developContinuation({
+        notes: take, key: "C", scale: SCALE, seed: 7, bars, target,
+        tempo: 96, timeSignature: { numerator: 4, denominator: 4 }
+      });
+      assert.equal(result.candidates.length, CONTINUATION_COUNT, "six kandidat lanjutan");
+      const bar = PPQ * 4;
+      assert.equal(result.gap.startTick % 120, 0, "celah mulai di grid");
+      assert.equal(result.gap.endTick - result.gap.startTick, bars * bar);
+      assert.ok(result.gap.startTick >= takeEnd, "celah dimulai setelah take berakhir");
+      assert.equal(result.gap.target, target);
+      assert.equal(result.gap.bars, bars);
+      const tonic = target === "tonic" ? 0 : 7;
+      assert.equal(((result.gap.anchorPitch % 12) - tonic + 12) % 12, 0, "anchor B pada nada Tonik atau Dominan");
+      for (const candidate of result.candidates) {
+        assert.ok(candidate.notes.length > 0);
+        assert.deepEqual([...candidate.baseNotes], take.map((note) => ({ ...note })));
+        for (const note of candidate.notes) {
+          assert.ok(note.startTick >= result.gap.startTick, "nada lanjutan tidak mendahului celah");
+          assert.ok(note.startTick + note.durationTicks <= result.gap.endTick, "nada lanjutan melewati anchor B");
+          assert.ok(isScalePitch(note.pitch, "C", SCALE), `nada lanjutan ${note.pitch} di luar skala`);
+        }
+        const last = candidate.notes.at(-1);
+        assert.equal(last.startTick + last.durationTicks, result.gap.endTick, "kandidat harus mendarat di anchor B");
+        assertNoOverlap([...candidate.baseNotes, ...candidate.notes], `continue ${bars}/${target}`);
+      }
+    }
   }
 });
 
-test("skala lagu tanpa nada yang cocok ditolak", () => {
-  assert.throws(() => developVariations({ notes: take, key: "C", scale: { name: "empty", intervals: [] } }),
-    (error) => error?.code === "ideas-invalid-scale");
+test("Lanjutan tanpa bars dan target memakai seed dan tetap deterministik", () => {
+  const take = TAKES["ritme campur"];
+  const first = developContinuation({ notes: take, key: "C", scale: SCALE, seed: 21 });
+  const second = developContinuation({ notes: take, key: "C", scale: SCALE, seed: 21 });
+  assert.equal(JSON.stringify(first), JSON.stringify(second));
+  assert.ok(CONTINUATION_BARS.includes(first.gap.bars));
+  assert.ok(CONTINUATION_TARGETS.includes(first.gap.target));
+  const other = developContinuation({ notes: take, key: "C", scale: SCALE, seed: 22 });
+  assert.notEqual(JSON.stringify(first.candidates), JSON.stringify(other.candidates),
+    "seed berbeda harus menghasilkan lanjutan yang berbeda");
 });
 
-test("developTake di command layer deterministik dan tidak mengubah lagu", () => {
+test("ideaDevelop tidak pernah menyentuh anchor, locked, atau langkah undo", () => {
   const commands = createCommands(fixture());
+  commands.addNote({ pitch: 60, startTick: 0, durationTicks: 480 });
+  const firstId = commands.getSong().notes[0].id;
+  commands.setAnchor(firstId, true);
+  commands.addNote({ pitch: 62, startTick: 480, durationTicks: 480 });
+  commands.setLocked(commands.getSong().notes[1].id, true);
   const before = JSON.stringify(commands.getSong());
-  const first = commands.developTake({ notes: take, seed: 5150 });
-  const second = commands.developTake({ notes: take, seed: 5150 });
-  assert.deepEqual(first, second);
-  assert.equal(JSON.stringify(commands.getSong()), before, "developTake hanya membaca lagu");
-  assert.equal(commands.getState().history.undoDepth, 0, "mengembangkan ide bukan langkah undo");
+  const undoBefore = commands.getState().history.undoDepth;
+  const take = TAKES["legato empat nada seperempat"];
+  const variation = commands.ideaDevelop({ kind: "variation", notes: take, seed: 5150 });
+  const continuation = commands.ideaDevelop({ kind: "continue", notes: take, seed: 5150 });
+  assert.ok(variation.candidates.length >= 3);
+  assert.equal(continuation.candidates.length, CONTINUATION_COUNT);
+  assert.equal(JSON.stringify(commands.getSong()), before, "mengembangkan ide hanya membaca lagu");
+  assert.equal(commands.getState().history.undoDepth, undoBefore, "mengembangkan ide bukan langkah undo");
+  assert.deepEqual(commands.getState().anchorNoteIds, [firstId]);
+  assert.deepEqual(commands.getState().lockedNoteIds, [commands.getSong().notes[1].id]);
+  assert.ok(commands.getState().availableActions.includes("ideaDevelop"));
   assert.ok(commands.getState().availableActions.includes("developTake"));
-  assert.throws(() => commands.developTake({ notes: [] }), (error) => error?.code === "ideas-invalid-take");
+  assert.deepEqual(commands.developTake({ notes: take, seed: 5150 }).candidates, variation.candidates);
 });
 
-test("menerima satu variasi menambah nada sebagai satu langkah undo", () => {
+test("Terima kandidat variasi menambah nada sebagai satu langkah undo", () => {
   const commands = createCommands(fixture());
-  const variation = commands.developTake({ notes: take, seed: 8 }).candidates[1];
+  const take = TAKES["legato empat nada seperempat"];
+  const variation = commands.ideaDevelop({ kind: "variation", notes: take, seed: 8 }).candidates[1];
   const added = commands.commitTake({ notes: variation.notes });
   assert.equal(added.length, variation.notes.length);
   assert.equal(commands.getState().history.undoDepth, 1);
@@ -137,8 +268,57 @@ test("menerima satu variasi menambah nada sebagai satu langkah undo", () => {
   assert.equal(commands.getSong().notes.length, 0);
 });
 
+test("Terima kandidat lanjutan menambah take dan lanjutan dalam satu langkah undo", () => {
+  const commands = createCommands(fixture());
+  const take = TAKES["legato empat nada seperempat"];
+  const candidate = commands.ideaDevelop({ kind: "continue", notes: take, seed: 13 }).candidates[0];
+  const notes = [...candidate.baseNotes, ...candidate.notes];
+  const added = commands.commitTake({ notes });
+  assert.equal(added.length, candidate.baseNotes.length + candidate.notes.length);
+  assert.equal(commands.getState().history.undoDepth, 1, "take dan lanjutan satu commit");
+  assertNoOverlap(commands.getSong().notes, "terima lanjutan");
+  commands.undo();
+  assert.equal(commands.getSong().notes.length, 0, "satu Undo mengembalikan take dan lanjutannya");
+});
+
+test("retry overcomes duplikat sehingga daftar kandidat tidak pernah memuat nada yang sama", () => {
+  // Take dua nada tidak punya nada tengah, jadi tidak ada jenis yang bisa
+  // berubah tanpa merusak aturan nada pembuka dan penutup.
+  const short = [{ pitch: 72, startTick: 0, durationTicks: 480 }, { pitch: 76, startTick: 480, durationTicks: 480 }];
+  const result = developVariations({ notes: short, key: "C", scale: SCALE, seed: 5 });
+  assert.equal(result.total, 0, "take yang tidak bisa dikembangkan tidak boleh memaksa duplikat");
+  assert.equal(RESEED_ATTEMPTS, 8, "pencobaan seed dibatasi delapan kali");
+});
+
+test("geometri mini-kontur mengisi kotak dan tidak menghasilkan polyline rusak", () => {
+  const rising = contourGeometry([
+    { pitch: 60, startTick: 0, durationTicks: 240 },
+    { pitch: 67, startTick: 240, durationTicks: 480 }
+  ]);
+  assert.equal(rising.viewBox, "0 0 96 24");
+  assert.equal(rising.empty, false);
+  assert.equal(rising.noteCount, 2);
+  const points = rising.points.split(" ");
+  assert.equal(points.length, 2);
+  for (const point of points) {
+    const [x, y] = point.split(",").map(Number);
+    assert.ok(Number.isFinite(x) && x >= 2 && x <= 94, `x ${x} di luar kotak`);
+    assert.ok(Number.isFinite(y) && y >= 2 && y <= 22, `y ${y} di luar kotak`);
+  }
+  const [x0, y0] = points[0].split(",").map(Number);
+  const [x1, y1] = points[1].split(",").map(Number);
+  assert.ok(y1 < y0, "nada lebih tinggi digambar lebih ke atas");
+  assert.ok(x1 > x0, "waktu bergerak ke kanan");
+  const flat = contourGeometry([{ pitch: 60, startTick: 0, durationTicks: 120 }, { pitch: 60, startTick: 120, durationTicks: 120 }]);
+  assert.equal(flat.points.split(" ").length, 2, "rentang nada satu oktaf tetap menghasilkan dua titik");
+  const empty = contourGeometry([]);
+  assert.equal(empty.empty, true);
+  assert.equal(empty.points, "");
+});
+
 test("variationSpan membulatkan akhir take ke grid dengan lantai satu birama", () => {
-  assert.equal(variationSpan(take), 1440);
+  const take = TAKES["legato empat nada seperempat"];
+  assert.equal(variationSpan(take), 1920);
   assert.equal(variationSpan([{ pitch: 60, startTick: 0, durationTicks: PPQ }]), PPQ);
   assert.equal(variationSpan([{ pitch: 60, startTick: 0, durationTicks: 121 }]), PPQ);
   assert.equal(variationSpan([{ pitch: 60, startTick: 0, durationTicks: 481 }]), 600);

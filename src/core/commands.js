@@ -1,17 +1,17 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.87";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.87";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.88";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.88";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261003.87";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.87";
+import { createAgentSnapshot } from "./snapshot.js?v=20261003.88";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.88";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
-import { developVariations } from "../generation/ideas.js?v=20261003.87";
+import { ideaDevelop } from "../generation/ideas.js?v=20261003.88";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261003.87";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.87";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.87";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.87";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261003.87";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261003.88";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.88";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.88";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.88";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261003.88";
 import { syllabifyLyrics } from "./lyrics.js";
 
 function fail(code) {
@@ -1407,11 +1407,26 @@ export function createCommands(initialSong, {
     },
     // I1: satu take = satu langkah undo. insertAtTick default-nya akhir lagu
     // atau playhead, jadi agent bisa mengirim take tanpa menyebut posisi.
-    // I2: variasi deterministik dari satu take. Tidak menyentuh lagu, jadi
-    // hasilnya selalu bisa dibandingkan sebelum satu accept.
+// I2: satu command untuk kedua arah pengembangan ide. Keduanya hanya
+    // membaca lagu sehingga hasilnya selalu bisa dibandingkan sebelum satu
+    // Terima, dan tidak ada satu pun yang menyentuh anchor atau locked.
+    ideaDevelop({ kind = "variation", notes, count, seed, bars, target } = {}) {
+      return cloneData(ideaDevelop({
+        kind,
+        notes,
+        count,
+        seed,
+        bars,
+        target,
+        key: song.key,
+        scale: song.scale,
+        tempo: song.timing.tempo,
+        timeSignature: song.timing.timeSignature
+      }));
+    },
+    // developTake tetap ada sebagai jalan pintas ke arah variasi.
     developTake({ notes, count, seed } = {}) {
-      const result = developVariations({ notes, count, seed, key: song.key, scale: song.scale });
-      return cloneData(result);
+      return commands.ideaDevelop({ kind: "variation", notes, count, seed });
     },
     commitTake({ notes, insertAtTick = null } = {}) {
       if (!Array.isArray(notes) || notes.length === 0) fail("invalid-note");
@@ -1791,10 +1806,16 @@ export function createCommands(initialSong, {
     listIdeas() {
       return cloneData(ideaBoard?.list?.() ?? { version: 1, ideas: [] });
     },
-    saveIdea({ notes, title = null, source = "take" } = {}) {
+saveIdea({ notes, title = null, source = "take" } = {}) {
       const saved = ideaBoard?.save?.({ notes, title, source });
       if (!saved) fail("idea-board-unavailable");
       return cloneData(saved);
+    },
+    renameIdea(ideaId, title) {
+      if (typeof ideaId !== "string" || ideaId.length === 0) fail("idea-board-invalid-entry");
+      const renamed = ideaBoard?.rename?.(ideaId, title);
+      if (!renamed) fail("idea-board-invalid-entry");
+      return cloneData(renamed);
     },
     deleteIdea(ideaId) {
       if (typeof ideaId !== "string" || ideaId.length === 0) fail("idea-board-invalid-entry");

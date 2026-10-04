@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261003.87">
+    <meta name="melodi-build" content="20261003.88">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.87">
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.88">
     <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.74"></script>
-    <script type="module" src="./src/app.js?v=20261003.87"></script>
+    <script type="module" src="./src/app.js?v=20261003.88"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -196,14 +196,32 @@
               </label>
               <p class="ideas-meter"><span data-copy="ideasTempoLabel"></span> <output data-entity="ideas-tempo"></output> <span class="muted">BPM</span></p>
               <p class="ideas-status" data-entity="ideas-status" role="status" aria-live="polite"></p>
+              <div class="ideas-latency" role="group" data-aria-copy="ideasCompensationLabel">
+                <span data-copy="ideasCompensationLabel"></span>
+                <button type="button" class="secondary" data-action="ideas-compensation-less" data-copy="ideasCompensationLess" data-aria-copy="ideasCompensationLess"></button>
+                <output data-entity="ideas-compensation"></output>
+                <button type="button" class="secondary" data-action="ideas-compensation-more" data-copy="ideasCompensationMore" data-aria-copy="ideasCompensationMore"></button>
+                <button type="button" class="secondary" data-action="ideas-compensation-auto" data-copy="ideasCompensationAuto"></button>
+              </div>
               <button type="button" class="secondary" data-action="undo" data-copy="undoButton" aria-label="Batalkan perubahan terakhir" title="Batalkan perubahan terakhir" data-focus-key="undo-ideas"></button>
             </div>
+            <p class="ideas-hint" data-entity="ideas-empty-hint" data-copy="ideasEmptyHint"></p>
+            <p class="ideas-hint muted" data-entity="ideas-mono-hint" data-copy="ideasMonophonicHint" hidden></p>
             <div class="ideas-board">
+              <div class="ideas-keyboard-head">
+                <p class="ideas-meter"><span data-copy="ideasKeyboardLabel"></span> <output data-entity="ideas-octave"></output></p>
+                <div class="ideas-octave-shift" role="group" data-aria-copy="ideasKeyboardLabel">
+                  <button type="button" class="secondary" data-action="ideas-octave-down" data-copy="ideasKeyboardOctaveDown" data-aria-copy="ideasKeyboardOctaveDown"></button>
+                  <button type="button" class="secondary" data-action="ideas-octave-up" data-copy="ideasKeyboardOctaveUp" data-aria-copy="ideasKeyboardOctaveUp"></button>
+                </div>
+              </div>
               <div class="ideas-keyboard" data-entity="ideas-keyboard" data-aria-copy="ideasKeyboardLabel" tabindex="0" role="group"></div>
               <aside class="ideas-takes-panel" data-aria-copy="ideasTakesHeading">
-                <h3 data-copy="ideasTakesHeading"></h3>
-                <ul class="ideas-takes" data-entity="ideas-takes" data-count="0"></ul>
-                <div class="ideas-variations" data-entity="ideas-variations" data-open="false"></div>
+                <div class="ideas-results-main">
+                  <h3 data-copy="ideasTakesHeading"></h3>
+                  <ul class="ideas-takes" data-entity="ideas-takes" data-count="0"></ul>
+                  <div class="ideas-variations" data-entity="ideas-variations" data-open="false"></div>
+                </div>
                 <section class="ideas-board-list" data-entity="ideas-board" data-count="0" aria-labelledby="ideas-board-heading">
                   <h3 id="ideas-board-heading" data-copy="ideasBoardHeading"></h3>
                   <p class="muted" data-entity="ideas-board-empty"></p>

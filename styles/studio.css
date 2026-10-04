@@ -791,28 +791,36 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-meter,.ideas-status{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
 .ideas-status{color:var(--text);min-width:9ch;}
 .ideas-readout{font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent-strong);}
-.ideas-board{display:grid;grid-template-columns:minmax(0,1fr) minmax(11rem,17rem);gap:var(--space-4);align-items:start;}
+.ideas-board{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-3);align-items:start;}
+.ideas-keyboard-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-2);}
+.ideas-octave-shift{display:flex;gap:var(--space-1);}
+.ideas-latency{display:inline-flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);color:var(--text-muted);}
+.ideas-latency output{min-width:5.5ch;text-align:center;color:var(--text);font-variant-numeric:tabular-nums;}
+.ideas-hint{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
 .ideas-keyboard{position:relative;display:grid;gap:var(--space-2);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);touch-action:none;}
 .ideas-keyboard-label{font-size:var(--text-xs);color:var(--text-muted);}
 .ideas-keyboard-white{position:relative;display:flex;gap:2px;}
 .ideas-keyboard-black{position:absolute;inset:0 var(--space-2) auto var(--space-2);height:60%;min-height:clamp(1.75rem,7dvh,2.75rem);pointer-events:none;}
 .ideas-key{flex:1 1 0;min-width:0;min-height:clamp(2.75rem,11dvh,5rem);border:1px solid var(--border-strong);border-radius:0 0 var(--radius) var(--radius);background:var(--surface);color:var(--text);cursor:pointer;}
-/* Posisi tombol hitam mengikuti celah antara sembilan tombol putih. */
-.ideas-key-black[data-slot="1"]{left:11.111%;}
-.ideas-key-black[data-slot="2"]{left:22.222%;}
-.ideas-key-black[data-slot="3"]{left:33.333%;}
-.ideas-key-black[data-slot="4"]{left:44.444%;}
-.ideas-key-black[data-slot="6"]{left:66.667%;}
+/* Posisi tombol hitam dihitung dari celah tombol putih di sebelah kiri. */
+.ideas-key-black{left:var(--key-slot,50%);}
 /* Warna tombol piano tidak mengikuti tema: tombol putih selalu terang dan
    tombol hitam selalu gelap supaya oktaf terbaca di mode terang maupun gelap. */
 .ideas-key-white{background:light-dark(#f7f5f1,#ecebe6);color:#1b2124;border-color:light-dark(#9d968c,#8b8479);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font-size:var(--text-xs);}
-.ideas-key-black{position:absolute;top:0;width:min(7.5%, 2rem);min-width:0;min-height:clamp(1.75rem,7dvh,2.75rem);transform:translateX(-50%);border-radius:0 0 4px 4px;background:light-dark(#22262a,#0c0f12);color:#e7e4de;border-color:light-dark(#22262a,#0c0f12);pointer-events:auto;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:9px;}
-.ideas-key-label{display:flex;flex-direction:column;align-items:center;line-height:1.1;}
+.ideas-key-black{position:absolute;top:0;width:min(7.5%, 2rem);min-width:0;min-height:clamp(1.75rem,7dvh,2.75rem);transform:translateX(-50%);border-radius:0 0 4px 4px;background:light-dark(#22262a,#0c0f12);color:#e7e4de;border-color:light-dark(#22262a,#0c0f12);pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:2px;font-size:9px;}
+/* Nama nada menempel di bawah tombol putih, label QWERTY menempel di atas
+   tombol hitam, jadi keduanya tidak pernah menimpa satu sama lain. */
+.ideas-key-note{line-height:1.1;white-space:nowrap;}
+.ideas-key-label{display:none;flex-direction:column;align-items:center;line-height:1.1;}
+/* Label QWERTY hanya muncul di perangkat dengan pointer halus; panel Ide
+   menuliskan capabilities pointer ke data-labels supaya tidak perlu media query. */
+.ideas-keyboard[data-labels="qwerty"] .ideas-key-label{display:flex;}
 .ideas-keyboard-hint{margin:0;font-size:var(--text-xs);color:var(--text-muted);}
 .ideas-key[data-active="true"]{background:var(--accent);border-color:var(--accent-strong);color:var(--surface);}
 /* Tombol hitam mengikuti lebar reboot piano, bukan minimum 44px global. */
 .app-shell .ideas-key-black{min-width:0;}
-.ideas-takes-panel{display:grid;gap:var(--space-2);align-content:start;}
+.ideas-takes-panel{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-3);align-content:start;}
+.ideas-results-main{display:grid;gap:var(--space-2);align-content:start;min-width:0;}
 .ideas-takes-panel h3{margin:0;font-size:var(--text-sm);}
 .ideas-takes{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2);}
 .ideas-take{display:grid;gap:var(--space-1);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
@@ -821,10 +829,22 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-variations{display:grid;gap:var(--space-2);}
 .ideas-variations[data-open="false"]{display:none;}
 .ideas-variations-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);font-size:var(--text-xs);color:var(--text-muted);}
-.ideas-variations-strip{display:grid;gap:var(--space-2);}
-.ideas-variation{display:grid;gap:var(--space-1);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);}
-.ideas-variation[data-kind="as-recorded"]{border-color:var(--border-strong);}.ideas-board-list{display:grid;gap:var(--space-2);border-top:1px solid var(--border);padding-top:var(--space-2);}
+.ideas-variations-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(13rem,1fr));gap:var(--space-2);}
+.ideas-variation{display:grid;gap:var(--space-1);align-content:start;padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);}
+.ideas-variation[data-active="true"]{border-color:var(--accent-strong);box-shadow:inset 0 0 0 1px var(--accent-strong);}
+.ideas-variation[data-compare="a"]{border-color:var(--ember);}
+.ideas-variation[data-compare="b"]{border-color:var(--accent);}
+.ideas-variation-reference{border-color:var(--border-strong);}
+.ideas-variation-head{display:flex;align-items:center;gap:var(--space-1);font-size:var(--text-sm);}
+.ideas-variation-head .muted{margin-left:auto;}
+.ideas-variation-slot{display:inline-grid;place-items:center;min-width:1.6em;height:1.6em;border:1px solid var(--border);border-radius:var(--radius);font-size:var(--text-xs);color:var(--text-muted);}
+.ideas-contour{width:100%;height:2.25rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
+.ideas-contour polyline{fill:none;stroke:var(--accent-strong);stroke-width:1.5;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke;}
+.ideas-variation-reference .ideas-contour polyline{stroke:var(--text-muted);}
+.ideas-compare{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);font-size:var(--text-xs);}
+.ideas-board-list{display:grid;gap:var(--space-2);align-content:start;border-top:1px solid var(--border);padding-top:var(--space-2);min-width:0;}
 .ideas-board-list h3{margin:0;font-size:var(--text-sm);}
 .ideas-ideas{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2);}
 .ideas-idea{display:grid;gap:var(--space-1);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
 .ideas-idea[data-saved="true"]{border-color:var(--accent);}
+.ideas-idea-name{min-height:var(--control-h);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);font:inherit;}

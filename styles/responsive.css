@@ -20,11 +20,15 @@
   .studio[data-view-mode="combined"] #expression-panel{grid-column:1/-1;}
   .studio .note-selection-bar{overflow:visible;}
   .studio .selection-more-actions{right:auto;left:0;}
+  /* I1 Ide: keyboard selebar kontainer, hasil kandidat dan papan ide jadi dua
+     kolom masing-masing supaya tidak ada area kosong besar. */
+  .ideas-board{grid-template-columns:minmax(0,1fr);}
+  .ideas-takes-panel{grid-template-columns:minmax(0,1fr) minmax(14rem,19rem);}
 }
 @media (pointer:coarse){
   :root{--control-h:44px;}
   /* Keyboard tangkap ide butuh tinggi tombol hitam lebih pendek supaya
-     sembilan tombol putih tetap muat dan tidak saling menutupi. */
+     tombol putih tetap terbaca dan tidak saling menutupi. */
   .studio .app-shell .ideas-keyboard .ideas-key-black{min-height:2rem !important;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
@@ -381,17 +385,18 @@
   .studio .help-sheet-card{padding:var(--space-4);}
 }
 @media (width <= 46rem){
-  /* I1 Ide: keyboard dan daftar take turun ke bawah supaya tombol tidak keluar
-     viewport di HP. Lebar tombol putih 40px agar sembilan tombol muat satu
-     baris pada 390px; tinggi tetap 44px. */
+  /* I1 Ide: keyboard dua oktaf digeser horizontal supaya target sentuh setiap
+     tuts tetap >= 44px pada 390px; tombol hitam ikut ter-scroll karena
+     posisinya relatif terhadap baris tombol putih. */
   .ideas-board{grid-template-columns:minmax(0,1fr);}
   .ideas-strip{gap:var(--space-2);}
   .ideas-takes{grid-template-columns:minmax(0,1fr);}
-  .app-shell .ideas-key{min-width:2.5rem;}
-  .app-shell .ideas-key-black{min-width:0;}
-  .ideas-keyboard{padding:var(--space-1);gap:var(--space-1);}
-  .ideas-keyboard-white{gap:1px;}
-  :root{--control-h:44px;}
+  .ideas-takes-panel{grid-template-columns:minmax(0,1fr);}
+  .ideas-keyboard{overflow-x:auto;overscroll-behavior-x:contain;}
+  .ideas-keyboard-white{min-width:calc(var(--key-touch-min) * 14);}
+  .app-shell .ideas-key{min-width:var(--key-touch-min);}
+  .app-shell .ideas-key-black{width:calc(var(--key-touch-min) * 0.72);}
+  :root{--key-touch-min:44px;--control-h:44px;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
   .expression-toolbar{

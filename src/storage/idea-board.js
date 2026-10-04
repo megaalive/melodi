@@ -9,11 +9,21 @@ import { MelodiError, PPQ } from "../core/model.js";
 const STORAGE_KEY = "melodi.idea-board";
 const BOARD_VERSION = 1;
 export const IDEA_BOARD_LIMIT = 24;
+const TITLE_LIMIT = 120;
 const GRID = 120;
 const MIN_PITCH = 0;
 const MAX_PITCH = 127;
 const MAX_NOTES = 64;
 const MAX_DURATION_TICKS = PPQ * 64;
+const SOURCES = new Set(["take", "variation", "continue"]);
+
+/** Nama otomatis "Ide 3 - 14:05" supaya entri papan ide tidak pernah kosong. */
+export function autoIdeaTitle(ordinal, timestamp) {
+  const date = new Date(Number.isFinite(timestamp) ? timestamp : 0);
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `Ide ${ordinal} - ${hours}:${minutes}`;
+}
 
 export function fail(code) {
   throw new MelodiError(code);
@@ -40,14 +50,14 @@ function normalizeIdea(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) fail("idea-board-invalid-entry");
   const notes = normalizeNotes(value.notes);
   const title = typeof value.title === "string" && value.title.trim().length > 0
-    ? value.title.trim().slice(0, 120) : null;
+    ? value.title.trim().slice(0, TITLE_LIMIT) : null;
   return {
     id: typeof value.id === "string" && value.id.length > 0 ? value.id : fail("idea-board-invalid-entry"),
     title,
     notes,
     key: typeof value.key === "string" ? value.key : null,
     tempo: Number.isSafeInteger(value.tempo) && value.tempo > 0 ? value.tempo : null,
-    source: value.source === "variation" ? "variation" : "take",
+    source: SOURCES.has(value.source) ? value.source : "take",
     createdAt: Number.isSafeInteger(value.createdAt) ? value.createdAt : 0,
     spanTicks: notes.reduce((max, note) => Math.max(max, note.startTick + note.durationTicks), 0)
   };
@@ -108,19 +118,32 @@ export function createIdeaBoard({ storage, idFactory, now = () => Date.now(), li
     },
     save({ notes, title = null, source = "take" } = {}) {
       const normalized = normalizeNotes(notes);
+      const createdAt = now();
+      const ordinal = Math.max(1, IDEA_BOARD_LIMIT - board.ideas.length);
       const entry = normalizeIdea({
-        id: idFactory?.() ?? `idea-${now()}`,
-        title,
+        id: idFactory?.() ?? `idea-${createdAt}`,
+        title: title ?? autoIdeaTitle(ordinal, createdAt),
         notes: normalized,
         key: null,
         tempo: null,
         source,
-        createdAt: now()
+        createdAt
       });
       const ideas = [entry, ...board.ideas].slice(0, limit);
       board = { version: BOARD_VERSION, ideas };
       flush();
       return entry;
+    },
+    rename(ideaId, title) {
+      if (typeof ideaId !== "string" || ideaId.length === 0) fail("idea-board-invalid-entry");
+      if (typeof title !== "string") fail("idea-board-invalid-entry");
+      const trimmed = title.trim().slice(0, TITLE_LIMIT);
+      const existing = board.ideas.find(idea => idea.id === ideaId) ?? null;
+      if (!existing) fail("idea-board-invalid-entry");
+      const next = { ...existing, title: trimmed.length > 0 ? trimmed : autoIdeaTitle(1, existing.createdAt) };
+      board = { version: BOARD_VERSION, ideas: board.ideas.map(idea => (idea.id === ideaId ? next : idea)) };
+      flush();
+      return next;
     },
     remove(ideaId) {
       const existing = board.ideas.find(idea => idea.id === ideaId) ?? null;

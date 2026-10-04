@@ -1,8 +1,8 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261003.87";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.87";
-import { percussionVoiceSpec } from "./percussion.js?v=20261003.87";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.87";
-import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.87";
+import { MelodiError, PPQ } from "../core/model.js?v=20261003.88";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.88";
+import { percussionVoiceSpec } from "./percussion.js?v=20261003.88";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.88";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.88";
 
 const LOOK_AHEAD_SECONDS = 0.2;
 const SCHEDULER_INTERVAL_MS = 30;
@@ -808,6 +808,12 @@ function currentCycle(tick) {
     playPreview,
     now() {
       return context?.currentTime ?? 0;
+    },
+    // Latensi keluaran yang dilaporkan context, dipakai perekaman tangkap ide
+    // supaya nada yang ditekan tepat pada klik masuk pada tick yang tepat.
+    outputLatency() {
+      const reported = context?.outputLatency ?? context?.baseLatency ?? 0;
+      return Number.isFinite(reported) && reported > 0 ? reported : 0;
     },
     noteOn(pitch, velocity = 100) {
       const audioContext = ensureContext();

@@ -3,14 +3,22 @@ import assert from "node:assert/strict";
 import { PPQ, createSong } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import {
+  KEYBOARD_BLACK_COUNT,
+  KEYBOARD_DEFAULT_OCTAVE,
+  KEYBOARD_MAX_OCTAVE,
+  KEYBOARD_MIN_OCTAVE,
   KEYBOARD_OCTAVE_LOW,
   BLACK_KEY_ROWS,
   QUANTIZE_MODES,
   TAKE_LIMIT,
+  KEYBOARD_WHITE_COUNT,
   WHITE_KEY_ROWS,
   gridTicksFor,
   isTypingTarget,
+  keyboardBaseFor,
   keyboardDisabled,
+  keyboardRangeFor,
+  keyboardRows,
   keyToPitch,
   quantizeTake
 } from "../src/ui/ideas.js";
@@ -83,6 +91,37 @@ test("keyboard QWERTY memetakan A-L dan W-E-T-Y-U ke dua oktaf", () => {
   const pitches = [...WHITE_KEY_ROWS, ...BLACK_KEY_ROWS].map(([, offset]) => offset);
   assert.equal(new Set(pitches).size, pitches.length, "tiap nada punya satu tombol saja");
   assert.equal(Math.max(...pitches), 14, "sembilan tombol putih menutup satu oktaf lebih satu nada");
+});
+
+test("keyboard tangkap ide dua oktaf penuh C4-B5 dengan posisi tombol hitam dari celah putih", () => {
+  assert.equal(KEYBOARD_WHITE_COUNT, 14, "dua oktaf penuh berarti empat belas tombol putih");
+  assert.equal(KEYBOARD_BLACK_COUNT, 10);
+  assert.equal(KEYBOARD_DEFAULT_OCTAVE, 1, "buka di C4");
+  const range = keyboardRangeFor(KEYBOARD_DEFAULT_OCTAVE);
+  assert.equal(range.low, 60);
+  assert.equal(range.high, 83);
+  const rows = keyboardRows(range.low);
+  assert.deepEqual(rows.white.map((entry) => entry.pitch),
+    [60, 62, 64, 65, 67, 69, 71, 72, 74, 76, 77, 79, 81, 83]);
+  assert.deepEqual(rows.black.map((entry) => entry.pitch), [61, 63, 66, 68, 70, 73, 75, 78, 80, 82]);
+  // C# duduk di tengah celah C dan D, jadi 1 dari 14 lebar baris tombol putih.
+  assert.deepEqual(rows.black.map((entry) => entry.slot), [1, 2, 4, 5, 6, 8, 9, 11, 12, 13]);
+  for (const entry of rows.black) {
+    const expected = Math.round(entry.slot / KEYBOARD_WHITE_COUNT * 1000000) / 10000;
+    assert.equal(Number(entry.slotPercent), expected);
+    assert.ok(Math.abs(Number(entry.slotPercent) - entry.slot / KEYBOARD_WHITE_COUNT * 100) < 0.001);
+  }
+  const pitches = [...rows.white, ...rows.black].map((entry) => entry.pitch);
+  assert.equal(new Set(pitches).size, pitches.length, "tiap nada punya satu tombol saja");
+  // QWERTY hanya melabeli nada yang benar-benar bisa dibunyikan huruf.
+  const labelled = [...rows.white, ...rows.black].filter((entry) => entry.hotkey).map((entry) => entry.pitch);
+  assert.deepEqual(labelled, [...WHITE_KEY_ROWS, ...BLACK_KEY_ROWS].map(([, offset]) => offset + 60));
+});
+
+test("rentang keyboard dijepit supaya dua oktaf selalu utuh", () => {
+  assert.equal(keyboardBaseFor(-4), keyboardBaseFor(KEYBOARD_MIN_OCTAVE));
+  assert.equal(keyboardBaseFor(99), keyboardBaseFor(KEYBOARD_MAX_OCTAVE));
+  assert.equal(keyboardBaseFor(0), KEYBOARD_OCTAVE_LOW);
 });
 
 test("keyboard QWERTY mati saat fokus di input, textarea, select, atau palette", () => {

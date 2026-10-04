@@ -9,7 +9,12 @@ import { readAppStyles } from "./helpers/read-app-styles.js";
 // empty-song hint becomes a centred, dismissible block. Both are covered by
 // tests/dock-summary-hint.test.js, so the guard moves instead of losing its
 // purpose: it still catches drift between rounds.
-const ACTIVE_CSS_BUDGET_BYTES = 232_000;
+// 232 KB -> 235 KB: the Ideas tab became a real workspace: two-octave keyboard
+// with data-driven black-key slots, candidate cards with mini-contour and A/B
+// compare, latency compensation control, and an inline idea rename field. The
+// behaviour is covered by tests/ideas-layout.test.js and
+// tests/ideas-variations.test.js, so the guard moves with it.
+const ACTIVE_CSS_BUDGET_BYTES = 235_000;
 
 test("active imported CSS stays within its tracked byte budget", () => {
   const normalizedStyles = readAppStyles().replace(/\r\n?/g, "\n");

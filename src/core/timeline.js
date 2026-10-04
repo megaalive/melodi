@@ -1,4 +1,4 @@
-import { MelodiError } from "./model.js?v=20261003.87";
+import { MelodiError } from "./model.js?v=20261003.88";
 
 export function songBarTicks(song) {
   const { numerator = 4, denominator = 4 } = song.timing?.timeSignature ?? {};

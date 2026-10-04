@@ -115,6 +115,39 @@ test("ideaSpanTicks membulatkan ke grid dengan lantai satu grid", () => {
   assert.equal(ideaSpanTicks([{ pitch: 60, startTick: 0, durationTicks: 121 }]), 240);
 });
 
+test("nama otomatis memberi urutan dan jam, dan nama bisa diganti", () => {
+  const board = fakeStore();
+  const first = board.save({ notes });
+  const second = board.save({ notes });
+  assert.match(first.title, /^Ide \d+ - \d{2}:\d{2}$/);
+  assert.match(second.title, /^Ide \d+ - \d{2}:\d{2}$/);
+  assert.notEqual(first.title, second.title, "urutan ide tidak boleh sama");
+  const renamed = board.rename(first.id, " refrain kedua ");
+  assert.equal(renamed.title, "refrain kedua");
+  assert.equal(board.list().ideas.find(idea => idea.id === first.id).title, "refrain kedua");
+  const blank = board.rename(first.id, "   ");
+  assert.match(blank.title, /^Ide \d+ - \d{2}:\d{2}$/, "nama kosong kembali ke nama otomatis");
+  assert.throws(() => board.rename("tidak-ada", "x"), (error) => error?.code === "idea-board-invalid-entry");
+  assert.throws(() => board.rename(first.id, 7), (error) => error?.code === "idea-board-invalid-entry");
+  assert.equal(board.list().ideas.length, 2, "mengganti nama tidak menambah entri");
+});
+
+test("commands.renameIdea mengubah nama di papan dan bukan di lagu", () => {
+  const board = fakeStore();
+  const commands = createCommands(fixture(), { ideaBoard: board });
+  const saved = commands.saveIdea({ notes, source: "continue" });
+  assert.equal(saved.source, "continue");
+  const before = JSON.stringify(commands.getSong());
+  assert.equal(commands.renameIdea(saved.id, " chorus ").title, "chorus");
+  assert.equal(commands.listIdeas().ideas[0].title, "chorus");
+  assert.equal(JSON.stringify(commands.getSong()), before);
+  assert.equal(commands.getState().history.undoDepth, 0, "mengganti nama bukan langkah undo");
+  assert.ok(commands.getState().availableActions.includes("renameIdea"));
+  assert.throws(() => commands.renameIdea("", "x"), (error) => error?.code === "idea-board-invalid-entry");
+  assert.throws(() => commands.renameIdea("tidak-ada", "x"), (error) => error?.code === "idea-board-invalid-entry");
+  assert.throws(() => createCommands(fixture()).renameIdea("x", "y"), (error) => error?.code === "idea-board-invalid-entry");
+});
+
 test("commands.saveIdea, listIdeas, dan deleteIdea tidak menyentuh lagu", () => {
   const board = fakeStore();
   const commands = createCommands(fixture(), { ideaBoard: board });
