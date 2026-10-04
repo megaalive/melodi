@@ -1,35 +1,36 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.86';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.86";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.86";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.86";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.86";
-import { PPQ, createBlankSong, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.86";
-import { createCommands } from "./core/commands.js?v=20261003.86";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.87';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.87";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.87";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.87";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.87";
+import { PPQ, createBlankSong, createId, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.87";
+import { createCommands } from "./core/commands.js?v=20261003.87";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.86";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.86";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.86";
-import { songProjection } from "./audio/transport.js?v=20261003.86";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.86";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.86";
-import { createScoreView } from "./ui/score.js?v=20261003.86";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.86";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.86";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.86";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.86";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.86";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.87";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.87";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.87";
+import { songProjection } from "./audio/transport.js?v=20261003.87";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.87";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.87";
+import { createScoreView } from "./ui/score.js?v=20261003.87";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.87";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.87";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.87";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.87";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.87";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.86";
-import { createGenerationContext } from "./generation/context.js?v=20261003.86";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.87";
+import { createGenerationContext } from "./generation/context.js?v=20261003.87";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createIdeasView } from "./ui/ideas-view.js?v=20261003.86";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.86";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.86";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.86";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.86";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.86";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.86";
-import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.86";
+import { createIdeasView } from "./ui/ideas-view.js?v=20261003.87";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.87";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.87";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.87";
+import { createIdeaBoard } from "./storage/idea-board.js?v=20261003.87";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.87";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.87";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.87";
+import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.87";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -2164,6 +2165,8 @@ try {
   shareLoadStatus = error?.code ?? "invalid";
 }
 
+// I3: papan ide bertahan di localStorage dan bukan bagian dari Song.
+const ideaBoard = createIdeaBoard({ storage: safeStorage(), idFactory: () => createId() });
 const browserLibrary = createBrowserLibrary();
 // P0: probe perf hanya hidup kalau halaman diminta (?perf=1). Caller diambil
 // lewat closure karena player dan commands baru ada setelah baris ini.
@@ -2211,7 +2214,8 @@ commands = createCommands(sharedSong ?? draft.song ?? createBlankSong(), {
     return audioPlayer;
   },
   perf: perfProbe ? { tick: (ms) => perfProbe.recordTick(ms) } : null,
-  browserLibrary
+  browserLibrary,
+  ideaBoard
 });
 if (perfProbe) setCloneProbe((ms) => perfProbe.recordClone(ms));
 
@@ -2588,6 +2592,9 @@ const publicCommands = Object.freeze({
   deleteNote: (noteId) => commands.deleteNote(noteId, { actor: "user" }),
   commitTake: (input) => commands.commitTake(input),
   developTake: (input) => commands.developTake(input),
+  listIdeas: () => commands.listIdeas(),
+  saveIdea: (input) => commands.saveIdea(input),
+  deleteIdea: (ideaId) => commands.deleteIdea(ideaId),
   addPercussionHit: commands.addPercussionHit,
   updatePercussionHit: commands.updatePercussionHit,
   deletePercussionHit: commands.deletePercussionHit,
@@ -3621,6 +3628,8 @@ ideasView = createIdeasView({
   getPlayer: () => audioPlayer
 });
 ideasView.onChange(() => render());
+// Papan ide dibaca sekali saat tab Ide dibuka pertama kali.
+ideasView.state.ideas = commands.listIdeas();
 studioView = createStudioWorkspace(commands, translate, reportError, {
   initialDockOpen: uiPreferences.dockOpen,
   initialDockWidth: uiPreferences.dockWidth,

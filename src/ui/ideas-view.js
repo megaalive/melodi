@@ -2,7 +2,7 @@
  * I1: view tab Ide. Tangkap ide dengan keyboard, mouse, atau sentuh; rekam
  * take memakai jam audio; take tetap di memori sampai user menekan Pakai.
  */
-import { PPQ } from "../core/model.js?v=20261003.86";
+import { PPQ } from "../core/model.js?v=20261003.87";
 import {
   BLACK_KEY_ROWS,
   KEYBOARD_OCTAVE_LOW,
@@ -14,7 +14,7 @@ import {
   keyboardDisabled,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.86";
+} from "./ideas.js?v=20261003.87";
 
 const OCTAVE_MIN = 0;
 const OCTAVE_MAX = 4;
@@ -43,6 +43,8 @@ export function createIdeasView({ root, commands, translate, getPlayer }) {
     quantize: "light",
     snap: "1/8",
 takes: [],
+    ideas: null,
+    savedIdeaId: null,
     variations: null,
     events: [],
     openPitch: null,
@@ -273,7 +275,68 @@ function acceptVariation(candidate) {
   return commands.commitTake({ notes: candidate.notes.map(note => ({ ...note })), insertAtTick: null });
 }
 
-function renderVariations() {
+function saveToBoard(notes, source = "take") {
+    const idea = commands.saveIdea({ notes: notes.map(note => ({ ...note })), title: null, source });
+    state.ideas = commands.listIdeas();
+    state.savedIdeaId = idea.id;
+    emit();
+    return idea;
+  }
+
+  function loadIdea(idea) {
+    if (state.recording) stopRecording();
+    return commands.commitTake({ notes: idea.notes.map(note => ({ ...note })), insertAtTick: null });
+  }
+
+  function removeIdea(idea) {
+    commands.deleteIdea(idea.id);
+    state.ideas = commands.listIdeas();
+    if (state.savedIdeaId === idea.id) state.savedIdeaId = null;
+    emit();
+  }
+
+  function renderBoard() {
+    const host = root?.querySelector('[data-entity="ideas-ideas"]');
+    const empty = root?.querySelector('[data-entity="ideas-board-empty"]');
+    const section = root?.querySelector('[data-entity="ideas-board"]');
+    if (!host || !section) return;
+    const ideas = state.ideas?.ideas ?? [];
+    section.dataset.count = String(ideas.length);
+    host.dataset.count = String(ideas.length);
+    host.replaceChildren(...ideas.map(renderIdeaRow));
+    if (empty) {
+      empty.hidden = ideas.length > 0;
+      empty.textContent = translate("ideasBoardEmpty");
+    }
+  }
+
+  function renderIdeaRow(idea) {
+    const row = document.createElement("li");
+    row.className = "ideas-idea";
+    row.dataset.entity = "ideas-idea";
+    row.dataset.ideaId = idea.id;
+    row.dataset.noteCount = String(idea.notes.length);
+    row.dataset.source = idea.source;
+    if (idea.id === state.savedIdeaId) row.dataset.saved = "true";
+    const title = document.createElement("strong");
+    title.textContent = translate("ideasTakeTitle", { count: idea.notes.length });
+    const meta = document.createElement("span");
+    meta.className = "muted";
+    meta.textContent = idea.source === "variation"
+      ? translate("ideasVariationPassing")
+      : translate("ideasVariationRecorded");
+    const actions = document.createElement("div");
+    actions.className = "ideas-take-actions";
+    actions.append(
+      button("ideasPlay", "ideas-idea-play", () => playVariation({ notes: idea.notes })),
+      button("ideasBoardLoad", "ideas-idea-load", () => loadIdea(idea)),
+      button("ideasDiscard", "ideas-idea-remove", () => removeIdea(idea))
+    );
+    row.append(title, meta, actions);
+    return row;
+  }
+
+  function renderVariations() {
   const host = root?.querySelector('[data-entity="ideas-variations"]');
   if (!host) return null;
   const data = state.variations;
@@ -304,7 +367,8 @@ function renderVariations() {
     row.className = "ideas-take-actions";
     row.append(
       button("ideasPlay", "ideas-variation-play", () => playVariation(candidate)),
-      button("ideasUse", "ideas-variation-use", () => acceptVariation(candidate))
+      button("ideasUse", "ideas-variation-use", () => acceptVariation(candidate)),
+      button("ideasSaveBoard", "ideas-variation-save", () => saveToBoard(candidate.notes, "variation"))
     );
     card.append(name, count, row);
     strip.append(card);
@@ -336,6 +400,7 @@ function renderTakeRow(take) {
       button("ideasPlay", "ideas-play", () => playTake(take)),
       button("ideasDevelop", "ideas-develop", () => developTake(take)),
       button("ideasUse", "ideas-use", () => commitTake(take)),
+      button("ideasSaveBoard", "ideas-take-save", () => saveToBoard(take.notes, "take")),
       button("ideasDiscard", "ideas-discard", () => discardTake(take))
     );
     row.append(title, meta, actions);
@@ -465,6 +530,7 @@ const list = root.querySelector('[data-entity="ideas-takes"]');
       list.dataset.count = String(state.takes.length);
     }
     renderVariations();
+    renderBoard();
   }
 
   function bind() {
@@ -505,11 +571,14 @@ const list = root.querySelector('[data-entity="ideas-takes"]');
 
   bind();
 
-  return {
+return {
     state,
     render,
     emit,
     onChange(handler) { onChange = handler; },
+    saveToBoard,
+    loadIdea,
+    removeIdea,
     startRecording,
     stopRecording,
     suspend,

@@ -823,4 +823,8 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-variations-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);font-size:var(--text-xs);color:var(--text-muted);}
 .ideas-variations-strip{display:grid;gap:var(--space-2);}
 .ideas-variation{display:grid;gap:var(--space-1);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);}
-.ideas-variation[data-kind="as-recorded"]{border-color:var(--border-strong);}
+.ideas-variation[data-kind="as-recorded"]{border-color:var(--border-strong);}.ideas-board-list{display:grid;gap:var(--space-2);border-top:1px solid var(--border);padding-top:var(--space-2);}
+.ideas-board-list h3{margin:0;font-size:var(--text-sm);}
+.ideas-ideas{list-style:none;margin:0;padding:0;display:grid;gap:var(--space-2);}
+.ideas-idea{display:grid;gap:var(--space-1);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);}
+.ideas-idea[data-saved="true"]{border-color:var(--accent);}

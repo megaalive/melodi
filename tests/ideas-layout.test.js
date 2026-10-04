@@ -225,6 +225,66 @@ test("kembangkan satu take jadi variasi deterministik yang bisa dibandingkan", a
   }
 });
 
+test("alur akhir HP: rekam, kembangkan, terima, simpan tanpa membuka menu", async () => {
+  const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const page = await context.newPage();
+    await page.goto(url, { waitUntil: "networkidle", timeout: 20000 });
+    await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+
+    // Empat nada seperti rencana tangkap ide.
+    const overlaysBefore = await page.evaluate(() => document.querySelectorAll("dialog[open], .app-menu-popover.open, .studio-more-popover.open").length);
+    await page.locator("[data-action='ideas-count-in']").uncheck();
+    await page.locator("#ideas-record").click();
+    for (const pitch of ["72", "74", "76", "79"]) await pressKey(page, `[data-pitch='${pitch}']`, 220);
+    await page.locator("#ideas-record").click();
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator("[data-entity='ideas-take']").first().getAttribute("data-note-count"), "4");
+
+    // Kembangkan, dengar, lalu terima salah satu variasi ke lagu.
+    await page.locator("[data-action='ideas-develop']").first().click();
+    await page.waitForTimeout(200);
+    assert.equal(await page.locator("[data-entity='ideas-variation']").count(), 3);
+    await page.locator("[data-action='ideas-variation-use']").nth(0).click();
+    await page.waitForTimeout(250);
+    assert.equal(await page.evaluate(() => window.melodi.commands.getSong().notes.length), 4);
+
+    // Simpan ide tanpa membuka menu apa pun.
+    await page.locator("[data-action='ideas-take-save']").first().click();
+    await page.waitForTimeout(250);
+    const board = await page.evaluate(() => window.melodi.commands.listIdeas());
+    assert.equal(board.ideas.length, 1, "take harus tersimpan di papan ide");
+    assert.equal(board.ideas[0].notes.length, 4);
+    assert.equal(await page.locator("[data-entity='ideas-idea']").count(), 1);
+    const openOverlays = await page.evaluate(() => document.querySelectorAll("dialog[open], .app-menu-popover.open, .studio-more-popover.open").length);
+    assert.equal(openOverlays, overlaysBefore, "alur simpan tidak boleh membuka menu atau dialog");
+
+    // Muat ide ke lagu lagi harus menjadi satu langkah undo tambahan.
+    await page.locator("[data-action='ideas-idea-load']").first().click();
+    await page.waitForTimeout(250);
+    const afterLoad = await page.evaluate(() => ({
+      notes: window.melodi.commands.getSong().notes.length,
+      undoDepth: window.melodi.getState().history.undoDepth
+    }));
+    assert.equal(afterLoad.notes, 8);
+    assert.equal(afterLoad.undoDepth, 2);
+
+    // Papan ide bertahan setelah reload.
+    await page.reload({ waitUntil: "networkidle", timeout: 20000 });
+    await page.waitForFunction(() => Boolean(window.melodi?.commands), null, { timeout: 15000 });
+    await page.evaluate(() => window.melodi.commands.setViewMode("ideas"));
+    await page.waitForTimeout(250);
+    assert.equal(await page.locator("[data-entity='ideas-idea']").count(), 1, "ide harus bertahan setelah reload");
+    await page.close();
+    await context.close();
+  } finally {
+    await browser.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
 test("QWERTY hanya bunyi di mode Ide dan mati saat fokus di input", async () => {
   const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
   const browser = await chromium.launch({ headless: true });
