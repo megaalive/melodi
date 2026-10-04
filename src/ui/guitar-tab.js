@@ -6,8 +6,8 @@ const LABEL_WIDTH = 42;
 const ROW_HEIGHT = 30;
 const TOP_PAD = 28;
 const BOTTOM_PAD = 24;
-const DEFAULT_PIXELS_PER_QUARTER = 72;
-const MAX_TAB_WIDTH = 12000;
+const MIN_PIXELS_PER_BEAT = 28;
+const DEFAULT_VIEWPORT_WIDTH = 760;
 const STRING_LABELS = Object.freeze(["e", "B", "G", "D", "A", "E"]);
 
 function svgElement(name, attributes = {}, parent = null, text = null) {
@@ -24,9 +24,12 @@ export function createGuitarTabGeometry(song, viewportWidth = 760) {
   const timeSignature = song?.timing?.timeSignature ?? song?.timeSignature ?? { numerator: 4, denominator: 4 };
   const beatTicks = PPQ * 4 / timeSignature.denominator;
   const barTicks = beatTicks * timeSignature.numerator;
-  const available = Math.max(320, Number(viewportWidth) || 760);
-  const naturalWidth = LABEL_WIDTH + (endTick / PPQ) * DEFAULT_PIXELS_PER_QUARTER + 28;
-  const width = Math.max(available - 2, Math.min(MAX_TAB_WIDTH, naturalWidth));
+  const measuredWidth = Number(viewportWidth);
+  const available = Number.isFinite(measuredWidth) && measuredWidth > 0
+    ? measuredWidth
+    : DEFAULT_VIEWPORT_WIDTH;
+  const naturalWidth = LABEL_WIDTH + (endTick / beatTicks) * MIN_PIXELS_PER_BEAT + 28;
+  const width = Math.max(available, naturalWidth);
   const pixelsPerTick = (width - LABEL_WIDTH - 28) / endTick;
   return {
     width,
@@ -69,6 +72,7 @@ export function createGuitarTabView(svg, scrollContainer, {
   let noteElementsById = new Map();
   let noteNavigation = [];
   let activeNoteId = null;
+  let lastRender = null;
 
   function eventX(tick, geometry) {
     return geometry.labelWidth + tick * geometry.pixelsPerTick;
@@ -135,9 +139,14 @@ export function createGuitarTabView(svg, scrollContainer, {
   }
 
   function render(song, state = {}) {
-    const geometry = createGuitarTabGeometry(song, scrollContainer?.clientWidth ?? 760);
+    lastRender = { song, state };
+    const viewportWidth = Number(scrollContainer?.clientWidth) || 0;
+    const geometry = createGuitarTabGeometry(song, viewportWidth || DEFAULT_VIEWPORT_WIDTH);
     const events = projectGuitarTab(song);
     const selected = new Set(state.selectedNoteIds ?? []);
+    const focusedNoteId = svg.contains(document.activeElement)
+      ? document.activeElement?.dataset?.noteId ?? null
+      : null;
     activeNoteId = state.playback?.currentNoteId ?? null;
     noteElementsById = new Map();
     noteNavigation = events.filter((event) => event.string && event.fret !== null).map((event) => event.noteId);
@@ -249,8 +258,24 @@ export function createGuitarTabView(svg, scrollContainer, {
     }
 
     updateSelection(state.selectedNoteIds ?? []);
+    if (focusedNoteId) noteElementsById.get(focusedNoteId)?.[0]?.focus?.();
     return { geometry, events };
   }
 
-  return Object.freeze({ render, updateSelection, updatePlayback });
+  function resize() {
+    const nextWidth = Number(scrollContainer?.clientWidth) || 0;
+    if (nextWidth <= 0 || !lastRender) return false;
+    const nextGeometryWidth = createGuitarTabGeometry(lastRender.song, nextWidth).width;
+    const renderedWidth = Number(svg.getAttribute("width")) || 0;
+    if (Math.abs(nextGeometryWidth - renderedWidth) < 1) return false;
+    render(lastRender.song, lastRender.state);
+    return true;
+  }
+
+  if (scrollContainer && typeof ResizeObserver === "function") {
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(scrollContainer);
+  }
+
+  return Object.freeze({ render, resize, updateSelection, updatePlayback });
 }
