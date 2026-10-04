@@ -57,7 +57,7 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .transport-buttons{gap:var(--space-1);}
 .studio .transport-buttons button{width:36px;min-width:36px;height:36px;min-height:36px;padding:var(--space-2);border-radius:6px;}
 .studio .transport-buttons button[hidden]{display:none;}
-.studio #play{background:#27786c;border-color:#27786c;color:white;}
+.studio #play{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
 .studio .history-buttons button{width:29px;height:29px;min-height:29px;padding:var(--space-1);}
 .studio .playback-readout{font-size:var(--text-xs);gap:var(--space-4);}
 .studio .playback-readout dt{font-size:var(--text-xs);letter-spacing:0;}
