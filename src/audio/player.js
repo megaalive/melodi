@@ -1,10 +1,14 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261003.96";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.96";
-import { percussionVoiceSpec } from "./percussion.js?v=20261003.96";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.96";
-import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.96";
+import { MelodiError, PPQ } from "../core/model.js?v=20261003.97";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.97";
+import { percussionVoiceSpec } from "./percussion.js?v=20261003.97";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.97";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.97";
 
-const LOOK_AHEAD_SECONDS = 0.2;
+// Jendela jadwal harus lebih besar daripada stall main thread terburuk yang
+// realistis (GC, layout, render editor): 200 ms mudah dilampaui di mesin
+// lambat, dan begitu terlampaui audio kehabisan suara yang terjadwal sebelum
+// wake berikutnya datang. 500 ms memberi jeda yang jauh sebelum putus bunyi.
+const LOOK_AHEAD_SECONDS = 0.5;
 const SCHEDULER_INTERVAL_MS = 30;
 const ACTIVATION_TIMEOUT_MS = 1500;
 // Kunci scheduled baru boleh dibuang setelah suaranya selesai, bukan setelah
@@ -35,6 +39,18 @@ function progressTime(event, position) {
   return event.startTime + Math.max(0, Math.min(1, ratio)) * (event.endTime - event.startTime);
 }
 
+/**
+ * Jendela jadwal untuk satu wake. Wake yang telat karena main thread sedang
+ * sibuk menambah lag-nya sendiri ke jendela, jadi lubang yang baru saja
+ * terjadi langsung diisi pada wake yang sama, bukan ditunggu wake berikutnya.
+ * Kelimitanya satu jendela penuh supaya stall panjang tidak menjadwalkan
+ * seluruh lagu sekaligus.
+ */
+export function schedulerLookAheadSeconds(lagSeconds = 0) {
+  const lag = Number.isFinite(lagSeconds) ? Math.max(0, lagSeconds) : 0;
+  return LOOK_AHEAD_SECONDS + Math.min(lag, LOOK_AHEAD_SECONDS);
+}
+
 
 function fail(code) {
   throw new MelodiError(code);
@@ -48,6 +64,8 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
   let playing = false;
   let generation = 0;
   let anchor = { audioTime: 0, tick: 0 };
+  // Jam audio saat wake terakhir, dipakai untuk mengukur kadar kemacetan.
+  let lastWakeAudioTime = 0;
   let tempo = 120;
   let loop = { enabled: false, startTick: 0, endTick: 1920 };
   const scheduled = new Map();
@@ -282,6 +300,7 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     cancelVoices();
     playing = false;
     anchor = { audioTime: context?.currentTime ?? anchor.audioTime, tick };
+    lastWakeAudioTime = anchor.audioTime;
     return tick;
   }
 
@@ -650,14 +669,14 @@ function currentCycle(tick) {
     return Math.max(0, Math.floor((tick - loop.startTick) / (loop.endTick - loop.startTick)));
   }
 
-  function scheduleAhead(audioNow = context.currentTime) {
+  function scheduleAhead(audioNow = context.currentTime, lagSeconds = 0) {
     const song = getSong();
     const options = {
       audioNow,
       anchorAudioTime: anchor.audioTime,
       anchorTick: anchor.tick,
       tempo,
-      lookAheadSeconds: LOOK_AHEAD_SECONDS,
+      lookAheadSeconds: schedulerLookAheadSeconds(lagSeconds),
       loop,
       scheduledKeys: scheduled
     };
@@ -710,6 +729,10 @@ function currentCycle(tick) {
     const startedAt = perf?.tick ? (globalThis.performance?.now?.() ?? 0) : 0;
     try {
       const now = context.currentTime;
+      // Selisih jam audio antar wake = kadar kemacetan main thread. Ini yang
+      // memperbesar jendela jadwal pada wake yang tertinggal.
+      const lagSeconds = Math.max(0, now - lastWakeAudioTime - SCHEDULER_INTERVAL_MS / 1000);
+      lastWakeAudioTime = now;
       const tick = positionAt(now);
       if (!loop.enabled && tick >= loop.endTick) {
         halt(loop.startTick);
@@ -730,7 +753,7 @@ function currentCycle(tick) {
       for (const [key, eventCycle] of scheduled) {
         if (loop.enabled && eventCycle < cycle - 1) scheduled.delete(key);
       }
-      scheduleAhead(now);
+      scheduleAhead(now, lagSeconds);
       onPosition(tick);
     } catch (error) {
       const tick = positionAt();
@@ -749,6 +772,7 @@ function currentCycle(tick) {
     loop = { enabled: nextLoop.enabled, startTick: nextLoop.startTick, endTick: nextLoop.endTick };
     playing = Boolean(shouldPlay && context?.state === "running");
     anchor = { audioTime: context?.currentTime ?? anchor.audioTime, tick };
+    lastWakeAudioTime = anchor.audioTime;
     if (playing) {
       try {
         scheduleAhead(anchor.audioTime);
@@ -792,6 +816,7 @@ function currentCycle(tick) {
     clearTimer();
     cancelVoices();
     anchor = { audioTime: audioContext.currentTime, tick };
+    lastWakeAudioTime = anchor.audioTime;
     playing = true;
     try {
       scheduleAhead(anchor.audioTime);

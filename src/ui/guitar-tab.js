@@ -134,7 +134,12 @@ export function createGuitarTabView(svg, scrollContainer, {
       for (const element of noteElementsById.get(activeNoteId) ?? []) element.dataset.current = "true";
     }
     if (follow && playback.status === "playing" && activeNoteId) {
-      noteElementsById.get(activeNoteId)?.[0]?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+      const element = noteElementsById.get(activeNoteId)?.[0];
+      // Tab yang tersembunyi tidak punya client rect; scrollIntoView di sana
+      // hanya memaksa layout yang tidak terlihat.
+      if (element?.isConnected && element.getClientRects().length) {
+        element.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+      }
     }
   }
 

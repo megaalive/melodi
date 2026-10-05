@@ -1,5 +1,5 @@
-import { spellPitchNameInKey } from "../notation/project.js?v=20261003.96";
-import { songBarTicks, barRangeAtTick } from "../core/timeline.js?v=20261003.96";
+import { spellPitchNameInKey } from "../notation/project.js?v=20261003.97";
+import { songBarTicks, barRangeAtTick } from "../core/timeline.js?v=20261003.97";
 export function harmonyChordSymbol(chord, key = "C") {
   return `${spellPitchNameInKey(60 + chord.rootPitchClass, key)}${({ major: '', minor: 'm', diminished: 'dim', augmented: 'aug' })[chord.quality] ?? chord.quality}`;
 }

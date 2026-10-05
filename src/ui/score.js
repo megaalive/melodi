@@ -619,7 +619,13 @@ export function createScoreView(host, status, fallback, scrollContainer, transla
     applyCurrentNote(playback.currentNoteId);
     applyCurrentSyllables(playback.currentSyllableIds);
     if (view.follow && playback.status === "playing" && playback.currentNoteId) {
-      noteElementsById.get(playback.currentNoteId)?.[0]?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+      const element = noteElementsById.get(playback.currentNoteId)?.[0];
+      // Pane yang tersembunyi tidak punya client rect. scrollIntoView di sana
+      // tetap memaksa layout sinkron penuh, dan kerja layout itu berjalan di
+      // antara wake scheduler audio, jadi audio ikut tersendat.
+      if (element?.isConnected && element.getClientRects().length) {
+        element.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+      }
     }
   }
 
