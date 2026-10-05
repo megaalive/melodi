@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.93";
+import { PPQ } from "../core/model.js?v=20261003.94";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.93";
+} from "./ideas.js?v=20261003.94";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,10 +35,13 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.93";
+} from "../storage/recording-preferences.js?v=20261003.94";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
+// Berhenti otomatis: dua detik setelah nada terakhir, atau jumlah birama tetap.
+const AUTO_STOP_IDLE_MS = 2000;
+const AUTO_STOP_BARS = Object.freeze([2, 4, 8]);
 
 const NOTE_NAMES = Object.freeze(["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]);
 
@@ -99,7 +102,7 @@ export function previewChunks(notes, limit = PREVIEW_LIMIT) {
   return chunks;
 }
 
-export function createIdeasView({ root, commands, translate, getPlayer, storage } = {}) {
+export function createIdeasView({ root, commands, translate, getPlayer, storage, autoStopIdleMs = AUTO_STOP_IDLE_MS, autoStopBarFactor = 1 } = {}) {
   const state = {
     octave: KEYBOARD_DEFAULT_OCTAVE,
     recording: false,
@@ -120,11 +123,15 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     paletteOpen: false,
     multiNote: false,
     audioError: false,
+    autoStop: true,
+    autoStopBars: 0,
+    autoplayAfterStop: true,
     compensation: readRecordingPreferences(storage)
   };
 
   let onChange = () => {};
   let compareToken = 0;
+  let autoStopTimer = null;
 
   function audio() {
     return getPlayer?.() ?? null;
@@ -206,6 +213,12 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     if (typeof root?.querySelector !== "function") return;
     const readout = root.querySelector('[data-entity="ideas-readout"]');
     if (readout) readout.textContent = state.openPitch === null ? "" : noteName(state.openPitch);
+    const banner = root.querySelector('[data-entity="ideas-record-banner"]');
+    if (banner) {
+      const text = state.recording ? bannerText() : "";
+      banner.textContent = text;
+      banner.hidden = text === "";
+    }
     const status = root.querySelector('[data-entity="ideas-status"]');
     if (status) status.textContent = statusText();
     renderKeyState();
@@ -237,12 +250,32 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       const remaining = Math.max(0, state.countInUntil - now());
       return translate("ideasCountIn", { seconds: remaining.toFixed(1) });
     }
-    if (state.recording) return translate("ideasRecording", { count: state.events.length + (state.openPitch === null ? 0 : 1) });
+    if (state.recording) {
+      return translate("ideasRecording", { count: state.events.length + (state.openPitch === null ? 0 : 1) });
+    }
     if (state.audioError) return translate("ideasAudioBlocked");
     return translate("ideasIdle", { count: state.takes.length });
   }
 
+  /** Spanduk merekam: jumlah nada dan waktu berjalan sejak rekaman dimulai. */
+  function bannerText() {
+    if (state.recording === "countin") return translate("ideasCountInBanner");
+    if (state.recording === true) {
+      return translate("ideasRecordingBanner", {
+        count: state.events.length + (state.openPitch === null ? 0 : 1),
+        seconds: Math.max(0, now() - state.startedAt).toFixed(1)
+      });
+    }
+    return "";
+  }
+
   function noteOn(pitch) {
+    // Hitung masuk yang sudah habis otomatis berubah menjadi rekaman, jadi nada
+    // pertama setelah hitungan tetap terekam tanpa tombol tambahan.
+    if (state.recording === "countin" && now() >= state.countInUntil) {
+      state.recording = true;
+      scheduleAutoStop();
+    }
     audio().noteOn?.(pitch, 100);
     if (state.recording !== true) {
       state.openPitch = pitch;
@@ -269,6 +302,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       const startTick = Math.round((state.openAt - state.startedAt) / secondsPerTickValue);
       const durationTicks = Math.max(1, Math.round((at - state.openAt) / secondsPerTickValue));
       state.events.push({ pitch, startTick: Math.max(0, startTick), durationTicks });
+      scheduleAutoStop();
     }
     renderLive();
   }
@@ -318,12 +352,14 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       renderLive();
       return false;
     }
+    scheduleAutoStop();
     emit();
     return true;
   }
 
   function stopRecording() {
     if (!state.recording) return null;
+    cancelAutoStop();
     if (state.recording === "countin") {
       state.recording = false;
       emit();
@@ -333,7 +369,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       state.events.push({ pitch: state.openPitch, startTick: 0, durationTicks: gridTicksFor(state.snap) });
       state.openPitch = null;
     }
-    const notes = quantizeTake(state.events, { quantize: state.quantize, snap: state.snap });
+    const notes = quantizeTake(trimLeadingSilence(state.events), { quantize: state.quantize, snap: state.snap });
     state.recording = false;
     state.events = [];
     if (notes.length === 0) {
@@ -349,7 +385,48 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     });
     state.takes = [take, ...state.takes.filter((item) => item.id !== take.id)].slice(0, TAKE_LIMIT);
     emit();
+    if (state.autoplayAfterStop) playTake(take);
     return take;
+  }
+
+  /**
+   * Pangkas jeda awal. Hitung masuk mati: nada pertama pindah ke tick 0 dan
+   * ritme relatif tetap. Hitung masuk hidup: jeda dipangkas ke kelipatan birama
+   * supaya frasa tetap sejajar birama.
+   */
+  function trimLeadingSilence(events) {
+    if (events.length === 0) return events;
+    const first = Math.min(...events.map((event) => event.startTick));
+    if (first <= 0) return events;
+    const shift = state.countIn ? Math.floor(first / barTicks()) * barTicks() : first;
+    if (shift <= 0) return events;
+    return events.map((event) => ({ ...event, startTick: Math.max(0, event.startTick - shift) }));
+  }
+
+  function cancelAutoStop() {
+    if (autoStopTimer !== null) clearTimeout(autoStopTimer);
+    autoStopTimer = null;
+  }
+
+  /**
+   * Berhenti otomatis: dua detik setelah nada terakhir bila sudah ada nada,
+   * atau setelah sejumlah birama sejak rekaman dimulai.
+   */
+  function scheduleAutoStop() {
+    cancelAutoStop();
+    if (!state.autoStop || state.recording !== true) return;
+    const notes = state.events.length;
+    const barLimit = AUTO_STOP_BARS.indexOf(state.autoStopBars);
+    if (barLimit >= 0) {
+      const seconds = barLimit * barTicks() * secondsPerTick() * autoStopBarFactor;
+      const elapsed = now() - state.startedAt;
+      autoStopTimer = setTimeout(() => { autoStopTimer = null; stopRecording(); },
+        Math.max(0, (seconds - elapsed) * 1000));
+      return;
+    }
+    if (notes >= 1) {
+      autoStopTimer = setTimeout(() => { autoStopTimer = null; stopRecording(); }, autoStopIdleMs);
+    }
   }
 
   function commitTake(take) {
@@ -409,6 +486,20 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
 
   function setCountIn(enabled) {
     state.countIn = Boolean(enabled);
+    emit();
+  }
+
+  function setAutoStop(enabled) {
+    state.autoStop = Boolean(enabled);
+    if (!state.autoStop) cancelAutoStop();
+    else scheduleAutoStop();
+    emit();
+  }
+
+  function setAutoStopBars(bars) {
+    const value = Number(bars);
+    state.autoStopBars = AUTO_STOP_BARS.includes(value) ? value : 0;
+    scheduleAutoStop();
     emit();
   }
 
@@ -922,6 +1013,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
   function suspend() {
     if (state.openPitch !== null) noteOff();
     if (state.recording) stopRecording();
+    else cancelAutoStop();
     stopPreview();
   }
 
@@ -955,6 +1047,16 @@ renderKeyboard();
       recordButton.setAttribute("aria-pressed", String(Boolean(state.recording)));
       recordButton.textContent = translate(state.recording ? "ideasStop" : "ideasRecord");
     }
+    const banner = root.querySelector('[data-entity="ideas-record-banner"]');
+    if (banner) {
+      const text = state.recording ? bannerText() : "";
+      banner.textContent = text;
+      banner.hidden = text === "";
+    }
+    const autoStopToggle = root.querySelector('[data-action="ideas-auto-stop"]');
+    if (autoStopToggle) autoStopToggle.checked = state.autoStop;
+    const autoStopBars = root.querySelector('[data-action="ideas-auto-stop-bars"]');
+    if (autoStopBars && autoStopBars.value !== String(state.autoStopBars)) autoStopBars.value = String(state.autoStopBars);
     const status = root.querySelector('[data-entity="ideas-status"]');
     if (status) status.textContent = statusText();
     const readout = root.querySelector('[data-entity="ideas-readout"]');
@@ -1061,6 +1163,8 @@ renderKeyboard();
       if (action === "ideas-snap") setSnap(event.target.value);
       if (action === "ideas-octave") setOctave(event.target.value);
       if (action === "ideas-count-in") setCountIn(event.target.checked);
+      if (action === "ideas-auto-stop") setAutoStop(event.target.checked);
+      if (action === "ideas-auto-stop-bars") setAutoStopBars(event.target.value);
     });
     root.addEventListener("click", event => {
       const action = event.target.closest?.("[data-action]")?.dataset.action;
@@ -1128,6 +1232,8 @@ if (typeof matchMedia === "function") {
     setQuantize,
     setSnap,
     setCountIn,
+    setAutoStop,
+    setAutoStopBars,
     setPaletteOpen,
     keyboardActive,
     keyboardRows: () => keyboardRows(keyboardBaseFor(state.octave)),

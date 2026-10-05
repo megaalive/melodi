@@ -789,6 +789,7 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-toggle,.ideas-field{display:inline-flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);color:var(--text-muted);}
 .ideas-field select{min-height:var(--control-h);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);}
 .ideas-meter,.ideas-status{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
+.ideas-record-banner{grid-column:1/-1;margin:0;padding:0.35rem 0.6rem;border:1px solid var(--danger);border-radius:var(--radius);background:color-mix(in srgb,var(--danger) 12%,transparent);color:var(--text);font-size:var(--text-sm);font-variant-numeric:tabular-nums;}
 .ideas-status{color:var(--text);min-width:9ch;}
 .ideas-readout{font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent-strong);}
 .ideas-audio-chip{margin:0;display:inline-flex;align-items:center;gap:var(--space-1);padding:0.15rem 0.5rem;border:1px solid var(--border);border-radius:999px;font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap;}
