@@ -280,6 +280,34 @@ test("tata letak Ide HP: satu kolom dengan urutan strip, keyboard, hasil", async
     assert.ok(order.keyboard.top >= order.strip.bottom - 1, "keyboard ada di bawah baris Tangkap");
     assert.ok(order.results.top >= order.keyboard.bottom - 1, "hasil ada di bawah keyboard");
     assert.ok(order.keyboard.width >= order.paneWidth * 0.95, "keyboard selebar pane di HP");
+
+    // C2 keyboard sentuh: tuts putih tetap >= 44px meski keyboard di-scroll
+    // horizontal, tombol hitam tidak lagi menampilkan label nada yang tidak
+    // terbaca, dan baris tab bawah tetap lima item.
+    const touch = await page.evaluate(() => {
+      const keyboard = document.querySelector(".ideas-keyboard");
+      const whiteWidths = [...document.querySelectorAll(".ideas-key-white")].map((el) => el.getBoundingClientRect().width);
+      const blackNotes = [...document.querySelectorAll(".ideas-key-black .ideas-key-note")].map((el) => getComputedStyle(el).display);
+      const tabLabels = [...document.querySelectorAll(".studio-panel-switches [role='tab']")]
+        .map((el) => (el.textContent ?? "").trim()).filter(Boolean);
+      return {
+        labels: keyboard.dataset.labels,
+        overflowX: getComputedStyle(keyboard).overflowX,
+        scrollWidth: keyboard.scrollWidth,
+        clientWidth: keyboard.clientWidth,
+        whiteCount: whiteWidths.length,
+        minWhiteWidth: Math.min(...whiteWidths),
+        blackNoteVisible: blackNotes.filter((display) => display !== "none").length,
+        tabLabels
+      };
+    });
+    assert.equal(touch.labels, "none", "data-labels ditulis none di pointer kasar");
+    assert.equal(touch.overflowX, "auto", "keyboard boleh di-scroll horizontal di HP");
+    assert.ok(touch.scrollWidth > touch.clientWidth, " keyboard lebih lebar dari wadahnya, jadi di-scroll");
+    assert.ok(touch.whiteCount >= 14, `tuts putih ${touch.whiteCount}, minimal dua oktaf`);
+    assert.ok(touch.minWhiteWidth >= 44, `tuts putih tersempit ${touch.minWhiteWidth}px, harus >= 44px`);
+    assert.equal(touch.blackNoteVisible, 0, "label nada pada tombol hitam disembunyikan di layar sentuh");
+    assert.equal(touch.tabLabels.length, 5, `baris tab bawah: ${touch.tabLabels.join(", ")}`);
     await page.close();
     await context.close();
   } finally {

@@ -392,8 +392,12 @@
   .ideas-takes-panel{grid-template-columns:minmax(0,1fr);}
   .ideas-keyboard{overflow-x:auto;overscroll-behavior-x:contain;}
   .ideas-keyboard-white{min-width:calc(var(--key-touch-min) * 14);}
-  .app-shell .ideas-key{min-width:var(--key-touch-min);}
+  .app-shell .ideas-key{min-width:var(--key-touch-min);flex:0 0 auto;}
+  .app-shell .ideas-key-white{flex:1 0 var(--key-touch-min);}
   .app-shell .ideas-key-black{width:calc(var(--key-touch-min) * 0.72);}
+  /* Label nada pada tombol hitam disembunyikan di layar sentuh: tingginya cuma
+     44px dan teksnya 9px, jadi tidak terbaca dan hanya memenuhi tombol. */
+  .ideas-keyboard[data-labels="none"] .ideas-key-black .ideas-key-note{display:none;}
   :root{--key-touch-min:44px;--control-h:44px;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
