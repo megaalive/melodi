@@ -1,8 +1,8 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261003.92";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.92";
-import { percussionVoiceSpec } from "./percussion.js?v=20261003.92";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.92";
-import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.92";
+import { MelodiError, PPQ } from "../core/model.js?v=20261003.93";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.93";
+import { percussionVoiceSpec } from "./percussion.js?v=20261003.93";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.93";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.93";
 
 const LOOK_AHEAD_SECONDS = 0.2;
 const SCHEDULER_INTERVAL_MS = 30;
@@ -57,6 +57,9 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
   // di 'ended'. Tidak pernah menyentuh voices transport.
   const MONITOR_MAX_VOICES = 8;
   const monitorVoices = new Map();
+  // Nada yang ditekan sebelum context selesai berjalan. Ditahan supaya tuts
+  // pertama tidak hilang, dan dibatalkan bersih bila noteOff datang duluan.
+  const pendingNotes = new Map();
   const chokeVoices = new Map();
   let nextVoiceId = 0;
   let previewTimer = null;
@@ -76,7 +79,9 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       else {
         const Context = globalThis.AudioContext ?? globalThis.webkitAudioContext;
         if (typeof Context !== "function") fail("audio-unavailable");
-        context = new Context();
+        // latencyHint interaktif memberi browser izin membuka audio sedini
+        // mungkin, jadi tuts pertama tidak menunggu undercut yang panjang.
+        context = new Context({ latencyHint: "interactive" });
       }
       masterGain = context.createGain();
       masterGain.gain.value = 0.22;
@@ -88,6 +93,26 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
       masterGain = null;
       fail("audio-unavailable");
     }
+  }
+
+  /**
+   * Siapkan audio untuk gerakan manusia. Context yang baru dibuat biasanya
+   * suspended beberapa milidetik, jadi resume() selalu ditunggu, bukan hanya
+   * dipanggil. Pending note yang menunggu resume langsung diputar.
+   */
+  async function prime() {
+    const audioContext = ensureContext();
+    if (audioContext.state === "running") {
+      startPendingNotes();
+      return true;
+    }
+    try {
+      await audioContext.resume?.();
+    } catch {
+      return audioContext.state === "running";
+    }
+    if (audioContext.state === "running") startPendingNotes();
+    return audioContext.state === "running";
   }
 
   function positionAt(audioTime = context?.currentTime ?? anchor.audioTime) {
@@ -143,8 +168,9 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
 
   function scheduleClick(atTime, accent) {
     const audioContext = ensureContext();
-    if (audioContext.state === "suspended") void audioContext.resume?.();
-    if (audioContext.state !== "running") return;
+    // Context yang belum running dijadwalkan lewat prime() sebelum squeeze
+    // ini dipanggil, jadi klik tidak pernah hilang diam-diam.
+    if (audioContext.state !== "running") return false;
     const source = audioContext.createBufferSource();
     const filter = audioContext.createBiquadFilter();
     const envelope = audioContext.createGain();
@@ -164,6 +190,47 @@ export function createAudioPlayer({ getSong, getMix = () => ({ channels: {} }), 
     }, { once: true });
     source.start(atTime);
     source.stop(atTime + 0.07);
+    return true;
+  }
+
+  /** Bunyikan satu nada monitor pada currentTime context yang sudah berjalan. */
+  function startMonitorVoice(pitch, velocity) {
+    const audioContext = context;
+    if (!audioContext || audioContext.state !== "running") return false;
+    releaseMonitorVoice(pitch, audioContext.currentTime);
+    if (monitorVoices.size >= MONITOR_MAX_VOICES) {
+      const oldest = [...monitorVoices.entries()].sort((left, right) => left[1].startedAt - right[1].startedAt)[0];
+      if (oldest) releaseMonitorVoice(oldest[0], audioContext.currentTime);
+    }
+    const startTime = audioContext.currentTime;
+    const oscillator = audioContext.createOscillator();
+    const envelope = audioContext.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.value = 440 * 2 ** ((pitch - 69) / 12);
+    const peak = 0.16 * Math.max(0.2, Math.min(1, velocity / 127));
+    envelope.gain.setValueAtTime(0, startTime);
+    envelope.gain.linearRampToValueAtTime(peak, startTime + 0.008);
+    oscillator.connect(envelope);
+    envelope.connect(masterGain);
+    const voice = { oscillator, envelope, pitch, startedAt: startTime, released: false };
+    monitorVoices.set(pitch, voice);
+    oscillator.addEventListener("ended", () => {
+      try { oscillator.disconnect(); } catch {}
+      try { envelope.disconnect(); } catch {}
+      if (monitorVoices.get(pitch) === voice) monitorVoices.delete(pitch);
+    }, { once: true });
+    oscillator.start(startTime);
+    return true;
+  }
+
+  /** Bunyikan nada yang ditahan selama context belum running. */
+  function startPendingNotes() {
+    if (pendingNotes.size === 0) return;
+    for (const [pitch, velocity] of [...pendingNotes]) {
+      if (!pendingNotes.has(pitch)) continue;
+      pendingNotes.delete(pitch);
+      startMonitorVoice(pitch, velocity);
+    }
   }
 
   function cancelVoices() {
@@ -817,36 +884,22 @@ function currentCycle(tick) {
     },
     noteOn(pitch, velocity = 100) {
       const audioContext = ensureContext();
-      // Tangkap ide selalu datang dari sentuhan atau ketukan, jadi context
-      // suspended di sini adalah artefak browser, bukan pilihan pengguna.
-      if (audioContext.state === "suspended") void audioContext.resume?.();
-      if (audioContext.state !== "running") return false;
-      this.noteOff(pitch);
-      if (monitorVoices.size >= MONITOR_MAX_VOICES) {
-        const oldest = [...monitorVoices.entries()].sort((left, right) => left[1].startedAt - right[1].startedAt)[0];
-        if (oldest) releaseMonitorVoice(oldest[0], audioContext.currentTime);
+      if (audioContext.state !== "running") {
+        // Nada tidak boleh hilang hanya karena context butuh beberapa milidetik
+        // untuk berjalan; nada ini ditahan lalu diputar begitu resume selesai.
+        pendingNotes.set(pitch, velocity);
+        void prime();
+        return true;
       }
-      const startTime = audioContext.currentTime;
-      const oscillator = audioContext.createOscillator();
-      const envelope = audioContext.createGain();
-      oscillator.type = "triangle";
-      oscillator.frequency.value = 440 * 2 ** ((pitch - 69) / 12);
-      const peak = 0.16 * Math.max(0.2, Math.min(1, velocity / 127));
-      envelope.gain.setValueAtTime(0, startTime);
-      envelope.gain.linearRampToValueAtTime(peak, startTime + 0.008);
-      oscillator.connect(envelope);
-      envelope.connect(masterGain);
-      const voice = { oscillator, envelope, pitch, startedAt: startTime, released: false };
-      monitorVoices.set(pitch, voice);
-      oscillator.addEventListener("ended", () => {
-        try { oscillator.disconnect(); } catch {}
-        try { envelope.disconnect(); } catch {}
-        if (monitorVoices.get(pitch) === voice) monitorVoices.delete(pitch);
-      }, { once: true });
-      oscillator.start(startTime);
-      return true;
+      return startMonitorVoice(pitch, velocity);
     },
     noteOff(pitch) {
+      if (pendingNotes.has(pitch)) {
+        // noteOff tiba sebelum resume selesai: batalkan nada itu, jangan
+        // sampai berbunyi lebih akhir.
+        pendingNotes.delete(pitch);
+        return true;
+      }
       const voice = monitorVoices.get(pitch);
       if (!voice || voice.released) return false;
       voice.released = true;
@@ -854,13 +907,22 @@ function currentCycle(tick) {
       return true;
     },
     noteOffAll() {
+      for (const pitch of [...pendingNotes.keys()]) pendingNotes.delete(pitch);
       for (const pitch of [...monitorVoices.keys()]) this.noteOff(pitch);
     },
     monitorVoiceCount() {
       return monitorVoices.size;
     },
+    pendingNoteCount() {
+      return pendingNotes.size;
+    },
+    /** Status context untuk indikator "Suara: siap" di strip Ide. */
+    contextState() {
+      return context?.state ?? "unknown";
+    },
+    prime,
     click(atTime, accent) {
-      scheduleClick(atTime, accent);
+      return scheduleClick(atTime, accent);
     },
     getDebugState() {
       return { voices: voices.size, scheduled: scheduled.size, playing, tempo, loop: { ...loop }, anchor: { ...anchor } };

@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.92";
+import { PPQ } from "../core/model.js?v=20261003.93";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.92";
+} from "./ideas.js?v=20261003.93";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,7 +35,7 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.92";
+} from "../storage/recording-preferences.js?v=20261003.93";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
@@ -119,6 +119,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     countInUntil: 0,
     paletteOpen: false,
     multiNote: false,
+    audioError: false,
     compensation: readRecordingPreferences(storage)
   };
 
@@ -167,11 +168,85 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     onChange();
   }
 
+  /**
+   * Status audio untuk chip di strip Ide. "unknown" berarti context belum
+   * pernah dibuat, jadi dibutuhkan gerakan manusia dulu.
+   */
+  function audioState() {
+    return audio()?.contextState?.() ?? "unknown";
+  }
+
+  function audioReady() {
+    return audioState() === "running";
+  }
+
+  /** Siapkan audio pada gerakan pengaktif pertama di tab Ide. */
+  async function primeAudio() {
+    const player = audio();
+    if (!player?.prime || player.contextState?.() === "running") return audioReady();
+    const ready = await player.prime();
+    renderAudioState();
+    return ready === true;
+  }
+
+  function renderAudioState() {
+    if (typeof root?.querySelector !== "function") return;
+    const chip = root.querySelector('[data-entity="ideas-audio-state"]');
+    if (!chip) return;
+    const ready = audioReady();
+    chip.dataset.state = ready ? "ready" : "pending";
+    chip.textContent = translate(ready ? "ideasAudioReady" : "ideasAudioTap");
+  }
+
+  /**
+   * Perbarui hanya bagian Ide yang berubah. noteOn dan noteOff tidak boleh
+   * menjalankan render seluruh app: tuts harus langsung terasa ditekan.
+   */
+  function renderLive() {
+    if (typeof root?.querySelector !== "function") return;
+    const readout = root.querySelector('[data-entity="ideas-readout"]');
+    if (readout) readout.textContent = state.openPitch === null ? "" : noteName(state.openPitch);
+    const status = root.querySelector('[data-entity="ideas-status"]');
+    if (status) status.textContent = statusText();
+    renderKeyState();
+    renderAudioState();
+  }
+
+  function renderKeyState() {
+    if (typeof root?.querySelector !== "function") return;
+    for (const key of root.querySelectorAll("[data-entity^='ideas-key-']")) {
+      const active = state.openPitch === Number(key.dataset.pitch);
+      key.setAttribute("aria-pressed", String(active));
+      key.dataset.active = String(active);
+      key.classList.toggle("pressed", active);
+    }
+  }
+
+  function markKeyPressed(pitch) {
+    if (typeof root?.querySelector !== "function" || pitch === null) return;
+    root.querySelector(`[data-entity='ideas-key-${pitch}']`)?.classList.add("pressed");
+  }
+
+  function markKeyReleased() {
+    if (typeof root?.querySelector !== "function") return;
+    for (const key of root.querySelectorAll("[data-entity^='ideas-key-']")) key.classList.remove("pressed");
+  }
+
+  function statusText() {
+    if (state.recording === "countin") {
+      const remaining = Math.max(0, state.countInUntil - now());
+      return translate("ideasCountIn", { seconds: remaining.toFixed(1) });
+    }
+    if (state.recording) return translate("ideasRecording", { count: state.events.length + (state.openPitch === null ? 0 : 1) });
+    if (state.audioError) return translate("ideasAudioBlocked");
+    return translate("ideasIdle", { count: state.takes.length });
+  }
+
   function noteOn(pitch) {
     audio().noteOn?.(pitch, 100);
     if (state.recording !== true) {
       state.openPitch = pitch;
-      emit();
+      renderLive();
       return;
     }
     if (state.openPitch !== null) {
@@ -180,7 +255,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     }
     state.openPitch = pitch;
     state.openAt = heardNow();
-    emit();
+    renderLive();
   }
 
   function noteOff() {
@@ -195,32 +270,54 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       const durationTicks = Math.max(1, Math.round((at - state.openAt) / secondsPerTickValue));
       state.events.push({ pitch, startTick: Math.max(0, startTick), durationTicks });
     }
-    emit();
+    renderLive();
   }
 
   function scheduleCountIn() {
     if (!state.countIn) {
       state.recording = true;
       state.startedAt = now();
-      return;
+      return true;
     }
     const step = PPQ;
     const total = barTicks();
     const start = now();
+    let scheduled = 0;
     for (let tick = 0; tick < total; tick += step) {
-      audio().click?.(start + tick * secondsPerTick(), tick % (PPQ * 4) === 0);
+      const placed = audio().click?.(start + tick * secondsPerTick(), tick % (PPQ * 4) === 0);
+      if (placed !== false) scheduled += 1;
     }
     state.recording = "countin";
     state.countInUntil = start + total * secondsPerTick();
     state.startedAt = state.countInUntil;
+    return scheduled;
   }
 
-  function startRecording() {
+  /**
+   * Mulai rekam. Audio disiapkan lebih dulu: context yang baru dibuat
+   * suspended beberapa milidetik, jadi klik hitung masuk dijadwalkan pada
+   * currentTime setelah context benar-benar berjalan.
+   */
+  async function startRecording() {
     if (state.recording) return false;
+    const ready = await primeAudio();
+    if (!ready) {
+      state.audioError = true;
+      renderLive();
+      return false;
+    }
+    state.audioError = false;
     state.events = [];
     state.openPitch = null;
     state.multiNote = false;
-    scheduleCountIn();
+    const scheduled = scheduleCountIn();
+    if (state.countIn && scheduled === 0) {
+      // Tidak ada satu pun klik yang bisa dijadwalkan: batalkan diam-diam.
+      state.recording = false;
+      state.audioError = true;
+      renderLive();
+      return false;
+    }
     emit();
     return true;
   }
@@ -836,8 +933,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     }
     const current = song();
     const grid = gridTicksFor(state.snap);
-    const remaining = state.recording === "countin" ? Math.max(0, state.countInUntil - now()) : 0;
-    renderKeyboard();
+renderKeyboard();
     root.dataset.candidateCount = String(candidates().length);
     root.dataset.candidateSeed = state.developed ? String(state.developed.seed) : "";
     root.dataset.developKind = state.developed?.kind ?? "";
@@ -860,13 +956,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       recordButton.textContent = translate(state.recording ? "ideasStop" : "ideasRecord");
     }
     const status = root.querySelector('[data-entity="ideas-status"]');
-    if (status) {
-      status.textContent = state.recording === "countin"
-        ? translate("ideasCountIn", { seconds: remaining.toFixed(1) })
-        : state.recording
-          ? translate("ideasRecording")
-          : translate("ideasIdle", { count: state.events.length });
-    }
+    if (status) status.textContent = statusText();
     const readout = root.querySelector('[data-entity="ideas-readout"]');
     if (readout) readout.textContent = state.openPitch === null ? "" : noteName(state.openPitch);
     const tempoOut = root.querySelector('[data-entity="ideas-tempo"]');
@@ -890,7 +980,9 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       const active = state.openPitch === Number(key.dataset.pitch);
       key.setAttribute("aria-pressed", String(active));
       key.dataset.active = String(active);
+      key.classList.toggle("pressed", active);
     }
+    renderAudioState();
 
     const hint = root.querySelector('[data-entity="ideas-empty-hint"]');
     if (hint) hint.hidden = state.takes.length > 0;
@@ -914,15 +1006,28 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
 
   function bind() {
     if (!root) return;
+    // Gerakan pengactivating pertama di tab Ide menyiapkan audio. pointerdown
+    // tidak dihitung karena di layar sentuh itu bukan aktivasi audio.
+    for (const type of ["pointerup", "click", "keydown"]) {
+      root.addEventListener(type, () => { void primeAudio(); }, { passive: true });
+    }
     root.addEventListener("pointerdown", event => {
       const key = event.target.closest?.("[data-entity^='ideas-key-']");
       if (!key) return;
       event.preventDefault();
       try { root.setPointerCapture?.(event.pointerId); } catch {}
+      // Kelas ditekan langsung supaya tuts terasa responsif tanpa render.
+      key.classList.add("pressed");
       noteOn(Number(key.dataset.pitch));
     });
-    root.addEventListener("pointerup", () => noteOff());
-    root.addEventListener("pointercancel", () => noteOff());
+    root.addEventListener("pointerup", event => {
+      event.target.closest?.("[data-entity^='ideas-key-']")?.classList.remove("pressed");
+      noteOff();
+    });
+    root.addEventListener("pointercancel", event => {
+      event.target.closest?.("[data-entity^='ideas-key-']")?.classList.remove("pressed");
+      noteOff();
+    });
     root.addEventListener("keydown", event => {
       if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
       if (!keyboardActive(event.target)) return;
@@ -938,11 +1043,17 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
         event.preventDefault();
         return;
       }
-      if (pressKey(event.key)) event.preventDefault();
+      if (pressKey(event.key)) {
+        markKeyPressed(keyToPitch(event.key, state.octave));
+        event.preventDefault();
+      }
     });
     root.addEventListener("keyup", event => {
       if (!keyboardActive(event.target)) return;
-      if (releaseKey(event.key)) event.preventDefault();
+      if (releaseKey(event.key)) {
+        markKeyReleased();
+        event.preventDefault();
+      }
     });
     root.addEventListener("change", event => {
       const action = event.target.dataset?.action;
@@ -955,7 +1066,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
       const action = event.target.closest?.("[data-action]")?.dataset.action;
       if (action === "ideas-record") {
         if (state.recording) stopRecording();
-        else startRecording();
+        else void startRecording();
       }
       if (action === "ideas-octave-down") shiftOctave(-1);
       if (action === "ideas-octave-up") shiftOctave(1);
@@ -983,6 +1094,8 @@ if (typeof matchMedia === "function") {
     renameIdea,
     startRecording,
     stopRecording,
+    primeAudio,
+    audioReady,
     suspend,
     commitTake,
     developTake,
