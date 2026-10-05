@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.90";
+import { PPQ } from "../core/model.js?v=20261003.91";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.90";
+} from "./ideas.js?v=20261003.91";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,7 +35,7 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.90";
+} from "../storage/recording-preferences.js?v=20261003.91";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
@@ -52,15 +52,13 @@ export function noteName(pitch) {
   return `${NOTE_NAMES[((pitch % 12) + 12) % 12]}${Math.floor(pitch / 12) - 1}`;
 }
 
-const GENERATOR_MOVE_LABELS = Object.freeze({
-  direct: "ideasMoveDirect",
-  passing: "ideasMovePassing",
-  neighbor: "ideasMoveNeighbor",
-  approach: "ideasMoveApproach",
-  leap: "ideasMoveLeap",
-  "leap-resolution": "ideasMoveLeapResolution",
-  repetition: "ideasMoveRepetition",
-  sequence: "ideasMoveSequence"
+const CONTINUATION_METHOD_LABELS = Object.freeze({
+  sequence: "ideasMethodSequence",
+  answer: "ideasMethodAnswer",
+  echo: "ideasMethodEcho",
+  smooth: "ideasMethodSmooth",
+  leaping: "ideasMethodLeaping",
+  balanced: "ideasMethodBalanced"
 });
 
 export function candidateKindLabel(kind) {
@@ -71,10 +69,10 @@ export function candidateKindLabel(kind) {
   return "ideasVariationRecorded";
 }
 
-/** Kartu variasi memakai jenisnya; kartu lanjutan memakai move generatornya. */
+/** Kartu variasi memakai jenisnya; kartu lanjutan memakai metodenya. */
 export function candidateLabelKey(candidate) {
-  if (candidate?.kind !== "continue") return candidateKindLabel(candidate?.kind);
-  return GENERATOR_MOVE_LABELS[candidate?.meta?.move] ?? "ideasContinueCandidate";
+  if (candidate?.kind !== 'continue') return candidateKindLabel(candidate?.kind);
+  return CONTINUATION_METHOD_LABELS[candidate?.meta?.method] ?? 'ideasContinueCandidate';
 }
 
 export function sourceLabelKey(source) {
@@ -616,6 +614,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage 
     card.dataset.kind = candidate.kind;
     card.dataset.noteCount = String(candidate.notes.length);
     card.dataset.slot = String(slot);
+    card.dataset.method = candidate.meta?.method ?? '';
     card.dataset.compare = compareSlot(candidate.id);
     if (candidate.id === state.activeCandidateId) card.dataset.active = "true";
     const head = document.createElement("div");

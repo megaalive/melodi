@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { PPQ, createSong } from "../src/core/model.js";
 import { createCommands } from "../src/core/commands.js";
 import { notesHash } from "../src/generation/ideas.js";
@@ -7,6 +8,7 @@ import { isScalePitch } from "../src/generation/primitives.js";
 import {
   QUALITY_TAKES,
   QUALITY_THRESHOLDS,
+  developForQuality,
   formatReport,
   measureCandidate,
   percent,
@@ -15,8 +17,8 @@ import {
 } from "../tools/idea-quality.mjs";
 
 // C1: skrip metrik harus bisa diulang, deterministik, dan mengukur hal yang
-// benar. Ambang mutu C2d ditegakkan di commit kedua, setelah generator
-// lanjutan berbasis motif masuk.
+// benar. C2d: setelah generator lanjutan berbasis motif, ambang mutu itu
+// ditegakkan di commit kedua ini.
 const SCALE = Object.freeze({ name: "major", intervals: [0, 2, 4, 5, 7, 9, 11] });
 const SMALL = Object.freeze({ seeds: 4, bars: [1, 2] });
 
@@ -92,7 +94,7 @@ test("metrik kandidat berada di rentang yang masuk akal dan menghitung hal yang 
     ] },
     { take, anchorAPitch: 76, anchorBPitch: 79, gapStart: 1920, barTicks: 1920, bars: 1 }
   );
-  assert.equal(leaping.leapRatio, 1 / 3, "satu dari tiga interval >= kuint");
+  assert.equal(leaping.leapRatio, 1 / 2, "interval ke anchor B tidak dihitung sebagai lompatan frasa");
   assert.equal(leaping.leapResolveRatio, 0, "lompatan itu tidak dibalikkan arah");
 });
 
@@ -158,12 +160,58 @@ test("Terima kandidat lanjutan tetap satu langkah undo", () => {
   assert.equal(commands.getSong().notes.length, 0);
 });
 
-test("ambang mutu C2d belum ditegakkan pada baseline ini", () => {
-  // Baseline .90 masih memakai generateGap profil balanced apa adanya, jadi
-  // ambang C2d sengaja gagal di sini dan ditutup pada commit generator.
-  const failures = thresholdFailures(runMetrics(SMALL));
-  assert.ok(failures.length > 0, "baseline harus gagal ambang, kalau tidak tidak ada yang dibenahi");
-  assert.ok(failures.some(failure => failure.includes("transisi nada-sama")));
-  assert.ok(QUALITY_THRESHOLDS.maxSameRatio === 0.25);
-  assert.equal(percent(QUALITY_THRESHOLDS.maxSameRatio), "25.0%");
+test("ambang mutu C2d terpenuhi pada sampel penuh 30 seed dan dua panjang birama", () => {
+  // Empat take contoh x 30 seed x 1 dan 2 birama, sama seperti
+  // tools/idea-quality.mjs, jadi ambangnya diuji pada sampel yang sama.
+  const report = runMetrics({ seeds: 30, bars: [1, 2] });
+  const failures = thresholdFailures(report);
+  // node --test menjalankan berkas test secara paralel, jadi p95 di dalam suite
+  // naik tajam karena CPU dibagi (sekitar 90 ms). Ambang 30 ms tetap ditegakkan
+  // oleh tools/idea-quality.mjs yang berjalan sendiri; tes ini memeriksa
+  // ambang musiknya saja supaya tidak gagal karena beban CPU, bukan karena
+  // regresi. Jalankan `node tools/idea-quality.mjs` untuk angka p95 yang resmi.
+  const musicFailures = failures.filter((failure) => !failure.startsWith("p95 ideaDevelop"));
+  assert.deepEqual(musicFailures, [], `ambang musik belum terpenuhi: ${musicFailures.join("; ")}`);
+  assert.ok(report.sameRatio <= 0.25, `transisi nada-sama ${percent(report.sameRatio)} harus <= 25%`);
+  assert.ok(report.distinctPerBarByLength["1 birama"] >= 4);
+  assert.ok(report.distinctPerBarByLength["2 birama"] >= 5);
+  assert.ok(report.meanInterval >= 1.5 && report.meanInterval <= 3.5);
+  assert.ok(report.leapRatio <= 0.15);
+  assert.ok(report.leapResolveRatio >= 0.8);
+  assert.ok(report.landRatio >= 0.9);
+  assert.ok(report.onsetReuseRatio >= 0.5, "setidaknya 3 dari 6 kandidat memakai ulang pola onset take");
+  assert.ok(report.distinctMethods >= 3);
+});
+
+test("kandidat lanjutan memakai motif take dan punya metode yang dikenal", () => {
+  const methods = new Set();
+  for (const [label, take] of Object.entries(QUALITY_TAKES)) {
+    const developed = developForQuality(take, { seed: 31, bars: 1 });
+    assert.ok(developed.candidates.length >= 3, `${label}: minimal tiga kandidat lanjutan`);
+    assert.ok(developed.candidates.length <= 6, `${label}: maksimal enam kandidat`);
+    assert.ok(developed.methods.length >= 1, `${label}: minimal satu metode`);
+    for (const candidate of developed.candidates) {
+      assert.equal(candidate.kind, "continue");
+      assert.ok(typeof candidate.meta.method === "string" && candidate.meta.method.length > 0, `${label}: meta.method wajib ada`);
+      methods.add(candidate.meta.method);
+      assert.equal(candidate.baseNotes.length, take.length, "take ikut dikembalikan untuk satu langkah undo");
+    }
+  }
+  assert.ok(methods.size >= 3, `metode yang terpakai: ${[...methods].join(", ")}`);
+});
+
+test("label metode lanjutan tersedia di id dan en", () => {
+  const messages = readFileSync(new URL("../src/i18n/messages.js", import.meta.url), "utf8");
+  for (const [key, id, en] of [
+    ["ideasMethodSequence", "Sekuens", "Sequence"],
+    ["ideasMethodAnswer", "Jawab", "Answer"],
+    ["ideasMethodEcho", "Gema", "Echo"],
+    ["ideasMethodSmooth", "Mulus", "Smooth"],
+    ["ideasMethodLeaping", "Melompat", "Leaping"]
+  ]) {
+    assert.match(messages, new RegExp(`${key}: "${id}"`), `${key} harus ada dalam bahasa Indonesia`);
+    assert.match(messages, new RegExp(`${key}: "${en}"`), `${key} harus ada dalam bahasa Inggris`);
+  }
+  assert.match(messages, /ideasNoCandidates: "Variasi butuh minimal 3 nada; coba Lanjutkan\."/);
+  assert.match(messages, /ideasNoCandidates: "Variations need at least 3 notes; try Continue\."/);
 });

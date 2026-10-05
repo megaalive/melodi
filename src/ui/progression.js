@@ -1,4 +1,4 @@
-import { harmonyChordSymbol, harmonyContextRange } from './harmony.js?v=20261003.90';
+import { harmonyChordSymbol, harmonyContextRange } from './harmony.js?v=20261003.91';
 
 export function createProgressionWorkspace(commands, language, onError) {
   const host = document.getElementById('progression-workspace');

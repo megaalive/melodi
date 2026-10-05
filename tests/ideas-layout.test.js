@@ -415,6 +415,23 @@ test("alur akhir HP: rekam, lanjutkan, bandingkan dua hasil, terima, simpan tanp
     const candidates = page.locator("[data-entity='ideas-variation']");
     assert.equal(await candidates.count(), 6, "enam kandidat lanjutan");
     assert.equal(await page.locator("[data-action='ideas-variation-use']").first().textContent(), "Terima");
+    // Kartu lanjutan memakai label metode, bukan nama move generator.
+    const methodLabels = await page.locator("[data-entity='ideas-variation']").evaluateAll(cards => cards.map(card => ({
+      method: card.dataset.method,
+      label: card.querySelector("strong").textContent
+    })));
+    assert.equal(methodLabels.length, 6);
+    // Rekaman sentuhan bisa jatuh ke dua metode saja, jadi syarat tiga metode
+    // diuji pada take deterministik di tests/idea-quality.test.js.
+    assert.ok(new Set(methodLabels.map(entry => entry.method)).size >= 2,
+      `minimal dua metode pada kartu: ${methodLabels.map(entry => entry.method).join(", ")}`);
+    const known = new Set(["Sekuens", "Jawab", "Gema", "Mulus", "Melompat", "Isi celah"]);
+    for (const entry of methodLabels) {
+      assert.ok(entry.method.length > 0, "setiap kartu lanjutan punya data-method");
+      assert.ok(known.has(entry.label), `label metode "${entry.label}" dikenal`);
+    }
+    assert.equal(await page.locator("[data-entity='ideas-variation'] .ideas-contour polyline").count(), 6,
+      "tiap kartu lanjutan tetap punya mini-kontur");
 
     await page.locator("[data-action='ideas-variation-play']").first().click();
     await page.waitForTimeout(200);
