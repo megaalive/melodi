@@ -410,9 +410,9 @@ test("Web Audio engine schedules canonical percussion together with melody", asy
   const player = createAudioPlayer({ getSong: () => song, audioContextFactory: () => context });
   await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
 
-  assert.equal(context.oscillators.length, 3, "1 oscillator melodi + 2 oscillator kick");
-  assert.equal(context.oscillators[1].startTime, 0);
-  assert.ok(context.oscillators[1].stopTime > 0);
+  assert.equal(context.oscillators.length, 4, "2 oscillator melodi + 2 oscillator kick");
+  assert.equal(context.oscillators[2].startTime, 0);
+  assert.ok(context.oscillators[2].stopTime > 0);
   assert.ok(context.gains.length >= 5, "master + melody + percussion envelope/source gains");
   player.stop();
 });
@@ -458,7 +458,7 @@ test("mix changes during transport reschedule at the current tick without restar
 
   try {
     await player.play(0, { tempo: 120, loop });
-    assert.equal(context.oscillators.length, 1, "melody is initially scheduled");
+    assert.equal(context.oscillators.length, 5, "melodi + kick + snare terjadwal dalam jendela awal");
     context.currentTime = 0.14;
     const positionBefore = player.getPosition();
     mix = { channels: { ...mix.channels,
@@ -469,10 +469,10 @@ test("mix changes during transport reschedule at the current tick without restar
     player.mixChanged(positionBefore, loop);
     assert.equal(player.getPosition(), positionBefore);
     assert.ok(context.oscillators[0].stopTime <= context.currentTime + 0.012, "the no-longer-audible melody voice is stopped promptly");
-    assert.equal(context.oscillators.length, 3, "only the selected kick is newly scheduled");
-    assert.ok(context.oscillators.slice(1).every((oscillator) => Math.abs(oscillator.startTime - 0.25) < 0.002));
+    assert.equal(context.oscillators.length, 7, "only the selected kick is newly scheduled");
+    assert.ok(context.oscillators.slice(5).every((oscillator) => Math.abs(oscillator.startTime - 0.25) < 0.002));
     const kickNoiseComponents = percussionVoiceSpec("gm-standard", { pieceId: "kick", velocity: 100, articulation: "normal" }).noise.length;
-    assert.equal(context.bufferSources.length, kickNoiseComponents, "solo filtering schedules only the kick's own noise components");
+    assert.equal(context.bufferSources.slice(3).length, kickNoiseComponents, "solo filtering schedules only the kick's own noise components");
   } finally {
     player.stop();
   }
@@ -548,18 +548,18 @@ test("Web Audio engine uses audio timestamps, de-duplicates wakes, and cancels o
   const loop = { enabled: false, startTick: 0, endTick: 1920 };
 
   await player.play(0, { tempo: 120, loop });
-  assert.equal(context.oscillators.length, 1);
+  assert.equal(context.oscillators.length, 2);
   assert.equal(context.oscillators[0].startTime, 0);
   assert.equal(context.oscillators[0].stopTime, 0.5);
   context.currentTime = 0.03;
   await new Promise((resolve) => setTimeout(resolve, 35));
-  assert.equal(context.oscillators.length, 1);
+  assert.equal(context.oscillators.length, 2);
 
   player.seek(480, { tempo: 120, loop, playing: true });
-  assert.equal(context.oscillators.length, 2);
-  assert.equal(context.oscillators[1].startTime, 0.03);
+  assert.equal(context.oscillators.length, 4);
+  assert.equal(context.oscillators[2].startTime, 0.03);
   player.pause();
-  assert.ok(context.oscillators[1].stopTime <= 0.042);
+  assert.ok(context.oscillators[2].stopTime <= 0.042);
   player.stop();
 });
 
@@ -912,7 +912,7 @@ test("transport channel volume scales canonical note envelopes without changing 
     const player = createAudioPlayer({ getSong: () => song, getMix: () => mix, audioContextFactory: () => context });
     try {
       await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 1920 } });
-      assert.equal(context.oscillators.length, volume === 0 ? 0 : 1);
+      assert.equal(context.oscillators.length, volume === 0 ? 0 : 2);
       peaks.push(volume === 0 ? 0 : context.gains[1].gain.events[1][1]);
       assert.equal(song.notes[0].volume, 0.5);
     } finally { player.stop(); }
@@ -960,15 +960,16 @@ test("channel volume change during playback reanchors at the clock position and 
     mix.channels.melody.volume = 0.5;
     player.mixChanged(player.getPosition(), loop);
     assert.equal(player.getPosition(), 240);
-    assert.equal(context.oscillators[1].startTime, 0.25);
-    assert.equal(context.gains[2].gain.events[1][1], 0.18 * 0.25);
+    assert.equal(context.oscillators.length, 4);
+    assert.equal(context.oscillators[2].startTime, 0.25);
+    assert.equal(context.gains[3].gain.events[1][1], 0.18 * 0.25);
     assert.ok(context.oscillators[0].stopTime <= 0.262);
     context.currentTime = 0.3;
     assert.equal(player.getPosition(), 288);
     mix.channels.melody.volume = 0;
     player.mixChanged(player.getPosition(), loop);
     assert.equal(player.getPosition(), 288);
-    assert.equal(context.oscillators.length, 2, "zero does not create replacement voices");
+    assert.equal(context.oscillators.length, 4, "zero does not create replacement voices");
   } finally { player.stop(); }
 });
 
@@ -1069,9 +1070,9 @@ test("audio safely skips legacy unknown chord qualities and schedules the suppor
     const player = createAudioPlayer({ getSong: () => song, getMix: () => createInstrumentMix(song), audioContextFactory: () => context, onError: error => errors.push(error) });
     try {
       await player.play(0, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 960 } });
-      assert.equal(context.oscillators.length, 0);
-      player.seek(480, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 960 }, playing: true });
       assert.equal(context.oscillators.length, harmonyStyle === "block" ? 8 : 4);
+      player.seek(480, { tempo: 120, loop: { enabled: false, startTick: 0, endTick: 960 }, playing: true });
+      assert.equal(context.oscillators.length, harmonyStyle === "block" ? 16 : 8);
       assert.ok(context.oscillators.every(oscillator => Number.isFinite(oscillator.startTime) && Number.isFinite(oscillator.stopTime)));
       assert.deepEqual(errors, []);
       assert.equal(song.chords[0].quality, "maj7");
@@ -1180,10 +1181,11 @@ test("chord and style edits reanchor guide voices without altering canonical mel
     song.sketch.bass.style = "root-fifth";
     player.songChanged(240);
     assert.ok(context.oscillators.slice(0, 8).every(oscillator => oscillator.stopTime <= 0.262));
-    assert.equal(context.oscillators.length, 12);
-    assert.ok(context.oscillators.slice(8).every(oscillator => oscillator.startTime === 0.25 && oscillator.stopTime === 0.5));
+    assert.equal(context.oscillators.length, 16);
+    assert.ok(context.oscillators.slice(8, 12).every(oscillator => oscillator.startTime === 0.25 && oscillator.stopTime === 0.5));
+    assert.ok(context.oscillators.slice(12).every(oscillator => oscillator.startTime === 0.5 && oscillator.stopTime === 1));
     assert.deepEqual(song.notes, []);
-    assert.ok(context.oscillators.slice(8).some(oscillator => Math.abs(oscillator.frequency.events[0][1] - 440 * 2 ** ((38 - 69) / 12)) < 1e-9));
+    assert.ok(context.oscillators.slice(8, 12).some(oscillator => Math.abs(oscillator.frequency.events[0][1] - 440 * 2 ** ((38 - 69) / 12)) < 1e-9));
   } finally { player.stop(); }
 });
 
