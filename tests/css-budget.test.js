@@ -14,7 +14,11 @@ import { readAppStyles } from "./helpers/read-app-styles.js";
 // compare, latency compensation control, and an inline idea rename field. The
 // behaviour is covered by tests/ideas-layout.test.js and
 // tests/ideas-variations.test.js, so the guard moves with it.
-const ACTIVE_CSS_BUDGET_BYTES = 235_000;
+// 235 KB -> 236 KB: the Ide tab grew a guided flow: step strip, empty state with
+// "Try a sample", audio-ready chip, recording banner, and an accept toast. The
+// behaviour is covered by tests/ideas-recording-flow.test.js and
+// tests/ideas-guided-flow.test.js, so the guard moves with it.
+const ACTIVE_CSS_BUDGET_BYTES = 236_000;
 
 test("active imported CSS stays within its tracked byte budget", () => {
   const normalizedStyles = readAppStyles().replace(/\r\n?/g, "\n");

@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261003.94">
+    <meta name="melodi-build" content="20261003.95">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.94">
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.95">
     <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.74"></script>
-    <script type="module" src="./src/app.js?v=20261003.94"></script>
+    <script type="module" src="./src/app.js?v=20261003.95"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -178,6 +178,19 @@
                 <output class="ideas-readout" data-entity="ideas-readout" aria-live="polite"></output>
               </div>
             </div>
+            <ol class="ideas-steps" data-entity="ideas-steps" data-step="empty" data-aria-copy="ideasStepsLabel">
+              <li class="ideas-step" data-entity="ideas-step" data-step="record" data-copy="ideasStepRecord"></li>
+              <li class="ideas-step" data-entity="ideas-step" data-step="develop" data-copy="ideasStepDevelop"></li>
+              <li class="ideas-step" data-entity="ideas-step" data-step="use" data-copy="ideasStepUse"></li>
+            </ol>
+            <div class="ideas-empty" data-entity="ideas-empty" data-open="true">
+              <ol class="ideas-empty-list">
+                <li data-copy="ideasEmptyStepOne"></li>
+                <li data-copy="ideasEmptyStepTwo"></li>
+                <li data-copy="ideasEmptyStepThree"></li>
+              </ol>
+              <button type="button" class="secondary" data-action="ideas-try-sample" data-copy="ideasTrySample"></button>
+            </div>
             <div class="ideas-strip" role="group" data-aria-copy="ideasStripLabel">
               <button type="button" id="ideas-record" class="ideas-record" data-action="ideas-record" data-copy="ideasRecord" aria-pressed="false"></button>
               <p class="ideas-audio-chip" data-entity="ideas-audio-state" data-state="pending" role="status" aria-live="polite" data-copy="ideasAudioTap"></p>
@@ -218,6 +231,10 @@
             </div>
             <p class="ideas-hint" data-entity="ideas-empty-hint" data-copy="ideasEmptyHint"></p>
             <p class="ideas-hint muted" data-entity="ideas-mono-hint" data-copy="ideasMonophonicHint" hidden></p>
+            <div class="ideas-toast" data-entity="ideas-toast" role="status" aria-live="polite" data-state="hidden" hidden>
+              <span data-entity="ideas-toast-text" data-copy="ideasToastAdded"></span>
+              <button type="button" class="secondary" data-action="ideas-toast-open" data-copy="ideasToastOpenEdit"></button>
+            </div>
             <div class="ideas-board">
               <div class="ideas-keyboard-head">
                 <p class="ideas-meter"><span data-copy="ideasKeyboardLabel"></span> <output data-entity="ideas-octave"></output></p>
