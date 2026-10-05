@@ -734,7 +734,9 @@
   .studio .mobile-workspace-dock .transport-main{justify-content:flex-start;gap:var(--space-1);}
   .studio .mobile-workspace-dock .history-buttons{flex:0 0 auto;gap:0;}
   .studio .mobile-workspace-dock .history-buttons button{flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;padding:var(--space-2);}
-  .studio .mobile-workspace-dock .studio-overview{display:flex !important;flex:1 1 auto;width:auto;min-width:48px;height:44px;border:0;}
+  /* min-width:0 supaya track playhead yang expandable menanggung selisih
+     lebar font, bukan tombol terakhir dock yang terdorong keluar layar. */
+  .studio .mobile-workspace-dock .studio-overview{display:flex !important;flex:1 1 0;width:auto;min-width:0;height:44px;border:0;}
   .studio .mobile-workspace-dock .studio-overview-label{flex:0 0 34px;padding:0 var(--space-1);border:0;}
   .studio .mobile-workspace-dock .studio-overview-label > span{display:none;}
   .studio .mobile-workspace-dock .studio-overview-label output{font-size:var(--text-xs);}
@@ -1197,6 +1199,7 @@
   .studio .brand-block .song-summary dd{font-size:var(--text-xs);}
   .studio .page-header > #studio-views{order:2;flex:0 0 auto;gap:var(--space-1);margin:0;}
   .studio .page-header > #studio-views > button{min-width:38px;min-height:34px;padding:var(--space-1) var(--space-1);font-size:var(--text-xs);}
+  /* min-width:0 di dock: sisa ruang header dipakai dock, bukan vice versa. */
   .studio .page-header > .transport-dock{order:3;position:static;display:flex;flex:1 1 28rem;width:auto;min-width:0;height:34px;margin:0;padding:0 var(--space-1);border:0;border-radius:0;background:transparent;box-shadow:none;}
   .studio .page-header .transport-main{display:flex;flex:1 1 auto;align-items:center;justify-content:space-between;flex-wrap:nowrap;gap:var(--space-1);min-width:0;height:34px;}
   .studio .page-header .transport-action-group{flex:0 0 auto;gap:var(--space-1);}
@@ -1217,10 +1220,12 @@
   .studio .page-header .history-buttons button{width:27px;min-width:27px;height:28px;min-height:28px;padding:var(--space-1);}
   .studio .page-header .follow-mode-control{gap:var(--space-1);white-space:nowrap;font-size:var(--text-xs);}
   .studio .page-header .studio-more > summary{min-height:30px;padding:var(--space-1) var(--space-1);font-size:var(--text-xs);}
-  .studio .page-header > .header-actions{order:4;display:flex;flex:0 0 auto;align-items:center;flex-wrap:nowrap;gap:var(--space-1);min-width:0;margin-left:0;}
-  .studio .header-actions .desktop-project-actions{display:flex;flex:0 0 auto;align-items:center;gap:var(--space-1);}
+  .studio .page-header > .header-actions{order:4;display:flex;flex:0 1 auto;align-items:center;flex-wrap:nowrap;gap:var(--space-1);min-width:0;margin-left:0;}
+  .studio .header-actions .desktop-project-actions{display:flex;flex:1 1 auto;align-items:center;gap:var(--space-1);min-width:0;}
   .studio .desktop-project-actions-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
-  .studio .header-actions .desktop-project-actions button{display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;gap:var(--space-1);width:auto;min-width:0;height:32px;min-height:32px;padding:var(--space-1) var(--space-1);white-space:nowrap;font-size:var(--text-xs);}
+  /* flex-shrink + overflow:hidden: saat font lebih lebar, label tombol Proyek
+     dipadatkan di dalam tombolnya sendiri, bukan menimpa transport dock. */
+  .studio .header-actions .desktop-project-actions button{display:inline-flex;flex:0 1 auto;align-items:center;justify-content:center;gap:var(--space-1);width:auto;min-width:0;height:32px;min-height:32px;padding:var(--space-1) var(--space-1);white-space:nowrap;font-size:var(--text-xs);overflow:hidden;}
   .studio .header-actions .desktop-project-actions button::before{font-size:var(--text-md);line-height:1;}
   .studio .desktop-project-actions [data-action="new-song"]::before{content:"+";}
   .studio .desktop-project-actions [data-action="show-examples"]::before{content:"☆";}

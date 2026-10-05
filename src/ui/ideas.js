@@ -3,8 +3,8 @@
  * kuantisasi ke grid snap. Modul ini tidak menyentuh canonical song; take
  * hanya hidup di memori UI sampai user menekan Pakai (satu langkah undo).
  */
-import { PPQ } from "../core/model.js?v=20261003.95";
-import { SNAP_TICKS } from "../core/editor.js?v=20261003.95";
+import { PPQ } from "../core/model.js?v=20261003.96";
+import { SNAP_TICKS } from "../core/editor.js?v=20261003.96";
 
 export const WHITE_KEY_ROWS = Object.freeze([["a", 0], ["s", 2], ["d", 4], ["f", 5], ["g", 7], ["h", 9], ["j", 11], ["k", 12], ["l", 14]]);
 export const BLACK_KEY_ROWS = Object.freeze([["w", 1], ["e", 3], ["t", 6], ["y", 8], ["u", 10]]);

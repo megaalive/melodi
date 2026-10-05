@@ -7,12 +7,12 @@ body.studio{--radius:6px;--studio-accent:var(--accent);background:var(--surface-
 .studio .mobile-workspace-dock{display:none;}
 .studio .mobile-workspace-dock:not([hidden]) { position: fixed; inset:auto 0 0;z-index:90;display:flex;flex-direction:column;width:100%;height:calc(88px + env(safe-area-inset-bottom, 0px));padding-bottom:env(safe-area-inset-bottom, 0px);border-top:0;box-shadow:inset 0 1px 0 var(--border-strong);background:var(--surface);}
 .studio .mobile-workspace-dock > .transport-dock{flex:0 0 44px;width:100%;height:44px;margin:0;padding:0 var(--space-1);border:0;background:var(--surface);}
-.studio .mobile-workspace-dock .transport-main{display:flex;align-items:center;height:44px;gap:var(--space-1);}
+.studio .mobile-workspace-dock .transport-main{display:flex;align-items:center;height:44px;gap:var(--space-1);overflow:hidden;}
 .studio .mobile-workspace-dock .transport-action-group{flex:0 0 auto;gap:0;}
 .studio .mobile-workspace-dock .transport-buttons{width:auto;gap:var(--space-1);}
 .studio .mobile-workspace-dock .transport-buttons button{flex:0 0 44px;width:44px;min-width:44px;height:44px;min-height:44px;padding:var(--space-2);}
 .studio .mobile-workspace-dock .playback-readout{display:none;}
-.studio .mobile-workspace-dock .studio-overview{display:flex !important;flex:1 1 auto;width:auto;min-width:48px;height:44px;border:0;}
+.studio .mobile-workspace-dock .studio-overview{display:flex !important;flex:1 1 0;width:auto;min-width:0;height:44px;border:0;}
 .studio .mobile-workspace-dock .studio-overview-label{flex:0 0 34px;padding:0 var(--space-1);border:0;}
 .studio .mobile-workspace-dock .studio-overview-label > span{display:none;}
 .studio .mobile-workspace-dock .studio-overview-label output{font-size:var(--text-xs);}
