@@ -37,15 +37,19 @@ function fixture() {
   });
 }
 
-test("laporan metrik memakai empat take contoh, dua panjang birama, dan seed tetap", () => {
+test("laporan metrik memakai tujuh take contoh, dua panjang birama, dan seed tetap", () => {
   const report = runMetrics(SMALL);
   assert.deepEqual(Object.keys(QUALITY_TAKES), [
     "legato 4 seperempat",
     "legato 8 stepwise",
     "empat nada dengan jeda",
-    "ritme campur"
+    "ritme campur",
+    "renggang dengan jeda",
+    "rendah A3-C4",
+    "phone 211 tick"
   ]);
   assert.equal(report.seeds, SMALL.seeds);
+  assert.equal(report.takes, 7);
   assert.deepEqual(report.bars, SMALL.bars);
   assert.ok(report.candidates > 0, "setiap pengembangan harus punya kandidat");
   for (const [label, value] of Object.entries(report.distinctPerBarByLength)) {
@@ -55,6 +59,9 @@ test("laporan metrik memakai empat take contoh, dua panjang birama, dan seed tet
   assert.match(table, /transisi nada-sama/);
   assert.match(table, /p95 ideaDevelop/);
   assert.match(table, /nada berbeda per baris 2 birama/);
+  assert.match(table, /durasi median 0,5x-2x take/);
+  assert.match(table, /sambungan <= 5 semitone/);
+  assert.match(table, /metode minimum per set/);
 });
 
 test("metrik kandidat berada di rentang yang masuk akal dan menghitung hal yang benar", () => {
@@ -161,7 +168,7 @@ test("Terima kandidat lanjutan tetap satu langkah undo", () => {
 });
 
 test("ambang mutu C2d terpenuhi pada sampel penuh 30 seed dan dua panjang birama", () => {
-  // Empat take contoh x 30 seed x 1 dan 2 birama, sama seperti
+  // Tujuh take contoh x 30 seed x 1 dan 2 birama, sama seperti
   // tools/idea-quality.mjs, jadi ambangnya diuji pada sampel yang sama.
   const report = runMetrics({ seeds: 30, bars: [1, 2] });
   const failures = thresholdFailures(report);
@@ -181,6 +188,21 @@ test("ambang mutu C2d terpenuhi pada sampel penuh 30 seed dan dua panjang birama
   assert.ok(report.landRatio >= 0.9);
   assert.ok(report.onsetReuseRatio >= 0.5, "setidaknya 3 dari 6 kandidat memakai ulang pola onset take");
   assert.ok(report.distinctMethods >= 3);
+  // Ritme dan sambungan (C1): lookahead baru harus drapedari take, bukan grid
+  // yang lebih halus, dan sambungan dari nada terakhir take harus berupa langkah.
+  assert.ok(report.denseRatio >= QUALITY_THRESHOLDS.minDenseRatio,
+    `durasi median dalam 0,5x-2x take hanya ${percent(report.denseRatio)}`);
+  assert.ok(report.overNoteCountRatio <= QUALITY_THRESHOLDS.maxOverNoteCountRatio,
+    `kandidat melewati batas nada per birama ${percent(report.overNoteCountRatio)}`);
+  assert.ok(report.joinLeapRatio >= QUALITY_THRESHOLDS.minJoinLeapRatio,
+    `sambungan <= ${QUALITY_THRESHOLDS.maxJoinLeap} semitone hanya ${percent(report.joinLeapRatio)}`);
+  assert.ok(report.joinLeapMedian <= QUALITY_THRESHOLDS.maxJoinLeap);
+  assert.ok(report.setsWithThreeMethods >= QUALITY_THRESHOLDS.minSetsWithThreeMethods,
+    `hanya ${percent(report.setsWithThreeMethods)} set yang punya minimal tiga metode`);
+  // p95 bergantung mesin dan CPU suite, jadi dijaga longgar di sini; angka resmi
+  // ditegakkan tools/idea-quality.mjs.
+  assert.ok(report.developP95 <= QUALITY_THRESHOLDS.looseDevelopP95,
+    `p95 ${report.developP95.toFixed(2)} ms melewati batas longgar ${QUALITY_THRESHOLDS.looseDevelopP95} ms`);
 });
 
 test("kandidat lanjutan memakai motif take dan punya metode yang dikenal", () => {

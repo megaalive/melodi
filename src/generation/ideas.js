@@ -43,7 +43,17 @@ const GENERATOR_WAVES = 2;
 const MOTIF_MAX_NOTES = 4;
 const MAX_SAME_RATIO = 0.5;
 const FIFTH = 7;
-const MIN_DISTINCT_PER_BAR = 2;
+const MIN_DISTINCT_PER_BAR = Object.freeze({ 1: 4, 2: 4 });
+const DURATION_RATIO_MIN = 0.5;
+const DURATION_RATIO_MAX = 2;
+const JOIN_LEAP_MAX = 5;
+
+function medianTicks(values) {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
 const LANDING_STEP_SEMITONES = 2;
 const GRID = 120;
 const MIN_PITCH = 36;
@@ -436,15 +446,29 @@ function landOnAnchor(pitches, target, context, range) {
     .sort((left, right) => Number(leaps && !left.reverses) - Number(leaps && !right.reverses)
       || left.fromPrevious - right.fromPrevious
       || left.toTarget - right.toTarget)[0];
-  if (previous !== null && best.fromPrevious > 4) return pitches;
+  if (previous !== null && best.fromPrevious > 4) {
+    // Nada sebelumnya masih jauh dari nada pendaratan, jadi nota sebelumnya
+    // itu digeser satu-dua anak tangga ke arahnya, bukan kandidat dibuang.
+    const before = landed.length >= 3 ? landed[landed.length - 3] : null;
+    let bridge = landed[landed.length - 2];
+    for (let step = 0; step < 2 && Math.abs(best.pitch - bridge) > 4; step += 1) {
+      const moved = stepToward(bridge, best.pitch, context);
+      if (moved === bridge) break;
+      if (before !== null && Math.abs(moved - before) < 1) break;
+      bridge = moved;
+    }
+    if (Math.abs(best.pitch - bridge) > 4) return pitches;
+    landed[landed.length - 2] = bridge;
+  }
   landed[landed.length - 1] = best.pitch;
   return landed;
 }
 
-/** Register hanya dipakai kalau seluruh frasa masih di dalam jangkala vokal. */
+// Register hanya dipakai kalau seluruh frasa masih di dalam jangkala vokal.
+// Nada pertama dikecualikan supaya sambungan dari nada terakhir take tetap langkah.
 function applyRegister(pitches, register, range) {
-  if (register === 0) return pitches;
-  const shifted = pitches.map((pitch) => pitch + register);
+  if (register === 0 || pitches.length < 2) return pitches;
+  const shifted = pitches.map((pitch, slot) => (slot === 0 ? pitch : pitch + register));
   return shifted.every((pitch) => pitch >= range.minPitch && pitch <= range.maxPitch) ? shifted : pitches;
 }
 
@@ -483,6 +507,56 @@ function walkTail(pitches, target, context, range, steps) {
   return walked;
 }
 
+/**
+ * Slot terkecil yang boleh dipakai: satu tingkat di bawah nada terpendek take,
+ * jadi lanjutan tidak pernah pindah ke grid yang lebih halus dari take.
+ */
+function minSlotUnits(motif) {
+  const shortest = Math.max(1, Math.min(...motif.durations));
+  return Math.max(1, Math.ceil(shortest / 2));
+}
+
+/**
+ * Potong slot supaya jumlah nadanya tidak melewati budget; nada terakhir
+ * dipanjangkan supaya celah tetap terisi sampai `gapUnits`.
+ */
+function capSlots(slots, gapUnits, maxSlots) {
+  if (slots.length <= maxSlots) return slots;
+  const kept = slots.slice(0, maxSlots);
+  const last = kept[kept.length - 1];
+  last.duration = Math.max(1, gapUnits - last.onset);
+  return kept;
+}
+
+/**
+ * Irama celah memakai pola onset take selama jumlah nadanya sudah cukup untuk
+ * ambang "nada berbeda per birama". Kalau kurang, durasi take diskalakan ke
+ * kepadatan yang dibutuhkan lalu diulang sampai celah terisi. Slot terkecil
+ * `minSlotUnits` supaya grid tidak pernah lebih halus dari grid take, dan
+ * jumlah nada dibatasi `notesBudget` supaya tidak lebih rapat dari take.
+ */
+function slotsForRhythm(gapUnits, motif, notesBudget, barCount) {
+  const floorUnits = minSlotUnits(motif);
+  const echoSlots = echoRhythm(motif, gapUnits);
+  // Satu nada ekstra per bar karena anchor A ikut dihitung pada birama pertama.
+  const needed = Math.max(2, (MIN_DISTINCT_PER_BAR[barCount] ?? MIN_DISTINCT_PER_BAR[1]) * barCount);
+  const maxSlots = Math.max(needed, Math.min(Math.round(gapUnits / floorUnits), Math.round(notesBudget * barCount)));
+  if (motif.onsets.length < 2 || echoSlots.length >= needed * 2) {
+    return capSlots(echoSlots, gapUnits, maxSlots);
+  }
+  const averageUnits = Math.max(floorUnits, Math.min(motif.averageDuration, Math.ceil(gapUnits / maxSlots)));
+  const pattern = motif.durations.map((duration) => Math.max(
+    floorUnits,
+    Math.min(gapUnits, Math.round((duration / motif.averageDuration) * averageUnits))
+  ));
+  // Kalau pola diskalakan sudah melewati budget, pakai durasi rata-rata saja.
+  const scaled = pattern.reduce((total, duration) => total + duration, 0);
+  const fill = scaled > maxSlots ? [averageUnits] : pattern;
+  const packed = slotsFromDurations(packRhythm(gapUnits, fill));
+  const capped = capSlots(packed, gapUnits, maxSlots);
+  return capped.length > echoSlots.length ? capped : echoSlots;
+}
+
 // Nada pembuka frasa selalu satu anak tangga dari anchor A supaya transisi
 // masuk bukan pengulangan nada yang sama.
 function motifOpening(anchorAPitch, direction, context) {
@@ -490,21 +564,10 @@ function motifOpening(anchorAPitch, direction, context) {
   return opening === anchorAPitch ? fit(context, anchorAPitch + 2 * direction, anchorAPitch) : opening;
 }
 
-/**
- * Irama celah: pola durasi motif diulang dan diperketat supaya tiap birama
- * punya cukup nada berbeda. Seed hanya memilih apakah motif dipakai utuh atau
- * dipotong dua.
- */
-function rhythmFor(gapUnits, motif, random) {
-  const whole = random() < 0.35;
-  const pattern = whole ? motif.durations : motif.durations.map((units) => Math.max(1, Math.floor(units / 2)));
-  return packRhythm(gapUnits, pattern);
-}
-
 /** Sekuens: motif diulang, digeser satu sampai dua anak tangga skala per putaran. */
 function sequencePitches(motif, count, anchorAPitch, target, context, range, random) {
-  const steps = 1 + Math.floor(random() * 2);
-  const direction = random() < 0.5 ? 1 : -1;
+  const steps = 2 + Math.floor(random() * 4);
+  let direction = random() < 0.5 ? 1 : -1;
   const register = random() < 0.4 ? 12 * (random() < 0.5 ? 1 : -1) : 0;
   const pitches = [motifOpening(anchorAPitch, direction, context)];
   let current = pitches[0];
@@ -512,9 +575,10 @@ function sequencePitches(motif, count, anchorAPitch, target, context, range, ran
   for (let slot = 1; slot < count; slot += 1) {
     if (index === motif.intervals.length) {
       index = 0;
-      current = shiftScalePitch(current, steps * direction, context, current);
+      if (random() < 0.4) direction = -direction;
+      current = avoidRepeat(shiftScalePitch(current, steps * direction, context, current), pitches, direction, context, range);
     } else {
-      current = fitRange(context, current + motif.intervals[index], range, current);
+      current = avoidRepeat(fitRange(context, current + motif.intervals[index], range, current), pitches, direction, context, range);
       index += 1;
     }
     pitches.push(current);
@@ -527,15 +591,25 @@ function answerPitches(motif, count, anchorAPitch, target, context, range, rando
   const mirrored = motif.intervals.map((interval) => -interval);
   const shape = random() < 0.5 ? mirrored : mirrored.reverse();
   const direction = random() < 0.5 ? 1 : -1;
-  const walkFrom = Math.max(2, count - Math.ceil(count / 3));
+  // Sepertiga akhir frasa berjalan menuju anchor B. Kalau jangkala vokal jauh di
+  // bawah anchor B, berjalan dimulai lebih awal supaya frasa sempat sampai.
+  const reach = count - Math.ceil(count / 3);
+  const gap = Math.abs(target - anchorAPitch);
+  const walkFrom = Math.max(2, gap > 12 ? Math.ceil(count / 3) : reach);
   const pitches = [motifOpening(anchorAPitch, direction, context)];
   let current = pitches[0];
   let index = 0;
   for (let slot = 1; slot < count; slot += 1) {
     if (slot >= walkFrom) {
-      current = stepToward(current, target, context);
+      // Sisa jarak dibagi dengan sisa slot, jadi frasa benar-benar sampai di anchor
+      // B dan bukan hanya satu anak tangga per slot.
+      const remaining = count - slot;
+      const left = Math.abs(target - current);
+      const aim = current + Math.sign(target - current) * Math.max(1, Math.min(left, Math.round(left / remaining)));
+      current = fitRange(context, aim, range, current);
+      if (current === pitches[pitches.length - 1]) current = stepToward(current, target, context);
     } else {
-      current = fitRange(context, current + shape[index % shape.length], range, current);
+      current = avoidRepeat(fitRange(context, current + shape[index % shape.length], range, current), pitches, direction, context, range);
       index += 1;
     }
     pitches.push(current);
@@ -553,8 +627,7 @@ function echoPitches(motif, count, anchorAPitch, target, context, range, random)
   if (current === anchorAPitch) current = motifOpening(anchorAPitch, direction, context);
   for (let slot = 0; slot < count; slot += 1) {
     if (slot > 0) {
-      current = fitRange(context, current + motif.intervals[(slot - 1) % motif.intervals.length] * direction, range, current);
-      if (slot % 2 === 0) current = stepToward(current, target, context);
+      current = avoidRepeat(fitRange(context, current + motif.intervals[(slot - 1) % motif.intervals.length] * direction, range, current), pitches, direction, context, range);
     }
     pitches.push(current);
   }
@@ -566,22 +639,107 @@ function distinctPitches(pitches) {
 }
 
 /**
- * Saring kandidat: terlalu banyak nada sama, terlalu sedikit nada berbeda per
- * birama, atau tidak mendarat di anchor B berarti kandidat dibuang.
+ * Kalau langkah berikutnya mengulang salah satu dari beberapa nada terakhir,
+ * geser satu atau dua anak tangga searah. Tanpa ini, walk yang menabrak batas
+ * jangkala vokal menghasilkan nada sama berulang dan ambang "nada berbeda per
+ * birama" tidak tercapai.
  */
-export function acceptableContinuation(notes, { context, gap, anchorAPitch, gapUnits }) {
+function avoidRepeat(pitch, history, direction, context, range) {
+  const previous = history.at(-1) ?? pitch;
+  const recent = history.slice(-4);
+  if (!recent.includes(pitch)) return pitch;
+  for (const way of [direction, -direction]) {
+    let moved = pitch;
+    for (let step = 0; step < 2; step += 1) {
+      moved = shiftScalePitch(moved, way, context, moved);
+      const candidate = fitRange(context, moved, range, previous);
+      if (!recent.includes(candidate)) return candidate;
+    }
+  }
+  return fitRange(context, pitch, range, previous);
+}
+
+/**
+ * Kandidat generator memakai granya sendiri lalu iramanya digeser ke pola onset
+ * take, sehingga catatan ritme berlaku padanya juga.
+ */
+function retimeSlots(notes, startTick, bar) {
+  const gapUnits = Math.max(1, Math.round(bar / GRID));
+  const relative = notes.map((note) => Math.max(0, Math.round((note.startTick - startTick) / GRID)));
+  const slots = [];
+  let cursor = 0;
+  for (const [index, onset] of relative.entries()) {
+    const at = Math.max(onset, cursor);
+    const next = relative[index + 1];
+    const bound = next === undefined ? gapUnits : Math.max(at + 1, next);
+    const duration = Math.max(1, Math.min(bound - at, gapUnits - at));
+    slots.push({ onset: at, duration });
+    cursor = at + duration;
+  }
+  while (cursor < gapUnits && slots.length < 64) {
+    const duration = Math.max(1, Math.min(1, gapUnits - cursor));
+    slots.push({ onset: cursor, duration });
+    cursor += duration;
+  }
+  if (slots.length === 0) return [{ onset: 0, duration: gapUnits }];
+  const last = slots[slots.length - 1];
+  last.duration = Math.max(1, gapUnits - last.onset);
+  return slots;
+}
+
+/**
+ * Batas jumlah nada per birama untuk kandidat lanjutan, sama dengan ambang
+ * di skrip kualitas: 1,5x take + 2.
+ */
+function notesBudgetFor(takeStats) {
+  return Math.max(5, Math.round(takeStats.notesPerBar * 1.5) + 2);
+}
+
+/**
+ * Saring kandidat: terlalu banyak nada sama, terlalu sedikit nada berbeda per
+ * birama, ritme terlalu rapat atau terlalu lambat, sambungan yang meloncat, atau
+ * tidak mendarat di anchor B berarti kandidat dibuang.
+ */
+function acceptableContinuation(notes, {
+  context, gap, anchorAPitch, gapUnits, takeStats = null, method = null
+}) {
   if (!Array.isArray(notes) || notes.length < 2) return false;
+  // Ritme: durasi median harus dekat dengan take dan jumlah nada per birama
+  // tidak boleh melampaui 1,5x take + 2. Metode jawab boleh satu nada lebih
+  // rapat untuk take pendek.
+  if (takeStats !== null) {
+    const durationRatio = medianTicks(notes.map((note) => note.durationTicks))
+      / Math.max(1, takeStats.medianDuration);
+    if (durationRatio < DURATION_RATIO_MIN || durationRatio > DURATION_RATIO_MAX) return false;
+    const budget = notesBudgetFor(takeStats) + (method === "answer" && takeStats.notes <= 4 ? 1 : 0);
+    if (notes.length / gap.bars > budget) return false;
+  }
+  if (notes.length > 0 && Math.abs(notes[0].pitch - anchorAPitch) > JOIN_LEAP_MAX) return false;
   const pitches = [anchorAPitch, ...notes.map((note) => note.pitch)];
   let same = 0;
   for (let index = 1; index < pitches.length; index += 1) if (pitches[index] === pitches[index - 1]) same += 1;
   if (same / (pitches.length - 1) > MAX_SAME_RATIO) return false;
   const distinct = new Set(pitches).size;
   const bars = Math.max(1, Math.round(gapUnits / (gapUnits / gap.bars)));
-  if (distinct / bars < MIN_DISTINCT_PER_BAR) return false;
+  // Nada berbeda dihitung per birama, sama seperti metrik di skrip kualitas, dan
+  // bukan sekali seluruh frasa, supaya frasa dua birama tidak perlu semua
+  // pitch-nya berbeda.
+  const barTicks = (gap.endTick - gap.startTick) / Math.max(1, bars);
+  const perBar = [];
+  for (let bar = 0; bar < bars; bar += 1) {
+    const from = gap.startTick + bar * barTicks;
+    const seen = new Set(notes.filter((note) => note.startTick >= from && note.startTick < from + barTicks).map((note) => note.pitch));
+    if (bar === 0) seen.add(anchorAPitch);
+    perBar.push(seen.size);
+  }
+  const distinctPerBar = perBar.reduce((total, value) => total + value, 0) / perBar.length;
+  if (distinctPerBar < (MIN_DISTINCT_PER_BAR[gap.bars] ?? MIN_DISTINCT_PER_BAR[1])) return false;
   const target = gap.anchorPitch;
   const last = notes[notes.length - 1].pitch;
   const interval = Math.abs(target - last);
-  if (!((interval >= 1 && interval <= LANDING_STEP_SEMITONES) || (interval !== 0 && interval % 12 === 0))) return false;
+  if (!((interval >= 1 && interval <= LANDING_STEP_SEMITONES) || (interval !== 0 && interval % 12 === 0))) {
+    return false;
+  }
   // Setiap lompatan di dalam frasa harus dibalikkan arah pada nada berikutnya;
   // interval terakhir bukan bagian pemeriksaan karena itu sudah diukur di atas.
   for (let index = 0; index < pitches.length - 2; index += 1) {
@@ -688,7 +846,9 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
 
   // Kandidat dari generator tab Edit hanya dipakai lewat profil smooth dan
   // leaping; profil balanced tetap dipakai sebagai cadangan terakhir supaya
-  // generateGap tidak pernah berubah perilakunya.
+  // generateGap tidak pernah berubah perilakunya. Kandidat dari generator
+  // diperbaiki pendaratannya saja supaya kedua profil punya peluang yang sama
+  // dengan metode motif.
   const viaProfile = (profile, seed) => {
     const result = generateGap(transient, {
       startTick: gapStart,
@@ -701,9 +861,28 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
       voiceRange: range,
       styleProfile: GENERATOR_PROFILES[profile] ?? profile
     });
-    const best = result.candidates[0];
-    return best ? best.notes.map(pick) : null;
+    const built = result.candidates.map((candidate) => candidate.notes.map(pick))
+      .map((notes) => retimeNotes(notes, gapStart, anchorAPitch, anchorBPitch, context, range, barTicks(meter)))
+      .filter((notes) => notes !== null);
+    return built[0] ?? null;
   };
+
+  // Kandidat generator memakai granya sendiri lalu iramanya digeser ke pola onset
+  // take, supaya catatan ritme berlaku padanya juga.
+  function retimeNotes(notes, startTick, anchorPitch, target, context, voiceRange, bar) {
+    if (!Array.isArray(notes) || notes.length === 0) return null;
+    const slots = retimeSlots(notes, startTick, bar);
+    const pitches = resolveLeaps(
+      landOnAnchor(walkTail(notes.map((note) => note.pitch), target, context, voiceRange, 2), target, context, voiceRange),
+      context,
+      voiceRange
+    );
+    if (pitches.length !== slots.length) return null;
+    if (pitches.some((pitch) => pitch === undefined)) return null;
+    const last = pitches[pitches.length - 1];
+    if (Math.abs(target - last) > LANDING_STEP_SEMITONES && Math.abs(target - last) % 12 !== 0) return null;
+    return buildNotes(slots, pitches.map((pitch) => pitch ?? anchorPitch), startTick);
+  }
 
   const builders = [
     {
@@ -712,10 +891,15 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
       waves: RESEED_ATTEMPTS,
       build: (seed) => {
         const random = createRandom(seed);
-        const durations = rhythmFor(gapUnits, motif, random);
+        const slots = slotsForRhythm(gapUnits, motif, notesBudget, barCount);
         return buildNotes(
-          slotsFromDurations(durations),
-          landOnAnchor(resolveLeaps(sequencePitches(motif, durations.length, anchorAPitch, anchorBPitch, context, range, random), context, range), anchorBPitch, context, range),
+          slots,
+          landOnAnchor(
+            resolveLeaps(sequencePitches(motif, slots.length, anchorAPitch, anchorBPitch, context, range, random), context, range),
+            anchorBPitch,
+            context,
+            range
+          ),
           gapStart
         );
       }
@@ -726,11 +910,11 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
       waves: RESEED_ATTEMPTS,
       build: (seed) => {
         const random = createRandom(seed);
-        const durations = rhythmFor(gapUnits, motif, random);
+        const slots = slotsForRhythm(gapUnits, motif, notesBudget, barCount);
         return buildNotes(
-          slotsFromDurations(durations),
+          slots,
           landOnAnchor(
-            resolveLeaps(answerPitches(motif, durations.length, anchorAPitch, anchorBPitch, context, range, random), context, range),
+            resolveLeaps(answerPitches(motif, slots.length, anchorAPitch, anchorBPitch, context, range, random), context, range),
             anchorBPitch,
             context,
             range
@@ -743,8 +927,10 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
       method: "echo",
       attempts: RESEED_ATTEMPTS,
       waves: RESEED_ATTEMPTS,
+      // Gema memakai pola onset take apa adanya; itu justru cirinya, dan metrik
+      // "kandidat memakai ulang pola onset take" ikut terjaga.
       build: (seed) => {
-        const slots = echoRhythm(motif, gapUnits);
+        const slots = slotsForRhythm(gapUnits, motif, notesBudget, barCount);
         return buildNotes(
           slots,
           landOnAnchor(
@@ -761,15 +947,26 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
     { method: "leaping", attempts: GENERATOR_ATTEMPTS, waves: GENERATOR_WAVES, build: (seed) => viaProfile("leaping", seed) }
   ];
 
-  const filter = { context, gap, anchorAPitch, gapUnits };
+  const takeStats = {
+    notes: take.length,
+    medianDuration: medianTicks(take.map((note) => note.durationTicks)),
+    notesPerBar: take.length / Math.max(1, Math.ceil((takeEnd / bar)))
+  };
+  // Batas jumlah nada per birama untuk kandidat, dan target kepadatan irama yang
+  // sama supaya kandidat selalu punya cukup nada untuk ambang "nada berbeda".
+  const notesBudget = notesBudgetFor(takeStats);
+  const baseFilter = { context, gap, anchorAPitch, gapUnits, takeStats };
   const seen = new Set();
   const pool = [];
   const methods = new Set();
-  // Gelombang bergilir: tiap metode menyumbang satu kandidat per gelombang,
-  // sehingga enam kandidat memakai sedikitnya tiga metode berbeda.
-  for (let wave = 0; wave < RESEED_ATTEMPTS && pool.length < requested; wave += 1) {
+  // Gelombang bergilir: tiap metode menyumbang satu kandidat per gelombang.
+  // Gelombang baru tetap jalan walau jumlah kandidat sudah cukup, selama
+  // metode yang lolos masih di bawah tiga, supaya enam kandidat memakai
+  // sedikitnya tiga metode berbeda.
+  for (let wave = 0; wave < RESEED_ATTEMPTS; wave += 1) {
+    if (pool.length >= requested && methods.size >= Math.min(3, builders.length)) break;
     for (const [index, builder] of builders.entries()) {
-      if (pool.length >= requested || wave >= builder.waves) break;
+      if (wave >= builder.waves) break;
       // Setiap metode menawarkan beberapa seed; yang dipakai adalah kandidat
       // dengan nada berbeda terbanyak, supaya ambang "nada berbeda per birama"
       // terpenuhi tanpa menambah jumlah kandidat.
@@ -785,7 +982,7 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
         } catch {
           built = null;
         }
-        if (!built || !acceptableContinuation(built, filter)) continue;
+        if (!built || !acceptableContinuation(built, { ...baseFilter, method: builder.method })) continue;
         const capped = capNotes(linearize(built));
         const hash = notesHash(capped);
         if (seen.has(hash)) continue;
