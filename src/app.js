@@ -1,36 +1,36 @@
-import { createProgressionWorkspace } from './ui/progression.js?v=20261003.94';
-import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.94";
-import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.94";
-import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.94";
-import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.94";
-import { PPQ, createBlankSong, createId, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.94";
-import { createCommands } from "./core/commands.js?v=20261003.94";
+import { createProgressionWorkspace } from './ui/progression.js?v=20261003.95';
+import { createStudioWorkspace, musicalPosition, noteVolumeForVelocity } from "./ui/studio.js?v=20261003.95";
+import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, readChordDrawDefaults, renderChordDrawControl } from "./ui/harmony.js?v=20261003.95";
+import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.95";
+import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.95";
+import { PPQ, createBlankSong, createId, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.95";
+import { createCommands } from "./core/commands.js?v=20261003.95";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
-import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.94";
-import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.94";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.94";
-import { songProjection } from "./audio/transport.js?v=20261003.94";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.94";
-import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.94";
-import { createScoreView } from "./ui/score.js?v=20261003.94";
-import { createGuitarView } from "./ui/guitar-view.js?v=20261003.94";
-import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.94";
-import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.94";
-import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.94";
-import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.94";
+import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.95";
+import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.95";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.95";
+import { songProjection } from "./audio/transport.js?v=20261003.95";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.95";
+import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.95";
+import { createScoreView } from "./ui/score.js?v=20261003.95";
+import { createGuitarView } from "./ui/guitar-view.js?v=20261003.95";
+import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.95";
+import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.95";
+import { isTextEntryActiveElement, playbackFollowMode } from "./ui/roll-follow.js?v=20261003.95";
+import { percussionExpressionPatch, resolvePercussionExpression } from "./ui/percussion-expression.js?v=20261003.95";
 import { createBendCurveEditor } from "./ui/bend-editor.js";
-import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.94";
-import { createGenerationContext } from "./generation/context.js?v=20261003.94";
+import { resolveSelectedAnchorGap } from "./ui/generation.js?v=20261003.95";
+import { createGenerationContext } from "./generation/context.js?v=20261003.95";
 import { createPaletteCatalog, filterPaletteEntries, isEntryAvailable } from "./ui/command-palette.js";
-import { createIdeasView } from "./ui/ideas-view.js?v=20261003.94";
-import { createDraftPersistence } from "./storage/draft.js?v=20261003.94";
-import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.94";
-import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.94";
-import { createIdeaBoard } from "./storage/idea-board.js?v=20261003.94";
-import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.94";
-import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.94";
-import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.94";
-import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.94";
+import { createIdeasView } from "./ui/ideas-view.js?v=20261003.95";
+import { createDraftPersistence } from "./storage/draft.js?v=20261003.95";
+import { createBrowserLibrary } from "./storage/browser-library.js?v=20261003.95";
+import { readUiPreferences, writeUiPreferences } from "./storage/ui-preferences.js?v=20261003.95";
+import { createIdeaBoard } from "./storage/idea-board.js?v=20261003.95";
+import { createShareUrl, decodeShareLocation } from "./io/share.js?v=20261003.95";
+import { deserializeProject, serializeProject } from "./core/serialization.js?v=20261003.95";
+import { saveProjectFile as saveSerializedProjectFile } from "./io/project-file.js?v=20261003.95";
+import { createPerfProbe, perfEnabled } from "./ui/perf.js?v=20261003.95";
 
 let language = DEFAULT_LANGUAGE;
 let commands;
@@ -3628,7 +3628,9 @@ ideasView = createIdeasView({
   commands,
   translate,
   getPlayer: () => audioPlayer,
-  storage: safeStorage()
+  storage: safeStorage(),
+  // Toast "Ditambahkan ke lagu" menawarkan jalan tanpa membuka menu.
+  onOpenEdit: () => run(() => commands.setViewMode("piano-roll"))
 });
 ideasView.onChange(() => render());
 // Papan ide dibaca sekali saat tab Ide dibuka pertama kali.

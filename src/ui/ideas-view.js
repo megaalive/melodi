@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.94";
+import { PPQ } from "../core/model.js?v=20261003.95";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.94";
+} from "./ideas.js?v=20261003.95";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,13 +35,22 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.94";
+} from "../storage/recording-preferences.js?v=20261003.95";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
 // Berhenti otomatis: dua detik setelah nada terakhir, atau jumlah birama tetap.
 const AUTO_STOP_IDLE_MS = 2000;
 const AUTO_STOP_BARS = Object.freeze([2, 4, 8]);
+// Alur Ide: (1) Rekam, (2) Dengar & kembangkan, (3) Pakai atau simpan.
+const STEPS_DONE = Object.freeze({
+  empty: [],
+  record: ["record"],
+  develop: ["record"],
+  use: ["record", "develop"]
+});
+const SAMPLE_TAKE = Object.freeze([[60, 0], [64, 1], [67, 2], [64, 3]]);
+const TOAST_MS = 6000;
 
 const NOTE_NAMES = Object.freeze(["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]);
 
@@ -102,7 +111,7 @@ export function previewChunks(notes, limit = PREVIEW_LIMIT) {
   return chunks;
 }
 
-export function createIdeasView({ root, commands, translate, getPlayer, storage, autoStopIdleMs = AUTO_STOP_IDLE_MS, autoStopBarFactor = 1 } = {}) {
+export function createIdeasView({ root, commands, translate, getPlayer, storage, onOpenEdit = null, autoStopIdleMs = AUTO_STOP_IDLE_MS, autoStopBarFactor = 1 } = {}) {
   const state = {
     octave: KEYBOARD_DEFAULT_OCTAVE,
     recording: false,
@@ -124,6 +133,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     multiNote: false,
     audioError: false,
     autoStop: true,
+    toast: false,
     autoStopBars: 0,
     autoplayAfterStop: true,
     compensation: readRecordingPreferences(storage)
@@ -132,6 +142,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
   let onChange = () => {};
   let compareToken = 0;
   let autoStopTimer = null;
+  let toastTimer = null;
 
   function audio() {
     return getPlayer?.() ?? null;
@@ -223,6 +234,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     if (status) status.textContent = statusText();
     renderKeyState();
     renderAudioState();
+    renderFlow();
   }
 
   function renderKeyState() {
@@ -352,6 +364,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
       renderLive();
       return false;
     }
+    revealKeyboard();
     scheduleAutoStop();
     emit();
     return true;
@@ -412,7 +425,14 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
    * Berhenti otomatis: dua detik setelah nada terakhir bila sudah ada nada,
    * atau setelah sejumlah birama sejak rekaman dimulai.
    */
-  function scheduleAutoStop() {
+  // Keyboard harus terlihat penuh saat merekam: strip langkah dan spanduk menambah
+// tinggi, dan tuts yang tertutup dock bawah tidak bisa dipukul.
+function revealKeyboard() {
+  if (typeof root?.querySelector !== "function") return;
+  root.querySelector('[data-entity="ideas-keyboard"]')?.scrollIntoView?.({ block: "end" });
+}
+
+function scheduleAutoStop() {
     cancelAutoStop();
     if (!state.autoStop || state.recording !== true) return;
     const notes = state.events.length;
@@ -929,6 +949,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     row.dataset.entity = "ideas-take";
     row.dataset.takeId = take.id;
     row.dataset.noteCount = String(take.noteCount);
+    row.dataset.short = String(take.noteCount < 3);
     const title = document.createElement("strong");
     title.textContent = translate("ideasTakeTitle", { count: take.noteCount });
     const meta = document.createElement("span");
@@ -938,14 +959,96 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     actions.className = "ideas-take-actions";
     actions.append(
       button("ideasPlay", "ideas-play", () => playTake(take)),
+      // Lanjutkan jadi tindakan utama; sisanya tetap ada tapi sekunder.
+      button("ideasContinue", "ideas-continue", () => developContinuation(take), { role: "primary" }),
       button("ideasDevelop", "ideas-develop", () => developVariations(take)),
-      button("ideasContinue", "ideas-continue", () => developContinuation(take)),
-      button("ideasUse", "ideas-use", () => commitTake(take)),
+      button("ideasUse", "ideas-use", () => useTake(take)),
       button("ideasSaveBoard", "ideas-take-save", () => saveToBoard(take.notes, "take")),
       button("ideasDiscard", "ideas-discard", () => discardTake(take))
     );
-    row.append(title, meta, actions);
+    const help = document.createElement("p");
+    help.className = "ideas-take-help";
+    help.dataset.entity = "ideas-take-help";
+    help.textContent = take.noteCount < 3
+      ? translate("ideasShortTakeHelp")
+      : translate("ideasContinueHelp");
+    row.append(title, meta, actions, help);
     return row;
+  }
+
+  /** Langkah aktif mengikuti keadaan: kosong, merekam, ada take, ada kandidat. */
+  function flowStep() {
+    if (state.recording) return "record";
+    if (candidates().length > 0 || state.developed) return "use";
+    if (state.takes.length > 0) return "develop";
+    return "empty";
+  }
+
+  function renderFlow() {
+    if (typeof root?.querySelector !== "function") return;
+    const step = flowStep();
+    const steps = root.querySelector('[data-entity="ideas-steps"]');
+    if (steps) {
+      steps.dataset.step = step;
+      for (const item of steps.querySelectorAll('[data-entity="ideas-step"]')) {
+        item.dataset.active = String(item.dataset.step === (step === "empty" ? "record" : step));
+        item.dataset.done = String(STEPS_DONE[step]?.includes(item.dataset.step) ?? false);
+      }
+    }
+    const empty = root.querySelector('[data-entity="ideas-empty"]');
+    if (empty) {
+      empty.dataset.open = String(state.takes.length === 0 && step === "empty");
+      empty.hidden = state.takes.length > 0;
+    }
+    const hint = root.querySelector('[data-entity="ideas-empty-hint"]');
+    if (hint) hint.hidden = state.takes.length > 0;
+  }
+
+  /** Take contoh C-E-G-E supaya pengguna baru melihat alur tanpa merekam. */
+  function loadSampleTake() {
+    const notes = SAMPLE_TAKE.map(([pitch, index]) => ({
+      pitch,
+      startTick: index * PPQ,
+      durationTicks: PPQ
+    }));
+    const take = createTake({
+      id: `take-sample-${song().id}`,
+      notes,
+      quantize: "off",
+      tempo: song().timing.tempo,
+      key: song().key
+    });
+    state.takes = [take, ...state.takes.filter((item) => item.id !== take.id)].slice(0, TAKE_LIMIT);
+    emit();
+    playTake(take);
+    return take;
+  }
+
+  /** Pakai take: toast dengan tombol Buka di Edit, Undo tetap satu langkah. */
+  function useTake(take) {
+    const result = commitTake(take);
+    if (!result) return null;
+    showToast();
+    return result;
+  }
+
+  function showToast() {
+    state.toast = true;
+    renderToast();
+    if (toastTimer !== null) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastTimer = null;
+      state.toast = false;
+      renderToast();
+    }, TOAST_MS);
+  }
+
+  function renderToast() {
+    if (typeof root?.querySelector !== "function") return;
+    const toast = root.querySelector('[data-entity="ideas-toast"]');
+    if (!toast) return;
+    toast.hidden = !state.toast;
+    toast.dataset.state = state.toast ? "visible" : "hidden";
   }
 
   function renderKeyboard() {
@@ -1096,6 +1199,8 @@ renderKeyboard();
       list.replaceChildren(...state.takes.map(renderTakeRow));
       list.dataset.count = String(state.takes.length);
     }
+    renderFlow();
+    renderToast();
     renderDeveloped();
     renderBoard();
   }
@@ -1177,6 +1282,8 @@ renderKeyboard();
       if (action === "ideas-compensation-less") adjustCompensation(-LATENCY_STEP_MS);
       if (action === "ideas-compensation-more") adjustCompensation(LATENCY_STEP_MS);
       if (action === "ideas-compensation-auto") resetCompensation();
+      if (action === "ideas-try-sample") loadSampleTake();
+      if (action === "ideas-toast-open") onOpenEdit?.();
     });
   }
 
@@ -1202,6 +1309,8 @@ if (typeof matchMedia === "function") {
     audioReady,
     suspend,
     commitTake,
+    useTake,
+    loadSampleTake,
     developTake,
     developVariations,
     developContinuation,
