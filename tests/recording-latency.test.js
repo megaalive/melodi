@@ -142,20 +142,35 @@ test("nada yang ditekan tepat pada klik terekam pada tick 0 setelah kompensasi",
     "durasi memakai selisih waktu yang sama, jadi tidak terpengaruh latensi");
 });
 
-test("tanpa kompensasi nada yang ditekan telat tetap bergeser mundur", async () => {
+test("tanpa kompensasi nada yang ditekan telat bergeser mundur hanya bila jeda tidak dipangkas", async () => {
   const context = fakeContext({ outputLatency: 0.25 });
   const { view, storage } = makeView(context);
   // Pengguna mematikan kompensasi otomatis dan mengaturnya ke 0 ms.
   view.adjustCompensation(-LATENCY_STEP_MS * 100);
   assert.deepEqual(readRecordingPreferences(storage), { latencyMs: 0 });
+  view.setCountIn(true);
+  await view.startRecording();
+  context.advance(2 + 0.25);
+  view.noteOn(60);
+  context.advance(0.5);
+  view.noteOff();
+  const take = view.stopRecording();
+  // Hitung masuk hidup: jeda dipangkas ke kelipatan birama, jadi selisih 0,25
+  // detik dari baris masuk masih terlihat.
+  assert.equal(take.notes[0].startTick, Math.round(0.25 / secondsPerTick));
+});
+
+test("tanpa kompensasi dan tanpa hitung masuk, jeda awal dipangkas ke tick 0", async () => {
+  const context = fakeContext({ outputLatency: 0.25 });
+  const { view, storage } = makeView(context);
+  view.adjustCompensation(-LATENCY_STEP_MS * 100);
   await view.startRecording();
   context.advance(0.25);
   view.noteOn(60);
   context.advance(0.5);
   view.noteOff();
   const take = view.stopRecording();
-  assert.ok(take.notes[0].startTick > 0, "tanpa kompensasi nada tertunda oleh latensi");
-  assert.equal(take.notes[0].startTick, Math.round(0.25 / secondsPerTick));
+  assert.equal(take.notes[0].startTick, 0, "jeda awal dipangkas, jadi latensi tidak terlihat sebagai tick kosong");
 });
 
 test("kompensasi manual mengikuti tombol -/+ dan tombol Otomatis", async () => {

@@ -1,4 +1,4 @@
-import { cloneData } from "./model.js?v=20261003.93";
+import { cloneData } from "./model.js?v=20261003.94";
 import { getActiveSyllableId } from "./lyrics.js";
 
 const AVAILABLE_ACTIONS = Object.freeze([

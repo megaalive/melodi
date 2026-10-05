@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Fondasi songwriting Melodi.">
-    <meta name="melodi-build" content="20261003.93">
+    <meta name="melodi-build" content="20261003.94">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.93">
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.94">
     <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.74"></script>
-    <script type="module" src="./src/app.js?v=20261003.93"></script>
+    <script type="module" src="./src/app.js?v=20261003.94"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -182,6 +182,16 @@
               <button type="button" id="ideas-record" class="ideas-record" data-action="ideas-record" data-copy="ideasRecord" aria-pressed="false"></button>
               <p class="ideas-audio-chip" data-entity="ideas-audio-state" data-state="pending" role="status" aria-live="polite" data-copy="ideasAudioTap"></p>
               <label class="ideas-toggle"><input type="checkbox" data-action="ideas-count-in" checked><span data-copy="ideasCountInLabel"></span></label>
+              <label class="ideas-toggle"><input type="checkbox" data-action="ideas-auto-stop" checked><span data-copy="ideasAutoStopLabel"></span></label>
+              <label class="ideas-field"><span data-copy="ideasAutoStopBarsLabel"></span>
+                <select data-action="ideas-auto-stop-bars">
+                  <option value="0" data-copy="ideasAutoStopBarsFree"></option>
+                  <option value="2">2</option>
+                  <option value="4">4</option>
+                  <option value="8">8</option>
+                </select>
+              </label>
+              <p class="ideas-record-banner" data-entity="ideas-record-banner" role="status" aria-live="polite" hidden></p>
               <label class="ideas-field"><span data-copy="ideasQuantizeLabel"></span>
                 <select data-action="ideas-quantize">
                   <option value="off" data-copy="ideasQuantizeOff"></option>

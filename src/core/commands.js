@@ -1,17 +1,17 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.93";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.93";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.94";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.94";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261003.93";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.93";
+import { createAgentSnapshot } from "./snapshot.js?v=20261003.94";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.94";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
-import { ideaDevelop } from "../generation/ideas.js?v=20261003.93";
+import { ideaDevelop } from "../generation/ideas.js?v=20261003.94";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261003.93";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.93";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.93";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.93";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261003.93";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261003.94";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.94";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.94";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.94";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261003.94";
 import { syllabifyLyrics } from "./lyrics.js";
 
 function fail(code) {
