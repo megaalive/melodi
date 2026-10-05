@@ -791,6 +791,10 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-meter,.ideas-status{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
 .ideas-status{color:var(--text);min-width:9ch;}
 .ideas-readout{font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent-strong);}
+.ideas-audio-chip{margin:0;display:inline-flex;align-items:center;gap:var(--space-1);padding:0.15rem 0.5rem;border:1px solid var(--border);border-radius:999px;font-size:var(--text-xs);color:var(--text-muted);white-space:nowrap;}
+.ideas-audio-chip::before{content:"";width:0.5rem;height:0.5rem;border-radius:50%;background:var(--text-muted);}
+.ideas-audio-chip[data-state="ready"]{color:var(--text);}
+.ideas-audio-chip[data-state="ready"]::before{background:var(--ember);}
 .ideas-board{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-3);align-items:start;}
 .ideas-keyboard-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-2);}
 .ideas-octave-shift{display:flex;gap:var(--space-1);}

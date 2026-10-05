@@ -25,21 +25,38 @@ function memoryStorage(seed = {}) {
   };
 }
 
-function fakeContext({ outputLatency = 0, baseLatency = undefined } = {}) {
+function fakeContext({ outputLatency = 0, baseLatency = undefined, resumeDelayMs = 0 } = {}) {
   let clock = 10;
+  let audioState = resumeDelayMs > 0 ? "suspended" : "running";
   const clicks = [];
   const voices = [];
   const previews = [];
+  const primes = [];
   return {
     clicks,
     voices,
     previews,
+    primes,
+    audioState() { return audioState; },
     advance(seconds) { clock += seconds; },
     setClock(seconds) { clock = seconds; },
     player: {
       now: () => clock,
       outputLatency: () => outputLatency,
-      click: (atTime, accent) => clicks.push({ atTime, accent }),
+      contextState: () => audioState,
+      // Context resume butuh beberapa milidetik, sama seperti browser sungguhan.
+      prime: async () => {
+        primes.push(clock);
+        if (audioState === "running") return true;
+        if (resumeDelayMs > 0) await new Promise(resolve => setTimeout(resolve, resumeDelayMs));
+        audioState = "running";
+        return true;
+      },
+      click: (atTime, accent) => {
+        if (audioState !== "running") return false;
+        clicks.push({ atTime, accent });
+        return true;
+      },
       noteOn: pitch => { voices.push({ pitch, at: clock, on: true }); return true; },
       noteOff: pitch => { voices.push({ pitch, at: clock, on: false }); return true; },
       noteOffAll: () => {},
@@ -107,10 +124,10 @@ test("preferensi kompensasi dinormalisasi, dibaca, dan ditulis tanpa melempar", 
   assert.equal(writeRecordingPreferences(null, { latencyMs: 10 }), false);
 });
 
-test("nada yang ditekan tepat pada klik terekam pada tick 0 setelah kompensasi", () => {
+test("nada yang ditekan tepat pada klik terekam pada tick 0 setelah kompensasi", async () => {
   const context = fakeContext({ outputLatency: 0.25 });
   const { view } = makeView(context);
-  view.startRecording();
+  await view.startRecording();
   const startedAt = context.player.now();
   // Pengguna menekan tepat saat klik tick 0 terdengar, yaitu latency kemudian.
   context.advance(0.25);
@@ -125,13 +142,13 @@ test("nada yang ditekan tepat pada klik terekam pada tick 0 setelah kompensasi",
     "durasi memakai selisih waktu yang sama, jadi tidak terpengaruh latensi");
 });
 
-test("tanpa kompensasi nada yang ditekan telat tetap bergeser mundur", () => {
+test("tanpa kompensasi nada yang ditekan telat tetap bergeser mundur", async () => {
   const context = fakeContext({ outputLatency: 0.25 });
   const { view, storage } = makeView(context);
   // Pengguna mematikan kompensasi otomatis dan mengaturnya ke 0 ms.
   view.adjustCompensation(-LATENCY_STEP_MS * 100);
   assert.deepEqual(readRecordingPreferences(storage), { latencyMs: 0 });
-  view.startRecording();
+  await view.startRecording();
   context.advance(0.25);
   view.noteOn(60);
   context.advance(0.5);
@@ -141,7 +158,7 @@ test("tanpa kompensasi nada yang ditekan telat tetap bergeser mundur", () => {
   assert.equal(take.notes[0].startTick, Math.round(0.25 / secondsPerTick));
 });
 
-test("kompensasi manual mengikuti tombol -/+ dan tombol Otomatis", () => {
+test("kompensasi manual mengikuti tombol -/+ dan tombol Otomatis", async () => {
   const context = fakeContext({ outputLatency: 0.25 });
   const { view, storage } = makeView(context);
   assert.equal(view.compensationSeconds(), 0.25);
@@ -156,11 +173,11 @@ test("kompensasi manual mengikuti tombol -/+ dan tombol Otomatis", () => {
   assert.deepEqual(readRecordingPreferences(storage), { latencyMs: null });
 });
 
-test("klik metronom tetap dijadwalkan dengan jam audio saat kompensasi aktif", () => {
+test("klik metronom tetap dijadwalkan dengan jam audio saat kompensasi aktif", async () => {
   const context = fakeContext({ outputLatency: 0.2 });
   const { view } = makeView(context);
   view.setCountIn(true);
-  view.startRecording();
+  await view.startRecording();
   assert.equal(view.state.recording, "countin");
   const bar = PPQ * 4;
   assert.equal(context.clicks.length, bar / PPQ);
@@ -175,10 +192,10 @@ test("klik metronom tetap dijadwalkan dengan jam audio saat kompensasi aktif", (
   assert.equal(view.state.recording, false);
 });
 
-test("take tetap monofonik saat dua tuts ditekan bersamaan", () => {
+test("take tetap monofonik saat dua tuts ditekan bersamaan", async () => {
   const context = fakeContext({ outputLatency: 0 });
   const { view } = makeView(context);
-  view.startRecording();
+  await view.startRecording();
   view.noteOn(60);
   context.advance(0.2);
   view.noteOn(64);
@@ -190,16 +207,16 @@ test("take tetap monofonik saat dua tuts ditekan bersamaan", () => {
   assert.deepEqual(take.notes.map(note => note.pitch), [60, 64]);
   assert.ok(take.notes[1].startTick >= take.notes[0].startTick + take.notes[0].durationTicks,
     "take monofonik tidak boleh menindih");
-  view.startRecording();
+  await view.startRecording();
   assert.equal(view.state.multiNote, false, "catatan multi-nada dibersihkan saat rekaman berikutnya dimulai");
   view.stopRecording();
 });
 
-test("kompensasi dijepit 0 sampai 0,25 detik walau context melaporkan lebih besar", () => {
+test("kompensasi dijepit 0 sampai 0,25 detik walau context melaporkan lebih besar", async () => {
   const context = fakeContext({ outputLatency: 1.4 });
   const { view } = makeView(context);
   assert.equal(view.compensationSeconds(), 0.25);
-  view.startRecording();
+  await view.startRecording();
   context.advance(0.25);
   view.noteOn(67);
   context.advance(0.25);

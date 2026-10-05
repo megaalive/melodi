@@ -1,4 +1,4 @@
-import { tickToX } from "./piano-roll.js?v=20261003.92";
+import { tickToX } from "./piano-roll.js?v=20261003.93";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 const MODES = new Set(["bend", "volume", "pan", "vibrato"]);
