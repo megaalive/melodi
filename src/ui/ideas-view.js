@@ -78,6 +78,11 @@ export function candidateKindLabel(kind) {
   if (kind === "inversion") return "ideasVariationInversion";
   if (kind === "sequence") return "ideasVariationSequence";
   if (kind === "rhythm") return "ideasVariationRhythm";
+  if (kind === "skeleton") return "ideasVariationSkeleton";
+  if (kind === "arpeggio") return "ideasVariationArpeggio";
+  if (kind === "reverse") return "ideasVariationReverse";
+  if (kind === "augment") return "ideasVariationAugment";
+  if (kind === "octave") return "ideasVariationOctave";
   return "ideasVariationRecorded";
 }
 
@@ -122,6 +127,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     ideas: null,
     savedIdeaId: null,
     developed: null,
+    intensity: "medium",
     activeCandidateId: null,
     compare: { a: null, b: null },
     comparePlaying: false,
@@ -532,6 +538,23 @@ function scheduleAutoStop() {
     emit();
   }
 
+  function setIntensity(value, takeId = null) {
+    if (!["gentle", "medium", "bold"].includes(value)) return false;
+    state.intensity = value;
+    // Bila kartu take itu sedang dikembangkan, kembangkan ulang dengan
+    // intensitas baru supaya hasilnya langsung terdengar.
+    const developed = state.developed;
+    if (takeId && developed?.takeId === takeId) {
+      const take = state.takes.find((item) => item.id === takeId);
+      if (take) {
+        developTake(take, { kind: developed.kind, seed: developed.seed, intensity: value });
+        return true;
+      }
+    }
+    emit();
+    return true;
+  }
+
   function setPaletteOpen(open) {
     state.paletteOpen = Boolean(open);
   }
@@ -586,9 +609,9 @@ function scheduleAutoStop() {
    * dari luar; tanpa seed, seed diturunkan dari isi take sehingga hasilnya
    * selalu sama untuk take yang sama.
    */
-  function developTake(take, { kind = "variation", seed, bars, target } = {}) {
+  function developTake(take, { kind = "variation", seed, bars, target, intensity } = {}) {
     if (!take) return null;
-    const result = commands.ideaDevelop({ kind, notes: take.notes, seed, bars, target });
+    const result = commands.ideaDevelop({ kind, notes: take.notes, seed, bars, target, intensity: intensity ?? state.intensity });
     resetDevelopment();
     state.developed = {
       takeId: take.id,
@@ -981,7 +1004,26 @@ function scheduleAutoStop() {
     help.textContent = take.noteCount < 3
       ? translate("ideasShortTakeHelp")
       : translate("ideasContinueHelp");
-    row.append(title, meta, actions, help);
+    // Intensitas berlaku untuk semua jenis variasi lama dan baru.
+    const intensityGroup = document.createElement("div");
+    intensityGroup.className = "ideas-intensity";
+    intensityGroup.setAttribute("role", "group");
+    intensityGroup.setAttribute("aria-label", translate("ideasIntensityLabel"));
+    intensityGroup.dataset.entity = "ideas-intensity";
+    for (const value of ["gentle", "medium", "bold"]) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "secondary";
+      option.dataset.action = "ideas-intensity";
+      option.dataset.value = value;
+      option.dataset.takeId = take.id;
+      option.setAttribute("aria-pressed", String(state.intensity === value));
+      option.textContent = translate(
+        value === "gentle" ? "ideasIntensityGentle" : value === "bold" ? "ideasIntensityBold" : "ideasIntensityMedium"
+      );
+      intensityGroup.append(option);
+    }
+    row.append(title, meta, actions, intensityGroup, help);
     return row;
   }
 
@@ -1294,10 +1336,14 @@ renderKeyboard();
       if (action === "ideas-auto-stop-bars") setAutoStopBars(event.target.value);
     });
     root.addEventListener("click", event => {
-      const action = event.target.closest?.("[data-action]")?.dataset.action;
+      const target = event.target.closest?.("[data-action]");
+      const action = target?.dataset.action;
       if (action === "ideas-record") {
         if (state.recording) stopRecording();
         else void startRecording();
+      }
+      if (action === "ideas-intensity" && target?.dataset.value) {
+        setIntensity(target.dataset.value, target.dataset.takeId ?? null);
       }
       if (action === "ideas-octave-down") shiftOctave(-1);
       if (action === "ideas-octave-up") shiftOctave(1);
@@ -1365,6 +1411,7 @@ if (typeof matchMedia === "function") {
     setCountIn,
     setAutoStop,
     setAutoStopBars,
+    setIntensity,
     setPaletteOpen,
     keyboardActive,
     keyboardRows: () => keyboardRows(keyboardBaseFor(state.octave)),

@@ -852,6 +852,10 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-take-actions{display:flex;flex-wrap:wrap;gap:var(--space-1);}
 .ideas-take-actions button{flex:1 1 auto;}
 .ideas-take-actions button[data-role="primary"]{border-color:var(--accent-strong);background:var(--accent-soft);color:var(--text);font-weight:600;}
+/* Kontrol intensitas: segmented tiga pilihan, 44px di HP via token global. */
+.ideas-intensity{display:flex;gap:var(--space-1);}
+.ideas-intensity button{flex:1 1 auto;min-height:var(--control-h);}
+.ideas-intensity button[aria-pressed="true"]{border-color:var(--accent-strong);background:var(--accent-soft);color:var(--accent-strong);}
 .ideas-take-help{margin:0;font-size:var(--text-xs);color:var(--text-muted);display:none;}
 .ideas-take:hover .ideas-take-help,.ideas-take:focus-within .ideas-take-help,.ideas-take[data-short="true"] .ideas-take-help{display:block;}
 .ideas-variations{display:grid;gap:var(--space-2);}
