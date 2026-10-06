@@ -27,9 +27,10 @@
 }
 @media (pointer:coarse){
   :root{--control-h:44px;}
-  /* Keyboard tangkap ide butuh tinggi tombol hitam lebih pendek supaya
-     tombol putih tetap terbaca dan tidak saling menutupi. */
-  .studio .app-shell .ideas-keyboard .ideas-key-black{min-height:2rem !important;}
+  /* Keyboard tangkap ide: tombol hitam 60% tinggi tuts putih via token,
+     tuts putih tetap terbaca dan tidak saling menutupi. */
+  .studio .app-shell .ideas-keyboard{--key-touch-min:var(--control-h);}
+  .studio .app-shell .ideas-keyboard .ideas-key-black{min-height:var(--control-h);height:60%;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}
   .studio :is(input:not([type="range"]), select){min-height:var(--control-h) !important;font-size:var(--text-lg) !important;}
   .roll-note, .roll-move-hit, .roll-resize-handle{touch-action:none;}
@@ -384,19 +385,24 @@
 }
 @media (width <= 46rem){
   /* I1 Ide: keyboard dua oktaf digeser horizontal supaya target sentuh setiap
-     tuts tetap >= 44px pada 390px; tombol hitam ikut ter-scroll karena
-     posisinya relatif terhadap baris tombol putih. */
+     tuts tetap >= 44px pada 390px; lapisan hitam di dalam track yang sama
+     sehingga ikut ter-scroll dengan posisi dari indeks tuts putih. */
   .ideas-board{grid-template-columns:minmax(0,1fr);}
   .ideas-strip{gap:var(--space-2);}
   .ideas-takes{grid-template-columns:minmax(0,1fr);}
   .ideas-takes-panel{grid-template-columns:minmax(0,1fr);}
+  /* C2c HP: kartu take/hasil di atas keyboard. */
+  .ideas-board{display:flex;flex-direction:column;}
+  .ideas-takes-panel{order:-1;}
+  .ideas-keyboard-wrap{order:2;}
   .ideas-keyboard{overflow-x:auto;overscroll-behavior-x:contain;}
-  .ideas-keyboard-white{min-width:calc(var(--key-touch-min) * 14);}
+  .ideas-keyboard-track{min-width:calc(var(--key-touch-min) * 14);}
   .app-shell .ideas-key{min-width:var(--key-touch-min);flex:0 0 auto;}
+  .app-shell .ideas-key-black{min-width:0;width:calc(var(--key-touch-min) * 0.6);flex:0 0 auto;}
   .app-shell .ideas-key-white{flex:1 0 var(--key-touch-min);}
-  .app-shell .ideas-key-black{width:calc(var(--key-touch-min) * 0.72);}
-  /* Label nada pada tombol hitam disembunyikan di layar sentuh: tingginya cuma
-     44px dan teksnya 9px, jadi tidak terbaca dan hanya memenuhi tombol. */
+  .app-shell .ideas-key-black{width:calc(var(--key-touch-min) * 0.6);}
+  /* Label nada pada tombol hitam disembunyikan di layar sentuh: tingginya
+     sebaris token dan tidak terbaca, jadi hanya memenuhi tombol. */
   .ideas-keyboard[data-labels="none"] .ideas-key-black .ideas-key-note{display:none;}
   :root{--key-touch-min:44px;--control-h:44px;}
   .studio :is(button, summary, [role="button"]):not(.guitar-layout-group button){min-height:var(--control-h) !important;font-size:var(--text-md) !important;}

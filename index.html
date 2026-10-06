@@ -7,9 +7,9 @@
     <meta name="melodi-build" content="20261003.97">
     <title>Melodi</title>
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="./styles/app.css?v=20261003.97">
+    <link rel="stylesheet" href="./styles/app.css?v=20261003.98">
     <script defer src="./vendor/abcjs/abcjs-basic-min.js?v=20261003.74"></script>
-    <script type="module" src="./src/app.js?v=20261003.97"></script>
+    <script type="module" src="./src/app.js?v=20261003.98"></script>
   </head>
   <body class="studio">
     <header class="page-header">
@@ -196,37 +196,42 @@
               <p class="ideas-audio-chip" data-entity="ideas-audio-state" data-state="pending" role="status" aria-live="polite" data-copy="ideasAudioTap"></p>
               <label class="ideas-toggle"><input type="checkbox" data-action="ideas-count-in" checked><span data-copy="ideasCountInLabel"></span></label>
               <label class="ideas-toggle"><input type="checkbox" data-action="ideas-auto-stop" checked><span data-copy="ideasAutoStopLabel"></span></label>
-              <label class="ideas-field"><span data-copy="ideasAutoStopBarsLabel"></span>
-                <select data-action="ideas-auto-stop-bars">
-                  <option value="0" data-copy="ideasAutoStopBarsFree"></option>
-                  <option value="2">2</option>
-                  <option value="4">4</option>
-                  <option value="8">8</option>
-                </select>
-              </label>
+              <details class="ideas-advanced" data-entity="ideas-advanced">
+                <summary><span data-copy="ideasAdvancedLabel"></span> <span class="ideas-advanced-summary" data-entity="ideas-advanced-summary"></span></summary>
+                <div class="ideas-advanced-body">
+                  <label class="ideas-field"><span data-copy="ideasAutoStopBarsLabel"></span>
+                    <select data-action="ideas-auto-stop-bars">
+                      <option value="0" data-copy="ideasAutoStopBarsFree"></option>
+                      <option value="2">2</option>
+                      <option value="4">4</option>
+                      <option value="8">8</option>
+                    </select>
+                  </label>
+                  <label class="ideas-field" data-aria-copy="ideasQuantizeHint"><span data-copy="ideasQuantizeLabel"></span>
+                    <select data-action="ideas-quantize" data-aria-copy="ideasQuantizeHint">
+                      <option value="off" data-copy="ideasQuantizeOff"></option>
+                      <option value="light" data-copy="ideasQuantizeLight"></option>
+                      <option value="strict" data-copy="ideasQuantizeStrict"></option>
+                    </select>
+                  </label>
+                  <label class="ideas-field" data-aria-copy="ideasSnapHint"><span data-copy="ideasSnapLabel"></span>
+                    <select data-action="ideas-snap" data-aria-copy="ideasSnapHint">
+                      <option value="1/8" data-copy="ideasSnapEighth"></option>
+                      <option value="1/16" data-copy="ideasSnapSixteenth"></option>
+                    </select>
+                  </label>
+                  <div class="ideas-latency" role="group" data-aria-copy="ideasCompensationHint">
+                    <span data-copy="ideasCompensationLabel"></span>
+                    <button type="button" class="secondary" data-action="ideas-compensation-less" data-copy="ideasKeyboardOctaveDown" data-aria-copy="ideasCompensationLess"></button>
+                    <output data-entity="ideas-compensation"></output>
+                    <button type="button" class="secondary" data-action="ideas-compensation-more" data-copy="ideasKeyboardOctaveUp" data-aria-copy="ideasCompensationMore"></button>
+                    <button type="button" class="secondary" data-action="ideas-compensation-auto" data-copy="ideasCompensationAuto"></button>
+                  </div>
+                </div>
+              </details>
               <p class="ideas-record-banner" data-entity="ideas-record-banner" role="status" aria-live="polite" hidden></p>
-              <label class="ideas-field"><span data-copy="ideasQuantizeLabel"></span>
-                <select data-action="ideas-quantize">
-                  <option value="off" data-copy="ideasQuantizeOff"></option>
-                  <option value="light" data-copy="ideasQuantizeLight"></option>
-                  <option value="strict" data-copy="ideasQuantizeStrict"></option>
-                </select>
-              </label>
-              <label class="ideas-field"><span data-copy="ideasSnapLabel"></span>
-                <select data-action="ideas-snap">
-                  <option value="1/8" data-copy="ideasSnapEighth"></option>
-                  <option value="1/16" data-copy="ideasSnapSixteenth"></option>
-                </select>
-              </label>
               <p class="ideas-meter"><span data-copy="ideasTempoLabel"></span> <output data-entity="ideas-tempo"></output> <span class="muted">BPM</span></p>
               <p class="ideas-status" data-entity="ideas-status" role="status" aria-live="polite"></p>
-              <div class="ideas-latency" role="group" data-aria-copy="ideasCompensationLabel">
-                <span data-copy="ideasCompensationLabel"></span>
-                <button type="button" class="secondary" data-action="ideas-compensation-less" data-copy="ideasKeyboardOctaveDown" data-aria-copy="ideasCompensationLess"></button>
-                <output data-entity="ideas-compensation"></output>
-                <button type="button" class="secondary" data-action="ideas-compensation-more" data-copy="ideasKeyboardOctaveUp" data-aria-copy="ideasCompensationMore"></button>
-                <button type="button" class="secondary" data-action="ideas-compensation-auto" data-copy="ideasCompensationAuto"></button>
-              </div>
               <button type="button" class="secondary" data-action="undo" data-copy="undoButton" aria-label="Batalkan perubahan terakhir" title="Batalkan perubahan terakhir" data-focus-key="undo-ideas"></button>
             </div>
             <p class="ideas-hint" data-entity="ideas-empty-hint" data-copy="ideasEmptyHint"></p>
@@ -236,14 +241,16 @@
               <button type="button" class="secondary" data-action="ideas-toast-open" data-copy="ideasToastOpenEdit"></button>
             </div>
             <div class="ideas-board">
-              <div class="ideas-keyboard-head">
-                <p class="ideas-meter"><span data-copy="ideasKeyboardLabel"></span> <output data-entity="ideas-octave"></output></p>
-                <div class="ideas-octave-shift" role="group" data-aria-copy="ideasKeyboardLabel">
-                  <button type="button" class="secondary" data-action="ideas-octave-down" data-copy="ideasKeyboardOctaveDown" data-aria-copy="ideasKeyboardOctaveDown"></button>
-                  <button type="button" class="secondary" data-action="ideas-octave-up" data-copy="ideasKeyboardOctaveUp" data-aria-copy="ideasKeyboardOctaveUp"></button>
+              <div class="ideas-keyboard-wrap">
+                <div class="ideas-keyboard-head">
+                  <p class="ideas-meter"><span data-copy="ideasKeyboardLabel"></span> <output data-entity="ideas-octave"></output></p>
+                  <div class="ideas-octave-shift" role="group" data-aria-copy="ideasKeyboardLabel">
+                    <button type="button" class="secondary" data-action="ideas-octave-down" data-copy="ideasKeyboardOctaveDown" data-aria-copy="ideasKeyboardOctaveDown"></button>
+                    <button type="button" class="secondary" data-action="ideas-octave-up" data-copy="ideasKeyboardOctaveUp" data-aria-copy="ideasKeyboardOctaveUp"></button>
+                  </div>
                 </div>
+                <div class="ideas-keyboard" data-entity="ideas-keyboard" data-aria-copy="ideasKeyboardLabel" tabindex="0" role="group"></div>
               </div>
-              <div class="ideas-keyboard" data-entity="ideas-keyboard" data-aria-copy="ideasKeyboardLabel" tabindex="0" role="group"></div>
               <aside class="ideas-takes-panel" data-aria-copy="ideasTakesHeading">
                 <div class="ideas-results-main">
                   <h3 data-copy="ideasTakesHeading"></h3>

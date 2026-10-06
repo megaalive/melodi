@@ -1,6 +1,6 @@
-import { MelodiError } from "../core/model.js?v=20261003.97";
-import { songBarTicks, canonicalSongEndTick } from "../core/timeline.js?v=20261003.97";
-import { deriveDiatonicTriads } from "./harmony.js?v=20261003.97";
+import { MelodiError } from "../core/model.js?v=20261003.98";
+import { songBarTicks, canonicalSongEndTick } from "../core/timeline.js?v=20261003.98";
+import { deriveDiatonicTriads } from "./harmony.js?v=20261003.98";
 
 export const HARMONY_PROGRESSION_PRESETS = Object.freeze(["pop", "jazz", "fifths", "ballad"]);
 

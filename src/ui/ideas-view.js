@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.97";
+import { PPQ } from "../core/model.js?v=20261003.98";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.97";
+} from "./ideas.js?v=20261003.98";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,7 +35,7 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.97";
+} from "../storage/recording-preferences.js?v=20261003.98";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
@@ -399,6 +399,15 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     state.takes = [take, ...state.takes.filter((item) => item.id !== take.id)].slice(0, TAKE_LIMIT);
     emit();
     if (state.autoplayAfterStop) playTake(take);
+    // Setelah berhenti merekam, gulir ke kartu take; hormati gerak yang dikurangi.
+    if (typeof root?.querySelector === "function" && typeof matchMedia !== "function") {
+      root.querySelector('[data-entity="ideas-takes"]')?.scrollIntoView?.({ block: "nearest" });
+    } else if (typeof root?.querySelector === "function") {
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      root.querySelector('[data-entity="ideas-takes"]')?.scrollIntoView?.(
+        reduced ? { block: "nearest" } : { block: "nearest", behavior: "smooth" }
+      );
+    }
     return take;
   }
 
@@ -1074,6 +1083,10 @@ function scheduleAutoStop() {
     label.className = "ideas-keyboard-label";
     const range = keyboardRangeFor(state.octave);
     label.textContent = `${noteName(range.low)}-${noteName(range.high)}`;
+    // Satu track gulir berisi lapisan putih dan hitam: lebar gulir 14 tuts
+    // putih penuh sehingga persen slot hitam selalu terhadap lebar gulir.
+    const track = document.createElement("div");
+    track.className = "ideas-keyboard-track";
     for (const entry of rows.white) {
       whiteRow.append(keyButton(entry.pitch, entry.hotkey, "ideas-key ideas-key-white"));
     }
@@ -1087,8 +1100,8 @@ function scheduleAutoStop() {
     const hint = document.createElement("p");
     hint.className = "ideas-keyboard-hint";
     hint.textContent = translate("ideasKeyboardHint");
-    whiteRow.append(blackRow);
-    board.replaceChildren(label, whiteRow, hint);
+    track.append(whiteRow, blackRow);
+    board.replaceChildren(label, track, hint);
   }
 
   function keyButton(pitch, hotkey, className) {
@@ -1172,6 +1185,15 @@ renderKeyboard();
     if (quantizeSelect && quantizeSelect.value !== state.quantize) quantizeSelect.value = state.quantize;
     const snapSelect = root.querySelector('[data-action="ideas-snap"]');
     if (snapSelect && snapSelect.value !== state.snap) snapSelect.value = state.snap;
+    const advancedSummary = root.querySelector('[data-entity="ideas-advanced-summary"]');
+    if (advancedSummary) {
+      const quantizeName = translate(quantizeLabelKey(state.quantize));
+      const snapName = state.snap === "1/16" ? translate("ideasSnapSixteenth") : translate("ideasSnapEighth");
+      const latencyName = state.compensation.latencyMs === null
+        ? translate("ideasCompensationAuto")
+        : `${state.compensation.latencyMs} ms`;
+      advancedSummary.textContent = `${quantizeName} · ${snapName} · ${latencyName}`;
+    }
     const countInToggle = root.querySelector('[data-action="ideas-count-in"]');
     if (countInToggle) countInToggle.checked = state.countIn;
     const compensationOut = root.querySelector('[data-entity="ideas-compensation"]');
