@@ -1410,7 +1410,7 @@ export function createCommands(initialSong, {
 // I2: satu command untuk kedua arah pengembangan ide. Keduanya hanya
     // membaca lagu sehingga hasilnya selalu bisa dibandingkan sebelum satu
     // Terima, dan tidak ada satu pun yang menyentuh anchor atau locked.
-    ideaDevelop({ kind = "variation", notes, count, seed, bars, target, intensity, chords } = {}) {
+    ideaDevelop({ kind = "variation", notes, count, seed, bars, target, intensity, chords, scope } = {}) {
       return cloneData(ideaDevelop({
         kind,
         notes,
@@ -1419,6 +1419,7 @@ export function createCommands(initialSong, {
         bars,
         target,
         intensity,
+        scope,
         chords: chords ?? song.chords ?? [],
         key: song.key,
         scale: song.scale,
@@ -1427,8 +1428,8 @@ export function createCommands(initialSong, {
       }));
     },
     // developTake tetap ada sebagai jalan pintas ke arah variasi.
-    developTake({ notes, count, seed, intensity } = {}) {
-      return commands.ideaDevelop({ kind: "variation", notes, count, seed, intensity });
+    developTake({ notes, count, seed, intensity, scope } = {}) {
+      return commands.ideaDevelop({ kind: "variation", notes, count, seed, intensity, scope });
     },
     commitTake({ notes, insertAtTick = null } = {}) {
       if (!Array.isArray(notes) || notes.length === 0) fail("invalid-note");

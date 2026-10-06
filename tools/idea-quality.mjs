@@ -187,6 +187,255 @@ export function developForQuality(take, { seed, bars, key = "C", scale = SCALE }
   return ideaDevelop({ kind: "continue", notes: take, seed, bars, key, scale, ...TIMING });
 }
 
+// ---------------------------------------------------------------------------
+// Metrik kualitas variasi (C3): enam take x seed x tiga intensitas, cakupan
+// "semua" supaya setiap jenis yang valid ikut terukur.
+// ---------------------------------------------------------------------------
+
+import { developVariations } from "../src/generation/ideas.js";
+
+export const VARIATION_QUALITY_TAKES = Object.freeze({
+  "legato 4 seperempat": [
+    { pitch: 72, startTick: 0, durationTicks: 480 },
+    { pitch: 76, startTick: 480, durationTicks: 480 },
+    { pitch: 79, startTick: 960, durationTicks: 480 },
+    { pitch: 76, startTick: 1440, durationTicks: 480 }
+  ],
+  "legato 8 stepwise": [
+    { pitch: 60, startTick: 0, durationTicks: 240 },
+    { pitch: 62, startTick: 240, durationTicks: 240 },
+    { pitch: 64, startTick: 480, durationTicks: 240 },
+    { pitch: 65, startTick: 720, durationTicks: 240 },
+    { pitch: 67, startTick: 960, durationTicks: 240 },
+    { pitch: 69, startTick: 1200, durationTicks: 240 },
+    { pitch: 71, startTick: 1440, durationTicks: 240 },
+    { pitch: 72, startTick: 1680, durationTicks: 240 }
+  ],
+  "empat nada dengan jeda": [
+    { pitch: 72, startTick: 0, durationTicks: 480 },
+    { pitch: 76, startTick: 960, durationTicks: 480 },
+    { pitch: 79, startTick: 1920, durationTicks: 480 },
+    { pitch: 76, startTick: 2880, durationTicks: 480 }
+  ],
+  "ritme campur": [
+    { pitch: 72, startTick: 0, durationTicks: 960 },
+    { pitch: 76, startTick: 960, durationTicks: 240 },
+    { pitch: 74, startTick: 1200, durationTicks: 240 },
+    { pitch: 72, startTick: 1440, durationTicks: 480 }
+  ],
+  "tengah C4-C5": [
+    { pitch: 60, startTick: 0, durationTicks: 480 },
+    { pitch: 64, startTick: 480, durationTicks: 480 },
+    { pitch: 67, startTick: 960, durationTicks: 480 },
+    { pitch: 72, startTick: 1440, durationTicks: 480 }
+  ],
+  "tiga nada pendek": [
+    { pitch: 67, startTick: 0, durationTicks: 480 },
+    { pitch: 72, startTick: 480, durationTicks: 480 },
+    { pitch: 69, startTick: 960, durationTicks: 480 }
+  ]
+});
+
+export const VARIATION_INTENSITIES = Object.freeze(["gentle", "medium", "bold"]);
+const VARIATION_BAR = 1920;
+const VARIATION_MIN_PITCH = 36;
+const VARIATION_MAX_PITCH = 96;
+
+function pitchClassOf(pitch) {
+  return ((pitch % 12) + 12) % 12;
+}
+
+function takeSpanOf(take) {
+  return take.at(-1).startTick + take.at(-1).durationTicks - take[0].startTick;
+}
+
+/** Ukur satu kandidat variasi terhadap take asalnya. */
+export function measureVariation(candidate, take) {
+  const notes = candidate.notes;
+  const sorted = [...notes].sort((left, right) => left.startTick - right.startTick);
+  let overlap = false;
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (sorted[index].startTick < sorted[index - 1].startTick + sorted[index - 1].durationTicks) overlap = true;
+  }
+  const scaleTones = scalePitches({ key: "C", scale: SCALE }, VARIATION_MIN_PITCH, VARIATION_MAX_PITCH);
+  const inScale = notes.every((note) => scaleTones.includes(note.pitch));
+  const leaps = [];
+  for (let index = 1; index < notes.length; index += 1) leaps.push(Math.abs(notes[index].pitch - notes[index - 1].pitch));
+  const leapShare = leaps.length === 0 ? 0 : leaps.filter((leap) => leap >= 3).length / leaps.length;
+  const rhythmSame = JSON.stringify(notes.map((note) => [note.startTick, note.durationTicks]))
+    === JSON.stringify(take.map((note) => [note.startTick, note.durationTicks]));
+  const pitchSame = JSON.stringify(notes.map((note) => note.pitch)) === JSON.stringify(take.map((note) => note.pitch));
+  const pitchClassSame = notes.length === take.length
+    && notes.every((note, index) => pitchClassOf(note.pitch) === pitchClassOf(take[index].pitch));
+  const span = notes.reduce((max, note) => Math.max(max, note.startTick + note.durationTicks), notes[0]?.startTick ?? 0)
+    - (notes[0]?.startTick ?? 0);
+  const contour = (list) => list.slice(1).map((note, index) => note.pitch - list[index].pitch);
+  return {
+    kind: candidate.kind,
+    noteCount: notes.length,
+    inScale,
+    overlap,
+    leapShare,
+    rhythmSame,
+    pitchSame,
+    pitchClassSame,
+    span,
+    spanRatio: span / Math.max(1, takeSpanOf(take)),
+    contourSame: JSON.stringify(contour(notes)) === JSON.stringify(contour(take)),
+    registerOutside: notes.filter((note, index) =>
+      (note.pitch < 48 || note.pitch > 84) && take[index] && take[index].pitch >= 48 && take[index].pitch <= 84).length
+  };
+}
+
+export function developVariationForQuality(take, { seed, intensity }) {
+  return developVariations({ notes: take, seed, key: "C", scale: SCALE, intensity, scope: "all" });
+}
+
+/** Kumpulkan metrik gabungan enam take x seed x tiga intensitas. */
+export function runVariationMetrics({ seeds = 20, intensities = VARIATION_INTENSITIES } = {}) {
+  const rows = [];
+  const durations = [];
+  const kindCounts = {};
+  for (const [label, take] of Object.entries(VARIATION_QUALITY_TAKES)) {
+    const takeHash = take.map((note) => `${note.pitch}:${note.startTick}:${note.durationTicks}`).join("|");
+    for (const intensity of intensities) {
+      for (let seed = 1; seed <= seeds; seed += 1) {
+        const started = performance.now();
+        const developed = developVariationForQuality(take, { seed, intensity });
+        durations.push(performance.now() - started);
+        const seen = new Set([takeHash]);
+        let duplicate = 0;
+        for (const candidate of developed.candidates) {
+          const hash = candidate.notes.map((note) => `${note.pitch}:${note.startTick}:${note.durationTicks}`).join("|");
+          if (hash === takeHash || seen.has(hash)) duplicate += 1;
+          seen.add(hash);
+          kindCounts[candidate.kind] = (kindCounts[candidate.kind] ?? 0) + 1;
+          rows.push({ take: label, seed, intensity, ...measureVariation(candidate, take) });
+        }
+        rows.push({ take: label, seed, intensity, kind: "__set__", duplicate });
+      }
+    }
+  }
+  const candidates = rows.filter((row) => row.kind !== "__set__");
+  const byKind = (kind) => candidates.filter((row) => row.kind === kind);
+  const rate = (list, predicate) => (list.length === 0 ? 1 : list.filter(predicate).length / list.length);
+  return {
+    seeds,
+    intensities: [...intensities],
+    takes: Object.keys(VARIATION_QUALITY_TAKES).length,
+    candidates: candidates.length,
+    kindCounts,
+    distinctRate: rate(rows.filter((row) => row.kind === "__set__"), (row) => row.duplicate === 0),
+    inScaleRate: rate(candidates, (row) => row.inScale),
+    overlapRate: rate(candidates, (row) => row.overlap),
+    skeletonReductionRate: rate(byKind("skeleton").filter((row) => VARIATION_QUALITY_TAKES[row.take].length >= 4),
+      (row) => row.noteCount <= Math.floor(VARIATION_QUALITY_TAKES[row.take].length * 0.7)),
+    arpeggioLeapRate: rate(byKind("arpeggio"), (row) => row.leapShare >= 0.4),
+    reverseRhythmRate: rate(byKind("reverse"), (row) => row.rhythmSame),
+    augmentPitchRate: rate(byKind("augment"), (row) => row.pitchSame),
+    augmentSpanOkRate: rate(byKind("augment"), (row) => row.span <= 4 * VARIATION_BAR),
+    augmentRatio: Object.fromEntries(VARIATION_INTENSITIES.map((intensity) => {
+      const list = byKind("augment").filter((row) => row.intensity === intensity);
+      return [intensity, list.length === 0 ? 0 : list.reduce((total, row) => total + row.spanRatio, 0) / list.length];
+    })),
+    octavePitchClassRate: rate(byKind("octave"), (row) => row.pitchClassSame),
+    octaveRangeRate: rate(byKind("octave"), (row) => row.registerOutside === 0),
+    octaveContourRate: rate(byKind("octave").filter((row) => row.intensity === "gentle"), (row) => row.contourSame),
+    developP95: percentile(durations, 0.95),
+    developMax: Math.max(0, ...durations)
+  };
+}
+
+export const VARIATION_THRESHOLDS = Object.freeze({
+  minDistinctRate: 1,
+  minInScaleRate: 1,
+  maxOverlapRate: 0,
+  minSkeletonReductionRate: 1,
+  minArpeggioLeapRate: 1,
+  minReverseRhythmRate: 1,
+  minAugmentPitchRate: 1,
+  minAugmentSpanOkRate: 1,
+  // Rasio panjang rata-rata per intensitas (toleransi +-0,3 pembulatan GRID).
+  augmentRatio: Object.freeze({ gentle: [1.2, 1.8], medium: [1.7, 2.3], bold: [1.2, 2.0] }),
+  minOctavePitchClassRate: 1,
+  minOctaveRangeRate: 1,
+  minOctaveContourRate: 1,
+  maxDevelopP95: 30,
+  looseDevelopP95: 150
+});
+
+export function variationThresholdFailures(report) {
+  const failures = [];
+  if (report.distinctRate < VARIATION_THRESHOLDS.minDistinctRate) {
+    failures.push(`kandidat duplikat ${(report.distinctRate * 100).toFixed(1)}% set bersih`);
+  }
+  if (report.inScaleRate < VARIATION_THRESHOLDS.minInScaleRate) {
+    failures.push(`dalam skala ${(report.inScaleRate * 100).toFixed(1)}% < 100%`);
+  }
+  if (report.overlapRate > VARIATION_THRESHOLDS.maxOverlapRate) {
+    failures.push(`overlap ${(report.overlapRate * 100).toFixed(1)}% > 0`);
+  }
+  if (report.skeletonReductionRate < VARIATION_THRESHOLDS.minSkeletonReductionRate) {
+    failures.push(`skeleton kurang >= 30% hanya ${(report.skeletonReductionRate * 100).toFixed(1)}%`);
+  }
+  if (report.arpeggioLeapRate < VARIATION_THRESHOLDS.minArpeggioLeapRate) {
+    failures.push(`arpeggio loncatan >= 40% hanya ${(report.arpeggioLeapRate * 100).toFixed(1)}%`);
+  }
+  if (report.reverseRhythmRate < VARIATION_THRESHOLDS.minReverseRhythmRate) {
+    failures.push(`reverse ritme 100% hanya ${(report.reverseRhythmRate * 100).toFixed(1)}%`);
+  }
+  if (report.augmentPitchRate < VARIATION_THRESHOLDS.minAugmentPitchRate) {
+    failures.push(`augment pitch 100% hanya ${(report.augmentPitchRate * 100).toFixed(1)}%`);
+  }
+  if (report.augmentSpanOkRate < VARIATION_THRESHOLDS.minAugmentSpanOkRate) {
+    failures.push(`augment <= 4 birama hanya ${(report.augmentSpanOkRate * 100).toFixed(1)}%`);
+  }
+  for (const [intensity, ratio] of Object.entries(report.augmentRatio)) {
+    const [low, high] = VARIATION_THRESHOLDS.augmentRatio[intensity];
+    if (ratio < low || ratio > high) failures.push(`augment rasio ${intensity} ${ratio.toFixed(2)} di luar [${low}, ${high}]`);
+  }
+  if (report.octavePitchClassRate < VARIATION_THRESHOLDS.minOctavePitchClassRate) {
+    failures.push(`oktaf pitch class hanya ${(report.octavePitchClassRate * 100).toFixed(1)}%`);
+  }
+  if (report.octaveRangeRate < VARIATION_THRESHOLDS.minOctaveRangeRate) {
+    failures.push(`oktaf keluar [48, 84] pada ${(report.octaveRangeRate * 100).toFixed(1)}%`);
+  }
+  if (report.octaveContourRate < VARIATION_THRESHOLDS.minOctaveContourRate) {
+    failures.push(`oktaf kontur halus hanya ${(report.octaveContourRate * 100).toFixed(1)}%`);
+  }
+  return failures;
+}
+
+export function variationPerformanceWarnings(report) {
+  if (report.developP95 <= VARIATION_THRESHOLDS.maxDevelopP95) return [];
+  return [`p95 developVariations ${report.developP95.toFixed(2)} ms melewati target ${VARIATION_THRESHOLDS.maxDevelopP95} ms`];
+}
+
+export function formatVariationReport(report) {
+  const rows = [
+    ["metrik", "nilai"],
+    ["---", "---"],
+    ["kandidat variasi", String(report.candidates)],
+    ["take x seed x intensitas", `${report.takes} x ${report.seeds} x ${report.intensities.join("/")}`],
+    ["set tanpa duplikat", percent(report.distinctRate)],
+    ["dalam skala", percent(report.inScaleRate)],
+    ["overlap", percent(report.overlapRate)],
+    ["skeleton kurang >= 30%", percent(report.skeletonReductionRate)],
+    ["arpeggio loncatan >= 40%", percent(report.arpeggioLeapRate)],
+    ["reverse ritme 100%", percent(report.reverseRhythmRate)],
+    ["augment pitch 100%", percent(report.augmentPitchRate)],
+    ["augment <= 4 birama", percent(report.augmentSpanOkRate)],
+    ...Object.entries(report.augmentRatio).map(([intensity, ratio]) => [`augment rasio ${intensity}`, ratio.toFixed(2)]),
+    ["oktaf pitch class 100%", percent(report.octavePitchClassRate)],
+    ["oktaf dalam [48, 84]", percent(report.octaveRangeRate)],
+    ["oktaf kontur halus utuh", percent(report.octaveContourRate)],
+    ["kandidat per jenis", Object.entries(report.kindCounts).map(([kind, count]) => `${kind} ${count}`).join(", ")],
+    ["p95 developVariations", `${report.developP95.toFixed(2)} ms`],
+    ["max developVariations", `${report.developMax.toFixed(2)} ms`]
+  ];
+  return rows.map(([left, right]) => `| ${left} | ${right} |`).join("\n");
+}
+
 /**
  * Kumpulkan metrik gabungan untuk seluruh take, seed, dan panjang birama.
  * `method` summarizing how many candidates each method produced.
@@ -410,4 +659,12 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "
   console.log("");
   console.log(failures.length === 0 ? "ambang: semua terpenuhi" : `ambang gagal: ${failures.join("; ")}`);
   if (warnings.length > 0) console.log(`peringatan: ${warnings.join("; ")} (exit 0)`);
+  console.log("");
+  const variationReport = runVariationMetrics({ seeds: 20 });
+  console.log(formatVariationReport(variationReport));
+  const variationFailures = variationThresholdFailures(variationReport);
+  const variationWarnings = variationPerformanceWarnings(variationReport);
+  console.log("");
+  console.log(variationFailures.length === 0 ? "ambang variasi: semua terpenuhi" : `ambang variasi gagal: ${variationFailures.join("; ")}`);
+  if (variationWarnings.length > 0) console.log(`peringatan: ${variationWarnings.join("; ")} (exit 0)`);
 }

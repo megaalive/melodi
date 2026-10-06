@@ -86,6 +86,20 @@ export function candidateKindLabel(kind) {
   return "ideasVariationRecorded";
 }
 
+/** Tooltip satu kalimat per jenis variasi. */
+export function candidateHintKey(kind) {
+  if (kind === "skeleton") return "ideasVariationSkeletonHint";
+  if (kind === "arpeggio") return "ideasVariationArpeggioHint";
+  if (kind === "reverse") return "ideasVariationReverseHint";
+  if (kind === "augment") return "ideasVariationAugmentHint";
+  if (kind === "octave") return "ideasVariationOctaveHint";
+  if (kind === "ornament") return "ideasVariationOrnamentHint";
+  if (kind === "inversion") return "ideasVariationInversionHint";
+  if (kind === "sequence") return "ideasVariationSequenceHint";
+  if (kind === "rhythm") return "ideasVariationRhythmHint";
+  return null;
+}
+
 /** Kartu variasi memakai jenisnya; kartu lanjutan memakai metodenya. */
 export function candidateLabelKey(candidate) {
   if (candidate?.kind !== 'continue') return candidateKindLabel(candidate?.kind);
@@ -128,6 +142,7 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     savedIdeaId: null,
     developed: null,
     intensity: "medium",
+    variationScope: "default",
     activeCandidateId: null,
     compare: { a: null, b: null },
     comparePlaying: false,
@@ -547,7 +562,7 @@ function scheduleAutoStop() {
     if (takeId && developed?.takeId === takeId) {
       const take = state.takes.find((item) => item.id === takeId);
       if (take) {
-        developTake(take, { kind: developed.kind, seed: developed.seed, intensity: value });
+        developTake(take, { kind: developed.kind, seed: developed.seed, intensity: value, scope: developed.scope ?? "default" });
         return true;
       }
     }
@@ -609,14 +624,15 @@ function scheduleAutoStop() {
    * dari luar; tanpa seed, seed diturunkan dari isi take sehingga hasilnya
    * selalu sama untuk take yang sama.
    */
-  function developTake(take, { kind = "variation", seed, bars, target, intensity } = {}) {
+  function developTake(take, { kind = "variation", seed, bars, target, intensity, scope } = {}) {
     if (!take) return null;
-    const result = commands.ideaDevelop({ kind, notes: take.notes, seed, bars, target, intensity: intensity ?? state.intensity });
+    const result = commands.ideaDevelop({ kind, notes: take.notes, seed, bars, target, intensity: intensity ?? state.intensity, scope: scope ?? state.variationScope });
     resetDevelopment();
     state.developed = {
       takeId: take.id,
       kind: result.kind,
       seed: result.seed,
+      scope: result.scope ?? "default",
       gap: result.gap ?? null,
       candidates: result.candidates
     };
@@ -635,7 +651,13 @@ function scheduleAutoStop() {
 
   function reseedTake(take) {
     const current = state.developed?.takeId === take.id ? state.developed.seed : 0;
-    return developTake(take, { kind: state.developed?.kind ?? "variation", seed: (current + 1) >>> 0 });
+    return developTake(take, { kind: state.developed?.kind ?? "variation", seed: (current + 1) >>> 0, scope: state.developed?.scope ?? "default" });
+  }
+
+  function toggleVariationScope(take) {
+    const next = state.developed?.scope === "all" ? "default" : "all";
+    state.variationScope = next;
+    return developTake(take, { kind: "variation", seed: state.developed?.seed, scope: next });
   }
 
   function stopPreview() {
@@ -865,6 +887,8 @@ function scheduleAutoStop() {
     index.setAttribute("aria-label", translate("ideasSlotLabel", { index: slot }));
     const name = document.createElement("strong");
     name.textContent = translate(candidateLabelKey(candidate));
+    const hintKey = candidateHintKey(candidate.kind);
+    if (hintKey) name.title = translate(hintKey);
     const count = document.createElement("span");
     count.className = "muted";
     count.textContent = translate("ideasTakeTitle", { count: candidate.notes.length });
@@ -918,6 +942,7 @@ function scheduleAutoStop() {
     host.dataset.open = String(Boolean(data));
     host.dataset.seed = data ? String(data.seed) : "";
     host.dataset.kind = data?.kind ?? "";
+    host.dataset.scope = data?.scope ?? "default";
     host.dataset.count = String(data?.candidates.length ?? 0);
     host.dataset.compare = String(state.comparePlaying);
     host.replaceChildren();
@@ -932,6 +957,16 @@ function scheduleAutoStop() {
     });
     reseed.classList.add("secondary");
     head.append(seedLabel, reseed);
+    if (data.kind === "variation") {
+      const take = state.takes.find((item) => item.id === data.takeId);
+      const more = button(
+        data.scope === "all" ? "ideasVariationShowFewer" : "ideasVariationShowMore",
+        "ideas-variation-scope",
+        () => { if (take) toggleVariationScope(take); }
+      );
+      more.classList.add("secondary");
+      head.append(more);
+    }
 
     const strip = document.createElement("div");
     strip.className = "ideas-variations-strip";
@@ -1383,6 +1418,7 @@ if (typeof matchMedia === "function") {
     developVariations,
     developContinuation,
     reseedTake,
+    toggleVariationScope,
     playVariation,
     playTake,
     acceptCandidate,

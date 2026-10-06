@@ -5,7 +5,7 @@
  * kandidat yang identik.
  *
  * Dua arah pengembangan:
- * - variation: tujuh transformasi melodik yang semuanya memakai seed dan
+ * - variation: sembilan transformasi melodik yang semuanya memakai seed dan
  *   berlaku juga untuk take legato tanpa jeda.
  * - continue: frasa asli dipakai sebagai anchor A, anchor B ditempatkan satu
  *   atau dua birama kemudian pada nada Tonik atau Dominan, lalu generator gap
@@ -27,7 +27,7 @@ import { createRandom, stableHash, validateSeed } from "./random.js";
 import { isScalePitch, nearestScalePitch, nextScalePitch, scalePitches, tonicPitchClass } from "./primitives.js";
 
 export const DEVELOP_KINDS = Object.freeze(["variation", "continue"]);
-export const VARIATION_KINDS = Object.freeze(["ornament", "inversion", "sequence", "rhythm", "skeleton", "arpeggio", "reverse"]);
+export const VARIATION_KINDS = Object.freeze(["ornament", "inversion", "sequence", "rhythm", "skeleton", "arpeggio", "reverse", "augment", "octave"]);
 export const INTENSITIES = Object.freeze(["gentle", "medium", "bold"]);
 export const DEFAULT_INTENSITY = "medium";
 // Kategori dipakai memilih kartu: Nada = inversion, sequence, reverse,
@@ -46,6 +46,8 @@ export const VARIATION_CATEGORIES = Object.freeze({
 });
 export const VARIATION_MIN = 2;
 export const VARIATION_MAX = 4;
+// Tampilan default empat kartu + Asli; "Lebih banyak" sampai sembilan.
+export const VARIATION_ALL_MAX = 9;
 export const CONTINUATION_BARS = Object.freeze([1, 2]);
 export const CONTINUATION_TARGETS = Object.freeze(["tonic", "dominant"]);
 export const CONTINUATION_METHODS = Object.freeze(["sequence", "answer", "echo", "smooth", "leaping"]);
@@ -376,14 +378,153 @@ function pitchReverse(notes, context, random, intensity = DEFAULT_INTENSITY) {
   return notes.map((note, index) => ({ ...note, pitch: flipped[index] ?? note.pitch }));
 }
 
+function meterBarTicks(timeSignature) {
+  const meter = timeSignature ?? { numerator: 4, denominator: 4 };
+  const raw = PPQ * 4 * (meter.numerator / meter.denominator);
+  return Math.max(GRID, Math.round(raw / GRID) * GRID);
+}
+
+function crossesBar(note, bar) {
+  if (bar <= 0) return false;
+  return Math.floor(note.startTick / bar) !== Math.floor((note.startTick + note.durationTicks - 1) / bar);
+}
+
+/**
+ * Perlebar (augmentasi ritme): onset dan durasi dikalikan faktor relatif
+ * terhadap onset pertama, dibulatkan ke GRID; pitch tidak berubah. Halus
+ * 1,5x; Sedang 2x; Berani progresif 1x ke 2x. Total <= 4 birama; bila 2x
+ * melampaui, turun ke 1,5x; bila 1,5x pun melampaui, jenis ini dilewati.
+ */
+function augment(notes, context, random, intensity = DEFAULT_INTENSITY, chords, timeSignature) {
+  void context;
+  void random;
+  void chords;
+  // Variasi butuh min. 3 nada; take pendek menampilkan pesan khusus.
+  if (notes.length < 3) return notes;
+  const bar = meterBarTicks(timeSignature);
+  const maxSpan = 4 * bar;
+  const takeSpan = notes[notes.length - 1].startTick + notes[notes.length - 1].durationTicks - notes[0].startTick;
+  // Aturan batas birama mengikuti variasi lain: take yang lebih pendek dari
+  // satu birama dan tidak melintas tidak boleh menghasilkan nada yang
+  // melintas. Take sepanjang satu birama atau lebih diatur oleh batas total
+  // 4 birama, karena setiap peregangan >= 1,5x pasti melewati garis birama
+  // berikutnya (DEVIASI terukur).
+  const strictBars = takeSpan < bar && !notes.some((note) => crossesBar(note, bar));
+  const base = notes[0].startTick;
+  const factorsFor = (mode) => {
+    if (mode === "gentle") return notes.map(() => 1.5);
+    if (mode === "bold") {
+      return notes.map((note, index) => (notes.length <= 1 ? 1 : 1 + index / (notes.length - 1)));
+    }
+    return notes.map(() => 2);
+  };
+  // Berani progresif memuncak di 2x; cadangannya seragam 1,5x.
+  const attempts = intensity === "bold" ? ["bold", "gentle"] : [intensity, "gentle"];
+  for (const mode of attempts) {
+    const factors = factorsFor(mode);
+    const scaled = notes.map((note, index) => ({
+      pitch: note.pitch,
+      startTick: base + Math.round(((note.startTick - base) * factors[index]) / GRID) * GRID,
+      durationTicks: Math.max(1, Math.round((note.durationTicks * factors[index]) / GRID) * GRID)
+    }));
+    const end = scaled.reduce((max, note) => Math.max(max, note.startTick + note.durationTicks), base);
+    if (end - base > maxSpan) continue;
+    if (strictBars && scaled.some((note) => crossesBar(note, bar))) continue;
+    // Faktor seragam harus benar-benar memanjangkan; progresif boleh sama
+    // pada take satu nada (nanti dibuang sebagai duplikat bila sama persis).
+    return scaled;
+  }
+  return notes;
+}
+
+const REGISTER_LO = 48;
+const REGISTER_HI = 84;
+
+function inRegister(pitch) {
+  return pitch >= REGISTER_LO && pitch <= REGISTER_HI;
+}
+
+/**
+ * Oktaf: pitch class semua nada tetap, hanya oktafnya yang berubah. Halus =
+ * seluruh take +-12; Sedang = setengah akhir take +-12 dengan lompatan
+ * sambungan terkecil; Berani = puncak +12 dan dasar -12.
+ */
+function octaveShift(notes, context, random, intensity = DEFAULT_INTENSITY) {
+  // Variasi butuh min. 3 nada; take pendek menampilkan pesan khusus.
+  if (notes.length < 3) return notes;
+  const shift = (pitch, semitones) => {
+    const moved = pitch + semitones;
+    if (moved < MIN_PITCH || moved > MAX_PITCH) return null;
+    return fit(context, moved, pitch, semitones > 0);
+  };
+  // Di luar [48, 84] hanya boleh bila take aslinya sudah di luar.
+  const registerOk = (built) => built.every((note, index) => inRegister(note.pitch) || !inRegister(notes[index].pitch));
+  if (intensity === "gentle") {
+    const first = random() < 0.5 ? 12 : -12;
+    for (const semitones of [first, -first]) {
+      const built = [];
+      for (const note of notes) {
+        const moved = shift(note.pitch, semitones);
+        if (moved === null || ((moved - note.pitch) % 12 + 12) % 12 !== 0) { built.length = 0; break; }
+        built.push({ ...note, pitch: moved });
+      }
+      if (built.length === notes.length && registerOk(built)) return built;
+    }
+    return notes;
+  }
+  if (intensity === "bold") {
+    if (notes.length < 2) return notes;
+    const pitches = notes.map((note) => note.pitch);
+    const peak = Math.max(...pitches);
+    const valley = Math.min(...pitches);
+    if (peak === valley) return notes;
+    const peakIndex = pitches.indexOf(peak);
+    let valleyIndex = pitches.lastIndexOf(valley);
+    if (valleyIndex === peakIndex) valleyIndex = pitches.indexOf(valley, peakIndex + 1);
+    if (valleyIndex < 0 || valleyIndex === peakIndex) return notes;
+    const up = shift(peak, 12);
+    const down = shift(valley, -12);
+    if (up === null || down === null) return notes;
+    const built = notes.map((note, index) => ({
+      ...note,
+      pitch: index === peakIndex ? up : index === valleyIndex ? down : note.pitch
+    }));
+    if (!registerOk(built)) return notes;
+    return built;
+  }
+  // Sedang: setengah akhir take digeser dengan arah lompatan terkecil.
+  const half = Math.max(1, Math.ceil(notes.length / 2));
+  const junction = notes[half].pitch - notes[half - 1].pitch;
+  const upLeap = Math.abs(junction + 12);
+  const downLeap = Math.abs(junction - 12);
+  const candidates = upLeap < downLeap
+    ? [12, -12]
+    : downLeap < upLeap
+      ? [-12, 12]
+      : random() < 0.5 ? [12, -12] : [-12, 12];
+  for (const semitones of candidates) {
+    const built = notes.map((note, index) => {
+      if (index < half) return { ...note };
+      const moved = shift(note.pitch, semitones);
+      return moved === null ? null : { ...note, pitch: moved };
+    });
+    if (built.some((note) => note === null)) continue;
+    if (!registerOk(built)) continue;
+    return built;
+  }
+  return notes;
+}
+
 const TRANSFORMS = Object.freeze({
   ornament,
   inversion,
   sequence: sequenceShift,
   rhythm: syncopate,
   skeleton,
-  arpeggio: (notes, context, random, intensity) => arpeggio(notes, context, random, intensity),
-  reverse: pitchReverse
+  arpeggio,
+  reverse: pitchReverse,
+  augment,
+  octave: octaveShift
 });
 
 /** Peta transformasi untuk pengujian per jenis. */
@@ -398,10 +539,10 @@ function candidateSeed(base, kindIndex, attempt) {
  * berikutnya dicoba sampai delapan kali; kalau masih sama, kandidat ini
  * dibuang supaya duplikat tidak pernah masuk daftar.
  */
-function distinctVariation(kind, kindIndex, notes, context, base, seen, takeHash, { intensity, chords } = {}) {
+function distinctVariation(kind, kindIndex, notes, context, base, seen, takeHash, { intensity, chords, meter } = {}) {
   for (let attempt = 0; attempt < RESEED_ATTEMPTS; attempt += 1) {
     const seed = candidateSeed(base, kindIndex, attempt);
-    const built = capNotes(linearize(TRANSFORMS[kind](notes, context, createRandom(seed), intensity, chords)));
+    const built = capNotes(linearize(TRANSFORMS[kind](notes, context, createRandom(seed), intensity, chords, meter)));
     if (built.length === 0) continue;
     const hash = notesHash(built);
     if (hash === takeHash || seen.has(hash)) continue;
@@ -410,38 +551,91 @@ function distinctVariation(kind, kindIndex, notes, context, base, seen, takeHash
   return null;
 }
 
+/** Acak urutan jenis berdasar seed supaya kartu default bervariasi per seed. */
+function shuffledKindOrder(seed) {
+  const order = VARIATION_KINDS.map((kind, index) => index);
+  const random = createRandom(seed);
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(random() * (index + 1));
+    [order[index], order[swap]] = [order[swap], order[index]];
+  }
+  return order;
+}
+
+function categoryOf(kind) {
+  return VARIATION_CATEGORIES[kind] ?? "pitch";
+}
+
+/**
+ * Pilih kartu default: minimal tiga kategori berbeda dan minimal satu Ritme
+ * atau Register bila take memungkinkan, lalu isi sampai jumlah yang diminta
+ * mengikuti urutan acak seed.
+ */
+function selectDefault(pool, requested) {
+  if (pool.length <= requested) return pool;
+  const picked = [];
+  const categories = new Set();
+  const needsRegister = pool.some((entry) => categoryOf(entry.kind) === "rhythm" || categoryOf(entry.kind) === "register");
+  for (const entry of pool) {
+    if (picked.length >= requested) break;
+    if (requested >= 3 && categories.has(categoryOf(entry.kind))) continue;
+    picked.push(entry);
+    categories.add(categoryOf(entry.kind));
+  }
+  if (needsRegister && !picked.some((entry) => categoryOf(entry.kind) === "rhythm" || categoryOf(entry.kind) === "register")) {
+    const rhythm = pool.find((entry) => !picked.includes(entry)
+      && (categoryOf(entry.kind) === "rhythm" || categoryOf(entry.kind) === "register"));
+    if (rhythm) {
+      if (picked.length >= requested) picked.pop();
+      picked.push(rhythm);
+    }
+  }
+  for (const entry of pool) {
+    if (picked.length >= requested) break;
+    if (!picked.includes(entry)) picked.push(entry);
+  }
+  return picked.slice(0, requested);
+}
+
 export function seedForNotes(notes) {
   return notesHash(normalizeNotes(notes));
 }
 
-export function developVariations({ notes: input, count, seed, key, scale, intensity, chords } = {}) {
+export function developVariations({ notes: input, count, seed, key, scale, intensity, chords, timeSignature, scope } = {}) {
   const notes = linearize(normalizeNotes(input));
-  const requested = clampCount(count, VARIATION_MIN, VARIATION_MAX);
+  const all = scope === "all";
+  const requested = all
+    ? clampCount(count, VARIATION_MIN, VARIATION_ALL_MAX, VARIATION_ALL_MAX)
+    : clampCount(count, VARIATION_MIN, VARIATION_MAX);
   const safeSeed = validateSeed(seed ?? seedForNotes(notes));
   const safeIntensity = normalizeIntensity(intensity);
   const context = Object.freeze({ key, scale });
   if (scalePitches(context, MIN_PITCH, MAX_PITCH).length === 0) fail("ideas-invalid-scale");
+  const meter = timeSignature ?? { numerator: 4, denominator: 4 };
   const takeHash = notesHash(notes);
   const seen = new Set([takeHash]);
-  const candidates = [];
-  VARIATION_KINDS.forEach((kind, kindIndex) => {
-    if (candidates.length >= requested) return;
-    const built = distinctVariation(kind, kindIndex, notes, context, safeSeed, seen, takeHash, { intensity: safeIntensity, chords });
-    if (!built) return;
+  const pool = [];
+  for (const kindIndex of shuffledKindOrder(safeSeed)) {
+    const kind = VARIATION_KINDS[kindIndex];
+    const built = distinctVariation(kind, kindIndex, notes, context, safeSeed, seen, takeHash, { intensity: safeIntensity, chords, meter });
+    if (!built) continue;
     seen.add(built.hash);
-    candidates.push(Object.freeze({
-      id: `variation-${candidates.length + 1}`,
-      kind: built.kind,
-      seed: built.seed,
-      notes: freezeNotes(built.notes),
-      baseNotes: Object.freeze([]),
-      meta: Object.freeze({ notes: notes.length, intensity: safeIntensity })
-    }));
-  });
+    pool.push(built);
+  }
+  const chosen = all ? pool.slice(0, requested) : selectDefault(pool, requested);
+  const candidates = chosen.map((built, index) => Object.freeze({
+    id: `variation-${index + 1}`,
+    kind: built.kind,
+    seed: built.seed,
+    notes: freezeNotes(built.notes),
+    baseNotes: Object.freeze([]),
+    meta: Object.freeze({ notes: notes.length, intensity: safeIntensity })
+  }));
   return Object.freeze({
     kind: "variation",
     seed: safeSeed,
     intensity: safeIntensity,
+    scope: all ? "all" : "default",
     total: candidates.length,
     requested,
     sourceNotes: freezeNotes(notes),
@@ -1211,11 +1405,11 @@ export function developContinuation({ notes: input, seed, bars, target, count, k
 }
 
 /** Satu command layer untuk kedua arah pengembangan ide. */
-export function ideaDevelop({ kind = "variation", notes, count, seed, bars, target, key, scale, tempo, timeSignature, intensity, chords } = {}) {
+export function ideaDevelop({ kind = "variation", notes, count, seed, bars, target, key, scale, tempo, timeSignature, intensity, chords, scope } = {}) {
   if (!DEVELOP_KINDS.includes(kind)) fail("ideas-invalid-kind");
   return kind === "continue"
     ? developContinuation({ notes, seed, bars, target, count, key, scale, tempo, timeSignature })
-    : developVariations({ notes, count, seed, key, scale, intensity, chords });
+    : developVariations({ notes, count, seed, key, scale, intensity, chords, timeSignature, scope });
 }
 
 export function variationSpan(notes) {

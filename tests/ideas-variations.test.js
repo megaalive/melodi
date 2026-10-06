@@ -10,6 +10,7 @@ import {
   DEVELOP_KINDS,
   INTENSITIES,
   RESEED_ATTEMPTS,
+  VARIATION_ALL_MAX,
   VARIATION_CATEGORIES,
   VARIATION_KINDS,
   VARIATION_MAX,
@@ -80,14 +81,45 @@ function assertNoOverlap(notes, label) {
   }
 }
 
-test("tujuh jenis variasi semuanya berbasis seed dan tidak ada as-recorded di daftar", () => {
-  assert.deepEqual([...VARIATION_KINDS], ["ornament", "inversion", "sequence", "rhythm", "skeleton", "arpeggio", "reverse"]);
+test("sembilan jenis variasi semuanya berbasis seed dan tidak ada as-recorded di daftar", () => {
+  assert.deepEqual([...VARIATION_KINDS], ["ornament", "inversion", "sequence", "rhythm", "skeleton", "arpeggio", "reverse", "augment", "octave"]);
   assert.equal(VARIATION_MAX, 4, "tampilan default empat kartu + Asli");
+  assert.equal(VARIATION_ALL_MAX, 9, "tampilan semua sampai sembilan jenis");
+  assert.deepEqual([...DEVELOP_KINDS], ["variation", "continue"]);
   const result = developVariations({ notes: TAKES["legato empat nada seperempat"], key: "C", scale: SCALE, seed: 3 });
   assert.ok(!result.candidates.some(candidate => candidate.kind === "as-recorded"),
     "kartu Asli adalah referensi, bukan kandidat");
-  assert.deepEqual(result.candidates.map(candidate => candidate.kind), ["ornament", "inversion", "sequence", "rhythm"]);
+  assert.equal(result.candidates.length, 4, "default empat kartu");
   assert.deepEqual(result.candidates.map(candidate => candidate.id), ["variation-1", "variation-2", "variation-3", "variation-4"]);
+  // Kartu default dipilih berdasar seed: minimal tiga kategori dan minimal
+  // satu Ritme atau Register bila take memungkinkan.
+  const categories = new Set(result.candidates.map((candidate) => VARIATION_CATEGORIES[candidate.kind]));
+  assert.ok(categories.size >= 3, `kategori default: ${[...categories].join(", ")}`);
+  assert.ok(result.candidates.some((candidate) => ["rhythm", "register"].includes(VARIATION_CATEGORIES[candidate.kind])),
+    "minimal satu Ritme atau Register");
+});
+
+test("cakupan Lebih banyak menampilkan seluruh jenis yang valid", () => {
+  const take = TAKES["legato delapan nada stepwise"];
+  const all = developVariations({ notes: take, key: "C", scale: SCALE, seed: 3, scope: "all" });
+  assert.equal(all.scope, "all");
+  assert.ok(all.candidates.length >= 4 && all.candidates.length <= 9,
+    `cakupan semua: ${all.candidates.length} kandidat`);
+  assert.equal(new Set(all.candidates.map((candidate) => candidate.kind)).size, all.candidates.length,
+    "setiap jenis tampil maksimal sekali");
+  const standard = developVariations({ notes: take, key: "C", scale: SCALE, seed: 3 });
+  assert.ok(all.candidates.length >= standard.candidates.length, "semua >= default");
+});
+
+test("pemilihan kartu deterministik dan berubah pada seed lain", () => {
+  const take = TAKES["legato empat nada seperempat"];
+  const signature = (seed) => JSON.stringify(
+    developVariations({ notes: take, key: "C", scale: SCALE, seed }).candidates.map((candidate) => candidate.kind)
+  );
+  assert.equal(signature(11), signature(11), "seed sama memberi kartu sama");
+  const baseline = signature(SEEDS[0]);
+  const different = SEEDS.slice(1).filter((seed) => signature(seed) !== baseline).length;
+  assert.ok(different / (SEEDS.length - 1) >= 0.8, "seed lain mengubah >= 80 persen himpunan");
 });
 
 test("jumlah kandidat variasi mengikuti batas dua sampai empat", () => {
@@ -130,9 +162,36 @@ for (const [label, take] of Object.entries(TAKES)) {
             `seed ${seed}: pitch Balik harus terbalik penuh`);
           continue;
         }
-        const first = candidate.notes[0];
-        const last = candidate.notes.at(-1);
-        for (const [position, expected] of [[first, take[0]], [last, take.at(-1)]]) {
+        if (candidate.kind === "augment") {
+          // Perlebar: pitch 100 persen tetap, nada pembuka di posisinya.
+          assert.deepEqual(candidate.notes.map((note) => note.pitch), take.map((note) => note.pitch),
+            `seed ${seed}: pitch Perlebar harus tetap`);
+          assert.equal(candidate.notes[0].startTick, take[0].startTick, "pembuka Perlebar tetap");
+          continue;
+        }
+        if (candidate.kind === "octave") {
+          // Oktaf: pitch class tetap, hanya oktaf berubah; semua di [36, 96].
+          for (const [index, note] of candidate.notes.entries()) {
+            assert.equal(((note.pitch - take[index].pitch) % 12 + 12) % 12, 0,
+              `seed ${seed}: kelas nada Oktaf harus tetap`);
+            assert.ok(note.pitch >= 36 && note.pitch <= 96, `nada ${note.pitch} di luar [36, 96]`);
+            assert.ok(isScalePitch(note.pitch, "C", SCALE), `nada ${note.pitch} di luar skala`);
+          }
+          assertNoOverlap(candidate.notes, `seed ${seed} octave`);
+          continue;
+        }
+        if (candidate.kind === "skeleton") {
+          // Inti: pitch pembuka/penutup tetap; durasi boleh memanjang.
+          assert.equal(candidate.notes[0].pitch, take[0].pitch, "pembuka Inti tetap");
+          assert.equal(candidate.notes[0].startTick, take[0].startTick, "waktu pembuka Inti tetap");
+          assert.equal(candidate.notes.at(-1).pitch, take.at(-1).pitch, "penutup Inti tetap");
+          for (const note of candidate.notes) {
+            assert.ok(isScalePitch(note.pitch, "C", SCALE), `nada ${note.pitch} di luar skala`);
+          }
+          assertNoOverlap(candidate.notes, `seed ${seed} skeleton`);
+          continue;
+        }
+        for (const [position, expected] of [[candidate.notes[0], take[0]], [candidate.notes.at(-1), take.at(-1)]]) {
           assert.equal(position.pitch, expected.pitch, `seed ${seed}: nada batas bergeser`);
           assert.equal(position.startTick, expected.startTick, `seed ${seed}: waktu nada batas bergeser`);
           assert.equal(position.durationTicks, expected.durationTicks, `seed ${seed}: durasi nada batas bergeser`);
@@ -168,7 +227,7 @@ test("take legato empat nada menghasilkan minimal tiga variasi yang saling berbe
 
 test("take legato tanpa jeda tetap punya hiasan, jadi tidak hanya jenis ritme yang berubah", () => {
   const take = TAKES["legato empat nada seperempat"];
-  const ornament = developVariations({ notes: take, key: "C", scale: SCALE, seed: 4 })
+  const ornament = developVariations({ notes: take, key: "C", scale: SCALE, seed: 4, scope: "all" })
     .candidates.find(candidate => candidate.kind === "ornament");
   assert.ok(ornament.notes.length > take.length, "hiasan memecah nada panjang");
   assert.equal(ornament.notes[0].pitch, take[0].pitch);
@@ -447,8 +506,82 @@ test("reverse mempertahankan ritme 100 persen", () => {
   }
 });
 
-test("intensitas sedang pada jenis lama sama dengan sebelum intensitas ada", () => {
-  // Nilai fundamental: Sedang harus deterministik dan berbeda antar seed,
+test("augment mempertahankan pitch 100 persen dengan rasio intensitas", () => {
+  const bar = PPQ * 4;
+  for (const [label, take] of Object.entries(TAKES)) {
+    const span = take.at(-1).startTick + take.at(-1).durationTicks - take[0].startTick;
+    if (span * 1.5 > 4 * bar) continue;
+    for (const seed of SEEDS) {
+      const gentle = buildKind("augment", take, seed, "gentle");
+      assert.deepEqual(gentle.map((note) => note.pitch), take.map((note) => note.pitch),
+        `${label}: pitch Perlebar harus 100 persen tetap`);
+      assert.equal(gentle[0].startTick, take[0].startTick, "pembuka tetap pada posisinya");
+      const gentleSpan = gentle.at(-1).startTick + gentle.at(-1).durationTicks - gentle[0].startTick;
+      assert.ok(Math.abs(gentleSpan / span - 1.5) < 0.25, `${label} halus: rasio ${gentleSpan / span}`);
+      assert.ok(gentleSpan <= 4 * bar, "total <= 4 birama");
+      if (span * 2 <= 4 * bar) {
+        const medium = buildKind("augment", take, seed, "medium");
+        const mediumSpan = medium.at(-1).startTick + medium.at(-1).durationTicks - medium[0].startTick;
+        assert.ok(Math.abs(mediumSpan / span - 2) < 0.25, `${label} sedang: rasio ${mediumSpan / span}`);
+      }
+      const bold = buildKind("augment", take, seed, "bold");
+      assert.deepEqual(bold.map((note) => note.pitch), take.map((note) => note.pitch),
+        `${label}: progresif tetap 100 persen pitch`);
+      const first = (bold[1].startTick - bold[0].startTick) / Math.max(1, take[1].startTick - take[0].startTick);
+      const lastIndex = bold.length - 1;
+      const last = (bold[lastIndex].startTick - bold[lastIndex - 1].startTick)
+        / Math.max(1, take[lastIndex].startTick - take[lastIndex - 1].startTick);
+      assert.ok(last >= first, `${label} berani: progresif 1x ke 2x (${first} ke ${last})`);
+      assertNoOverlap(bold, `${label} augment bold`);
+    }
+  }
+});
+
+test("augment yang melampaui 4 birama dilewati", () => {
+  const bar = PPQ * 4;
+  const long = [0, 1, 2, 3, 4, 5].map((index) => ({
+    pitch: 60 + (index % 3) * 2,
+    startTick: index * bar,
+    durationTicks: bar
+  }));
+  assert.deepEqual(buildKind("augment", long, 3, "medium"), long, "take 6 birama dilewati");
+});
+
+test("octave mempertahankan pitch class dengan aturan register", () => {
+  for (const [label, take] of Object.entries(TAKES)) {
+    for (const seed of SEEDS) {
+      const gentle = buildKind("octave", take, seed, "gentle");
+      assert.deepEqual(gentle.map((note) => note.startTick), take.map((note) => note.startTick),
+        `${label}: ritme Oktaf halus tetap`);
+      for (const [index, note] of gentle.entries()) {
+        assert.equal(((note.pitch - take[index].pitch) % 12 + 12) % 12, 0, "kelas nada tetap");
+        assert.ok(note.pitch >= 36 && note.pitch <= 96, `nada ${note.pitch} di luar [36, 96]`);
+        if (take[index].pitch >= 48 && take[index].pitch <= 84) {
+          assert.ok(note.pitch >= 48 && note.pitch <= 84, `nada ${note.pitch} keluar [48, 84]`);
+        }
+      }
+      // Kontur utuh pada Halus: urutan interval identik.
+      const intervals = (list) => list.slice(1).map((note, index) => note.pitch - list[index].pitch);
+      assert.deepEqual(intervals(gentle), intervals(take), `${label}: kontur halus utuh 100 persen`);
+      const medium = buildKind("octave", take, seed, "medium");
+      const half = Math.ceil(take.length / 2);
+      assert.deepEqual(medium.slice(0, half).map((note) => note.pitch), take.slice(0, half).map((note) => note.pitch),
+        `${label}: setengah awal Oktaf sedang tetap`);
+      const bold = buildKind("octave", take, seed, "bold");
+      const peak = Math.max(...take.map((note) => note.pitch));
+      const valley = Math.min(...take.map((note) => note.pitch));
+      if (peak !== valley && take.length >= 2 && peak + 12 <= 84 && valley - 12 >= 48) {
+        assert.ok(bold.some((note) => note.pitch === peak + 12), `${label}: puncak +12`);
+        assert.ok(bold.some((note) => note.pitch === valley - 12), `${label}: dasar -12`);
+      } else {
+        assert.deepEqual(bold.map((note) => note.pitch), take.map((note) => note.pitch),
+          `${label}: di luar register dilewati`);
+      }
+    }
+  }
+});
+
+test("intensitas sedang pada jenis lama sama dengan sebelum intensitas ada", () => {  // Nilai fundamental: Sedang harus deterministik dan berbeda antar seed,
   // sementara Halus mengubah lebih sedikit dan Berani lebih banyak.
   const take = TAKES["legato delapan nada stepwise"];
   for (const kind of ["ornament", "inversion", "sequence", "rhythm"]) {
