@@ -18,7 +18,12 @@ import { readAppStyles } from "./helpers/read-app-styles.js";
 // "Try a sample", audio-ready chip, recording banner, and an accept toast. The
 // behaviour is covered by tests/ideas-recording-flow.test.js and
 // tests/ideas-guided-flow.test.js, so the guard moves with it.
-const ACTIVE_CSS_BUDGET_BYTES = 236_000;
+// 236 KB -> 238 KB: the Ide tab gained a single-scroll keyboard track, a
+// recording-settings disclosure with summary, an intensity segmented control,
+// and nine variation kinds with a show-more scope. Covered by
+// tests/ideas-layout.test.js, tests/ideas-variations.test.js, and
+// tests/idea-quality.test.js, so the guard moves with it.
+const ACTIVE_CSS_BUDGET_BYTES = 238_000;
 
 test("active imported CSS stays within its tracked byte budget", () => {
   const normalizedStyles = readAppStyles().replace(/\r\n?/g, "\n");

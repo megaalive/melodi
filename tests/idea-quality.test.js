@@ -8,12 +8,15 @@ import { isScalePitch } from "../src/generation/primitives.js";
 import {
   QUALITY_TAKES,
   QUALITY_THRESHOLDS,
+  VARIATION_THRESHOLDS,
   developForQuality,
   formatReport,
   measureCandidate,
   percent,
   runMetrics,
-  thresholdFailures
+  runVariationMetrics,
+  thresholdFailures,
+  variationThresholdFailures
 } from "../tools/idea-quality.mjs";
 
 // C1: skrip metrik harus bisa diulang, deterministik, dan mengukur hal yang
@@ -236,4 +239,23 @@ test("label metode lanjutan tersedia di id dan en", () => {
   }
   assert.match(messages, /ideasNoCandidates: "Variasi butuh minimal 3 nada; coba Lanjutkan\."/);
   assert.match(messages, /ideasNoCandidates: "Variations need at least 3 notes; try Continue\."/);
+});
+
+test("ambang mutu variasi C3 terpenuhi pada 6 take x 20 seed x 3 intensitas", () => {
+  // Sama seperti tools/idea-quality.mjs (cakupan semua), jadi ambang diuji
+  // pada sampel yang sama dengan laporan metrik.
+  const report = runVariationMetrics({ seeds: 20 });
+  assert.equal(report.takes, 6);
+  assert.equal(report.seeds, 20);
+  assert.deepEqual(report.intensities, ["gentle", "medium", "bold"]);
+  assert.ok(report.candidates > 0, "setiap pengembangan harus punya kandidat");
+  const failures = variationThresholdFailures(report);
+  // node --test paralel menaikkan p95 karena CPU dibagi; yang dijaga di sini
+  // ambang musiknya, batas longgar p95 sebagai penjaga regresi.
+  assert.deepEqual(failures, [], `ambang variasi belum terpenuhi: ${failures.join("; ")}`);
+  assert.equal(report.distinctRate, 1, "100 persen kandidat berbeda");
+  assert.equal(report.inScaleRate, 1, "100 persen dalam skala");
+  assert.equal(report.overlapRate, 0, "0 overlap");
+  assert.ok(report.developP95 <= VARIATION_THRESHOLDS.looseDevelopP95,
+    `p95 ${report.developP95.toFixed(2)} ms melewati batas longgar ${VARIATION_THRESHOLDS.looseDevelopP95} ms`);
 });

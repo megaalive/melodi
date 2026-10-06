@@ -1,10 +1,10 @@
 import { midiToPitch, PPQ } from "../core/model.js";
-import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.97";
+import { bindCanvasNavigation } from "./canvas-navigation.js?v=20261003.98";
 import { DEFAULT_ROLL_ZOOM, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "../core/editor.js";
 import { normalizeRuntimeState } from "../core/runtime-state.js";
-import { centeredScrollLeft } from "./roll-follow.js?v=20261003.97";
-import { canonicalSongEndTick } from "../core/timeline.js?v=20261003.97";
-import { harmonyChordSymbol } from "./harmony.js?v=20261003.97";
+import { centeredScrollLeft } from "./roll-follow.js?v=20261003.98";
+import { canonicalSongEndTick } from "../core/timeline.js?v=20261003.98";
+import { harmonyChordSymbol } from "./harmony.js?v=20261003.98";
 
 export { SNAP_TICKS };
 export const DEFAULT_PITCH_RANGE = Object.freeze({ min: 48, max: 83 });

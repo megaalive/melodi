@@ -255,7 +255,7 @@ test("tata letak Ide desktop: keyboard selebar kontainer, kartu tiga kolom, papa
   }
 });
 
-test("tata letak Ide HP: satu kolom dengan urutan strip, keyboard, hasil", async () => {
+test("tata letak Ide HP: satu kolom dengan urutan strip, hasil, keyboard", async () => {
   const { server, url } = await startAuditServer({ basePath: "/melodi/", port: 0 });
   const browser = await chromium.launch({ headless: true });
   try {
@@ -266,19 +266,22 @@ test("tata letak Ide HP: satu kolom dengan urutan strip, keyboard, hasil", async
     await page.waitForTimeout(250);
     const order = await page.evaluate(() => {
       const rect = selector => document.querySelector(selector)?.getBoundingClientRect() ?? null;
+      const boardStyle = getComputedStyle(document.querySelector(".ideas-board"));
       return {
         strip: rect(".ideas-strip"),
         keyboard: rect("[data-entity='ideas-keyboard']"),
         results: rect(".ideas-takes-panel"),
-        boardColumns: getComputedStyle(document.querySelector(".ideas-takes-panel")).gridTemplateColumns.split(" ").filter(Boolean).length,
-        stripColumns: getComputedStyle(document.querySelector(".ideas-board")).gridTemplateColumns.split(" ").filter(Boolean).length,
+        boardDisplay: boardStyle.display,
+        boardDirection: boardStyle.flexDirection,
+        takesColumns: getComputedStyle(document.querySelector(".ideas-takes-panel")).gridTemplateColumns.split(" ").filter(Boolean).length,
         paneWidth: rect("#ideas-section").width
       };
     });
-    assert.equal(order.stripColumns, 1, "board satu kolom di HP");
-    assert.equal(order.boardColumns, 1, "hasil satu kolom di HP");
-    assert.ok(order.keyboard.top >= order.strip.bottom - 1, "keyboard ada di bawah baris Tangkap");
-    assert.ok(order.results.top >= order.keyboard.bottom - 1, "hasil ada di bawah keyboard");
+    assert.equal(order.boardDisplay, "flex", "board kolom tunggal via flex di HP");
+    assert.equal(order.boardDirection, "column", "board tersusun vertikal di HP");
+    assert.equal(order.takesColumns, 1, "hasil satu kolom di HP");
+    assert.ok(order.results.top >= order.strip.bottom - 1, "kartu take ada di bawah baris Tangkap");
+    assert.ok(order.keyboard.top >= order.results.bottom - 1, "keyboard ada di bawah kartu hasil");
     assert.ok(order.keyboard.width >= order.paneWidth * 0.95, "keyboard selebar pane di HP");
 
     // C2 keyboard sentuh: tuts putih tetap >= 44px meski keyboard di-scroll

@@ -9,7 +9,7 @@
  * D3: waktu rekam dikurangi kompensasi latensi supaya nada yang ditekan tepat
  * pada klik metronom terekam pada tick yang sama dengan kliknya.
  */
-import { PPQ } from "../core/model.js?v=20261003.97";
+import { PPQ } from "../core/model.js?v=20261003.98";
 import {
   KEYBOARD_BLACK_COUNT,
   KEYBOARD_DEFAULT_OCTAVE,
@@ -27,7 +27,7 @@ import {
   keyboardRows,
   keyToPitch,
   quantizeTake
-} from "./ideas.js?v=20261003.97";
+} from "./ideas.js?v=20261003.98";
 import {
   LATENCY_STEP_MS,
   latencySeconds,
@@ -35,7 +35,7 @@ import {
   readRecordingPreferences,
   stepLatency,
   writeRecordingPreferences
-} from "../storage/recording-preferences.js?v=20261003.97";
+} from "../storage/recording-preferences.js?v=20261003.98";
 
 const PREVIEW_LIMIT = 16;
 const COMPARE_SLOTS = 8;
@@ -78,7 +78,26 @@ export function candidateKindLabel(kind) {
   if (kind === "inversion") return "ideasVariationInversion";
   if (kind === "sequence") return "ideasVariationSequence";
   if (kind === "rhythm") return "ideasVariationRhythm";
+  if (kind === "skeleton") return "ideasVariationSkeleton";
+  if (kind === "arpeggio") return "ideasVariationArpeggio";
+  if (kind === "reverse") return "ideasVariationReverse";
+  if (kind === "augment") return "ideasVariationAugment";
+  if (kind === "octave") return "ideasVariationOctave";
   return "ideasVariationRecorded";
+}
+
+/** Tooltip satu kalimat per jenis variasi. */
+export function candidateHintKey(kind) {
+  if (kind === "skeleton") return "ideasVariationSkeletonHint";
+  if (kind === "arpeggio") return "ideasVariationArpeggioHint";
+  if (kind === "reverse") return "ideasVariationReverseHint";
+  if (kind === "augment") return "ideasVariationAugmentHint";
+  if (kind === "octave") return "ideasVariationOctaveHint";
+  if (kind === "ornament") return "ideasVariationOrnamentHint";
+  if (kind === "inversion") return "ideasVariationInversionHint";
+  if (kind === "sequence") return "ideasVariationSequenceHint";
+  if (kind === "rhythm") return "ideasVariationRhythmHint";
+  return null;
 }
 
 /** Kartu variasi memakai jenisnya; kartu lanjutan memakai metodenya. */
@@ -122,6 +141,8 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     ideas: null,
     savedIdeaId: null,
     developed: null,
+    intensity: "medium",
+    variationScope: "default",
     activeCandidateId: null,
     compare: { a: null, b: null },
     comparePlaying: false,
@@ -399,6 +420,15 @@ export function createIdeasView({ root, commands, translate, getPlayer, storage,
     state.takes = [take, ...state.takes.filter((item) => item.id !== take.id)].slice(0, TAKE_LIMIT);
     emit();
     if (state.autoplayAfterStop) playTake(take);
+    // Setelah berhenti merekam, gulir ke kartu take; hormati gerak yang dikurangi.
+    if (typeof root?.querySelector === "function" && typeof matchMedia !== "function") {
+      root.querySelector('[data-entity="ideas-takes"]')?.scrollIntoView?.({ block: "nearest" });
+    } else if (typeof root?.querySelector === "function") {
+      const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      root.querySelector('[data-entity="ideas-takes"]')?.scrollIntoView?.(
+        reduced ? { block: "nearest" } : { block: "nearest", behavior: "smooth" }
+      );
+    }
     return take;
   }
 
@@ -523,6 +553,23 @@ function scheduleAutoStop() {
     emit();
   }
 
+  function setIntensity(value, takeId = null) {
+    if (!["gentle", "medium", "bold"].includes(value)) return false;
+    state.intensity = value;
+    // Bila kartu take itu sedang dikembangkan, kembangkan ulang dengan
+    // intensitas baru supaya hasilnya langsung terdengar.
+    const developed = state.developed;
+    if (takeId && developed?.takeId === takeId) {
+      const take = state.takes.find((item) => item.id === takeId);
+      if (take) {
+        developTake(take, { kind: developed.kind, seed: developed.seed, intensity: value, scope: developed.scope ?? "default" });
+        return true;
+      }
+    }
+    emit();
+    return true;
+  }
+
   function setPaletteOpen(open) {
     state.paletteOpen = Boolean(open);
   }
@@ -577,14 +624,15 @@ function scheduleAutoStop() {
    * dari luar; tanpa seed, seed diturunkan dari isi take sehingga hasilnya
    * selalu sama untuk take yang sama.
    */
-  function developTake(take, { kind = "variation", seed, bars, target } = {}) {
+  function developTake(take, { kind = "variation", seed, bars, target, intensity, scope } = {}) {
     if (!take) return null;
-    const result = commands.ideaDevelop({ kind, notes: take.notes, seed, bars, target });
+    const result = commands.ideaDevelop({ kind, notes: take.notes, seed, bars, target, intensity: intensity ?? state.intensity, scope: scope ?? state.variationScope });
     resetDevelopment();
     state.developed = {
       takeId: take.id,
       kind: result.kind,
       seed: result.seed,
+      scope: result.scope ?? "default",
       gap: result.gap ?? null,
       candidates: result.candidates
     };
@@ -603,7 +651,13 @@ function scheduleAutoStop() {
 
   function reseedTake(take) {
     const current = state.developed?.takeId === take.id ? state.developed.seed : 0;
-    return developTake(take, { kind: state.developed?.kind ?? "variation", seed: (current + 1) >>> 0 });
+    return developTake(take, { kind: state.developed?.kind ?? "variation", seed: (current + 1) >>> 0, scope: state.developed?.scope ?? "default" });
+  }
+
+  function toggleVariationScope(take) {
+    const next = state.developed?.scope === "all" ? "default" : "all";
+    state.variationScope = next;
+    return developTake(take, { kind: "variation", seed: state.developed?.seed, scope: next });
   }
 
   function stopPreview() {
@@ -833,6 +887,8 @@ function scheduleAutoStop() {
     index.setAttribute("aria-label", translate("ideasSlotLabel", { index: slot }));
     const name = document.createElement("strong");
     name.textContent = translate(candidateLabelKey(candidate));
+    const hintKey = candidateHintKey(candidate.kind);
+    if (hintKey) name.title = translate(hintKey);
     const count = document.createElement("span");
     count.className = "muted";
     count.textContent = translate("ideasTakeTitle", { count: candidate.notes.length });
@@ -886,6 +942,7 @@ function scheduleAutoStop() {
     host.dataset.open = String(Boolean(data));
     host.dataset.seed = data ? String(data.seed) : "";
     host.dataset.kind = data?.kind ?? "";
+    host.dataset.scope = data?.scope ?? "default";
     host.dataset.count = String(data?.candidates.length ?? 0);
     host.dataset.compare = String(state.comparePlaying);
     host.replaceChildren();
@@ -900,6 +957,16 @@ function scheduleAutoStop() {
     });
     reseed.classList.add("secondary");
     head.append(seedLabel, reseed);
+    if (data.kind === "variation") {
+      const take = state.takes.find((item) => item.id === data.takeId);
+      const more = button(
+        data.scope === "all" ? "ideasVariationShowFewer" : "ideasVariationShowMore",
+        "ideas-variation-scope",
+        () => { if (take) toggleVariationScope(take); }
+      );
+      more.classList.add("secondary");
+      head.append(more);
+    }
 
     const strip = document.createElement("div");
     strip.className = "ideas-variations-strip";
@@ -972,7 +1039,26 @@ function scheduleAutoStop() {
     help.textContent = take.noteCount < 3
       ? translate("ideasShortTakeHelp")
       : translate("ideasContinueHelp");
-    row.append(title, meta, actions, help);
+    // Intensitas berlaku untuk semua jenis variasi lama dan baru.
+    const intensityGroup = document.createElement("div");
+    intensityGroup.className = "ideas-intensity";
+    intensityGroup.setAttribute("role", "group");
+    intensityGroup.setAttribute("aria-label", translate("ideasIntensityLabel"));
+    intensityGroup.dataset.entity = "ideas-intensity";
+    for (const value of ["gentle", "medium", "bold"]) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "secondary";
+      option.dataset.action = "ideas-intensity";
+      option.dataset.value = value;
+      option.dataset.takeId = take.id;
+      option.setAttribute("aria-pressed", String(state.intensity === value));
+      option.textContent = translate(
+        value === "gentle" ? "ideasIntensityGentle" : value === "bold" ? "ideasIntensityBold" : "ideasIntensityMedium"
+      );
+      intensityGroup.append(option);
+    }
+    row.append(title, meta, actions, intensityGroup, help);
     return row;
   }
 
@@ -1074,6 +1160,10 @@ function scheduleAutoStop() {
     label.className = "ideas-keyboard-label";
     const range = keyboardRangeFor(state.octave);
     label.textContent = `${noteName(range.low)}-${noteName(range.high)}`;
+    // Satu track gulir berisi lapisan putih dan hitam: lebar gulir 14 tuts
+    // putih penuh sehingga persen slot hitam selalu terhadap lebar gulir.
+    const track = document.createElement("div");
+    track.className = "ideas-keyboard-track";
     for (const entry of rows.white) {
       whiteRow.append(keyButton(entry.pitch, entry.hotkey, "ideas-key ideas-key-white"));
     }
@@ -1087,8 +1177,8 @@ function scheduleAutoStop() {
     const hint = document.createElement("p");
     hint.className = "ideas-keyboard-hint";
     hint.textContent = translate("ideasKeyboardHint");
-    whiteRow.append(blackRow);
-    board.replaceChildren(label, whiteRow, hint);
+    track.append(whiteRow, blackRow);
+    board.replaceChildren(label, track, hint);
   }
 
   function keyButton(pitch, hotkey, className) {
@@ -1172,6 +1262,15 @@ renderKeyboard();
     if (quantizeSelect && quantizeSelect.value !== state.quantize) quantizeSelect.value = state.quantize;
     const snapSelect = root.querySelector('[data-action="ideas-snap"]');
     if (snapSelect && snapSelect.value !== state.snap) snapSelect.value = state.snap;
+    const advancedSummary = root.querySelector('[data-entity="ideas-advanced-summary"]');
+    if (advancedSummary) {
+      const quantizeName = translate(quantizeLabelKey(state.quantize));
+      const snapName = state.snap === "1/16" ? translate("ideasSnapSixteenth") : translate("ideasSnapEighth");
+      const latencyName = state.compensation.latencyMs === null
+        ? translate("ideasCompensationAuto")
+        : `${state.compensation.latencyMs} ms`;
+      advancedSummary.textContent = `${quantizeName} · ${snapName} · ${latencyName}`;
+    }
     const countInToggle = root.querySelector('[data-action="ideas-count-in"]');
     if (countInToggle) countInToggle.checked = state.countIn;
     const compensationOut = root.querySelector('[data-entity="ideas-compensation"]');
@@ -1272,10 +1371,14 @@ renderKeyboard();
       if (action === "ideas-auto-stop-bars") setAutoStopBars(event.target.value);
     });
     root.addEventListener("click", event => {
-      const action = event.target.closest?.("[data-action]")?.dataset.action;
+      const target = event.target.closest?.("[data-action]");
+      const action = target?.dataset.action;
       if (action === "ideas-record") {
         if (state.recording) stopRecording();
         else void startRecording();
+      }
+      if (action === "ideas-intensity" && target?.dataset.value) {
+        setIntensity(target.dataset.value, target.dataset.takeId ?? null);
       }
       if (action === "ideas-octave-down") shiftOctave(-1);
       if (action === "ideas-octave-up") shiftOctave(1);
@@ -1315,6 +1418,7 @@ if (typeof matchMedia === "function") {
     developVariations,
     developContinuation,
     reseedTake,
+    toggleVariationScope,
     playVariation,
     playTake,
     acceptCandidate,
@@ -1343,6 +1447,7 @@ if (typeof matchMedia === "function") {
     setCountIn,
     setAutoStop,
     setAutoStopBars,
+    setIntensity,
     setPaletteOpen,
     keyboardActive,
     keyboardRows: () => keyboardRows(keyboardBaseFor(state.octave)),

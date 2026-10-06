@@ -1,5 +1,5 @@
-import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.97';
-import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.97';
+import { songBarTicks, canonicalSongEndTick } from '../core/timeline.js?v=20261003.98';
+import { minimumGuitarViewHeight } from './guitar-view.js?v=20261003.98';
 
 export function musicalPosition(song, tick) {
   const barTicks = songBarTicks(song);

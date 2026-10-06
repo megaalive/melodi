@@ -802,7 +802,16 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-step[data-done="true"]{color:var(--accent-strong);}
 .ideas-empty:not([hidden]){display:grid;gap:var(--space-2);justify-items:start;margin:0 0 var(--space-2);padding:var(--space-3);border:1px dashed var(--border);border-radius:var(--radius);}
 .ideas-empty-list{margin:0;padding-left:1.25rem;display:grid;gap:var(--space-1);font-size:var(--text-sm);color:var(--text-muted);}
-.ideas-toast:not([hidden]){display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin:0 0 var(--space-2);padding:0.4rem 0.6rem;border:1px solid var(--accent-strong);border-radius:var(--radius);background:var(--accent-soft);color:var(--text);font-size:var(--text-sm);}
+.ideas-toast:not([hidden]){display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin:0 0 var(--space-2);padding:0.4rem 0.6rem;border:1px solid var(--accent-strong);border-radius:var(--radius);background:var(--accent-soft);color:var(--text);font-size:var(--text-sm);scroll-margin-top:var(--space-4);}
+/* C2: pengaturan jarang dipakai masuk disclosure; ringkasan nilai ikut di judul. */
+.ideas-advanced{border:1px solid var(--border);border-radius:var(--radius);padding:var(--space-1) var(--space-2);background:var(--surface);}
+.ideas-advanced > summary{display:flex;align-items:center;gap:var(--space-2);min-height:var(--control-h);cursor:pointer;font-size:var(--text-sm);color:var(--text);}
+.ideas-advanced-summary{color:var(--text-muted);font-size:var(--text-xs);}
+.ideas-advanced-body{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);padding-top:var(--space-2);}
+.ideas-keyboard-wrap{display:grid;gap:var(--space-2);min-width:0;}
+/* Kartu take/hasil di atas keyboard dan dapat digulir; toast in-flow di atas
+   kartu sehingga tidak menimpa tombol aksi. */
+.ideas-takes{scroll-margin-bottom:calc(var(--control-h) * 2);}
 .ideas-board{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-3);align-items:start;}
 .ideas-keyboard-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-2);}
 .ideas-octave-shift{display:flex;gap:var(--space-1);}
@@ -810,17 +819,20 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-latency output{min-width:5.5ch;text-align:center;color:var(--text);font-variant-numeric:tabular-nums;}
 .ideas-latency button{min-width:var(--control-h);padding-inline:var(--space-1);}
 .ideas-hint{margin:0;font-size:var(--text-sm);color:var(--text-muted);}
-.ideas-keyboard{position:relative;display:grid;gap:var(--space-2);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);touch-action:none;}
+.ideas-keyboard{--key-touch-min:var(--control-h);position:relative;display:grid;gap:var(--space-2);padding:var(--space-2);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-subtle);touch-action:pan-x pan-y;overflow-x:auto;overscroll-behavior-x:contain;}
 .ideas-keyboard-label{font-size:var(--text-xs);color:var(--text-muted);}
-.ideas-keyboard-white{position:relative;display:flex;gap:2px;}
-.ideas-keyboard-black{position:absolute;inset:0 var(--space-2) auto var(--space-2);height:60%;min-height:clamp(1.75rem,7dvh,2.75rem);pointer-events:none;}
-.ideas-key{flex:1 1 0;min-width:0;min-height:clamp(2.75rem,11dvh,5rem);border:1px solid var(--border-strong);border-radius:0 0 var(--radius) var(--radius);background:var(--surface);color:var(--text);cursor:pointer;}
+.ideas-keyboard-track{position:relative;min-width:calc(var(--key-touch-min) * 14);}
+/* Lapisan putih dan hitam berbagi satu kontainer gulir: posisi hitam dihitung
+   dari indeks tuts putih (slot/14) terhadap lebar gulir, bukan lebar terlihat. */
+.ideas-keyboard-white{position:relative;display:flex;gap:calc(var(--space-1) / 4);}
+.ideas-keyboard-black{position:absolute;inset:0 0 auto 0;height:60%;min-height:var(--control-h);pointer-events:none;}
+.ideas-key{flex:1 1 0;min-width:0;min-height:calc(var(--control-h) * 2);border:1px solid var(--border-strong);border-radius:0 0 var(--radius) var(--radius);background:var(--surface);color:var(--text);cursor:pointer;}
 /* Posisi tombol hitam dihitung dari celah tombol putih di sebelah kiri. */
 .ideas-key-black{left:var(--key-slot,50%);}
 /* Warna tombol piano tidak mengikuti tema: tombol putih selalu terang dan
    tombol hitam selalu gelap supaya oktaf terbaca di mode terang maupun gelap. */
-.ideas-key-white{background:light-dark(#f7f5f1,#ecebe6);color:#1b2124;border-color:light-dark(#9d968c,#8b8479);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 2px;font-size:var(--text-xs);}
-.ideas-key-black{position:absolute;top:0;width:min(7.5%, 2rem);min-width:0;min-height:clamp(1.75rem,7dvh,2.75rem);transform:translateX(-50%);border-radius:0 0 4px 4px;background:light-dark(#22262a,#0c0f12);color:#e7e4de;border-color:light-dark(#22262a,#0c0f12);pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:2px;font-size:9px;}
+.ideas-key-white{flex:1 0 var(--key-touch-min);background:light-dark(#f7f5f1,#ecebe6);color:#1b2124;border-color:light-dark(#9d968c,#8b8479);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:0 0 var(--space-1);font-size:var(--text-xs);min-height:calc(var(--control-h) * 3);}
+.ideas-key-black{position:absolute;top:0;width:calc(var(--key-touch-min) * 0.6);min-width:0;min-height:var(--control-h);height:60%;transform:translateX(-50%);border-radius:0 0 var(--radius) var(--radius);background:light-dark(#22262a,#0c0f12);color:#e7e4de;border-color:light-dark(#22262a,#0c0f12);pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:var(--space-1);font-size:var(--text-2xs);}
 /* Nama nada menempel di bawah tombol putih, label QWERTY menempel di atas
    tombol hitam, jadi keduanya tidak pernah menimpa satu sama lain. */
 .ideas-key-note{line-height:1.1;white-space:nowrap;}
@@ -840,6 +852,10 @@ button.danger-button:hover:not(:disabled){background:var(--danger);color:var(--o
 .ideas-take-actions{display:flex;flex-wrap:wrap;gap:var(--space-1);}
 .ideas-take-actions button{flex:1 1 auto;}
 .ideas-take-actions button[data-role="primary"]{border-color:var(--accent-strong);background:var(--accent-soft);color:var(--text);font-weight:600;}
+/* Kontrol intensitas: segmented tiga pilihan, 44px di HP via token global. */
+.ideas-intensity{display:flex;gap:var(--space-1);}
+.ideas-intensity button{flex:1 1 auto;min-height:var(--control-h);}
+.ideas-intensity button[aria-pressed="true"]{border-color:var(--accent-strong);background:var(--accent-soft);color:var(--accent-strong);}
 .ideas-take-help{margin:0;font-size:var(--text-xs);color:var(--text-muted);display:none;}
 .ideas-take:hover .ideas-take-help,.ideas-take:focus-within .ideas-take-help,.ideas-take[data-short="true"] .ideas-take-help{display:block;}
 .ideas-variations{display:grid;gap:var(--space-2);}

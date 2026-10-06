@@ -1,17 +1,17 @@
-import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.97";
-import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.97";
+import { canonicalSongEndTick, barRangeAtTick, chordSnapTicks } from "./timeline.js?v=20261003.98";
+import { cloneData, createBlankSong, createId, createSong, MelodiError, SUPPORTED_CHORD_QUALITIES } from "./model.js?v=20261003.98";
 import { DEFAULT_EDITOR_TOOL, DEFAULT_ROLL_ZOOM, DEFAULT_SNAP, EDITOR_TOOLS, MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, SNAP_TICKS } from "./editor.js";
-import { createAgentSnapshot } from "./snapshot.js?v=20261003.97";
-import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.97";
+import { createAgentSnapshot } from "./snapshot.js?v=20261003.98";
+import { projectPlaybackState, validateLoop, validateTempo, validateTick, wrapLoopTick } from "../audio/transport.js?v=20261003.98";
 import { createGenerationContext } from "../generation/context.js";
 import { generateGap as generateGapCandidates } from "../generation/generator.js";
-import { ideaDevelop } from "../generation/ideas.js?v=20261003.97";
+import { ideaDevelop } from "../generation/ideas.js?v=20261003.98";
 import { nextSeed } from "../generation/random.js";
-import { createExample, listExamples } from "../examples/catalog.js?v=20261003.97";
-import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.97";
-import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.97";
-import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.97";
-import { findPercussionKit } from "../instruments/percussion.js?v=20261003.97";
+import { createExample, listExamples } from "../examples/catalog.js?v=20261003.98";
+import { createInstrumentMix, percussionChannelId } from "../audio/mix.js?v=20261003.98";
+import { suggestHarmony as inferHarmonyCandidates } from "../harmony/harmony.js?v=20261003.98";
+import { generateHarmonyProgression as planHarmonyProgression } from "../harmony/progression.js?v=20261003.98";
+import { findPercussionKit } from "../instruments/percussion.js?v=20261003.98";
 import { syllabifyLyrics } from "./lyrics.js";
 
 function fail(code) {
@@ -1410,7 +1410,7 @@ export function createCommands(initialSong, {
 // I2: satu command untuk kedua arah pengembangan ide. Keduanya hanya
     // membaca lagu sehingga hasilnya selalu bisa dibandingkan sebelum satu
     // Terima, dan tidak ada satu pun yang menyentuh anchor atau locked.
-    ideaDevelop({ kind = "variation", notes, count, seed, bars, target } = {}) {
+    ideaDevelop({ kind = "variation", notes, count, seed, bars, target, intensity, chords, scope } = {}) {
       return cloneData(ideaDevelop({
         kind,
         notes,
@@ -1418,6 +1418,9 @@ export function createCommands(initialSong, {
         seed,
         bars,
         target,
+        intensity,
+        scope,
+        chords: chords ?? song.chords ?? [],
         key: song.key,
         scale: song.scale,
         tempo: song.timing.tempo,
@@ -1425,8 +1428,8 @@ export function createCommands(initialSong, {
       }));
     },
     // developTake tetap ada sebagai jalan pintas ke arah variasi.
-    developTake({ notes, count, seed } = {}) {
-      return commands.ideaDevelop({ kind: "variation", notes, count, seed });
+    developTake({ notes, count, seed, intensity, scope } = {}) {
+      return commands.ideaDevelop({ kind: "variation", notes, count, seed, intensity, scope });
     },
     commitTake({ notes, insertAtTick = null } = {}) {
       if (!Array.isArray(notes) || notes.length === 0) fail("invalid-note");
