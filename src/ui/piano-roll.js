@@ -396,10 +396,8 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
   let scrollViewportWidth = 0;
   let scrollViewportHeight = 0;
   let svgBoundsWidth = 0;
-  // Toleransi follow dihitung dari viewport, bukan konstanta: playhead pada
-  // lagu panjang bergerak puluhan piksel per tick, jadi toleransi tetap
-  // berarti container digeser tiap tick.
-  const centerFollowTolerance = () => Math.max(24, Math.round(scrollViewportWidth * 0.12));
+  // Follow playback tidak memakai dead-zone: di fase tengah viewport harus
+  // bergerak bersama timeline agar playhead benar-benar diam di tengah.
   let knownScrollLeft = 0;
   let playheadElement = null;
 
@@ -921,15 +919,16 @@ export function createPianoRollView(svg, commands, { onAddNote = () => {}, onAdd
       }
       if (followMode !== "none" && playback.status === "playing" && scrollViewportWidth > 0 && !activeDrag && !chordDrag && !finishingDrag) {
         if (followMode === "center") {
-        const centered = centeredScrollLeft({
-          playheadX: x,
-          viewportWidth: scrollViewportWidth,
-          gutterWidth: geometry.labelWidth,
-          contentWidth: geometry.width
-        });
-        // Playhead maju beberapa piksel per tick; scroll ulang tiap tick hanya
-        // memaksa layout tanpa menggeser apa yang terlihat.
-        if (Math.abs(centered - knownScrollLeft) >= centerFollowTolerance()) scrollTo(centered);
+          const centered = centeredScrollLeft({
+            playheadX: x,
+            viewportWidth: scrollViewportWidth,
+            gutterWidth: geometry.labelWidth,
+            contentWidth: geometry.width
+          });
+          // centeredScrollLeft sudah membentuk tiga fase: awal tetap di kiri,
+          // tengah mengikuti playhead, lalu berhenti di batas kanan. Karena itu
+          // setiap perubahan posisi harus diterapkan tanpa dead-zone.
+          if (centered !== knownScrollLeft) scrollTo(centered);
         } else {
           const left = knownScrollLeft;
           const right = left + scrollViewportWidth;
