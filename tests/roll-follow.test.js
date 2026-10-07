@@ -60,6 +60,12 @@ test("focused transport fields do not suspend playback follow, while real text e
   assert.equal(isTextEntryActiveElement(null), false);
 });
 
+test("piano roll center follow stays continuous without a viewport dead-zone", () => {
+  const pianoRoll = readFileSync(resolve("src/ui/piano-roll.js"), "utf8");
+  assert.doesNotMatch(pianoRoll, /centerFollowTolerance/);
+  assert.match(pianoRoll, /if \(centered !== knownScrollLeft\) scrollTo\(centered\);/);
+});
+
 test("the app passes its canonical note-and-percussion range decision to both rolls", () => {
   const app = readFileSync(resolve("src/app.js"), "utf8");
   assert.match(app, /function canonicalSongEndTick\(song\)/);
