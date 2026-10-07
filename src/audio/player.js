@@ -1,8 +1,8 @@
-import { MelodiError, PPQ } from "../core/model.js?v=20261003.98";
-import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.98";
-import { percussionVoiceSpec } from "./percussion.js?v=20261003.98";
-import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.98";
-import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.98";
+import { MelodiError, PPQ } from "../core/model.js?v=20261003.99";
+import { planNoteEvents, planPercussionEvents, tickAtAudioTime, validateTempo, wrapLoopTick } from "./transport.js?v=20261003.99";
+import { percussionVoiceSpec } from "./percussion.js?v=20261003.99";
+import { instrumentGain, percussionChannelId } from "./mix.js?v=20261003.99";
+import { planHarmonyEvents, planBassEvents } from "../harmony/sketch.js?v=20261003.99";
 
 // Jendela jadwal harus lebih besar daripada stall main thread terburuk yang
 // realistis (GC, layout, render editor): 200 ms mudah dilampaui di mesin
