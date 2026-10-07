@@ -10,7 +10,7 @@ import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.98";
 import { createAudioPlayer } from "./audio/player.js?v=20261003.98";
 import { songProjection } from "./audio/transport.js?v=20261003.98";
-import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.98";
+import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.99";
 import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.98";
 import { createScoreView } from "./ui/score.js?v=20261003.98";
 import { createGuitarView } from "./ui/guitar-view.js?v=20261003.98";
