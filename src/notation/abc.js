@@ -57,6 +57,43 @@ function eventToken(event, projection, noteClassById, chordsByTick, includeChord
   return `${chordPrefix}${classDecoration}${abcPitch(event.spelling)}${length}${tie}`;
 }
 
+// ABC joins adjacent short notes without whitespace to draw beams. Grouping
+// boundaries come from meter, not from the note array or visual line breaks.
+function beamGroupEnd(measure, tick, projection) {
+  const { numerator, denominator } = projection.timeSignature;
+  const unitTicks = projection.ppq * 4 / denominator;
+  const offset = tick - measure.startTick;
+
+  // Conventional default subdivisions for irregular eighth-note meters.
+  const irregular = denominator === 8 && numerator === 5 ? [2, 3]
+    : denominator === 8 && numerator === 7 ? [2, 2, 3] : null;
+  if (irregular) {
+    let end = 0;
+    for (const units of irregular) {
+      end += units * unitTicks;
+      if (offset < end) return measure.startTick + end;
+    }
+  }
+
+  // Compound meters (6/8, 9/8, 12/8, ...) group three eighths.
+  // Short 2/8 and 3/8 measures can be one beam group.
+  const groupTicks = denominator >= 8 && numerator >= 6 && numerator % 3 === 0
+    ? unitTicks * 3
+    : denominator === 8 && numerator <= 3 ? projection.ticksPerMeasure
+      : unitTicks;
+  return measure.startTick + (Math.floor(offset / groupTicks) + 1) * groupTicks;
+}
+
+function canBeam(previous, next, measure, projection) {
+  if (!previous || previous.kind !== "note" || next.kind !== "note") return false;
+  if (previous.noteId === next.noteId) return false; // chord-split tied segments
+  const eighthTicks = projection.ppq / 2;
+  if (previous.durationTicks > eighthTicks || next.durationTicks > eighthTicks) return false;
+  if (previous.startTick + previous.durationTicks !== next.startTick) return false;
+  // Neither note may cross a subdivision boundary, even if both onsets fit.
+  return next.startTick + next.durationTicks <= beamGroupEnd(measure, previous.startTick, projection);
+}
+
 function makeClassMaps(song) {
   const ordered = [...song.notes].sort((left, right) =>
     left.startTick - right.startTick || left.pitch - right.pitch || left.id.localeCompare(right.id));
@@ -108,21 +145,28 @@ export function projectSongToAbc(song) {
     for (const measure of projection.measures) {
       const chordsByTick = new Map(measure.chords.map((chord) => [chord.startTick, chord]));
       const events = measureEventsForLane(measure, laneIndex, projection);
+      let measureText = "";
+      let previous = null;
       for (const event of events) {
-        // Chord yang mulai di tengah note/rest tetap tampak pada tick yang tepat.
-        // Pemecahan hanya proyeksi ABC; canonical note dan durasinya tidak berubah.
+        // Chord labels starting inside a note/rest split only the ABC view.
+        // The canonical note identity and exact tick duration stay unchanged.
         const boundaries = laneIndex === 0 ? [...chordsByTick.keys()]
           .filter((tick) => tick > event.startTick && tick < event.startTick + event.durationTicks)
           .sort((left, right) => left - right) : [];
         const starts = [event.startTick, ...boundaries];
         for (let index = 0; index < starts.length; index += 1) {
           const endTick = starts[index + 1] ?? event.startTick + event.durationTicks;
-          tokens.push(eventToken({ ...event, startTick: starts[index], durationTicks: endTick - starts[index],
+          const fragment = { ...event, startTick: starts[index], durationTicks: endTick - starts[index],
             tieToNext: event.kind === "note" && (index < starts.length - 1 || event.tieToNext)
-          }, projection, noteClassById, chordsByTick, laneIndex === 0));
+          };
+          // No whitespace inside a beat group makes abcjs draw a beam.
+          // Rests, long notes, gaps, and beat boundaries always break it.
+          measureText += (measureText && !canBeam(previous, fragment, measure, projection) ? " " : "")
+            + eventToken(fragment, projection, noteClassById, chordsByTick, laneIndex === 0);
+          previous = fragment;
         }
       }
-      tokens.push("|");
+      tokens.push(measureText + " |");
     }
     return `[V:${voiceId}] ${tokens.join(" ")}`;
   });

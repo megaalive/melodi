@@ -1,5 +1,5 @@
 import { midiToPitch } from "../core/model.js";
-import { projectSongToAbc, expressionSummary } from "../notation/abc.js";
+import { projectSongToAbc, expressionSummary } from "../notation/abc.js?notation=20261012.2";
 import { spellPitchNameInKey } from "../notation/project.js";
 import { normalizePlaybackState, normalizeRuntimeState, normalizeViewState } from "../core/runtime-state.js";
 

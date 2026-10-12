@@ -12,7 +12,7 @@ import { createAudioPlayer } from "./audio/player.js?v=20261003.99&patch=2026101
 import { songProjection } from "./audio/transport.js?v=20261003.99";
 import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.99";
 import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.99";
-import { createScoreView } from "./ui/score.js?v=20261003.99";
+import { createScoreView } from "./ui/score.js?v=20261003.99&notation=20261012.2";
 import { createGuitarView } from "./ui/guitar-view.js?v=20261003.99";
 import { createGuitarTabView } from "./ui/guitar-tab.js?v=20261003.99";
 import { createDrumGridView, drumKeyboardIntent, isDrumKeyboardTarget } from "./ui/drum-grid.js?v=20261003.99";

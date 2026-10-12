@@ -71,3 +71,59 @@ test("expression summary stays empty at defaults and describes mix plus vibrato"
     vibrato: { rateHz: 5.8, depthSemitones: 0.3, delayPosition: 0.2 }
   })), "V 72% · L 35 · Vib 5.8Hz ±0.3");
 });
+
+test("4/4 notation beams eighth notes by quarter-note beats, not across beats", () => {
+  const fixture = song(Array.from({ length: 8 }, (_, index) =>
+    note("beat-" + index, [60, 62, 64, 65, 67, 69, 71, 72][index], index * 240, 240)
+  ));
+  const result = projectSongToAbc(fixture);
+  const music = result.abc.split("\n").find(line => line.startsWith("[V:1] "))
+    .replace(/!class=melodi-note-\d+!/g, "").replace("[V:1] ", "");
+  assert.equal(music, "CD EF GA Bc |");
+  assert.equal(result.noteIdByClass.size, 8);
+});
+
+test("6/8 notation beams three eighth notes per dotted-quarter pulse", () => {
+  const fixture = song(Array.from({ length: 6 }, (_, index) =>
+    note("six-" + index, [60, 62, 64, 65, 67, 69][index], index * 240, 240)
+  ), { timing: { ppq: PPQ, tempo: 96, timeSignature: { numerator: 6, denominator: 8 } } });
+  const music = projectSongToAbc(fixture).abc.split("\n").find(line => line.startsWith("[V:1] "))
+    .replace(/!class=melodi-note-\d+!/g, "").replace("[V:1] ", "");
+  assert.equal(music, "CDE FGA |");
+});
+
+test("rests, long notes, and split ties never join an invalid beam", () => {
+  const fixture = song([
+    note("a", 60, 0, 240),
+    note("b", 62, 480, 240),
+    note("c", 64, 720, 240),
+    note("d", 67, 1680, 480)
+  ]);
+  const result = projectSongToAbc(fixture);
+  const music = result.abc.split("\n").find(line => line.startsWith("[V:1] "))
+    .replace(/!class=melodi-note-\d+!/g, "").replace("[V:1] ", "");
+  assert.match(music, /C z DE/);
+  assert.match(music, /G- \| G/);
+  assert.equal(result.noteIdByClass.size, 4);
+});
+
+test("irregular 5/8 groups 2+3 without changing event ticks", () => {
+  const fixture = song(Array.from({ length: 5 }, (_, index) =>
+    note("odd-" + index, [60, 62, 64, 65, 67][index], index * 240, 240)
+  ), { timing: { ppq: PPQ, tempo: 96, timeSignature: { numerator: 5, denominator: 8 } } });
+  const before = structuredClone(fixture);
+  const music = projectSongToAbc(fixture).abc.split("\n").find(line => line.startsWith("[V:1] "))
+    .replace(/!class=melodi-note-\d+!/g, "").replace("[V:1] ", "");
+  assert.equal(music, "CD EFG |");
+  assert.deepEqual(fixture, before);
+});
+
+test("a chord symbol on the second eighth keeps its onset and beam", () => {
+  const fixture = song([
+    note("a", 60, 0, 240),
+    note("b", 62, 240, 240)
+  ], { chords: [{ id: "c1", rootPitchClass: 9, quality: "minor", startTick: 240, durationTicks: 240 }] });
+  const music = projectSongToAbc(fixture).abc.split("\n").find(line => line.startsWith("[V:1] "))
+    .replace(/!class=melodi-note-\d+!/g, "").replace("[V:1] ", "");
+  assert.match(music, /C"Am"D/);
+});
