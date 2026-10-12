@@ -282,7 +282,8 @@ assert.match(studio, /toolbarActions\.append\(rollCollapse\)/);
   assert.match(transportButtons, /id="play"[^>]*data-action="play"[^>]*data-action-alias="pause"/);
   assert.match(transportButtons, /id="pause"[^>]*data-action="pause"[^>]*hidden/);
   assert.match(app, /if \(state\.playback\.status === "playing"\) run\(\(\) => commands\.pause\(\), "playbackPaused"\)/);
-  assert.match(app, /playToggle\.dataset\.ariaCopy = playing \? "pauseButton" : "playButton"/);
+  assert.match(app, /const playCopy = playing \? "pauseButton" : "playButton"/);
+  assert.match(app, /writeAttribute\(playToggle, "data-aria-copy", playCopy\)/);
   assert.match(app, /element\.setAttribute\("aria-label", label\)/);
   assert.match(app, /element\.setAttribute\("title", label\)/);
 

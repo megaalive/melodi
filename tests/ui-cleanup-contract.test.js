@@ -59,7 +59,7 @@ test("duplicate key and meter readouts are removed while machine state hooks rem
     assert.doesNotMatch(html, new RegExp(`\\bid="${id}"`));
   }
   assert.match(html, /class="machine-detail" hidden>[\s\S]*?id="current-tick" data-entity="current-tick"/);
-  assert.match(app, /current-section"\)\.textContent = section\?\.name \?\?/);
-  assert.match(app, /current-section"\)\.dataset\.entityId = section\?\.id/);
+  assert.match(app, /writeText\(byId\("current-section"\), section\?\.name \?\?/);
+  assert.match(app, /writeAttribute\(byId\("current-section"\), "data-entity-id", section\?\.id/);
   assert.match(app, /const complete = followControl\s*&&/);
 });
