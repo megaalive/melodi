@@ -689,9 +689,16 @@ function currentCycle(tick) {
       scheduledKeys: { has: (key) => scheduled.has(`sketch:${key}`) }
     });
     const mix = getMix();
+    // Solo/mute detection traverses every channel. Resolve each channel's
+    // gain only once per scheduling wake, even during dense drum passages.
+    const gains = new Map();
+    function gainFor(channelId) {
+      if (!gains.has(channelId)) gains.set(channelId, instrumentGain(mix, channelId));
+      return gains.get(channelId);
+    }
 
     for (const event of noteEvents) {
-      const gain = instrumentGain(mix, "melody");
+      const gain = gainFor("melody");
       if (gain === 0) continue;
       try {
         scheduleVoice(event, gain);
@@ -702,7 +709,7 @@ function currentCycle(tick) {
       }
     }
     for (const event of percussionEvents) {
-      const gain = instrumentGain(mix, percussionChannelId(event.track.id, event.hit.pieceId));
+      const gain = gainFor(percussionChannelId(event.track.id, event.hit.pieceId));
       if (gain === 0) continue;
       try {
         scheduledAt.set(event.key, schedulePercussionVoice(event, gain));
@@ -712,7 +719,7 @@ function currentCycle(tick) {
       }
     }
     for (const event of sketchEvents) {
-      const gain = instrumentGain(mix, event.note.channel);
+      const gain = gainFor(event.note.channel);
       if (gain === 0) continue;
       try {
         scheduleSketchVoice(event, gain);

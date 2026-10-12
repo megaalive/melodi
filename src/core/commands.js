@@ -129,11 +129,16 @@ export function createCommands(initialSong, {
     if (selection && selection.endTick > selection.startTick) {
       return { startTick: selection.startTick, endTick: selection.endTick };
     }
-    const notes = song.notes.filter((note) => selectedNoteIds.includes(note.id));
-    if (notes.length) return {
-      startTick: Math.min(...notes.map((note) => note.startTick)),
-      endTick: Math.max(...notes.map((note) => note.startTick + note.durationTicks))
-    };
+    // Most playback frames have no selected notes. Avoid walking the whole
+    // song in getPlaybackView() just to discover an empty selection.
+    if (selectedNoteIds.length) {
+      const selected = new Set(selectedNoteIds);
+      const notes = song.notes.filter((note) => selected.has(note.id));
+      if (notes.length) return {
+        startTick: Math.min(...notes.map((note) => note.startTick)),
+        endTick: Math.max(...notes.map((note) => note.startTick + note.durationTicks))
+      };
+    }
     return harmonyRange ? cloneData(harmonyRange) : barRangeAtTick(song, Math.max(0, Math.floor(playback.currentTick)));
   }
 

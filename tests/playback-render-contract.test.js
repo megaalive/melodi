@@ -52,3 +52,17 @@ test("the perf probe stays inert unless it is asked for", () => {
   assert.match(perf, /localStorage\?\.getItem\("melodiPerf"\) === "1"/, "atau lewat localStorage");
   assert.match(app, /const perfProbe = perfEnabled\(\)/, "app memasang probe hanya saat diminta");
 });
+test("playback updates only regions visible in the active workspace", () => {
+  assert.match(app, /const scoreVisible = VIEW_REGION_MODES\.score\.includes\(state\.view\.mode\)/);
+  assert.match(app, /const drumsVisible = VIEW_REGION_MODES\.drums\.includes\(state\.view\.mode\)/);
+  assert.match(app, /const guitarVisible = VIEW_REGION_MODES\.guitar\.includes\(state\.view\.mode\)/);
+  assert.match(app, /if \(uiPreferences\.guitarLayout === "fretboard" && guitarVisible\)/);
+});
+
+test("the playback hot path caches song duration and compares each DOM field directly", () => {
+  assert.match(app, /const songEndTickCache = new WeakMap\(\)/);
+  assert.match(app, /songEndTickCache\.get\(song\)/);
+  assert.match(app, /element\.getAttribute\(name\) !== value/);
+  assert.match(app, /element\.hasAttribute\("hidden"\) !== Boolean\(hidden\)/);
+  assert.match(commands, /if \(selectedNoteIds\.length\) \{/);
+});

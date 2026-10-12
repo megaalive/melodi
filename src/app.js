@@ -65,8 +65,16 @@ const languageSelect = byId("language");
 const themeSelect = byId("theme");
 const translate = (key, values) => message(language, key, values);
 
+// Canonical Song objects are replaced on every edit. Cache expensive timeline
+// scans by identity, rather than rescanning every note and drum hit per frame.
+const songEndTickCache = new WeakMap();
 function canonicalSongEndTick(song) {
-  return Math.max(1, musicalEndTick(song));
+  let end = songEndTickCache.get(song);
+  if (end === undefined) {
+    end = Math.max(1, musicalEndTick(song));
+    songEndTickCache.set(song, end);
+  }
+  return end;
 }
 
 // Berbeda dari bahasa (yang in-memory), pilihan tema disimpan: ini preferensi
@@ -1472,40 +1480,27 @@ function schedulePlaybackRender() {
   });
 }
 
-// P3: penulisan DOM hanya terjadi kalau nilainya berubah. Tanpa ini setiap
-// tick mencederai dozens node even when the value is identical.
-const lastDomValue = new WeakMap();
-
+// Read the actual DOM value: one WeakMap value per element used to overwrite
+// previous attribute/property keys and silently defeated the change guard.
+// Reading the field also stays correct if another view updates that element.
 function writeText(element, value) {
-  if (!element) return;
-  if (lastDomValue.get(element) === value) return;
-  lastDomValue.set(element, value);
-  element.textContent = value;
+  if (element && element.textContent !== value) element.textContent = value;
 }
 
 function writeAttribute(element, name, value) {
-  if (!element) return;
-  const key = `@${name}`;
-  if (lastDomValue.get(element) === key + value) return;
-  lastDomValue.set(element, key + value);
-  element.setAttribute(name, value);
+  if (element && element.getAttribute(name) !== value) element.setAttribute(name, value);
 }
 
 function writeProperty(element, name, value) {
-  if (!element) return;
-  const key = `#${name}`;
-  if (lastDomValue.get(element) === key + value) return;
-  lastDomValue.set(element, key + value);
-  element[name] = value;
+  if (element && element[name] !== value) element[name] = value;
 }
 
-// SVG tidak punya properti `hidden`, jadi atributnya yang ditulis.
+// SVG does not support the `hidden` property: toggle the attribute only
+// when its current state actually changes.
 function writeHidden(element, hidden) {
-  if (!element) return;
-  const key = `#hidden=${hidden}`;
-  if (lastDomValue.get(element) === key) return;
-  lastDomValue.set(element, key);
-  element.toggleAttribute("hidden", Boolean(hidden));
+  if (element && element.hasAttribute("hidden") !== Boolean(hidden)) {
+    element.toggleAttribute("hidden", Boolean(hidden));
+  }
 }
 
 let lastSyllableKey = "";
@@ -1555,8 +1550,8 @@ function renderPlaybackNow() {
   writeText(byId("current-tick"), String(playback.currentTick));
   writeText(byId("current-note"), note ? midiToPitch(note.pitch) : translate("noCurrentNote"));
   writeAttribute(byId("current-note"), "data-entity-id", note?.id ?? "");
-  byId("current-section").textContent = section?.name ?? translate("noCurrentSection");
-  byId("current-section").dataset.entityId = section?.id ?? "";
+  writeText(byId("current-section"), section?.name ?? translate("noCurrentSection"));
+  writeAttribute(byId("current-section"), "data-entity-id", section?.id ?? "");
   const mobileTransportSummary = byId("mobile-transport-summary");
   const tempoState = translate(playback.loop.enabled ? "loopStateOn" : "loopStateOff");
   writeText(byId("mobile-transport-bpm"), String(playback.tempo));
@@ -1570,8 +1565,9 @@ function renderPlaybackNow() {
   const playing = playback.status === "playing";
   const playToggle = byId("play");
   writeProperty(playToggle, "disabled", false);
-  playToggle.dataset.ariaCopy = playing ? "pauseButton" : "playButton";
-  const toggleLabel = translate(playToggle.dataset.ariaCopy);
+  const playCopy = playing ? "pauseButton" : "playButton";
+  writeAttribute(playToggle, "data-aria-copy", playCopy);
+  const toggleLabel = translate(playCopy);
   writeAttribute(playToggle, "aria-label", toggleLabel);
   writeAttribute(playToggle, "title", toggleLabel);
   // Ikonnya <svg>, dan SVGElement tidak punya properti `hidden`, jadi assignment
@@ -1597,11 +1593,13 @@ function renderPlaybackNow() {
   const textEntryActive = isTextEntryActiveElement(document.activeElement);
   const follow = state.view.follow && playback.status === "playing" && !textEntryActive && !pointerInteractionActive;
   const followMode = playbackFollowMode(follow);
-  // P3: view yang tidak terlihat tidak diberi updatePlayback sama sekali.
-  const rollVisible = !byId("piano-roll-section")?.hidden;
-  const scoreVisible = state.view.mode !== "lyrics";
-  const drumsVisible = state.view.mode !== "lyrics";
-  const guitarVisible = state.view.mode !== "score";
+  // Match the same region rules used by render(). Updating an invisible
+  // score/drum/guitar view forces expensive layout reads during audio playback.
+  const rollVisible = VIEW_REGION_MODES["piano-roll"].includes(state.view.mode)
+    && !byId("piano-roll-section")?.hidden;
+  const scoreVisible = VIEW_REGION_MODES.score.includes(state.view.mode);
+  const drumsVisible = VIEW_REGION_MODES.drums.includes(state.view.mode);
+  const guitarVisible = VIEW_REGION_MODES.guitar.includes(state.view.mode);
   if (rollVisible) rollView?.updatePlayback(playback, { followMode, songEndTick });
   if (rollVisible) expressionView?.updatePlayback(playback);
   if (scoreVisible) scoreView?.updatePlayback(playback, { ...state.view, follow });
@@ -1614,7 +1612,7 @@ function renderPlaybackNow() {
   });
   // Fretboard opted-in dan view-nya sendiri sudah refuse render kalau nada
   // aktif tidak berubah, jadi snapshot penuh hanya diambil di mode ini.
-  if (uiPreferences.guitarLayout === "fretboard") {
+  if (uiPreferences.guitarLayout === "fretboard" && guitarVisible) {
     const state = normalizeRuntimeState(commands.getState());
     if (guitarView?.updatePlayback(state)) renderGuitar(state);
   }
