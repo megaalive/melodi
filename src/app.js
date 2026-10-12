@@ -4,11 +4,11 @@ import { harmonyContextRange, renderHarmonyInspector, setHarmonyEditorRange, rea
 import { canonicalSongEndTick as musicalEndTick } from "./core/timeline.js?v=20261003.99";
 import { harmonyKeyboardIntent } from "./ui/harmony-interactions.js?v=20261003.99";
 import { PPQ, createBlankSong, createId, midiToPitch, pitchToMidi, setCloneProbe } from "./core/model.js?v=20261003.99";
-import { createCommands } from "./core/commands.js?v=20261003.99";
+import { createCommands } from "./core/commands.js?v=20261003.99&patch=20261012.1";
 import { MAX_ROLL_ZOOM, MIN_ROLL_ZOOM, ROLL_ZOOM_STEP, SNAP_TICKS } from "./core/editor.js";
 import { normalizePlaybackState, normalizeRuntimeState, VIEW_REGION_MODES } from "./core/runtime-state.js?v=20261003.99";
 import { DEFAULT_LANGUAGE, message } from "./i18n/messages.js?v=20261003.99";
-import { createAudioPlayer } from "./audio/player.js?v=20261003.99";
+import { createAudioPlayer } from "./audio/player.js?v=20261003.99&patch=20261012.1";
 import { songProjection } from "./audio/transport.js?v=20261003.99";
 import { createPianoRollView } from "./ui/piano-roll.js?v=20261003.99";
 import { createExpressionLaneView } from "./ui/expression-lane.js?v=20261003.99";
